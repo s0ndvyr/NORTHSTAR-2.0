@@ -14,3 +14,34 @@ body{background:#090f14}body::before{background:radial-gradient(ellipse 65% 36% 
 .ring-center b,.ring-center span{display:block}.orbit-art small{display:none}@media(min-width:901px) and (max-width:1279px){.logo{background:#c8e79a;box-shadow:none;color:#132419}.logo-mark{background:transparent!important}}
 @media(min-width:601px) and (max-width:1180px){.bento>.card:nth-child(7){grid-column:span 12}}
 .canvas-troubleshoot{margin-top:28px;border:1px solid var(--border);border-radius:16px;background:rgba(201,225,192,.035);overflow:hidden}.canvas-troubleshoot summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px;font-weight:700;font-size:15px}.canvas-troubleshoot summary::-webkit-details-marker{display:none}.canvas-troubleshoot summary:focus-visible{outline:3px solid #d2f398;outline-offset:-3px}.troubleshoot-hint{color:#c4e87b;font-size:12px;font-weight:650}.canvas-troubleshoot>p{margin:0 20px 16px;line-height:1.6}.troubleshoot-list{display:grid;gap:8px;margin:0 20px 18px}.troubleshoot-list label{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:11px;background:rgba(209,229,210,.04);color:var(--muted);font-size:13px;line-height:1.6;cursor:pointer}.troubleshoot-list label b{color:var(--text)}.troubleshoot-list input{appearance:auto;accent-color:#c4e87b;width:20px;height:20px;flex:0 0 20px;margin-top:2px}.troubleshoot-list code{color:#d0eab1;overflow-wrap:anywhere}.troubleshoot-list input:checked+span{opacity:.7}.canvas-troubleshoot[open] .troubleshoot-hint{font-size:0}.canvas-troubleshoot[open] .troubleshoot-hint:after{content:'Close checklist';font-size:12px}
+
+/* ---------- connection debug console ---------- */
+.debug-console{margin-top:24px;border:1px solid var(--border);border-radius:16px;background:rgba(8,14,16,.72);overflow:hidden}
+.debug-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(196,232,123,.05)}
+.debug-header-text{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.debug-header-text strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--text)}
+.debug-header-meta{font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.debug-dot{width:9px;height:9px;border-radius:50%;background:#778b84;flex:0 0 auto}
+.debug-dot.is-run{background:var(--amber);animation:debugPulse 1.1s ease-in-out infinite}
+.debug-dot.is-ok{background:#a7d9bd;box-shadow:0 0 8px rgba(167,217,189,.6)}
+.debug-dot.is-bad{background:var(--rose);box-shadow:0 0 8px rgba(239,169,156,.55)}
+@keyframes debugPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.debug-header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.debug-btn{appearance:none;border:1px solid var(--border);background:rgba(209,229,210,.06);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:650;cursor:pointer;min-height:0}
+.debug-btn:hover{background:rgba(209,229,210,.12);color:var(--text)}
+.debug-btn:focus-visible{outline:3px solid #d2f398;outline-offset:2px}
+.debug-body{padding:14px 18px 16px}
+.debug-body[hidden]{display:none}
+.debug-log{list-style:none;margin:0;padding:0;max-height:270px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;color:var(--muted);scrollbar-width:thin}
+.debug-entry{padding:7px 10px;margin-bottom:7px;border-radius:9px;background:rgba(209,229,210,.035);border-left:3px solid #778b84;white-space:pre-wrap;overflow-wrap:anywhere}
+.debug-entry.debug-ok{border-left-color:#a7d9bd;color:#cfe8da;background:rgba(167,217,189,.06)}
+.debug-entry.debug-err{border-left-color:var(--rose);color:#f3cdc5;background:rgba(239,169,156,.07)}
+.debug-entry.debug-info{border-left-color:#5b7a6d}
+.debug-verdict{margin-top:10px;padding:13px 15px;border-radius:11px;border-left:3px solid #778b84;background:rgba(209,229,210,.05);font-size:13px;line-height:1.6}
+.debug-verdict strong{display:block;font-size:13px;margin-bottom:5px;color:var(--text)}
+.debug-verdict p{margin:5px 0 0;color:var(--muted)}
+.debug-verdict.is-ok{border-left-color:#a7d9bd;background:rgba(167,217,189,.07)}
+.debug-verdict.is-ok strong{color:#a7d9bd}
+.debug-verdict.is-bad{border-left-color:var(--rose);background:rgba(239,169,156,.08)}
+.debug-verdict.is-bad strong{color:var(--rose)}
+@media(max-width:600px){.debug-header{padding:12px 14px}.debug-body{padding:12px 14px 14px}.debug-log{max-height:210px}}

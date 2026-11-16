@@ -23,18 +23,222 @@ const urlFrom = value => {
 };
 function getCredentials() { try { return JSON.parse(sessionStorage.getItem('northstar_canvas_session') || 'null'); } catch { return null; } }
 function setCredentials(c) { sessionStorage.setItem('northstar_canvas_session', JSON.stringify(c)); }
+/* ---------- connection debug console (lives inside the Connect modal) ---------- */
+const DBG = window.CanvasDebug || {redact:s=>String(s),redactStack:s=>String(s),parseRetryAfter:()=>null,buildEvent:()=>({kind:'unknown',httpError:'',hint:'',actions:[],verdict:''}),verdictForFailure:()=>({verdict:'',hint:''})};
+const debugState={entries:[],verdict:'',hint:'',attemptId:0,startedAt:0,mode:''};
+const dbgEl=id=>document.getElementById(id);
+function dbgNow(){const d=new Date(),p=(n,l)=>{let s=String(n);while(s.length<(l||2))s='0'+s;return s;};return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())+'.'+p(d.getMilliseconds(),3);}
+function pushEntry(level,msg){
+  const entry={t:dbgNow(),level:level,msg:String(msg)};
+  debugState.entries.push(entry);
+  if(debugState.entries.length>400)debugState.entries.splice(0,debugState.entries.length-400);
+  const log=dbgEl('debugLog');
+  if(log){const li=document.createElement('li');li.className='debug-entry debug-'+level;
+    li.textContent=(debugState.attemptId?'attempt '+debugState.attemptId+'  ':'')+entry.t+'  '+entry.msg;
+    log.appendChild(li);log.scrollTop=log.scrollHeight;}
+  return entry;
+}
+function dbgSetDot(state){const dot=dbgEl('debugDot');if(dot){dot.className='debug-dot'+(state?' is-'+state:'');dot.setAttribute('data-state',state||'idle');}}
+function dbgHeader(text){const el=dbgEl('debugHeaderMeta');if(el)el.textContent=text;}
+function dbgVerdict(kind,title,lines){
+  debugState.verdict=kind;debugState.hint=(lines||[]).join(' ');
+  const box=dbgEl('debugVerdict');if(!box)return;
+  box.hidden=false;box.className='debug-verdict is-'+kind;box.textContent='';
+  const h=document.createElement('strong');h.textContent=title;box.appendChild(h);
+  (lines||[]).forEach(line=>{if(!line)return;const p=document.createElement('p');p.textContent=line;box.appendChild(p);});
+}
+function scrollDebugIntoView(){const c=document.querySelector('.debug-console');if(c&&c.scrollIntoView){try{c.scrollIntoView({block:'nearest'});}catch{}}}
+function resetDebug(mode){
+  debugState.attemptId++;debugState.entries=[];debugState.verdict='';debugState.hint='';
+  debugState.startedAt=performance.now();debugState.mode=mode||'';
+  const log=dbgEl('debugLog');if(log)log.textContent='';
+  const box=dbgEl('debugVerdict');if(box){box.hidden=true;box.textContent='';}
+  dbgSetDot('run');dbgHeader('running · '+(mode==='bridge'?'via your bridge':'direct to Canvas'));
+  return debugState.attemptId;
+}
+function summarizeConnect(error){
+  let event=null;for(const e of debugState.entries)if(e.event)event=e.event;
+  const ms=debugState.startedAt?Math.round(performance.now()-debugState.startedAt):0;
+  if(error&&error.kind==='invalid-input'){dbgSetDot('bad');dbgHeader('nothing sent');dbgVerdict('bad','Check your entries',[error.message]);scrollDebugIntoView();return;}
+  if(!error&&event&&event.kind==='success'){dbgSetDot('ok');dbgHeader('connected · '+ms+'ms');dbgVerdict('ok','Connected',['Every traced request was accepted by Canvas. The full trace stays here for this attempt.']);return;}
+  if(event&&event.kind!=='success'){
+    dbgSetDot('bad');dbgHeader((event.verdict||'failed')+(ms?' · '+ms+'ms':''));
+    dbgVerdict('bad',event.verdict||'Connection failed',[event.httpError,event.hint].concat(event.actions||[]));
+    scrollDebugIntoView();return;
+  }
+  const summary=DBG.verdictForFailure(error||{});
+  if(error){
+    dbgSetDot('bad');dbgHeader((summary.verdict||'failed')+(ms?' · '+ms+'ms':''));
+    dbgVerdict('bad',summary.verdict||'Connection failed',[summary.hint||(error.message?DBG.redact(error.message):'')]);
+    scrollDebugIntoView();
+  }else{dbgSetDot('ok');dbgHeader('ready');dbgVerdict('ok','Ready to connect',['Press Connect & sync — every request will be traced here.']);}
+}
+function buildDebugReport(){
+  const lines=[];
+  lines.push('NORTHSTAR Canvas debug report · '+new Date().toString());
+  lines.push('Attempt: '+(debugState.attemptId||'-')+(debugState.mode?' ('+(debugState.mode==='bridge'?'bridge':'direct')+')':''));
+  lines.push('Page origin: '+(typeof location!=='undefined'?location.origin:'-'));
+  lines.push('User agent: '+(typeof navigator!=='undefined'?navigator.userAgent:'-'));
+  if(debugState.verdict)lines.push('Verdict: '+debugState.verdict+(debugState.hint?' — '+debugState.hint:''));
+  lines.push('','Entries:');
+  if(!debugState.entries.length)lines.push('(no entries yet)');
+  debugState.entries.forEach(entry=>{
+    lines.push(entry.t+'  '+entry.msg);
+  });
+  lines.push('','Security: the Canvas token never appears in this report.');
+  return DBG.redact(lines.join('\n'));
+}
+function fallbackCopy(text){
+  try{const ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}catch{}
+}
+function copyDebugReport(){
+  const text=buildDebugReport();
+  const done=()=>{const btn=dbgEl('debugCopy');if(!btn)return;const old=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=old;},1600);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done,()=>{fallbackCopy(text);done();});
+  else{fallbackCopy(text);done();}
+}
+function bootstrapDebug(){
+  const copyBtn=dbgEl('debugCopy'),clearBtn=dbgEl('debugClear'),toggleBtn=dbgEl('debugToggle'),body=dbgEl('debugBody');
+  if(copyBtn)copyBtn.addEventListener('click',copyDebugReport);
+  if(clearBtn)clearBtn.addEventListener('click',()=>{
+    debugState.entries=[];debugState.verdict='';debugState.hint='';
+    const log=dbgEl('debugLog');if(log)log.textContent='';
+    const box=dbgEl('debugVerdict');if(box){box.hidden=true;box.textContent='';}
+    dbgSetDot('idle');dbgHeader('cleared — press Connect & sync to trace again');
+  });
+  if(toggleBtn&&body)toggleBtn.addEventListener('click',()=>{
+    const open=body.hasAttribute('hidden');
+    if(open){body.removeAttribute('hidden');toggleBtn.setAttribute('aria-expanded','true');toggleBtn.textContent='Hide';}
+    else{body.setAttribute('hidden','');toggleBtn.setAttribute('aria-expanded','false');toggleBtn.textContent='Show';}
+  });
+  dbgSetDot('idle');dbgHeader('waiting for a connection attempt…');
+}
+/* Diagnostic probes for failed requests: is the host reachable, does it answer
+   without credentials, does it redirect, and (bridge) does it allow this origin? */
+async function probeDiagnostics(creds,target,mode){
+  const out={reachable:null,probe:null,originAllowed:null};
+  const root=(mode==='bridge'?creds.proxy:creds.base).replace(/\/+$/,'')+'/';
+  const to=ms=>(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)?AbortSignal.timeout(ms):undefined;
+  try{await fetch(root,{method:'HEAD',mode:'no-cors',cache:'no-store',signal:to(5000)});out.reachable=true;pushEntry('info','probe: host reachable — '+root);}
+  catch{out.reachable=false;pushEntry('err','probe: host unreachable — '+root+' (DNS, TLS, or offline; Canvas never contacted)');return out;}
+  try{
+    const r=await fetch(target,{method:'GET',cache:'no-store',redirect:'follow',signal:to(8000)});
+    out.probe={readable:true,status:r.status,redirected:r.redirected,finalUrl:r.url};
+    pushEntry('info','probe: unauthenticated GET → HTTP '+r.status+(r.redirected?' (redirected → '+r.url+')':'')+' · response readable by this page');
+  }catch(e){
+    out.probe={readable:false,error:String((e&&e.message)||e)};
+    pushEntry('info','probe: unauthenticated GET → blocked ('+String((e&&e.message)||e)+')');
+  }
+  if(mode==='bridge'){
+    try{
+      const r=await fetch(creds.proxy,{method:'OPTIONS',cache:'no-store',signal:to(5000)});
+      out.originAllowed=(r.status===204||r.ok);
+      pushEntry(out.originAllowed?'info':'err','probe: bridge origin check → '+(out.originAllowed?'ALLOWED (HTTP '+r.status+')':'REFUSED (HTTP '+r.status+')'));
+    }catch{
+      out.originAllowed=false;
+      pushEntry('err','probe: bridge origin check → REFUSED (403 without CORS headers — ALLOWED_ORIGIN does not match this site)');
+    }
+  }
+  return out;
+}
 async function canvasPage(creds, path) {
   const api = new URL(path, creds.base);
-  if (api.origin !== creds.base || !api.pathname.startsWith('/api/v1/')) throw Error('Invalid Canvas API path.');
+  if (api.origin !== creds.base || !api.pathname.startsWith('/api/v1/')) { pushEntry('err','Invalid Canvas API path: '+path); throw Error('Invalid Canvas API path.'); }
+  const mode = creds.proxy ? 'bridge' : 'direct';
   let target = api.href;
   if (creds.proxy) { const bridge = new URL(creds.proxy); bridge.searchParams.set('path', api.pathname + api.search); target = bridge.href; }
+  const started = performance.now();
+  const elapsed = () => Math.round(performance.now() - started);
+  pushEntry('info', elapsed()+'ms  GET '+api.pathname+api.search+(mode==='bridge'?'  →  bridge '+creds.proxy:'  →  direct'));
   let response;
-  try { response = await fetch(target, {headers:{Authorization:'Bearer '+creds.token, Accept:'application/json'}, redirect:'error', cache:'no-store'}); }
-  catch { throw Error('Browser could not reach Canvas. Your school may block cross-origin requests; deploy the included private bridge, then enter its URL. Also check the school URL and connection.'); }
-  if (response.status === 401) throw Error('Canvas rejected the token (401). Check that it belongs to this school and has not expired.');
-  if (response.status === 403) throw Error('Canvas denied access (403). Check the token permissions, school policy, and bridge settings.');
-  if (!response.ok) throw Error('Canvas returned HTTP '+response.status+'. Check the school URL and bridge settings.');
-  try { return await response.json(); } catch { throw Error('Canvas did not return valid JSON. Check the school URL and bridge.'); }
+  try {
+    response = await fetch(target, {
+      headers:{Authorization:'Bearer '+creds.token, Accept:'application/json'},
+      redirect:'error',
+      cache:'no-store',
+      signal:(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)?AbortSignal.timeout(20000):undefined
+    });
+  } catch (e) {
+    const raw = String((e && e.message) || e);
+    const name = String((e && e.name) || '');
+    let kind = 'network';
+    if (name === 'TimeoutError' || /timeout|timed out/i.test(raw)) kind = 'timeout';
+    else if (name === 'AbortError' || /\baborted?\b/i.test(raw)) kind = 'abort';
+    else if (/redirect/i.test(raw)) kind = 'redirect';
+    pushEntry('info', elapsed()+'ms  '+(kind==='timeout'?'TIMED OUT after 20s':kind==='abort'?'ABORTED by the browser':kind==='redirect'?'REDIRECT refused (redirect: error)':'NO RESPONSE — '+raw));
+    let probes = null;
+    if (kind === 'network' || kind === 'timeout' || kind === 'redirect') {
+      pushEntry('info', 'diagnostics: checking host reachability and an unauthenticated probe…');
+      probes = await probeDiagnostics(creds, target, mode);
+    }
+    const event = DBG.buildEvent({mode:mode,status:null,path:api.pathname,thrown:{kind:kind,message:raw},probes:probes,hostHint:api.host,durationMs:elapsed()});
+    if (kind === 'redirect' && !event.redirectLocation && probes && probes.probe && probes.probe.redirected) event.redirectLocation = probes.probe.finalUrl;
+    const lines = [elapsed()+'ms  '+(event.verdict||'FAILED')];
+    if (event.httpError) lines.push(event.httpError);
+    if (event.hint) lines.push(event.hint);
+    (event.actions||[]).forEach(a=>lines.push('→ '+a));
+    const errEntry = pushEntry('err', DBG.redact(lines.join('\n')));
+    errEntry.event = event;
+    const err = new Error(kind === 'network' ? 'Could not reach Canvas: '+raw+'. '+event.hint : (event.httpError || raw));
+    err.kind = kind === 'network' ? 'network' : kind;
+    err.status = null;
+    err.event = event;
+    throw err;
+  }
+  const status = response.status;
+  const hdr = n => { try { return response.headers.get(n) || ''; } catch { return ''; } };
+  const server = hdr('server');
+  const contentType = hdr('content-type');
+  const retryAfter = hdr('retry-after');
+  let requestId = hdr('x-request-id') || hdr('x-correlation-id');
+  let requestIdSource = requestId ? 'response header' : '';
+  if (!requestId) { try { requestId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()); } catch { requestId = String(Date.now()); } requestIdSource = 'local'; }
+  if (!response.ok) {
+    const rawBody = await response.text().catch(() => '');
+    let bodyPreview = '', bodyError = '';
+    try { const parsed = JSON.parse(rawBody); bodyPreview = JSON.stringify(parsed).slice(0,240); if (parsed && typeof parsed.error === 'string') bodyError = parsed.error; }
+    catch { bodyPreview = rawBody.replace(/\s+/g,' ').trim().slice(0,240); }
+    const event = DBG.buildEvent({mode:mode,status:status,statusText:response.statusText||'',server:server,contentType:contentType,requestId:requestId,requestIdSource:requestIdSource,retryAfter:retryAfter,bodyPreview:bodyPreview,bodyError:bodyError,path:api.pathname,durationMs:elapsed(),hostHint:api.host});
+    const lines = [elapsed()+'ms  HTTP '+status+(response.statusText?' '+response.statusText:'')+'  '+api.pathname];
+    if (event.httpError) lines.push(event.httpError);
+    if (event.hint) lines.push(event.hint);
+    (event.actions||[]).forEach(a=>lines.push('→ '+a));
+    if (server) lines.push('Server: '+server);
+    if (contentType) lines.push('Content-Type: '+contentType);
+    if (event.retryAfter != null) lines.push('Retry-After: '+event.retryAfter+'s');
+    lines.push('X-Request-Id: '+requestId+(requestIdSource?' ('+requestIdSource+')':''));
+    if (bodyPreview) lines.push('Body: '+bodyPreview);
+    const errEntry = pushEntry('err', DBG.redact(lines.join('\n')));
+    errEntry.event = event;
+    const err = new Error(event.httpError || ('Canvas returned HTTP '+status+'.'));
+    err.kind = 'http';
+    err.status = status;
+    err.event = event;
+    throw err;
+  }
+  let data;
+  try { data = await response.json(); }
+  catch {
+    const event = DBG.buildEvent({mode:mode,status:status,statusText:response.statusText||'',server:server,contentType:contentType,requestId:requestId,requestIdSource:requestIdSource,durationMs:elapsed(),nonJson:true,path:api.pathname,hostHint:api.host});
+    const lines = [elapsed()+'ms  HTTP '+status+' — body is not JSON  '+api.pathname];
+    if (event.httpError) lines.push(event.httpError);
+    if (event.hint) lines.push(event.hint);
+    (event.actions||[]).forEach(a=>lines.push('→ '+a));
+    if (server) lines.push('Server: '+server);
+    if (contentType) lines.push('Content-Type: '+contentType);
+    lines.push('X-Request-Id: '+requestId+(requestIdSource?' ('+requestIdSource+')':''));
+    const errEntry = pushEntry('err', DBG.redact(lines.join('\n')));
+    errEntry.event = event;
+    const err = new Error('Canvas did not return valid JSON ('+(contentType||'unknown content type')+'). Check the school URL and bridge.');
+    err.kind = 'http';
+    err.status = status;
+    err.event = event;
+    throw err;
+  }
+  const count = Array.isArray(data) ? data.length+(data.length===1?' item':' items') : 'JSON object';
+  const okEntry = pushEntry('ok', elapsed()+'ms  HTTP 200  '+api.pathname+'  ('+count+')');
+  okEntry.event = {kind:'success', status:200, path:api.pathname};
+  return data;
 }
 async function allPages(creds, path) {
   let items = [];
@@ -108,18 +312,31 @@ renderLab = function(){originalRenderLab();};
 rateFlash = function(r){const f=FLASHCARDS[flashIdx];f.mastery=Math.max(0,Math.min(100,f.mastery+(r==='Easy'?12:r==='Good'?6:-10)));toast('Confidence updated for this session');nextFlash();};
 copilotReply = function(raw){const q=raw.toLowerCase();const pending=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status)).sort((a,b)=>a.due-b.due);if(/due|deadline|today/.test(q))return pending.length?'<b>Up next:</b><br>'+pending.slice(0,5).map(a=>'• '+esc(a.title)+' · '+relDue(a.due)).join('<br>'):'No pending assignments in this view.';if(/plan|week|study/.test(q))return pending.length?'<b>Try a focus sprint for:</b><br>'+pending.slice(0,3).map((a,i)=>(i+1)+'. '+esc(a.title)).join('<br>'):'Your queue is clear. Try a focus sprint in Study Lab.';return 'I’m a simple, rule-based study guide, not an AI model. Ask “what is due?” or “plan my week” for suggestions based on your current assignments.';};
 connectCanvas = async function(){
-  let creds; try{const base=urlFrom($('#canvasUrl').value);const token=$('#canvasToken').value.trim();const proxy=$('#canvasProxy').value.trim()?urlFrom($('#canvasProxy').value):'';if(!token)throw Error('Enter your Canvas access token.');creds={base,token,proxy};}catch(e){$('#canvasStatus').textContent=e.message;return;}
+  let creds; try{const base=urlFrom($('#canvasUrl').value);const token=$('#canvasToken').value.trim();const proxy=$('#canvasProxy').value.trim()?urlFrom($('#canvasProxy').value):'';if(!token)throw Error('Enter your Canvas access token.');creds={base,token,proxy};}
+  catch(e){resetDebug('');pushEntry('err','Validation failed — nothing was sent: '+e.message);summarizeConnect({kind:'invalid-input',message:e.message});$('#canvasStatus').textContent=e.message;return;}
+  const mode=creds.proxy?'bridge':'direct';
+  resetDebug(mode);
+  pushEntry('info','Attempt #'+debugState.attemptId+' · '+(mode==='bridge'?'bridge mode':'direct mode'));
+  pushEntry('info',mode==='bridge'?('Bridge: '+creds.proxy+' — path forwarded as ?path=…; token sent only in the Authorization header'):('Canvas: '+creds.base));
+  pushEntry('info','Token: '+creds.token.length+' characters · never displayed, logged, or copied');
   $('#canvasStatus').textContent='Connecting and loading courses…';$('#connectAction').disabled=true;
-  try{await pullCanvas(creds);setCredentials(creds);$('#canvasToken').value='';$('#canvasStatus').textContent=`Connected: ${COURSES.length} courses and ${ASSIGNMENTS.length} assignments loaded. Token retained only for this browser session.`;toast('Canvas connected and coursework synced');}
-  catch(e){$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;toast('Canvas connection failed. See the troubleshooting checklist.');}finally{$('#connectAction').disabled=false;}
+  try{await pullCanvas(creds);setCredentials(creds);$('#canvasToken').value='';pushEntry('ok','Connected — '+COURSES.length+' courses and '+ASSIGNMENTS.length+' assignments loaded');summarizeConnect(null);$('#canvasStatus').textContent=`Connected: ${COURSES.length} courses and ${ASSIGNMENTS.length} assignments loaded. Token retained only for this browser session.`;toast('Canvas connected and coursework synced');}
+  catch(e){pushEntry('err','Connection failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;toast('Canvas connection failed. See the debug console in this menu.');}finally{$('#connectAction').disabled=false;}
 };
 async function pullCanvas(creds){
   const rawCourses=await allPages(creds,'/api/v1/courses?enrollment_state=active');const courses=convertCourses(rawCourses);let assignments=[];
   for(const c of courses){const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);assignments.push(...convertAssignments(rows,c,creds.base));}
   COURSES.splice(0,COURSES.length,...courses);ASSIGNMENTS=assignments;mode='live';ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses`,time:'Just now'}); refreshAll();
 }
-syncCanvas = async function(){const c=getCredentials();if(!c){openConnect();toast('Connect Canvas first.');return;}toast('Syncing Canvas…');try{await pullCanvas(c);toast('Canvas sync complete');}catch(e){$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the troubleshooting checklist.');}};
-window.disconnectCanvas = function(){sessionStorage.removeItem('northstar_canvas_session');$('#canvasToken').value='';COURSES.splice(0,COURSES.length,...structuredClone(DEMO_COURSES));ASSIGNMENTS=structuredClone(DEMO_ASSIGNMENTS);mode='demo';ACTIVITY.splice(0);refreshAll();$('#canvasStatus').textContent='Disconnected. Sample data is shown. Your local notes remain on this device.';};
+syncCanvas = async function(){const c=getCredentials();if(!c){openConnect();toast('Connect Canvas first.');return;}
+  const mode=c.proxy?'bridge':'direct';resetDebug(mode);
+  pushEntry('info','Sync · '+(mode==='bridge'?'bridge mode':'direct mode'));
+  pushEntry('info',mode==='bridge'?('Bridge: '+c.proxy):('Canvas: '+c.base));
+  pushEntry('info','Token: '+c.token.length+' characters · never displayed, logged, or copied');
+  toast('Syncing Canvas…');
+  try{await pullCanvas(c);pushEntry('ok','Sync complete — '+COURSES.length+' courses, '+ASSIGNMENTS.length+' assignments');summarizeConnect(null);toast('Canvas sync complete');}
+  catch(e){pushEntry('err','Sync failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the debug console.');}};
+window.disconnectCanvas = function(){sessionStorage.removeItem('northstar_canvas_session');$('#canvasToken').value='';if(debugState.attemptId)pushEntry('info','Disconnected — session token cleared from this tab');dbgSetDot('idle');dbgHeader('disconnected');COURSES.splice(0,COURSES.length,...structuredClone(DEMO_COURSES));ASSIGNMENTS=structuredClone(DEMO_ASSIGNMENTS);mode='demo';ACTIVITY.splice(0);refreshAll();$('#canvasStatus').textContent='Disconnected. Sample data is shown. Your local notes remain on this device.';};
 function refreshAll(){statusFilter='All';renderDashboard();initLedger();renderCourses();renderNotes();renderLab();renderAutopilot();}
 // Do not claim unimplemented AI, analytics, submission, or encrypted storage.
 $('#syncLabel').textContent='Demo workspace · not synced';
@@ -132,6 +349,7 @@ $('#projGpa').parentElement.nextElementSibling.querySelector('.mono').textConten
 $('#hsGpa').title='Illustrative demo projection only';
 $('#canvasStatus').textContent=hadOldToken?'An earlier version stored your token in plain text and may have sent it to a third-party proxy. Consider revoking it in Canvas and creating a new token.':'Demo mode: sample coursework is shown until you connect.';
 const existing=getCredentials();if(existing){$('#canvasUrl').value=existing.base;$('#canvasProxy').value=existing.proxy||'';$('#canvasStatus').textContent='Session found. Tap Sync Canvas to load your coursework.';}
+bootstrapDebug();
 refreshAll();
 if(existing) syncCanvas();
 })();
