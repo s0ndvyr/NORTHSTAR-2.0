@@ -1,0 +1,9 @@
+{
+  "name": "NORTHSTAR — Academic Command Center",
+  "short_name": "NORTHSTAR",
+  "description": "A focused academic dashboard with Canvas coursework and local study tools.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a1114",
+  "theme_color": "#0a1114"
+}

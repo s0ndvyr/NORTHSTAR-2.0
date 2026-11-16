@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NORTHSTAR — Academic Command Center</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NORTHSTAR">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="styles/main.css">
+<link rel="stylesheet" href="styles/northstar-premium.css">
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-mark">✦</div><div class="logo-text"><b>NORTHSTAR</b><span>ACADEMIC COMMAND</span></div></div>
+    <div class="nav-label">COMMAND</div>
+    <button class="nav-item active" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span class="lbl">Dashboard</span><span class="badge" id="navDue">3</span><span class="tip">Dashboard</span></button>
+    <button class="nav-item" data-view="ledger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lbl">Ledger</span><span class="tip">Coursework Ledger</span></button>
+    <button class="nav-item" data-view="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Courses</span><span class="tip">Course Hubs</span></button>
+    <div class="nav-label">CREATE</div>
+    <button class="nav-item" data-view="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="lbl">Notebook</span><span class="tip">Academic Notebook</span></button>
+    <button class="nav-item" data-view="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="lbl">Study Lab</span><span class="tip">Study Lab</span></button>
+    <button class="nav-item" data-view="copilot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg><span class="lbl">Copilot</span><span class="badge v">GUIDE</span><span class="tip">Copilot</span></button>
+    <div class="nav-label">SYSTEM</div>
+    <button class="nav-item" id="connectBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11L4 6.5M12 11l8-4.5M12 11v9"/></svg><span class="lbl">Connect</span><span class="tip">Connect Canvas</span></button>
+    <button class="nav-item" id="notifBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 20a2 2 0 01-3.4 0"/></svg><span class="lbl">Alerts</span><span class="tip">Activity &amp; Alerts</span></button>
+    <div class="sidebar-spacer"></div>
+    <div class="autopilot-mini" onclick="showView('copilot')" title="Study guide">✧<span class="n" id="autopilotCount">2</span></div>
+    <div style="display:flex;align-items:center;gap:9px;margin-top:10px"><div class="side-avatar">C</div><div class="side-user-meta" style="flex:1;min-width:0"><b style="font-size:12.5px;display:block">Christian</b><span class="tiny muted">Your academic space</span></div><span class="dot"></span></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn hamburger" id="hamburger">☰</button>
+      <div class="search"><span style="color:var(--muted)">⌕</span><input id="globalSearch" placeholder="Search assignments, courses, notes…"><kbd>/</kbd></div>
+      <span class="pill hide-m"><span class="dot"></span> <span id="syncLabel">Demo workspace · not synced</span></span>
+      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / 03</span>
+      <button class="icon-btn" id="bellBtn" title="Activity & Alerts">♪<span class="n" id="bellN">4</span></button>
+      <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings">⚙</button>
+      <button class="btn btn-primary btn-sm hide-m" onclick="openConnect()">⬡ Connect LMS</button>
+      <div class="avatar">C</div>
+    </div>
+
+    <div class="content">
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="dash-head">
+          <div>
+            <div class="eyebrow" id="dateLine">—</div>
+            <h1 id="greeting">Good evening, <em>Christian</em>.</h1>
+            <p class="sub" id="heroSub">—</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary btn-sm" onclick="showView('lab')">◐ Start focus sprint</button>
+            <button class="btn btn-ghost btn-sm" onclick="showView('notes');setTimeout(newNote,300)">✎ New note</button>
+            <button class="btn btn-violet btn-sm" onclick="showView('copilot')">✧ Ask Copilot</button>
+          </div>
+        </div>
+
+        <div class="data-state" id="dataState">SAMPLE DATA · Connect Canvas to see your real coursework</div>
+        <div class="mission-strip"><div><span>YOUR NORTH STAR</span><strong>Make room for<br><i>what matters.</i></strong><p>One clear place for every deadline, every course, and the work you’re proud of.</p><button class="mission-link" onclick="showView('ledger')">Explore your coursework <span>↗</span></button></div><div class="orbit-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="northstar-symbol">✳</div><small>FIND YOUR<br>FOCUS</small></div></div>
+        <div class="bento">
+          <!-- Today's Focus -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>Today's Focus</h3><p>Your highest-priority deliverable</p></div><span class="badge badge-amber" id="focusBadge">DUE TODAY</span></div>
+            <div id="focusCard"></div>
+          </div>
+          <!-- Academic Health -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>Academic Health</h3><p>Illustrative score from overdue + deadlines</p></div><span class="badge badge-cyan">LIVE</span></div>
+            <div class="flex" style="gap:18px">
+              <div class="ring">
+                <svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/><circle id="statusRing" cx="50" cy="50" r="42" fill="none" stroke="#34d399" stroke-width="9" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="60"/></svg>
+                <div class="ring-center"><div><b id="statusPct">—</b><span>HEALTH</span></div></div>
+              </div>
+              <div style="flex:1;min-width:0">
+                <span class="badge badge-green" id="statusBadge">● On Track</span>
+                <p class="small muted" style="margin-top:8px;line-height:1.55" id="statusText">—</p>
+              </div>
+            </div>
+            <div class="flex mt" style="gap:8px">
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsGpa">3.82</b><div class="tiny muted">PROJECTED GPA</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsStreak">12d 🔥</b><div class="tiny muted">STREAK</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsDone">—</b><div class="tiny muted">DONE</div></div>
+            </div>
+          </div>
+          <!-- Focus Time -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>Focus Time</h3><p>Hours this week by day</p></div><span class="badge badge-violet" id="hsHours">18.5h</span></div>
+            <div id="focusBars"></div>
+            <p class="tiny muted mt">Best focus window: <b style="color:#e6edf7">10 AM – 12 PM</b> · example insight</p>
+          </div>
+          <!-- AI Insights -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>AI Insights</h3><p>Copilot · human-in-the-loop</p></div><span class="badge badge-violet">✧ AI</span></div>
+            <div class="insight"><b>You're most productive 10 AM – 12 PM</b><span>Schedule hard work there</span></div>
+            <div class="insight"><b>2 overdue items need clearing</b><span>Homework 3 is oldest — start there</span></div>
+            <div class="insight"><b>Try a 25-minute sprint</b><span>For Thermodynamics PS6 tonight</span></div>
+            <button class="btn btn-ghost btn-sm" style="width:100%" onclick="showView('copilot')">Open Copilot →</button>
+          </div>
+          <!-- Weekly Radar -->
+          <div class="card span8">
+            <div class="card-head"><div><h3>Weekly Academic Radar</h3><p>Planned workload vs. actual focus hours</p></div><span class="badge badge-cyan">● LIVE</span></div>
+            <div id="radarChart"></div>
+            <div class="flex mt" style="gap:16px">
+              <span class="small"><span class="dotc" style="display:inline-block;background:#22d3ee"></span> Planned</span>
+              <span class="small"><span class="dotc" style="display:inline-block;background:#818cf8"></span> Actual</span>
+              <span class="small muted" style="margin-left:auto" id="radarNote"></span>
+            </div>
+          </div>
+          <!-- Task Completion gauge -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>Task Completion</h3><p>This semester</p></div></div>
+            <div style="text-align:center;padding:6px 0">
+              <svg width="190" height="110" viewBox="0 0 190 110" id="gaugeSvg"></svg>
+              <div class="big-num" id="completionPct" style="margin-top:-52px">—</div>
+              <div class="tiny muted" style="letter-spacing:.1em;font-weight:800">COMPLETE</div>
+            </div>
+            <div class="flex mt" style="justify-content:space-between">
+              <span class="small"><b class="mono" id="compDone">—</b> <span class="muted">Completed</span></span>
+              <span class="small"><b class="mono" id="compPend">—</b> <span class="muted">Pending</span></span>
+            </div>
+          </div>
+          <!-- Priority Queue -->
+          <div class="card span8">
+            <div class="card-head"><div><h3>Priority Queue</h3><p>Ranked by due date and priority</p></div><button class="btn btn-ghost btn-sm" onclick="showView('ledger')">View all →</button></div>
+            <div id="priorityList"></div>
+          </div>
+          <!-- Today + Heatmap -->
+          <div class="card span4">
+            <div class="card-head"><div><h3>Today</h3><p>Schedule at a glance</p></div></div>
+            <div id="todaySchedule"></div>
+            <div class="divider"></div>
+            <div class="flex" style="justify-content:space-between"><h3 style="font-size:13px;font-weight:800">Focus Heatmap</h3><span class="badge badge-green" id="heatTotal">—</span></div>
+            <div class="heat mt" id="heatmap"></div>
+            <div class="flex mt" style="justify-content:space-between"><span class="tiny muted">Less</span><span class="tiny muted">More →</span></div>
+          </div>
+          <!-- Calendar strip -->
+          <div class="card span12" style="padding:16px 20px">
+            <div class="flex" style="justify-content:space-between;margin-bottom:12px"><h3 style="font-size:14px;font-weight:800">Next 7 Days</h3><span class="badge badge-cyan" id="weekTotal">—</span></div>
+            <div class="cal-strip" id="calStrip"></div>
+          </div>
+          <!-- Momentum + Activity -->
+          <div class="card span6">
+            <div class="card-head"><div><h3>Course Momentum</h3><p>Standing across active courses</p></div><button class="btn btn-ghost btn-sm" onclick="showView('courses')">All hubs →</button></div>
+            <div id="momentumList"></div>
+          </div>
+          <div class="card span6">
+            <div class="card-head"><div><h3>Activity Log</h3><p>Recent syncs and focus sessions</p></div><button class="btn btn-ghost btn-sm" onclick="openDrawer()">All →</button></div>
+            <div id="activityList"></div>
+          </div>
+          <!-- Autopilot -->
+          <div class="card span12">
+            <div class="card-head"><div><h3>Autopilot Desk</h3><p>AI drafts awaiting approval — never auto-submitted · 🛡 Guardrail on</p></div><span class="badge badge-violet">HUMAN-IN-THE-LOOP</span></div>
+            <div id="autopilotList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ LEDGER ============ -->
+      <section class="view" id="view-ledger">
+        <div class="section-title" style="margin-top:0"><div><h2>Central Academic Ledger</h2><p id="ledgerCount">—</p></div><button class="btn btn-primary btn-sm" onclick="syncCanvas()">↻ Sync Canvas</button></div>
+        <div class="filters" id="statusTabs"></div>
+        <div class="filters">
+          <select class="select" id="fCourse"><option value="">All courses</option></select>
+          <select class="select" id="fType"><option value="">All types</option><option>Quiz</option><option>Writing</option><option>Homework</option><option>Project</option><option>Reading</option><option>Discussion</option></select>
+          <select class="select" id="fPriority"><option value="">All priorities</option><option>High</option><option>Normal</option><option>Low</option></select>
+          <select class="select" id="fSort"><option value="due">Sort: Due date</option><option value="points">Sort: Points</option><option value="course">Sort: Course</option></select>
+          <input class="select" id="fSearch" placeholder="Search title…" style="flex:1;min-width:150px">
+        </div>
+        <div id="ledgerList"></div>
+        <div class="card mt">
+          <div class="card-head"><div><h3>“What-If” Grade Projection</h3><p>Drag sliders to model final scores — see exact GPA impact instantly</p></div><span class="badge badge-cyan">CALCULATOR</span></div>
+          <div id="whatifList"></div>
+          <div class="divider"></div>
+          <div class="flex" style="justify-content:space-between;gap:16px">
+            <div><span class="tiny muted" style="font-weight:800;letter-spacing:.08em">PROJECTED GPA</span><div class="mono" style="font-size:34px;font-weight:700" id="projGpa">—</div></div>
+            <div style="text-align:center"><span class="tiny muted" style="font-weight:800;letter-spacing:.08em">CURRENT GPA</span><div class="mono" style="font-size:34px;font-weight:700;color:var(--muted)">3.82</div></div>
+            <div style="text-align:right"><span class="tiny muted" style="font-weight:800;letter-spacing:.08em">DELTA</span><div class="mono" style="font-size:34px;font-weight:700" id="projDelta">—</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ COURSES ============ -->
+      <section class="view" id="view-courses">
+        <div class="section-title" style="margin-top:0"><div><h2>Connected Course Hubs</h2><p>Your courses and their upcoming work</p></div></div>
+        <div class="grid3" id="courseGrid"></div>
+        <div id="courseDetail" class="mt"></div>
+      </section>
+
+      <!-- ============ NOTES ============ -->
+      <section class="view" id="view-notes">
+        <div class="section-title" style="margin-top:0"><div><h2>Academic Notebook</h2><p>Markdown-style notes and assignment links, saved locally</p></div><button class="btn btn-primary btn-sm" onclick="newNote()">+ New note</button></div>
+        <div class="filters">
+          <select class="select" id="nCourse"><option value="">All courses</option></select>
+          <input class="select" id="nTag" placeholder="Filter by tag… (e.g. exam, essay)" style="flex:1;min-width:160px">
+        </div>
+        <div class="grid3" id="notesGrid"></div>
+        <div class="card mt" id="noteEditor" style="display:none">
+          <div class="card-head"><div><label class="field-label" for="noteTitleInput">NOTE TITLE</label><input id="noteTitleInput" class="select" aria-label="Note title"><p id="noteMeta">—</p></div><span class="badge badge-green" id="noteSaved">✓ Saved locally</span></div>
+          <div class="toolbar">
+            <button class="tool-btn" onclick="noteFmt('## ')">H2</button>
+            <button class="tool-btn" onclick="noteFmt('**','**')"><b>B</b></button>
+            <button class="tool-btn" onclick="noteFmt('*','*')"><i>I</i></button>
+            <button class="tool-btn" onclick="noteFmt('`','`')">&lt;/&gt;</button>
+            <button class="tool-btn" onclick="noteFmt('- ')">• List</button>
+            <button class="tool-btn" onclick="noteFmt('- [ ] ')">☑ Task</button>
+            <button class="tool-btn" onclick="noteFmt('> ')">❝ Callout</button>
+            <span class="tiny muted" style="margin-left:auto;align-self:center" id="noteWords">0 words</span>
+          </div>
+          <textarea class="editor" id="noteBody" placeholder="Write your note…"></textarea>
+          <div class="flex mt">
+            <select class="select" id="noteLink"><option value="">Link to assignment…</option></select>
+            <button class="btn btn-ghost btn-sm" onclick="saveNote()">Save note</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteNote()">Delete</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ STUDY LAB ============ -->
+      <section class="view" id="view-lab">
+        <div class="section-title" style="margin-top:0"><div><h2>Study Lab</h2><p>Focus timer and example flashcards. Study analytics are illustrative.</p></div></div>
+        <div class="grid2" style="grid-template-columns:1fr 1.2fr">
+          <div class="card" style="text-align:center">
+            <div class="card-head" style="text-align:left"><div><h3>Focus Timer</h3><p>Link a sprint to an assignment</p></div><span class="badge badge-cyan">POMODORO</span></div>
+            <div class="flex" style="justify-content:center;gap:7px;margin-bottom:14px" id="pomoModes">
+              <button class="tab active" data-min="25">25m</button><button class="tab" data-min="45">45m</button><button class="tab" data-min="60">60m</button>
+            </div>
+            <select class="select" id="pomoAssign" style="width:100%;margin-bottom:16px"></select>
+            <div class="mono" style="font-size:64px;font-weight:700;line-height:1;letter-spacing:-.02em" id="pomoTime">25:00</div>
+            <div class="progress mt mb" style="max-width:320px;margin-left:auto;margin-right:auto;height:9px"><i id="pomoBar" style="width:0%"></i></div>
+            <div class="flex" style="justify-content:center">
+              <button class="btn btn-primary" id="pomoToggle" onclick="togglePomo()">▶ Start focus</button>
+              <button class="btn btn-ghost" onclick="resetPomo()">Reset</button>
+            </div>
+            <p class="tiny muted mt" id="pomoStatus">Choose a sprint length and start when ready.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Example Flashcards</h3><p>Tap card to flip · rate your confidence</p></div><span class="badge badge-violet" id="flashCount">—</span></div>
+            <div class="flash-wrap"><div class="flash" id="flashCard" onclick="flipFlash()">
+              <div class="flash-face flash-front"><span class="eyebrow">QUESTION</span><h3 id="flashQ">—</h3><p>Tap to reveal answer</p></div>
+              <div class="flash-face flash-back"><span class="eyebrow" style="color:#6ee7b7">ANSWER</span><p id="flashA" style="color:#d1fae5;font-size:14px">—</p></div>
+            </div></div>
+            <div class="flex mt" style="justify-content:center">
+              <button class="btn btn-danger btn-sm" onclick="rateFlash('Hard')">Hard</button>
+              <button class="btn btn-ghost btn-sm" onclick="rateFlash('Good')">Good</button>
+              <button class="btn btn-primary btn-sm" onclick="rateFlash('Easy')">Easy ✓</button>
+              <button class="btn btn-ghost btn-sm" onclick="nextFlash()">Skip →</button>
+            </div>
+            <div class="divider"></div>
+            <div class="flex" style="justify-content:space-between"><span class="small muted">Example confidence score</span><b class="mono" id="masteryPct">—</b></div>
+            <div class="progress green mt"><i id="masteryBar" style="width:0%"></i></div>
+          </div>
+        </div>
+        <div class="grid3 mt">
+          <div class="card"><div class="card-head"><div><h3>Focus by Subject</h3><p>Hours this week</p></div></div><div id="chartSubject"></div></div>
+          <div class="card"><div class="card-head"><div><h3>Quiz Accuracy</h3><p>By topic</p></div></div><div id="chartQuiz"></div></div>
+          <div class="card"><div class="card-head"><div><h3>Timeliness</h3><p>On-time vs. late</p></div></div><div id="chartTime"></div></div>
+        </div>
+      </section>
+
+      <!-- ============ COPILOT ============ -->
+      <section class="view" id="view-copilot">
+        <div class="section-title" style="margin-top:0"><div><h2>Academic Copilot</h2><p>A simple rule-based study guide, not an AI service</p></div><span class="badge badge-violet">✧ STUDY GUIDE</span></div>
+        <div class="grid2" style="grid-template-columns:1.35fr 1fr">
+          <div class="card">
+            <div class="card-head"><div><h3>Ask Copilot</h3><p>Try: “scaffold my essay”, “explain this quiz question”, “plan my week”</p></div></div>
+            <div class="chat-box" id="chatBox"></div>
+            <div class="chat-input"><input id="chatInput" placeholder="Ask what’s due or plan a study sprint…"><button class="btn btn-primary" onclick="sendChat()">Send</button></div>
+            <div class="flex mt">
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('What is due today?')">✦ What is due?</button>
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('What is overdue?')">✦ Overdue work</button>
+              <button class="btn btn-ghost btn-sm" onclick="quickChat('Plan my study week')">✦ Plan my week</button>
+            </div>
+          </div>
+          <div>
+            <div class="card mb" style="display:none"><div id="copilotPlans"></div></div>
+            <div class="card">
+              <div class="card-head"><div><h3>🛡 Safety Guardrail</h3></div></div>
+              <p class="small muted" style="line-height:1.65">The guide offers simple template responses. It is not an AI model, and does not submit work to Canvas.</p>
+              <div class="divider"></div>
+              <div class="check"><input type="checkbox" checked disabled><div><b class="small">Require human approval before any submission</b><div class="tiny muted">Enforced at the API layer</div></div></div>
+              <div class="check"><input type="checkbox" checked disabled><div><b class="small">Show sources &amp; rubric alignment</b><div class="tiny muted">Every draft cites its rubric criteria</div></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="view" id="view-settings">
+        <div class="dash-head">
+          <div>
+            <div class="eyebrow">WORKSPACE PREFERENCES</div>
+            <h1>Settings &amp; Themes</h1>
+            <p class="sub">Customize your NORTHSTAR workspace. Changes save automatically.</p>
+          </div>
+          <div class="head-actions">
+            <span class="pill" style="font-family:var(--mono)">NORTHSTAR v2.2.0</span>
+            <button class="btn btn-ghost btn-sm" onclick="resetSettings()">↺ Reset Defaults</button>
+          </div>
+        </div>
+        <div class="card" style="max-width:720px;padding:24px">
+<div class="settings-grid">
+      <div class="set-group">
+        <label class="set-lbl">Theme</label>
+        <div class="theme-swatches" id="themeSwatches">
+          <button class="swatch-btn" data-theme-val="obsidian" onclick="setTheme('obsidian')"><span class="swatch-dot" style="background:#050914"></span>Obsidian</button>
+          <button class="swatch-btn" data-theme-val="midnight" onclick="setTheme('midnight')"><span class="swatch-dot" style="background:#0c1029"></span>Midnight</button>
+          <button class="swatch-btn" data-theme-val="emerald" onclick="setTheme('emerald')"><span class="swatch-dot" style="background:#071712"></span>Emerald</button>
+          <button class="swatch-btn" data-theme-val="nordic" onclick="setTheme('nordic')"><span class="swatch-dot" style="background:#161d24"></span>Nordic</button>
+          <button class="swatch-btn" data-theme-val="parchment" onclick="setTheme('parchment')"><span class="swatch-dot" style="background:#f6f3ec"></span>Parchment</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <label class="set-lbl">Accent Color</label>
+        <div class="accent-row" id="accentRow">
+          <button class="accent-dot" data-acc="#22d3ee" style="background:#22d3ee" onclick="setAccent('#22d3ee')" title="Cyan"></button>
+          <button class="accent-dot" data-acc="#818cf8" style="background:#818cf8" onclick="setAccent('#818cf8')" title="Violet"></button>
+          <button class="accent-dot" data-acc="#34d399" style="background:#34d399" title="Emerald" onclick="setAccent('#34d399')"></button>
+          <button class="accent-dot" data-acc="#f59e0b" style="background:#f59e0b" title="Amber" onclick="setAccent('#f59e0b')"></button>
+          <button class="accent-dot" data-acc="#fb7185" style="background:#fb7185" title="Rose" onclick="setAccent('#fb7185')"></button>
+        </div>
+      </div>
+      <div class="set-group">
+        <label class="set-lbl">Layout Density &amp; Text Size</label>
+        <div class="seg-row" id="densitySeg">
+          <button class="seg-btn" data-den="compact" onclick="setDensity('compact')">Compact</button>
+          <button class="seg-btn" data-den="comfortable" onclick="setDensity('comfortable')">Comfortable</button>
+          <button class="seg-btn" data-den="spacious" onclick="setDensity('spacious')">Spacious</button>
+        </div>
+      </div>
+      <div class="set-group" style="display:grid;grid-template-columns:1fr 120px;gap:10px">
+        <div>
+          <label class="set-lbl">Your Name</label>
+          <input id="setName" class="inp" placeholder="Christian" oninput="updateProfileSettings()" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
+        </div>
+        <div>
+          <label class="set-lbl">Target GPA</label>
+          <input id="setGpa" type="number" step="0.05" min="0" max="4.0" class="inp" placeholder="3.90" oninput="updateProfileSettings()" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
+        </div>
+      </div>
+      <div class="set-row">
+        <div><b>Reduced Motion</b><small>Disable animations for distraction-free focus</small></div>
+        <button class="toggle" id="togNoAnim" onclick="toggleSetting('noAnim')"></button>
+      </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- WORKSPACE MODAL -->
+<div class="overlay" id="wsOverlay">
+  <div class="workspace" id="workspace"></div>
+</div>
+
+<!-- CONNECT MODAL -->
+<div class="overlay" id="connectOverlay" role="dialog" aria-modal="true" aria-labelledby="connectTitle">
+  <div class="workspace connect-panel" style="max-width:800px">
+    <div class="ws-head"><div><span class="eyebrow">YOUR SCHOOL, CONNECTED</span><h2 id="connectTitle">Bring Canvas closer.</h2><p class="small muted mt">Connect to see your courses and assignments here. Nothing is submitted to Canvas.</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('connectOverlay')">✕</button></div>
+    <div class="ws-body"><div class="connect-grid"><div>
+      <label class="field-label" for="canvasUrl">Canvas school URL</label><input class="select connect-input" id="canvasUrl" type="url" placeholder="https://school.instructure.com" autocomplete="url">
+      <label class="field-label" for="canvasToken">Canvas access token</label><input class="select connect-input" id="canvasToken" type="password" placeholder="Paste your Canvas token" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <label class="field-label" for="canvasProxy">Your private Canvas bridge URL <span class="muted">(optional)</span></label><input class="select connect-input" id="canvasProxy" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url">
+      <p class="small muted mt">Your token is kept only for this browser session. Never send it in chat. If your school blocks direct browser access, deploy the included private bridge and enter its URL above.</p>
+      <div class="flex mt"><button class="btn btn-primary" id="connectAction" onclick="connectCanvas()">Connect &amp; sync</button><button class="btn btn-ghost" onclick="disconnectCanvas()">Disconnect</button></div><p class="small muted mt" id="canvasStatus" aria-live="polite">Demo mode: sample coursework is shown until you connect.</p>
+    </div><div class="connect-explain"><span class="eyebrow">A QUICK HEADS-UP</span><h3>Good key.<br>Different obstacle.</h3><p>Some schools block websites from talking directly to Canvas. A correct token alone can’t bypass that browser restriction.</p><p>The included bridge is self-hosted and sends the token in an authorization header, never through a public CORS proxy or URL.</p><p><b>Available:</b> courses, assignments, due dates, points and submission status.<br><b>Not available:</b> StudentVUE sync or submissions from this app.</p></div></div>
+      <details class="canvas-troubleshoot" id="canvasTroubleshoot">
+        <summary><span>Connection not working?</span><span class="troubleshoot-hint">Open the checklist</span></summary>
+        <p class="small muted">Work through these in order. Your checkmarks last only while this page is open.</p>
+        <div class="troubleshoot-list">
+          <label><input type="checkbox"><span><b>Check the school URL.</b> Use your school’s exact Canvas HTTPS origin, such as <code>https://school.instructure.com</code>, without a path or page address.</span></label>
+          <label><input type="checkbox"><span><b>Check the token.</b> Generate a fresh Canvas access token for that same school account, and paste it without extra spaces. A 401 usually means Canvas rejected it.</span></label>
+          <label><input type="checkbox"><span><b>Check permissions.</b> A 403 can mean your token, account, school policy, or bridge does not permit the request. Ask your Canvas administrator if needed.</span></label>
+          <label><input type="checkbox"><span><b>Rule out a browser access block.</b> If the browser cannot reach Canvas despite a valid token, your school may block cross-origin requests. Deploy the included private bridge and enter its HTTPS origin above.</span></label>
+          <label><input type="checkbox"><span><b>Check bridge settings.</b> In the deployed Worker, set <code>CANVAS_ORIGIN</code> to your school and <code>ALLOWED_ORIGIN</code> to this site’s exact origin. Redeploy after changes. Follow the included README for setup.</span></label>
+          <label><input type="checkbox"><span><b>Connected but no courses?</b> Confirm the account has active Canvas enrollments. Only active courses are fetched; unpublished or inaccessible work may not appear.</span></label>
+          <label><input type="checkbox"><span><b>Protect your token.</b> If you used the old app, revoke the previous token because it may have been sent to public proxies. Never share a token in chat or commit it to GitHub.</span></label>
+        </div>
+        <p class="small muted">Still stuck? Share the status message with your Canvas administrator, but remove your token and any personal details first.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="flex" style="justify-content:space-between;margin-bottom:14px"><h3 style="font-family:var(--serif);font-size:24px;font-weight:500">Activity &amp; Alerts</h3><button class="ws-close" onclick="closeDrawer()">✕</button></div>
+  <div id="drawerList"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script src="scripts/app.js"></script>
+<script src="scripts/premium.js"></script>
+</body>
+</html>
