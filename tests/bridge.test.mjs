@@ -14,4 +14,25 @@ for(const p of ['https://evil.example/api/v1/courses','/api/v1/users/self','/api
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'POST'}))).status,405);
 assert.equal((await worker.fetch(request('/api/v1/courses',{headers:{Origin:'https://evil.example'}}))).status,403);
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'OPTIONS'}))).status,204);
-console.log('PASS: bridge forwards only allowed read-only paths and bearer header, rejects other origins, hosts and writes');
+console.log('PASS: bridge read paths and bearer header, rejects other origins, hosts and arbitrary writes');
+const submitPath='/api/v1/courses/1/assignments/2/submissions';
+const post=(data,path=submitPath)=>request(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+let before=upstream.length;
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_text_entry',body:'<p>My work</p>'}}))).status,200);
+assert.equal(upstream.at(-1).opts.method,'POST');
+assert.deepEqual(JSON.parse(upstream.at(-1).opts.body),{submission:{submission_type:'online_text_entry',body:'<p>My work</p>'}});
+assert.equal(upstream.length,before+1);
+before=upstream.length;
+for(const data of [
+  {submission:{submission_type:'online_upload',file_ids:[1]}},
+  {submission:{submission_type:'online_url',url:'javascript:alert(1)'}},
+  {submission:{submission_type:'online_text_entry',body:' '}},
+  {submission:{submission_type:'online_text_entry',body:'x',user_id:2}},
+  {submission:{submission_type:'online_text_entry',body:'x'},comment:'no'}
+]) assert.equal((await worker.fetch(post(data))).status,400);
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_url',url:'https://example.com'}},submitPath+'?as_user_id=2'))).status,403);
+assert.equal((await worker.fetch(post({},'https://evil.example'+submitPath))).status,403);
+assert.equal((await worker.fetch(post({},'/api/v1/courses/1/quizzes/2'))).status,405);
+assert.equal((await worker.fetch(request(submitPath,{method:'DELETE'}))).status,405);
+assert.equal(upstream.length,before,'invalid writes never reach Canvas');
+console.log('PASS: only validated assignment submission POSTs reach Canvas; other writes and impersonation rejected');
