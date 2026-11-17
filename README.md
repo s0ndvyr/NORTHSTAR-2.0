@@ -80,3 +80,14 @@ For DOM boot + mocked live sync, run `npm install` once and then `node tests/boo
 - A submission with a current ungraded attempt is labeled **Awaiting Grading**. A grade from an earlier attempt is not presented as the score for the current attempt when Canvas reports `grade_matches_current_submission: false`. Excused work is excluded from pending-work priorities.
 - Manually configured NORTHSTAR marking periods remain local organizational periods. Canvas grading-period totals are shown as a separate official source and are not assumed to be the same dates or labels.
 - Live synchronization has not yet been verified against the owner's authenticated school account in this development environment. The included tests use deterministic Canvas-shaped fixtures; the final live check must be performed with the owner's own Canvas connection and the correct Worker deployment.
+
+
+## NORTHSTAR / .4.3 — Phase 3 academic intelligence
+
+- The dashboard and Academic Ledger default to the current user-defined marking period. The Ledger can switch to a specific marking period or all periods. Older periods do not drive Today's Focus.
+- Unpublished and Canvas-locked assignments are excluded from the active workload. Submitted, awaiting-grading, graded, missing, overdue, and excused states remain distinct. Submitted work shows its submission/graded age, never an overdue countdown.
+- Course exclusions are stored locally. Ignored courses remain visible in course management as muted/ignored but are excluded from the dashboard workload, priority queue, grade projections, and AI academic context.
+- Unknown grade values display as N/A. Canvas official grades and NORTHSTAR estimates remain source-labeled and separate.
+- StudentVUE: Settings provides an external link to the NNPS StudentVUE portal and a CSV/JSON grade import path for user-supplied report data. The import retains course, marking period, school year, source, and import timestamp and can display historical grade records on course detail pages. This is an import workflow, not a live StudentVUE API connection.
+- NNPS public materials reviewed do not provide third-party API documentation, OAuth registration, or integration authorization. Do not collect StudentVUE passwords or use undocumented/reverse-engineered endpoints. Direct synchronization remains blocked pending district-approved documentation or written authorization.
+- The displayed app release is NORTHSTAR / .4.3; package version is 0.4.3.
