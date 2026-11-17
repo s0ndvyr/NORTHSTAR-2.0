@@ -880,6 +880,12 @@ renderLedger = function() {
   const html=list.map(phase3RenderLedgerRow).join('');
   $('#ledgerList').innerHTML=html||'<div class="card" style="text-align:center;padding:36px"><p class="muted">No published assignments match this marking period and filter. Try another marking period or clear a filter.</p></div>';
 };
+const phase3OriginalAddPeriod=addPeriod;
+addPeriod=function(){phase3OriginalAddPeriod();initLedger();};
+const phase3OriginalDeletePeriod=deletePeriod;
+deletePeriod=function(id){phase3OriginalDeletePeriod(id);initLedger();};
+const phase3OriginalImportPeriods=importPeriods;
+importPeriods=async function(input){await phase3OriginalImportPeriods(input);initLedger();};
 const phase3BaseInitLedger=initLedger;
 initLedger = function() {
   phase3BaseInitLedger();
