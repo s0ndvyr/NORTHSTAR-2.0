@@ -56,8 +56,9 @@ Do not advance a phase until its exit criteria are tested and remaining limitati
 - App and package release identifier updated to `NORTHSTAR / .4.3` and package version `0.4.3`.
 - New `scripts/studentvue.js` adapter supports user-selected CSV/JSON grade files. It validates course, marking period and grade values; preserves school year, source and import timestamp; merges repeated imports without losing other period records; and supports per-course history.
 - Settings now provides the official NNPS StudentVUE portal link, an import control, CSV template download, import status and clear-import action. It does not collect the StudentVUE password.
-- StudentVUE grade imports are displayed as `StudentVUE import`, not as a live connection. Per-course historical records are displayed on course detail.
-- The academic dashboard and Ledger default to the current user-defined marking period. Ledger offers Current Marking Period, All Marking Periods, and each configured period.
+- StudentVUE grade imports are displayed as `StudentVUE import`, not as a live connection. Per-course current and historical records are displayed on course detail. Imported grade records are encrypted through the existing device vault; earlier localStorage imports are migrated into the vault and removed from plaintext storage.
+- The academic dashboard and Ledger default to the current user-defined marking period. Ledger offers Current Marking Period, All Marking Periods, and each configured period. Adding, deleting, or importing a period refreshes the Ledger filter options immediately.
+- Dashboard Today's Focus, Priority Queue, calendar, and course momentum are scoped to current-period published work. Today's Focus prefers due-today work before later upcoming items. Academic Signals, Upcoming Workload, the 7-Day Forecast, Task Completion, and Submission Activity are derived from current Canvas records; illustrative focus hours and static example insights are no longer presented as live student data.
 - Today's Focus now prefers work due today, then current upcoming/in-progress work. The priority queue retains overdue/missing priority, but only within the current marking period.
 - Unpublished and Canvas-locked assignments are excluded from the active work list.
 - Submitted/completed assignment date metadata now reports time since submission/grading rather than overdue days.
@@ -91,7 +92,7 @@ Official support contact listed by NNPS: Technology Service Center, `tsc@nn.k12.
 - Earlier Phase 2 unit suite results were reported as passing for AI, bridge security, Canvas normalization, grade calculations, submission validation, and diagnostics.
 - Phase 3 added `tests/studentvue.test.mjs` covering quoted CSV parsing, JSON parsing, period selection, historical rows, validation, and persistence.
 - Browser boot test now loads `scripts/studentvue.js` and asserts the .4.3 release label.
-- A GitHub Actions workflow was added to run syntax checks, `npm test`, and browser boot checks. Do not claim the CI workflow passed until a completed run is visible.
+- A GitHub Actions workflow runs JavaScript syntax checks, all unit suites, and the jsdom browser boot test. The latest Phase 3 workflow run for the current implementation completed successfully (run 44150307627, commit `901fa2ddcbd53f2c0ca6666b3cb4800439e3e0df`). The boot test covers current-period filtering, submitted-age labels, ignored-course behavior, encrypted StudentVUE imports, and historical grade display.
 - No authenticated direct StudentVUE API test has been run; no district-supported API is documented in the public information reviewed.
 - Live StudentVUE grade values have not been imported or compared against the student's portal.
 - No new changes have been pushed to production `main`. All Phase 3 work is on the development branch.
@@ -102,13 +103,16 @@ Official support contact listed by NNPS: Technology Service Center, `tsc@nn.k12.
 - [x] Document the direct-API authorization limitation and safe integration gate.
 - [x] Add CSV/JSON import adapter and source/timestamp provenance.
 - [x] Add historical StudentVUE grade display to course detail.
+- [x] Store imported StudentVUE grades encrypted in the device vault, migrate any legacy local import, and test import/source display.
 - [x] Add current marking-period scope and explicit Ledger period selector.
+- [x] Refresh period filter options whenever the user adds, deletes, or imports periods.
+- [x] Replace illustrative focus/health/radar cards with current-period workload counts, live academic signals, and actual Canvas submission activity.
 - [x] Correct submitted-date display to avoid overdue messaging.
 - [x] Exclude unpublished and Canvas-locked assignments from active work.
 - [x] Add persistent ignored-course exclusions and muted course display.
 - [x] Change unknown grade display to N/A and distinguish grade sources.
 - [x] Set visible release identity and package version to .4.3.
-- [ ] Complete the branch CI test run and fix any failures.
+- [x] Complete the branch CI test run and fix failures (syntax checks, seven unit suites, jsdom boot test all pass).
 - [ ] User imports real StudentVUE-sourced records and confirms course/period mappings.
 - [ ] NNPS confirms whether an approved API, Ed-Fi source, or data export is available.
 - [ ] If approved documentation is provided, implement and test direct read-only sync; otherwise close Phase 3 with import workflow and documented district limitation.
