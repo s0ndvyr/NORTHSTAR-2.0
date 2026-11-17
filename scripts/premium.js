@@ -259,7 +259,7 @@ function convertCourses(rows) {
   return rows.filter(c => Number.isInteger(c.id)).map((c,i)=>{
     const enrollment=(Array.isArray(c.enrollments)?c.enrollments:[]).find(e=>e.type==='StudentEnrollment') || (Array.isArray(c.enrollments)?c.enrollments[0]:null) || {};
     const official = value => value===null || value===undefined || value==='' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
-    return {id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:official(enrollment.computed_current_score), officialCurrentGrade:official(enrollment.computed_current_score), officialFinalGrade:official(enrollment.computed_final_score), officialCurrentLetter:enrollment.computed_current_grade==null?null:safe(enrollment.computed_current_grade), officialFinalLetter:enrollment.computed_final_grade==null?null:safe(enrollment.computed_final_grade), currentGradingPeriodGrade:official(enrollment.computed_current_period_score), currentGradingPeriodLetter:enrollment.computed_current_period_grade==null?null:safe(enrollment.computed_current_period_grade), gradeSource:'Canvas enrollment totals', credits:0, modules:[], canvasId:c.id, canvasUrl:c.html_url};
+    return {id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:official(enrollment.computed_current_score), officialCurrentGrade:official(enrollment.computed_current_score), officialFinalGrade:official(enrollment.computed_final_score), officialCurrentLetter:enrollment.computed_current_grade==null?null:safe(enrollment.computed_current_grade), officialFinalLetter:enrollment.computed_final_grade==null?null:safe(enrollment.computed_final_grade), currentGradingPeriodGrade:official(enrollment.current_period_computed_current_score), currentGradingPeriodLetter:enrollment.current_period_computed_current_grade==null?null:safe(enrollment.current_period_computed_current_grade), gradeSource:'Canvas enrollment totals', credits:0, modules:[], canvasId:c.id, canvasUrl:c.html_url};
   });
 }
 function convertAssignments(rows,c,base) {
@@ -444,8 +444,8 @@ async function pullCanvas(creds){
       c.officialFinalGrade=value(enrollment.computed_final_score);
       c.officialCurrentLetter=enrollment.computed_current_grade==null?null:safe(enrollment.computed_current_grade);
       c.officialFinalLetter=enrollment.computed_final_grade==null?null:safe(enrollment.computed_final_grade);
-      c.currentGradingPeriodGrade=value(enrollment.computed_current_period_score);
-      c.currentGradingPeriodLetter=enrollment.computed_current_period_grade==null?null:safe(enrollment.computed_current_period_grade);
+      c.currentGradingPeriodGrade=value(enrollment.current_period_computed_current_score);
+      c.currentGradingPeriodLetter=enrollment.current_period_computed_current_grade==null?null:safe(enrollment.current_period_computed_current_grade);
       c.grade=c.officialCurrentGrade;
     }catch(e){
       nextMeta[c.id]=nextMeta[c.id]||{weighted:false,scheme:null,dropLowest:0,dropHighest:0};
