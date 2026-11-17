@@ -68,6 +68,12 @@ window.document.getElementById('periodEnd').value = '2026-10-31';
 window.addPeriod();
 assert.ok(window.document.getElementById('periodsManager').textContent.includes('Marking Period 1'), 'period added and rendered');
 assert.ok(JSON.parse(window.localStorage.getItem('northstar_periods_v1')).length === 1, 'period persisted to localStorage');
+window.document.getElementById('periodName').value = 'Marking Period 2';
+window.document.getElementById('periodStart').value = '2026-11-01';
+window.document.getElementById('periodEnd').value = '2026-12-31';
+window.addPeriod();
+assert.equal(JSON.parse(window.localStorage.getItem('northstar_periods_v1')).length, 2, 'multiple periods persist');
+assert.ok(window.document.getElementById('fPeriod').options.length >= 4, 'ledger exposes current, all, and configured period filters');
 
 // ledger renders
 window.renderLedger();
@@ -109,6 +115,19 @@ assert.ok(window.document.getElementById('courseDetail').textContent.includes('9
 window.openWorkspace('canvas_11_1');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submitted'), 'submitted but ungraded work is distinguished from incomplete work');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
+window.renderLedger();
+const activeLedger = window.document.getElementById('ledgerList').textContent;
+assert.ok(activeLedger.includes('Awaiting feedback'), 'current-period ledger includes current-period assignment');
+assert.ok(!activeLedger.includes('Test work'), 'current-period ledger excludes prior-period assignment');
+assert.ok(activeLedger.includes('Submitted 1 day ago'), 'submitted assignment shows elapsed submission time');
+assert.ok(!activeLedger.includes('60d overdue'), 'submitted assignment is never labeled overdue');
+window.toggleIgnoredCourse('canvas_1', true);
+window.renderLedger();
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('No published assignments'), 'ignored course is removed from the active ledger');
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('IGNORED'), 'ignored course remains visible as ignored in course management');
+window.toggleIgnoredCourse('canvas_1', false);
+window.renderLedger();
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;
