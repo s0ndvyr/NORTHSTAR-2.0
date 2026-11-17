@@ -71,11 +71,11 @@
           </div>
           <!-- Academic Health -->
           <div class="card span4">
-            <div class="card-head"><div><h3>Academic Health</h3><p>Illustrative score from overdue + deadlines</p></div><span class="badge badge-cyan">LIVE</span></div>
+            <div class="card-head"><div><h3>Current-Period Progress</h3><p>Published work completed in your active marking period</p></div><span class="badge badge-cyan">LIVE</span></div>
             <div class="flex" style="gap:18px">
               <div class="ring">
                 <svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/><circle id="statusRing" cx="50" cy="50" r="42" fill="none" stroke="#34d399" stroke-width="9" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="60"/></svg>
-                <div class="ring-center"><div><b id="statusPct">—</b><span>HEALTH</span></div></div>
+                <div class="ring-center"><div><b id="statusPct">—</b><span>COMPLETE</span></div></div>
               </div>
               <div style="flex:1;min-width:0">
                 <span class="badge badge-green" id="statusBadge">● On Track</span>
@@ -83,32 +83,29 @@
               </div>
             </div>
             <div class="flex mt" style="gap:8px">
-              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsGpa">3.82</b><div class="tiny muted">PROJECTED GPA</div></div>
-              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsStreak">12d 🔥</b><div class="tiny muted">STREAK</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsGpa">3.82</b><div class="tiny muted">OFFICIAL GPA</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsStreak">12d 🔥</b><div class="tiny muted">REMAINING</div></div>
               <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsDone">—</b><div class="tiny muted">DONE</div></div>
             </div>
           </div>
           <!-- Focus Time -->
           <div class="card span4">
-            <div class="card-head"><div><h3>Focus Time</h3><p>Hours this week by day</p></div><span class="badge badge-violet" id="hsHours">18.5h</span></div>
+            <div class="card-head"><div><h3>Upcoming Workload</h3><p>Open assignments due by day</p></div><span class="badge badge-violet" id="hsHours">18.5h</span></div>
             <div id="focusBars"></div>
-            <p class="tiny muted mt">Best focus window: <b style="color:#e6edf7">10 AM – 12 PM</b> · example insight</p>
+            <p class="tiny muted mt">Counts are limited to the current marking period and exclude submitted work.</p>
           </div>
           <!-- AI Insights -->
           <div class="card span4">
-            <div class="card-head"><div><h3>AI Insights</h3><p>Copilot · human-in-the-loop</p></div><span class="badge badge-violet">✧ AI</span></div>
-            <div class="insight"><b>You're most productive 10 AM – 12 PM</b><span>Schedule hard work there</span></div>
-            <div class="insight"><b>2 overdue items need clearing</b><span>Homework 3 is oldest — start there</span></div>
-            <div class="insight"><b>Try a 25-minute sprint</b><span>For Thermodynamics PS6 tonight</span></div>
+            <div class="card-head"><div><h3>Academic Signals</h3><p>Live summaries from your current-period coursework</p></div><span class="badge badge-violet">✧ AI</span></div>
+            <div id="academicSignals"></div>
             <button class="btn btn-ghost btn-sm" style="width:100%" onclick="showView('copilot')">Open Copilot →</button>
           </div>
           <!-- Weekly Radar -->
           <div class="card span8">
-            <div class="card-head"><div><h3>Weekly Academic Radar</h3><p>Planned workload vs. actual focus hours</p></div><span class="badge badge-cyan">● LIVE</span></div>
+            <div class="card-head"><div><h3>7-Day Workload Forecast</h3><p>Published assignments due each day in the current marking period</p></div><span class="badge badge-cyan">● LIVE</span></div>
             <div id="radarChart"></div>
             <div class="flex mt" style="gap:16px">
-              <span class="small"><span class="dotc" style="display:inline-block;background:#22d3ee"></span> Planned</span>
-              <span class="small"><span class="dotc" style="display:inline-block;background:#818cf8"></span> Actual</span>
+              <span class="small"><span class="dotc" style="display:inline-block;background:#22d3ee"></span> Open assignments due</span>
               <span class="small muted" style="margin-left:auto" id="radarNote"></span>
             </div>
           </div>
@@ -135,7 +132,7 @@
             <div class="card-head"><div><h3>Today</h3><p>Schedule at a glance</p></div></div>
             <div id="todaySchedule"></div>
             <div class="divider"></div>
-            <div class="flex" style="justify-content:space-between"><h3 style="font-size:13px;font-weight:800">Focus Heatmap</h3><span class="badge badge-green" id="heatTotal">—</span></div>
+            <div class="flex" style="justify-content:space-between"><h3 style="font-size:13px;font-weight:800">Submission Activity</h3><span class="badge badge-green" id="heatTotal">—</span></div>
             <div class="heat mt" id="heatmap"></div>
             <div class="flex mt" style="justify-content:space-between"><span class="tiny muted">Less</span><span class="tiny muted">More →</span></div>
           </div>
