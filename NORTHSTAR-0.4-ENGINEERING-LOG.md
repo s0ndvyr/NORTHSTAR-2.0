@@ -3,7 +3,8 @@
 Last updated: 2026-11-17
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Working branch: `northstar-0.4-phase-2-canvas-sync`
+Working branch: `northstar-0.4.3-phase-3-studentvue`
+Current release identifier: `NORTHSTAR / .4.3`
 
 ## Product direction
 
@@ -12,7 +13,7 @@ NORTHSTAR is a single-user, iPad-first academic command center. It must accurate
 ## Phase roadmap
 
 1. **Foundation** — persistence architecture, credential handling, recoverable settings, initial backup groundwork.
-2. **Canvas synchronization** — courses, assignments, submission states, official grades, sync reliability, offline snapshots. **Current phase.**
+2. **Canvas synchronization** — courses, assignments, submission states, official grades, sync reliability, offline snapshots. **Phase 2 implementation recorded; live user verification remains an explicit release gate.**
 3. **StudentVUE** — investigate official district-supported access; implement only authorized methods.
 4. **Assignment workspace** — assignment instructions, drafts, supported submission types, attachments where supported, confirmation and feedback.
 5. **Settings and data management** — complete settings audit, backup/restore, credential controls, persistence verification.
@@ -59,10 +60,9 @@ Do not advance a phase until its exit criteria are tested and remaining limitati
 
 ## Current repository and branch status
 
-- `main` currently points to commit `79c8b342310db881e4b24a5ee21966b70ce690ed`.
-- `northstar-0.4-phase-2-canvas-sync` exists and currently points to the same commit as `main`.
-- The earlier Phase 2 ZIP contains uncommitted changes. The current working archive adds further corrections described above.
-- Do not claim these changes are in GitHub until a commit is visible on the working branch.
+- The Phase 3 branch was created from the then-current `main` HEAD (`74c28ef0e5e3e2d233ebcc7b7f036b0bd24880ac`).
+- Phase 3 research documentation is being committed to `northstar-0.4.3-phase-3-studentvue`; production `main` is not modified.
+- The older working-archive notes below describe Phase 2 implementation and verification status; they are not evidence that live Canvas testing has passed.
 
 ## Current Canvas bridge configuration to verify
 
@@ -84,7 +84,7 @@ Do not advance a phase until its exit criteria are tested and remaining limitati
 - Not yet run: authenticated live sync against the user's school Canvas account.
 - Not yet run: deployed Cloudflare Worker integration test.
 
-## Phase 2 exit checklist
+## Phase 2 exit checklist (user verification still required)
 
 - [ ] Verify the exact Canvas school origin and Worker allowed origin.
 - [ ] Connect with the user's own Canvas token entered directly in the NORTHSTAR UI (never in chat).
@@ -100,11 +100,30 @@ Do not advance a phase until its exit criteria are tested and remaining limitati
 - [ ] Run full browser boot test after `jsdom` is available.
 - [ ] Commit the verified Phase 2 work to the development branch, not `main`.
 
+## Phase 3 — StudentVUE (active)
+
+- Research document: `STUDENTVUE-INTEGRATION-RESEARCH.md`.
+- NNPS public documentation confirms StudentVUE provides student access to grades and assignments, but the reviewed public district material does not publish an authorized API, OAuth flow, developer registration, or third-party integration agreement.
+- A community reverse-engineered mobile protocol exists, but it is not district authorization. Do not implement private endpoint scraping or undocumented credential flows.
+- Live integration is blocked pending confirmation of a district-approved API, Ed-Fi endpoint, or approved data export.
+- Proposed data contract keeps StudentVUE grade records separate from Canvas and preserves source, retrieval timestamp, school year, course, and marking period. Missing grades remain null and display as N/A.
+- No student credentials have been requested or stored. Never ask the user to paste a StudentVUE password into ChatGPT or NORTHSTAR.
+
+### Phase 3 exit checklist
+
+- [x] Review official NNPS StudentVUE information and login portal.
+- [x] Review Edupoint's public overview of district-configurable StudentVUE capabilities.
+- [x] Identify and document the boundary between official district support and community reverse-engineered protocol notes.
+- [ ] Ask NNPS whether a student-authorized API, Ed-Fi endpoint, or approved export is available.
+- [ ] Obtain written permission / terms and official authentication and API documentation before implementation.
+- [ ] Implement only a district-approved read-only connector or import workflow.
+- [ ] Add tests for grade provenance, null/N/A handling, historical period mapping, stale snapshots, and failed-sync preservation.
+- [ ] Verify current and historical grades against StudentVUE on the user's iPad without exposing credentials.
+- [ ] Close Phase 3 only after the authorized integration path is proven; otherwise record the no-API limitation and proceed with a safe manual import/external-link fallback.
+
 ## Next actions
 
-1. Reconcile the current working archive with the GitHub working branch.
-2. Complete the Phase 2 code review and tests.
-3. Verify bridge configuration without exposing the user's Canvas token.
-4. Ask the user to test the real Canvas connection in the NORTHSTAR UI and share only non-secret diagnostic output if it fails.
-5. Close Phase 2 only after the exit checklist is satisfied.
-6. Then begin StudentVUE research (Phase 3).
+1. Ask NNPS Student Information Systems or the school's Technology Support Specialist whether a supported student-authorized integration/export exists.
+2. If approved documentation is supplied, design and implement the read-only connector and tests.
+3. In parallel, continue isolated Phase 3 academic data-model work only where it does not imply a live StudentVUE connection.
+4. Keep the next phase gated until this phase's exit criteria and limitations are recorded.
