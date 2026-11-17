@@ -1039,4 +1039,54 @@ aiContext=function(){
 renderCourseIgnoreSettings();
 renderStudentVueSettings();
 
+/* Phase 3 follow-through: calendar, course grade history, and initial UI refresh. */
+renderCalendar=function(){
+  const rows=phase3VisibleAssignments('current');
+  const days=[];for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()+i);days.push(d);}
+  let total=0;
+  $('#calStrip').innerHTML=days.map((d,i)=>{
+    const items=rows.filter(a=>!CANVAS_SYNC.isResolved(a.status)&&!a.noDue&&new Date(a.due).toDateString()===d.toDateString());
+    total+=items.length;
+    return '<div class="cal-day '+(i===0?'today':'')+'" onclick="filterAndGo(\''+(i===0?'Due Today':'Upcoming')+'\')"><span class="dow">'+d.toLocaleDateString('en-US',{weekday:'short'})+'</span><span class="dnum">'+d.getDate()+'</span><span class="dcnt">'+(items.length?items.length+' due':'Clear')+'</span><span class="dots">'+items.slice(0,4).map(a=>'<i style="background:'+courseById(a.course).color+'"></i>').join('')+'</span></div>';
+  }).join('');
+  $('#weekTotal').textContent=total+' due this week · '+(phase3CurrentPeriod()?.name||'active date window');
+};
+const phase3BaseOpenCourse=openCourse;
+openCourse=function(id){
+  phase3BaseOpenCourse(id);
+  const course=courseById(id);if(!course)return;
+  const history=window.NorthstarStudentVue?window.NorthstarStudentVue.historyForCourse(course,phase3StudentVue):[];
+  const detail=$('#courseDetail');if(!detail)return;
+  const historyHtml=history.length?'<div class="card mt"><div class="card-head"><div><h3>StudentVUE grade history</h3><p>Imported grade records · source and marking period retained</p></div><span class="badge badge-cyan">'+history.length+' records</span></div>'+history.map(r=>'<div class="period-row"><div style="flex:1;min-width:0"><b>'+esc(r.period)+'</b><div class="tiny muted">'+esc(r.schoolYear||'School year not provided')+(r.asOf?' · '+esc(r.asOf):'')+'</div></div><b class="mono">'+esc(r.display||'N/A')+'</b></div>').join('')+'</div>':'';
+  if(historyHtml)detail.insertAdjacentHTML('beforeend',historyHtml);
+};
+const phase3BaseRenderCourses=renderCourses;
+renderCourses=function(){
+  if(mode==='demo'){phase3BaseRenderCourses();return;}
+  const scoped=phase3VisibleAssignments(phase3PeriodSelection||'current');
+  $('#courseGrid').innerHTML=COURSES.map(course=>{
+    const ignored=phase3CourseIgnored(course),work=scoped.filter(a=>a.course===course.id);
+    const done=work.filter(a=>CANVAS_SYNC.isResolved(a.status)||a.status==='Excused').length;
+    const grade=ignored?{value:'Excluded',source:'Ignored course'}:phase3GradeFor(course);
+    return '<button class="card course-card" style="--cc:'+course.color+';text-align:left;'+(ignored?'opacity:.48;filter:grayscale(.85);':'')+'" onclick="openCourse(\''+esc(course.id)+'\')"><span class="course-code">'+esc(course.code)+'</span><h3>'+esc(course.name)+'</h3><p class="muted small">Canvas course'+(ignored?' · IGNORED':'')+'</p><div class="mini-stats"><div><b>'+work.length+'</b><span>Selected-period assignments</span></div><div><b>'+done+'</b><span>Complete / submitted</span></div><div><b>'+esc(grade.value)+'</b><span>'+esc(grade.source)+'</span></div></div></button>';
+  }).join('')||'<p class="muted">No courses returned by Canvas.</p>';
+};
+const phase3BaseDynamicOverview=dynamicOverview;
+dynamicOverview=function(){
+  phase3BaseDynamicOverview();
+  const period=phase3CurrentPeriod(),scoped=phase3VisibleAssignments('current');
+  const completed=scoped.filter(a=>CANVAS_SYNC.isResolved(a.status)||a.status==='Excused').length;
+  if(scoped.length&&typeof renderGauge==='function')renderGauge(completed,scoped.length-completed);
+};
+const periodCard=$('#view-dashboard .section-title');
+$('#view-settings .head-actions .pill')?.replaceChildren(document.createTextNode(NORTHSTAR_RELEASE));
+const periodSelect=$('#fPeriod');
+if(periodSelect)periodSelect.value=phase3PeriodSelection||'current';
+renderDashboard();
+initLedger();
+renderCourses();
+renderWhatIf();
+renderCourseIgnoreSettings();
+renderStudentVueSettings();
+
 })();
