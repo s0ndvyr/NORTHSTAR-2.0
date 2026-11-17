@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const S=createRequire(import.meta.url)('../scripts/submissions.js');
+assert.equal(S.payload('online_text_entry','<script>\nhi').submission.body,'<p>&lt;script&gt;<br>hi</p>');
+assert.throws(()=>S.payload('online_url','javascript:alert(1)'));
+assert.throws(()=>S.payload('online_text_entry','  '));
+assert.throws(()=>S.payload('online_upload','file'));
+let calls=0;
+const args={credentials:{proxy:'https://bridge.example',token:'secret'},courseId:1,assignmentId:2,data:S.payload('online_url','https://example.com')};
+const result=await S.send({...args,fetchImpl:async(url,opts)=>{calls++;assert(!url.includes('secret'));assert.equal(opts.headers.Authorization,'Bearer secret');assert.equal(opts.redirect,'error');return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};}});
+assert.equal(result.attempt,2);
+await assert.rejects(S.send({...args,credentials:{},fetchImpl:()=>{throw Error('should not call');}}),/private bridge/);
+await assert.rejects(S.send({...args,fetchImpl:async()=>{calls++;throw Error('secret');}}),/outcome unknown/);
+assert.equal(calls,2,'no retry after ambiguous failure');
+await assert.rejects(S.send({...args,fetchImpl:async()=>({ok:false,status:403})}),/HTTP 403/);
+await assert.rejects(S.send({...args,fetchImpl:async()=>({ok:true,json:async()=>({})})}),/not confirmed/);
+console.log('PASS: submission validation, text escaping, bridge-only transport, confirmed response and no retries');

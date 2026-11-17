@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -85,7 +85,7 @@ window.fetch = async url => {
   const u = new URL(url);
   let data;
   if (u.pathname === '/api/v1/courses') data=[{id:1,name:'Math',course_code:'MATH'}];
-  else if (u.pathname.endsWith('/assignments')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90}}];
+  else if (u.pathname.endsWith('/assignments')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90}}];
   else if (u.pathname.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
   else data={weighted_assignment_groups:true};
   return {ok:true,status:200,headers:{get:n=>n.toLowerCase()==='content-type'?'application/json':null},json:async()=>data,text:async()=>JSON.stringify(data)};
@@ -98,6 +98,20 @@ window.renderCourses();
 window.renderWhatIf();
 assert.ok(window.document.getElementById('courseGrid').textContent.includes('90.0%'), 'synced score reaches computed course grade');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
+window.openWorkspace('canvas_10_1');
+window.document.getElementById('assignmentDraft').value='My own work';
+let writes=0;
+window.fetch=async(url,opts)=>{writes++;return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};};
+window.sessionStorage.setItem('northstar_canvas_session',JSON.stringify({base:'https://school.instructure.com',proxy:'https://bridge.example',token:'secret'}));
+window.confirm=()=>false;
+await window.submitAssignment();
+assert.equal(writes,0,'cancel must not write');
+let confirmation='';
+window.confirm=msg=>{confirmation=msg;return true;};
+await window.submitAssignment();
+assert.equal(writes,1,'one confirmed write');
+assert.ok(confirmation.includes('My own work')&&confirmation.includes('Math')&&confirmation.includes('Test work'));
+assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas confirmed'));
 assert.equal(errors.length,0,errors.join(' | '));
 console.log('PASS: mocked live sync and app boots clean, grades compute, periods manage, AI key is session-only, viewer works');
 process.exit(0);
