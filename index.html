@@ -265,7 +265,7 @@
 
       <!-- ============ COPILOT ============ -->
       <section class="view" id="view-copilot">
-        <div class="section-title" style="margin-top:0"><div><h2>Academic Copilot</h2><p>A simple rule-based study guide, not an AI service</p></div><span class="badge badge-violet">✧ STUDY GUIDE</span></div>
+        <div class="section-title" style="margin-top:0"><div><h2>Academic Copilot</h2><p>Powered by Google Gemini when a key is set in Settings — otherwise a built-in guide</p></div><span class="badge badge-violet">✧ AI COPILOT</span></div>
         <div class="grid2" style="grid-template-columns:1.35fr 1fr">
           <div class="card">
             <div class="card-head"><div><h3>Ask Copilot</h3><p>Try: “scaffold my essay”, “explain this quiz question”, “plan my week”</p></div></div>
@@ -281,7 +281,7 @@
             <div class="card mb" style="display:none"><div id="copilotPlans"></div></div>
             <div class="card">
               <div class="card-head"><div><h3>🛡 Safety Guardrail</h3></div></div>
-              <p class="small muted" style="line-height:1.65">The guide offers simple template responses. It is not an AI model, and does not submit work to Canvas.</p>
+              <p class="small muted" style="line-height:1.65">With a Gemini key, the Copilot is a real AI that explains, summarizes, and quizzes using your courses and grades. It teaches and guides — it never completes assignments or submits work to Canvas. Without a key, a built-in rule-based guide answers from your live data.</p>
               <div class="divider"></div>
               <div class="check"><input type="checkbox" checked disabled><div><b class="small">Require human approval before any submission</b><div class="tiny muted">Enforced at the API layer</div></div></div>
               <div class="check"><input type="checkbox" checked disabled><div><b class="small">Show sources &amp; rubric alignment</b><div class="tiny muted">Every draft cites its rubric criteria</div></div></div>
@@ -346,6 +346,27 @@
         <button class="toggle" id="togNoAnim" onclick="toggleSetting('noAnim')"></button>
       </div>
           </div>
+        </div>
+        <div class="card" style="max-width:720px;padding:24px;margin-top:16px">
+          <div class="card-head"><div><h3>Marking Periods</h3><p>Your school’s grading periods. Assignments are organized by due date into these — old periods archive automatically. Canvas has no API for periods, so these are yours to define once.</p></div></div>
+          <div id="periodsManager"></div>
+          <div class="divider"></div>
+          <div class="flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:140px"><label class="set-lbl">Period name</label><input id="periodName" class="inp" placeholder="Marking Period 1" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px"></div>
+            <div><label class="set-lbl">Start</label><input id="periodStart" type="date" class="inp" style="padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px"></div>
+            <div><label class="set-lbl">End</label><input id="periodEnd" type="date" class="inp" style="padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px"></div>
+            <button class="btn btn-primary btn-sm" onclick="addPeriod()">Add period</button>
+          </div>
+        </div>
+        <div class="card" style="max-width:720px;padding:24px;margin-top:16px">
+          <div class="card-head"><div><h3>✧ AI — Google Gemini (free tier)</h3><p>Your key is kept in session storage, not persistent local storage; clear it when finished. AI calls go straight from your browser to Google.</p></div><span class="badge badge-violet">AI</span></div>
+          <label class="set-lbl">Gemini API key</label>
+          <input id="geminiKey" type="password" class="inp" placeholder="Paste a free key from Google AI Studio" autocomplete="off" autocapitalize="none" spellcheck="false" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
+          <label class="set-lbl" style="margin-top:12px">Model (availability depends on your Google account)</label>
+          <input id="geminiModel" class="inp" placeholder="gemini-2.0-flash" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
+          <div class="flex mt" style="gap:8px"><button class="btn btn-primary btn-sm" onclick="saveAiSettings()">Save for this session</button><button class="btn btn-ghost btn-sm" onclick="testAiKey()">Test key</button></div>
+          <p class="small muted mt" id="aiStatus">No Gemini key set — the built-in guide is active.</p>
+          <p class="tiny muted mt">Get a free key at <b>Google AI Studio</b> (aistudio.google.com) → “Get API key”. The AI explains, summarizes, and quizzes — it never completes assignments for you.</p>
         </div>
       </section>
 
@@ -413,10 +434,20 @@
   <div id="drawerList"></div>
 </aside>
 
+<!-- IN-DASHBOARD VIEWER -->
+<div class="overlay" id="viewerOverlay">
+  <div class="workspace" style="max-width:1000px;height:86vh;display:flex;flex-direction:column">
+    <div class="ws-head"><div><span class="eyebrow">IN-DASHBOARD VIEW</span><h2>Canvas page</h2><p class="small muted mt" id="viewerNote"></p></div><button class="ws-close" aria-label="Close" onclick="closeViewer()">✕</button></div>
+    <div style="flex:1;min-height:0"><iframe id="viewerFrame" title="Canvas page" style="width:100%;height:100%;border:0;border-radius:12px;background:#fff"></iframe></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="scripts/app.js"></script>
 <script src="scripts/canvas-debug.js"></script>
+<script src="scripts/grades.js"></script>
+<script src="scripts/ai.js"></script>
 <script src="scripts/premium.js"></script>
 </body>
 </html>
