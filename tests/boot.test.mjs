@@ -102,7 +102,7 @@ await window.connectCanvas();
 window.renderCourses();
 window.renderWhatIf();
 assert.ok(window.document.getElementById('courseGrid').textContent.includes('88.5%'), 'official Canvas enrollment percentage is displayed');
-assert.ok(window.document.getElementById('courseGrid').textContent.includes('Canvas current grade'), 'official grade source is clearly labeled');
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('Canvas official current grade'), 'official grade source is clearly labeled');
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('Marking Period 2'), 'current grading-period title comes from the student enrollment');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('91.0%'), 'official current grading-period percentage is displayed');
