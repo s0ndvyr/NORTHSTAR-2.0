@@ -383,6 +383,25 @@
         </div>
         <p class="small muted">Still stuck? Share the status message with your Canvas administrator, but remove your token and any personal details first.</p>
       </details>
+
+      <section class="debug-console" aria-label="Connection debug console">
+        <header class="debug-header">
+          <div class="debug-header-text">
+            <span class="debug-dot" id="debugDot"></span>
+            <strong>Debug console</strong>
+            <span class="debug-header-meta" id="debugHeaderMeta">Waiting for a connection attempt…</span>
+          </div>
+          <div class="debug-header-actions">
+            <button type="button" class="debug-btn" id="debugCopy">Copy report</button>
+            <button type="button" class="debug-btn" id="debugClear">Clear</button>
+            <button type="button" class="debug-btn debug-btn-collapse" id="debugToggle" aria-expanded="true" aria-controls="debugBody">Hide</button>
+          </div>
+        </header>
+        <div class="debug-body" id="debugBody">
+          <ul class="debug-log" id="debugLog" aria-live="polite"></ul>
+          <div class="debug-verdict" id="debugVerdict" hidden></div>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -397,6 +416,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="scripts/app.js"></script>
+<script src="scripts/canvas-debug.js"></script>
 <script src="scripts/premium.js"></script>
 </body>
 </html>
