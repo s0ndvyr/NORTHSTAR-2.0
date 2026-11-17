@@ -256,13 +256,21 @@ async function allPages(creds, path) {
 const typeOf = a => a.submission_types?.includes('discussion_topic') ? 'Discussion' : a.submission_types?.includes('online_quiz') ? 'Quiz' : a.submission_types?.includes('online_text_entry') ? 'Writing' : 'Homework';
 function convertCourses(rows) {
   const palette=['#c4e87b','#9cd9bd','#c6bded','#eac988','#efa99c','#a7cce1'];
-  return rows.filter(c => Number.isInteger(c.id)).map((c,i)=>({id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:0, credits:0, modules:[], canvasId:c.id, canvasUrl: c.html_url}));
+  return rows.filter(c => Number.isInteger(c.id)).map((c,i)=>{
+    const enrollment=(Array.isArray(c.enrollments)?c.enrollments:[]).find(e=>e.type==='StudentEnrollment') || (Array.isArray(c.enrollments)?c.enrollments[0]:null) || {};
+    const official = value => value===null || value===undefined || value==='' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
+    return {id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:official(enrollment.computed_current_score), officialCurrentGrade:official(enrollment.computed_current_score), officialFinalGrade:official(enrollment.computed_final_score), officialCurrentLetter:enrollment.computed_current_grade==null?null:safe(enrollment.computed_current_grade), officialFinalLetter:enrollment.computed_final_grade==null?null:safe(enrollment.computed_final_grade), currentGradingPeriodGrade:official(enrollment.computed_current_period_score), currentGradingPeriodLetter:enrollment.computed_current_period_grade==null?null:safe(enrollment.computed_current_period_grade), gradeSource:'Canvas enrollment totals', credits:0, modules:[], canvasId:c.id, canvasUrl:c.html_url};
+  });
 }
 function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
     const sub=a.submission || {}, isDone = ['submitted','graded','pending_review'].includes(sub.workflow_state), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:Number(a.points_possible)||0, priority:'Normal', status:sub.workflow_state==='graded'?'Completed':isDone?'Submitted':sub.missing?'Missing':'Not Started', progress:isDone?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score==null?null:Number(sub.score), excused:!!sub.excused, missing:!!sub.missing, late:!!sub.late, groupId:a.assignment_group_id, subState:sub.workflow_state, submissionTypes:a.submission_types||[], gradedAt:sub.graded_at, canvasUrl:href};
+    const workflow=String(sub.workflow_state||'').toLowerCase();
+    const submitted=['submitted','graded','pending_review'].includes(workflow);
+    const missing=!!sub.missing;
+    const status=sub.excused?'Excused':workflow==='graded'?'Completed':submitted?'Submitted':missing?'Missing':'Not Started';
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:Number(a.points_possible)||0, priority:'Normal', status, progress:submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score==null?null:Number(sub.score), excused:!!sub.excused, missing, late:!!sub.late, groupId:a.assignment_group_id, subState:workflow||null, submissionTypes:a.submission_types||[], gradedAt:sub.graded_at||null, submittedAt:sub.submitted_at||null, attempt:sub.attempt==null?null:Number(sub.attempt), gradeMatchesCurrentSubmission:sub.grade_matches_current_submission!==false, secondsLate:sub.seconds_late==null?null:Number(sub.seconds_late), canvasUrl:href};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
@@ -414,20 +422,40 @@ connectCanvas = async function(){
   catch(e){pushEntry('err','Connection failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;toast('Canvas connection failed. See the debug console in this menu.');}finally{$('#connectAction').disabled=false;}
 };
 async function pullCanvas(creds){
-  const rawCourses=await allPages(creds,'/api/v1/courses?enrollment_state=active');const courses=convertCourses(rawCourses);let assignments=[];
-  GROUPS={}; COURSE_META={};
+  // Build a complete candidate snapshot first. Nothing visible is replaced until every
+  // required course/assignment page has loaded successfully.
+  const coursePath='/api/v1/courses?enrollment_state=active&include%5B%5D=total_scores&include%5B%5D=current_grading_period_scores';
+  const rawCourses=await allPages(creds,coursePath);
+  const courses=convertCourses(rawCourses);
+  const assignments=[], nextGroups={}, nextMeta={};
   for(const c of courses){
-    const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);assignments.push(...convertAssignments(rows,c,creds.base));
+    const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);
+    assignments.push(...convertAssignments(rows,c,creds.base));
     try{
       const grows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignment_groups`);
-      GROUPS[c.id]=grows.filter(g=>Number.isInteger(g.id)).map(g=>({id:g.id,name:safe(g.name||'Group'),weight:Number(g.group_weight)||0,dropLowest:Number(g.rules?.drop_lowest)||0,dropHighest:Number(g.rules?.drop_highest)||0}));
-    }catch(e){ pushEntry('err','Assignment groups unavailable for '+c.code+' — grades will be unweighted. Redeploy the bridge with the latest worker.js.'); GROUPS[c.id]=[]; }
+      nextGroups[c.id]=grows.filter(g=>Number.isInteger(g.id)).map(g=>({id:g.id,name:safe(g.name||'Group'),weight:Number(g.group_weight)||0,dropLowest:Number(g.rules?.drop_lowest)||0,dropHighest:Number(g.rules?.drop_highest)||0}));
+    }catch(e){ pushEntry('err','Assignment groups unavailable for '+c.code+' — official Canvas grades remain separate; local grade estimates may be unweighted.'); nextGroups[c.id]=[]; }
     try{
-      const det=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
-      COURSE_META[c.id]={weighted:!!det.weighted_assignment_groups, scheme:Array.isArray(det.grading_standard)?det.grading_standard:null, dropLowest:Number(det.drop_lowest)||0, dropHighest:Number(det.drop_highest)||0};
-    }catch(e){ COURSE_META[c.id]={weighted:false,scheme:null,dropLowest:0,dropHighest:0}; }
+      const det=await canvasPage(creds,`/api/v1/courses/${c.canvasId}?include%5B%5D=total_scores&include%5B%5D=current_grading_period_scores`);
+      nextMeta[c.id]={weighted:!!det.weighted_assignment_groups, scheme:Array.isArray(det.grading_standard)?det.grading_standard:null, dropLowest:Number(det.drop_lowest)||0, dropHighest:Number(det.drop_highest)||0};
+      const enrollment=(Array.isArray(det.enrollments)?det.enrollments:[]).find(e=>e.type==='StudentEnrollment') || {};
+      const value=v=>v==null||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
+      c.officialCurrentGrade=value(enrollment.computed_current_score);
+      c.officialFinalGrade=value(enrollment.computed_final_score);
+      c.officialCurrentLetter=enrollment.computed_current_grade==null?null:safe(enrollment.computed_current_grade);
+      c.officialFinalLetter=enrollment.computed_final_grade==null?null:safe(enrollment.computed_final_grade);
+      c.currentGradingPeriodGrade=value(enrollment.computed_current_period_score);
+      c.currentGradingPeriodLetter=enrollment.computed_current_period_grade==null?null:safe(enrollment.computed_current_period_grade);
+      c.grade=c.officialCurrentGrade;
+    }catch(e){
+      nextMeta[c.id]=nextMeta[c.id]||{weighted:false,scheme:null,dropLowest:0,dropHighest:0};
+      pushEntry('info','Official enrollment grade details unavailable for '+c.code+'; grade fields will remain unavailable rather than estimated.');
+    }
   }
-  COURSES.splice(0,COURSES.length,...courses);ASSIGNMENTS=assignments;mode='live';ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses`,time:'Just now'}); refreshAll();
+  GROUPS=nextGroups; COURSE_META=nextMeta;
+  COURSES.splice(0,COURSES.length,...courses);ASSIGNMENTS=assignments;mode='live';
+  ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses · official grades when permitted`,time:'Just now'});
+  refreshAll();
 }
 /* ---------- exact grade math (via grades.js) ---------- */
 function gradeOptsFor(courseId){ const m=COURSE_META[courseId]||{weighted:false,scheme:null,dropLowest:0,dropHighest:0}; return {weighted:m.weighted,scheme:m.scheme,courseDropLowest:m.dropLowest,courseDropHighest:m.dropHighest}; }
