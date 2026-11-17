@@ -30,7 +30,7 @@ The checklist also appears in the Connect panel, and opens automatically on conn
 
 ### Debug console
 
-The Connect panel also contains a **debug console** that traces every request an attempt makes. Each entry shows the timing, HTTP status, `Server`/`Content-Type` headers, a truncated response body (for example a Canvas `{"errors":[…]}` payload or a bridge `{"error":"Path not allowed"}`), a `X-Request-Id` you can give your administrator, and a plain-language diagnosis. When a request never completes, the console runs three probes — host reachability, an **unauthenticated** request to the same URL (to tell a CORS/preflight block from a dead host), and, in bridge mode, an origin check against `ALLOWED_ORIGIN` — and states which one failed. Typical verdicts: `Blocked (403 — org policy, scopes, or WAF)`, `Blocked by CORS/preflight (org policy or WAF)`, `Blocked by bridge config (403, path/origin)`, `Token rejected (401)`, `URL redirects away from Canvas`, `Canvas host unreachable`. Use **Copy report** to copy the full trace for support; the token is redacted from everything the console displays or copies.
+The Connect panel also contains a **debug console** that traces every request an attempt makes. Each entry shows the timing, HTTP status, `Server`/`Content-Type` headers, a truncated response body (for example a Canvas `{"errors":[…]}` payload or a bridge `{"error":"Path not allowed"}`), a `X-Request-Id` you can give your administrator, and a plain-language diagnosis. When a request never completes, the console runs three probes — host reachability, an **unauthenticated** request to the same URL (to tell a CORS/preflight block from a dead host), and, in bridge mode, an origin check against `ALLOWED_ORIGIN` — and states which one failed. Typical verdicts: `Blocked (403 — org policy, scopes, or WAF)`, `Blocked by CORS/preflight (org policy or WAF)`, `Blocked by bridge config (403, path/origin)`, `User-Agent refused (403 via bridge)`, `Token rejected (401)`, `URL redirects away from Canvas`, `Canvas host unreachable`. Use **Copy report** to copy the full trace for support; the token is redacted from everything the console displays or copies.
 
 ### Set up your own optional bridge
 
@@ -43,10 +43,19 @@ GitHub Pages cannot run server-side code. The included `canvas-bridge/worker.js`
 
 If your school's Canvas security policy blocks external access, ask the Canvas administrator. The bridge cannot fix an expired token, inadequate permissions, or a blocked account.
 
-## What works and what is not connected
+## NORTHSTAR 2.0 — Phase 1
 
-- Canvas sync reads active courses and paginated assignments including due dates, points and submission status. It does not fetch grades or StudentVUE data.
-- Open an assignment to keep a device-local draft or follow its link to Canvas. **No submission is made by Northstar.**
-- Notebook and assignment drafts save locally. The study timer and example flashcards are in-browser utilities. The study guide is rule-based, not AI.
-- Example grades, charts, and analytics in demo mode are illustrative, not real records. What-if calculations are disabled for synced Canvas data because grading weights and credits aren't known.
-- No backend is deployed by this ZIP. Connecting through the optional bridge cannot be verified until it is configured with your school and deployed.
+- Sync reads active courses, paginated assignments and submission scores, assignment groups, and course weighting metadata. Redeploy `canvas-bridge/worker.js` to enable the new read-only group/course endpoints. Keep your existing school and allowed-site origins.
+- Settings → Marking Periods: enter your school's dates once. The ledger groups work by due date, including missing work in archived periods. Undated work gets its own bucket. These local organizational periods are not official Canvas grading periods.
+- Grade calculations are deterministic: scored work and missing-as-zero count, excused and other ungraded work do not. Category weights come from Canvas. If metadata cannot be loaded, the console warns and calculations fall back to unweighted totals. These are estimates, not official grades: school-specific overrides, extra-credit weighting, never-drop rules, and Canvas's point-impact drop algorithm are not fully reproduced (drops currently use assignment percentage). Letter and GPA scales are estimates unless supplied by the course.
+- Live what-if sliders project the selected average on currently pending work. GPA is an unweighted estimate; course credits are not known.
+- Settings → AI: supply a Gemini key and model, save for the session, then test. Copilot and assignment study tools call Google directly; course/assignment context is sent to Google when requested. Free-tier availability and quotas depend on the account/model. Without a key the rule-based guide remains available.
+- Keys use sessionStorage, not localStorage. Session storage is accessible to scripts on this origin and may be restored by the browser; clear the key in Settings when finished. It is not encrypted secret storage.
+- Notes/drafts stay device-local. The embedded Canvas viewer may be blocked by school policy; use the assignment's Canvas link instead.
+- Submissions/resubmissions (Phase 2) and quiz-engine integration (Phase 3) are not implemented yet. The bridge remains GET-only. Nothing submits work to Canvas.
+- Demo charts and flashcards remain examples, not school analytics. No StudentVUE connection is provided.
+
+### Tests
+
+Run `node tests/debug.test.mjs`, `node tests/bridge.test.mjs`, `node tests/grades.test.mjs`, and `node tests/ai.test.mjs`.
+For DOM boot + mocked live sync: install the test-only dependency with `npm install --no-save --package-lock=false jsdom@31.0.1`, then run `node tests/boot.test.mjs`. Do not commit node_modules.

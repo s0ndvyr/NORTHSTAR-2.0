@@ -152,7 +152,26 @@
         event.verdict = "Token rejected (401)";
       } else if (status === 403) {
         event.kind = "forbidden";
-        if (mode === "bridge") {
+        var uaRefused = /user.?agent/i.test(event.bodyPreview);
+        if (uaRefused) {
+          event.httpError = "Canvas (or a filter in front of it) refused the request's User-Agent (HTTP 403).";
+          event.hint = "The response body says the request did not provide a valid user agent. This is a bot/WAF rule, not a token problem — your token was never evaluated.";
+          if (mode === "bridge") {
+            event.hint += " The bridge forwards only Authorization and Accept, so Canvas sees the Worker's default user agent and rejects it. The Worker must forward the browser's User-Agent instead.";
+            event.actions = [
+              "In the Worker, add 'User-Agent': request.headers.get('User-Agent') to the upstream fetch headers (the included canvas-bridge/worker.js already does this).",
+              "Redeploy the Worker, then reconnect."
+            ];
+            event.verdict = "User-Agent refused (403 via bridge)";
+          } else {
+            event.hint += " Browsers always send a user agent, so a direct request hitting this rule usually means a proxy or WAF is rewriting or stripping it.";
+            event.actions = [
+              "Try the included bridge, which forwards your browser's user agent.",
+              "If a VPN or certificate-inspection proxy is active, try without it."
+            ];
+            event.verdict = "User-Agent refused (403)";
+          }
+        } else if (mode === "bridge") {
           event.httpError = "Canvas refused the request through the bridge (HTTP 403).";
           event.hint = "The bridge forwarded the request and Canvas itself refused it — an organization/account restriction, not a wrong URL. Typical causes: personal access tokens disabled by policy, missing token scopes, an unauthorized role, or an IP/WAF allowlist that does not include Cloudflare's egress.";
           event.actions = [

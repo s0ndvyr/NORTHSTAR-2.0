@@ -13,10 +13,10 @@ export default {
     if(!/^Bearer \S+$/.test(auth)) return reply('Authorization required',401);
     const path=new URL(request.url).searchParams.get('path')||'';
     let url; try { url=new URL(path, CANVAS_ORIGIN); } catch { return reply('Invalid path',400); }
-    if(url.origin!==CANVAS_ORIGIN || !/^\/api\/v1\/courses(?:\/\d+\/assignments)?$/.test(url.pathname) || url.searchParams.has('access_token')) return reply('Path not allowed',403);
+    if(url.origin!==CANVAS_ORIGIN || !/^\/api\/v1\/courses(?:\/\d+(?:\/assignments|\/assignment_groups)?)?$/.test(url.pathname) || url.searchParams.has('access_token')) return reply('Path not allowed',403);
     // Prevent browser cookies, redirects, or arbitrary headers from reaching Canvas.
     try {
-      const upstream=await fetch(url.toString(),{method:'GET',headers:{Authorization:auth,Accept:'application/json'},redirect:'manual'});
+      const upstream=await fetch(url.toString(),{method:'GET',headers:{Authorization:auth,Accept:'application/json','User-Agent':request.headers.get('User-Agent')||'NORTHSTAR-bridge/1.0'},redirect:'manual'});
       if(upstream.status>=300&&upstream.status<400) return reply('Canvas redirected the request; verify your Canvas origin',502);
       return new Response(upstream.body,{status:upstream.status,headers:{...cors,'Content-Type':upstream.headers.get('Content-Type')||'application/json','X-Content-Type-Options':'nosniff'}});
     }catch{return reply('Could not reach Canvas',502);}

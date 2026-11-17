@@ -45,3 +45,11 @@ body{background:#090f14}body::before{background:radial-gradient(ellipse 65% 36% 
 .debug-verdict.is-bad{border-left-color:var(--rose);background:rgba(239,169,156,.08)}
 .debug-verdict.is-bad strong{color:var(--rose)}
 @media(max-width:600px){.debug-header{padding:12px 14px}.debug-body{padding:12px 14px 14px}.debug-log{max-height:210px}}
+
+/* ---------- marking periods + AI ---------- */
+.period-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:11px;background:rgba(209,229,210,.04);margin-bottom:8px}
+.period-section{margin-bottom:22px}
+.period-head{display:flex;align-items:center;gap:10px;margin:18px 0 10px;flex-wrap:wrap}
+.period-head h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0}
+.ai-response{font-size:13.5px;line-height:1.65;color:var(--text);background:rgba(196,232,123,.05);border:1px solid rgba(196,232,123,.14);border-radius:12px;padding:13px 15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.set-lbl{display:block;font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:7px}

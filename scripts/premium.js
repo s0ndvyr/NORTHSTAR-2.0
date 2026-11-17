@@ -4,6 +4,8 @@
 const DEMO_COURSES = structuredClone(COURSES);
 const DEMO_ASSIGNMENTS = structuredClone(ASSIGNMENTS);
 let mode = 'demo', activeAssignment = null;
+let GROUPS = {}, COURSE_META = {};
+const GRADES = window.Grades, AI = window.NorthstarAI;
 const store = {
   get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
@@ -14,6 +16,7 @@ localStorage.removeItem('canvas_token');
 localStorage.removeItem('canvas_base');
 ACTIVITY.splice(0); AUTOPILOT.splice(0);
 NOTES = store.get('northstar_notes_v2', []);
+let PERIODS = store.get('northstar_periods_v1', []);
 const safe = value => String(value ?? '').replace(/[&<>"'`]/g, '');
 const asText = html => { const node = document.createElement('div'); node.innerHTML = html || ''; return safe(node.textContent.trim()); };
 const urlFrom = value => {
@@ -259,18 +262,19 @@ function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
     const sub=a.submission || {}, isDone = ['submitted','graded','pending_review'].includes(sub.workflow_state), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:Number(a.points_possible)||0, priority:'Normal', status:sub.workflow_state==='graded'?'Completed':isDone?'Submitted':sub.missing?'Missing':'Not Started', progress:isDone?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], canvasUrl:href};
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:Number(a.points_possible)||0, priority:'Normal', status:sub.workflow_state==='graded'?'Completed':isDone?'Submitted':sub.missing?'Missing':'Not Started', progress:isDone?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score==null?null:Number(sub.score), excused:!!sub.excused, missing:!!sub.missing, late:!!sub.late, groupId:a.assignment_group_id, subState:sub.workflow_state, submissionTypes:a.submission_types||[], gradedAt:sub.graded_at, canvasUrl:href};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
-const oldMomentum=renderMomentum; renderMomentum=function(){if(mode==='demo'){oldMomentum();return;}$('#momentumList').innerHTML=COURSES.map(c=>{const as=ASSIGNMENTS.filter(a=>a.course===c.id);const done=as.filter(a=>['Submitted','Completed'].includes(a.status)).length;return `<div class="mom-row" onclick="openCourse('${c.id}')"><div class="flex" style="justify-content:space-between"><b class="small">${c.code}</b><span class="small muted">${done}/${as.length} submitted</span></div><div class="progress mt"><i style="width:${as.length?Math.round(done/as.length*100):0}%"></i></div></div>`;}).join('') || '<p class="small muted">No courses found.</p>';};
+const oldMomentum=renderMomentum; renderMomentum=function(){if(mode==='demo'){oldMomentum();return;}$('#momentumList').innerHTML=COURSES.map(c=>{const as=ASSIGNMENTS.filter(a=>a.course===c.id);const done=as.filter(a=>['Submitted','Completed'].includes(a.status)).length;const g=gradeForCourse(c.id);return `<div class="mom-row" onclick="openCourse('${c.id}')"><div class="flex" style="justify-content:space-between"><b class="small">${c.code}</b><span class="small muted">${done}/${as.length} submitted</span></div><div class="flex" style="justify-content:space-between;align-items:center;margin-top:4px"><span class="small" style="color:${c.color};font-weight:700">${fmtPct(g.percent)}${g.letter?' · '+g.letter:''}</span><span class="tiny muted">computed grade</span></div><div class="progress mt"><i style="width:${as.length?Math.round(done/as.length*100):0}%;background:${c.color}"></i></div></div>`;}).join('') || '<p class="small muted">No courses found.</p>';};
 const originalRelDue=relDue;
 relDue = d => new Date(d).getFullYear() >= 2999 ? 'No due date' : originalRelDue(d);
 statusOf = a => { if(a.status==='Completed'||a.status==='Submitted') return a.status; if(a.status==='Missing') return 'Missing'; if(a.noDue)return a.status; const now=new Date(), d=new Date(a.due); if(d<now)return 'Overdue'; if(d.toDateString()===now.toDateString())return 'Due Today'; return a.status; };
 function dynamicOverview() {
   const pending=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status));
   const today=pending.filter(a=>statusOf(a)==='Due Today'), late=pending.filter(a=>['Overdue','Missing'].includes(statusOf(a)));
-  $('#heroSub').textContent=`${today.length} due today  ·  ${late.length} need attention  ·  ${pending.length} open`; 
+  const current=GRADES?GRADES.currentPeriod(PERIODS,new Date()):null;
+  $('#heroSub').textContent=(current?current.name+' · ':'')+`${today.length} due today  ·  ${late.length} need attention  ·  ${pending.length} open`;
   $('#syncLabel').textContent=mode==='live'?'Canvas connected · live data':'Demo workspace · not synced';
   $('#dataState').textContent=mode==='live'?'CANVAS CONNECTED · Your synced coursework':'SAMPLE DATA · Connect Canvas to see your real coursework';$('#dataState').classList.toggle('live',mode==='live');
   $('#ledgerCount').textContent=`${$('#ledgerList').children.length} shown · ${ASSIGNMENTS.length} assignments · ${mode==='live'?'Canvas':'sample data'}`;
@@ -288,15 +292,73 @@ renderDashboard = function(){ originalRenderDashboard(); dynamicOverview(); if(t
 matchesStatus = function(a){if(statusFilter==='All')return true;const st=statusOf(a);if(statusFilter==='Upcoming')return !['Completed','Submitted'].includes(a.status)&&!a.noDue&&new Date(a.due)>new Date();if(statusFilter==='Missing')return a.status==='Missing'||st==='Overdue';if(statusFilter==='Completed')return a.status==='Completed'||a.status==='Submitted';return st===statusFilter||a.status===statusFilter;};
 filterAndGo = function(f){statusFilter=f;showView('ledger');initLedger();};
 const oldRenderLedger=renderLedger;
-renderLedger = function(){ oldRenderLedger(); $('#ledgerCount').textContent=`${$('#ledgerList').children.length} shown · ${ASSIGNMENTS.length} assignments · ${mode==='live'?'Canvas':'sample data'}`; };
+function ledgerRow(a){
+  const c=courseById(a.course); const st=statusOf(a);
+  const stColor = st==="Overdue"||st==="Missing"?"badge-rose":st==="Due Today"?"badge-amber":st==="Completed"||st==="Submitted"?"badge-green":st==="In Progress"?"badge-cyan":"badge-violet";
+  const barCls = st==="Overdue"||st==="Missing"?"rose":st==="Completed"||st==="Submitted"?"green":"";
+  return `<div class="ledger-row" style="--lc:${c.color}" onclick="openWorkspace('${a.id}')">
+    <div><h4>${esc(a.title)}</h4><div class="meta">${typeIcon(a.type)} ${a.type} · ${a.points} pts · ${a.priority} priority ${a.score!=null?`· <b style="color:#6ee7b7">${a.score}/${a.points}</b>`:""}</div></div>
+    <div class="hide-ipad"><span class="course-chip" style="background:${c.color}22;color:${c.color}"><span class="dotc" style="background:${c.color}"></span>${c.code}</span><div class="meta">${c.name}</div></div>
+    <div><b class="mono small">${fmtDate(a.due)}</b><div class="meta">${relDue(a.due)}</div></div>
+    <div><div class="progress ${barCls}"><i style="width:${a.progress}%"></i></div><div class="meta mono">${a.progress}%</div></div>
+    <div><span class="badge ${stColor}">${st}</span></div>
+    <button class="btn btn-ghost btn-sm">Open →</button></div>`;
+}
+function emptyLedger(){ return `<div class="card" style="text-align:center;padding:36px"><p class="muted">No assignments match these filters. Try clearing a facet.</p></div>`; }
+renderLedger = function(){
+  if(mode!=='live'){ oldRenderLedger(); $('#ledgerCount').textContent=`${$('#ledgerList').children.length} shown · ${ASSIGNMENTS.length} assignments · sample data`; return; }
+  const fc=$("#fCourse").value, ft=$("#fType").value, fp=$("#fPriority").value, fs=$("#fSort").value, q=($("#fSearch").value||"").toLowerCase();
+  let list=ASSIGNMENTS.filter(a=>matchesStatus(a)&&(!fc||a.course===fc)&&(!ft||a.type===ft)&&(!fp||a.priority===fp)&&(!q||a.title.toLowerCase().includes(q)));
+  if(fs==="due")list.sort((a,b)=>a.due-b.due); else if(fs==="points")list.sort((a,b)=>b.points-a.points); else list.sort((a,b)=>courseById(a.course).code.localeCompare(courseById(b.course).code));
+  $('#ledgerCount').textContent=`${list.length} of ${ASSIGNMENTS.length} assignments · Canvas`;
+  if(!PERIODS.length || !GRADES){ $('#ledgerList').innerHTML = list.map(ledgerRow).join("") || emptyLedger(); return; }
+  const b=GRADES.bucketByPeriod(list, PERIODS, new Date());
+  const section=(title, items, badge)=> items.length ? `<div class="period-section"><div class="period-head"><h3>${esc(title)}</h3>${badge||''}<span class="tiny muted">${items.length} item${items.length===1?'':'s'}</span></div>${items.map(ledgerRow).join('')}</div>` : '';
+  let html='';
+  b.buckets.forEach(bk=>{ html += section(bk.period.name, bk.items, bk.archived?'<span class="badge badge-violet">ARCHIVED</span>':''); });
+  html += section('Not in a marking period', b.unassigned, '');
+  html += section('No due date', b.noDue, '');
+  $('#ledgerList').innerHTML = html || emptyLedger();
+};
 const oldRenderWhatIf=renderWhatIf;
-renderWhatIf = function(){ if(mode==='live' || !COURSES.length) { $('#whatifList').innerHTML='<p class="small muted">A reliable projection needs your school’s grading weights and credit values. Not available from this sync.</p>'; $('#projGpa').textContent='—'; $('#projDelta').textContent='—'; $('#hsGpa').textContent='—'; return; } oldRenderWhatIf(); };
+renderWhatIf = function(){
+  if(mode!=='live' || !COURSES.length){ oldRenderWhatIf(); return; }
+  $('#whatifList').innerHTML = COURSES.map(c=>{
+    const g=gradeForCourse(c.id);
+    return `<div style="margin-bottom:14px">
+      <div class="flex" style="justify-content:space-between"><span class="small"><b style="color:${c.color}">${c.code}</b> ${c.name} <span class="muted">· current ${fmtPct(g.percent)}${g.letter?' ('+g.letter+')':''} · ${g.counts.pending} pending (${g.pendingPoints} pts)</span></span><b class="mono" id="wi-val-${c.id}">—</b></div>
+      <input type="range" min="0" max="100" value="85" data-c="${c.id}" class="wi-slider">
+      <div class="tiny muted">↳ Projected final if remaining work averages this score</div></div>`;
+  }).join('');
+  $$('.wi-slider').forEach(s=>s.oninput=updateWhatIfLive);
+  updateWhatIfLive();
+};
+function updateWhatIfLive(){
+  let gpaSum=0, n=0, curSum=0, cn=0;
+  COURSES.forEach(c=>{
+    const slider=$(`.wi-slider[data-c="${c.id}"]`);
+    const cur=gradeForCourse(c.id);
+    if(cur.percent!=null){ curSum+=gradeToGpa(cur.percent); cn++; }
+    if(slider){
+      const proj=GRADES?GRADES.projectWith(ASSIGNMENTS.filter(a=>a.course===c.id), GROUPS[c.id]||[], gradeOptsFor(c.id), +slider.value):null;
+      $('#wi-val-'+c.id).textContent = proj==null?'—':proj.toFixed(1)+'%';
+      if(proj!=null){ gpaSum+=gradeToGpa(proj); n++; }
+    }
+  });
+  const gpa=n?gpaSum/n:null, curGpa=cn?curSum/cn:null;
+  $('#projGpa').textContent = gpa==null?'—':gpa.toFixed(2);
+  const delta=(gpa!=null&&curGpa!=null)?gpa-curGpa:null;
+  $('#projDelta').textContent = delta==null?'—':(delta>=0?'+':'')+delta.toFixed(2);
+  $('#projDelta').style.color = delta==null?'':(delta>=0?'#6ee7b7':'#fda4af');
+  $('#hsGpa').textContent = curGpa==null?'—':curGpa.toFixed(2);
+}
 const oldRenderCourses=renderCourses;
-renderCourses = function(){ if(mode==='demo') {oldRenderCourses();return;} $('#courseGrid').innerHTML=COURSES.map(c=>{const work=ASSIGNMENTS.filter(a=>a.course===c.id); const done=work.filter(a=>['Completed','Submitted'].includes(a.status)).length; return `<button class="card course-card" style="--cc:${c.color};text-align:left" onclick="openCourse('${c.id}')"><span class="course-code">${c.code}</span><h3>${c.name}</h3><p class="muted small">Canvas course</p><div class="mini-stats"><div><b>${work.length}</b><span>Assignments</span></div><div><b>${done}</b><span>Submitted</span></div><div><b>—</b><span>Grade</span></div></div></button>`;}).join('') || '<p class="muted">No active Canvas courses were returned.</p>'; };
+renderCourses = function(){ if(mode==='demo') {oldRenderCourses();return;} $('#courseGrid').innerHTML=COURSES.map(c=>{const work=ASSIGNMENTS.filter(a=>a.course===c.id); const done=work.filter(a=>['Completed','Submitted'].includes(a.status)).length; const g=gradeForCourse(c.id); return `<button class="card course-card" style="--cc:${c.color};text-align:left" onclick="openCourse('${c.id}')"><span class="course-code">${c.code}</span><h3>${c.name}</h3><p class="muted small">Canvas course</p><div class="mini-stats"><div><b>${work.length}</b><span>Assignments</span></div><div><b>${done}</b><span>Submitted</span></div><div><b>${fmtPct(g.percent)}</b><span>Computed grade${g.letter?" · "+g.letter:""}</span></div></div></button>`;}).join('') || '<p class="muted">No active Canvas courses were returned.</p>'; };
 openCourse = function(id){ const c=courseById(id);if(!c)return;showView('courses');const list=ASSIGNMENTS.filter(a=>a.course===id).sort((a,b)=>a.due-b.due); $('#courseDetail').innerHTML=`<div class="card"><div class="card-head"><div><span class="eyebrow">${c.code}</span><h3 style="font:500 28px var(--serif);margin-top:8px">${c.name}</h3><p>${mode==='live'?'Canvas coursework':'Example course'}</p></div></div><h4 class="small">COURSEWORK</h4>${list.map(a=>`<button class="prio" style="width:100%;text-align:left" onclick="openWorkspace('${a.id}')"><div class="prio-info"><b>${esc(a.title)}</b><span>${a.type} · ${a.points} points</span></div><span class="small">${relDue(a.due)}</span></button>`).join('')||'<p class="small muted mt">No assignments found.</p>'}</div>`; $('#courseDetail').scrollIntoView({behavior:'smooth'}); };
 openWorkspace = function(id){
   const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
-  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<a class="btn btn-primary" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Complete or submit coursework in Canvas. Northstar does not submit on your behalf.</p></div></div></div></div>`;
+  const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
+  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">View in dashboard</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Complete or submit coursework in Canvas. Northstar does not submit on your behalf.</p></div></div></div></div>`;
   const input=$('#assignmentDraft');input.value=localStorage.getItem(key)||'';input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};$('#wsOverlay').classList.add('open');
 };
 renderNotes = function(){const select=$('#nCourse'), previous=select.value;select.innerHTML='<option value="">All courses</option>'+COURSES.map(c=>`<option value="${c.id}">${c.code}</option>`).join('');select.value=previous; select.onchange=renderNotes;$('#nTag').oninput=renderNotes;const q=$('#nTag').value.toLowerCase();const list=NOTES.filter(n=>(!select.value||n.course===select.value)&&(!q||(n.tags||[]).join(' ').toLowerCase().includes(q)));$('#notesGrid').innerHTML=list.map(n=>{const c=courseById(n.course);return `<button class="card note-card" style="text-align:left" onclick="openNote('${safe(n.id)}')"><span class="eyebrow">${c?c.code:'GENERAL NOTE'}</span><h4 style="margin-top:12px">${esc(n.title)}</h4><p>${esc(n.body.slice(0,140))}</p></button>`;}).join('')||'<p class="muted small">No notes yet. Start a fresh page.</p>';$('#noteLink').innerHTML='<option value="">Link to assignment…</option>'+ASSIGNMENTS.map(a=>`<option value="${a.id}">${esc(a.title)}</option>`).join('');};
@@ -325,9 +387,125 @@ connectCanvas = async function(){
 };
 async function pullCanvas(creds){
   const rawCourses=await allPages(creds,'/api/v1/courses?enrollment_state=active');const courses=convertCourses(rawCourses);let assignments=[];
-  for(const c of courses){const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);assignments.push(...convertAssignments(rows,c,creds.base));}
+  GROUPS={}; COURSE_META={};
+  for(const c of courses){
+    const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);assignments.push(...convertAssignments(rows,c,creds.base));
+    try{
+      const grows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignment_groups`);
+      GROUPS[c.id]=grows.filter(g=>Number.isInteger(g.id)).map(g=>({id:g.id,name:safe(g.name||'Group'),weight:Number(g.group_weight)||0,dropLowest:Number(g.rules?.drop_lowest)||0,dropHighest:Number(g.rules?.drop_highest)||0}));
+    }catch(e){ pushEntry('err','Assignment groups unavailable for '+c.code+' — grades will be unweighted. Redeploy the bridge with the latest worker.js.'); GROUPS[c.id]=[]; }
+    try{
+      const det=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
+      COURSE_META[c.id]={weighted:!!det.weighted_assignment_groups, scheme:Array.isArray(det.grading_standard)?det.grading_standard:null, dropLowest:Number(det.drop_lowest)||0, dropHighest:Number(det.drop_highest)||0};
+    }catch(e){ COURSE_META[c.id]={weighted:false,scheme:null,dropLowest:0,dropHighest:0}; }
+  }
   COURSES.splice(0,COURSES.length,...courses);ASSIGNMENTS=assignments;mode='live';ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses`,time:'Just now'}); refreshAll();
 }
+/* ---------- exact grade math (via grades.js) ---------- */
+function gradeOptsFor(courseId){ const m=COURSE_META[courseId]||{weighted:false,scheme:null,dropLowest:0,dropHighest:0}; return {weighted:m.weighted,scheme:m.scheme,courseDropLowest:m.dropLowest,courseDropHighest:m.dropHighest}; }
+function gradeForCourse(courseId){
+  if(!GRADES) return {percent:null,letter:null,earned:0,possible:0,pendingPoints:0,groups:[],counts:{graded:0,missing:0,excused:0,pending:0}};
+  return GRADES.computeCourseGrade(ASSIGNMENTS.filter(a=>a.course===courseId), GROUPS[courseId]||[], gradeOptsFor(courseId));
+}
+function fmtPct(p){ return p==null?'—':p.toFixed(1)+'%'; }
+
+/* ---------- marking periods (user-defined; Canvas exposes no API for them) ---------- */
+function savePeriods(){ store.set('northstar_periods_v1', PERIODS); }
+function addPeriod(){
+  const name=($('#periodName')?.value||'').trim(), start=$('#periodStart')?.value, end=$('#periodEnd')?.value;
+  if(!name||!start||!end){ toast('Give the period a name and start/end dates.'); return; }
+  if(new Date(end)<new Date(start)){ toast('End date must be after the start date.'); return; }
+  PERIODS.push({id:'p'+Date.now(), name:name, start:start, end:end});
+  PERIODS.sort((a,b)=>new Date(a.start)-new Date(b.start));
+  savePeriods(); renderPeriodsManager(); renderLedger(); renderDashboard(); toast('Marking period added: '+name);
+}
+function deletePeriod(id){ PERIODS=PERIODS.filter(p=>p.id!==id); savePeriods(); renderPeriodsManager(); renderLedger(); renderDashboard(); }
+function renderPeriodsManager(){
+  const box=$('#periodsManager'); if(!box) return;
+  const now=new Date(), cur=GRADES?GRADES.currentPeriod(PERIODS,now):null;
+  box.innerHTML = PERIODS.length ? PERIODS.map(p=>{
+    const isCur = cur && cur.id===p.id, past = new Date(p.end+'T23:59:59.999') < now;
+    return `<div class="period-row"><div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="tiny muted">${fmtDate(p.start)} – ${fmtDate(p.end)}</div></div>${isCur?'<span class="badge badge-green">CURRENT</span>':past?'<span class="badge badge-violet">ARCHIVED</span>':''}<button class="btn btn-ghost btn-sm" onclick="deletePeriod('${p.id}')">Delete</button></div>`;
+  }).join('') : '<p class="small muted">No marking periods yet. Add your school’s periods above — assignments will be organized by them, and old periods archive automatically.</p>';
+}
+
+/* ---------- AI study tools (Gemini free tier, session-only key) ---------- */
+function getAiKey(){ try{ return sessionStorage.getItem('northstar_gemini_session')||''; }catch{ return ''; } }
+function setAiKey(k){ try{ sessionStorage.setItem('northstar_gemini_session', k||''); }catch{} }
+function getAiModel(){ try{ return sessionStorage.getItem('northstar_gemini_model')||(AI?AI.DEFAULT_MODEL:'gemini-2.0-flash'); }catch{ return AI?AI.DEFAULT_MODEL:'gemini-2.0-flash'; } }
+function setAiModel(m){ try{ sessionStorage.setItem('northstar_gemini_model', m||''); }catch{} }
+function aiContext(){
+  const lines=COURSES.map(c=>{ const g=gradeForCourse(c.id); return `${c.code} ${c.name}: ${g.percent==null?'no grade yet':g.percent.toFixed(1)+'%'+(g.letter?' ('+g.letter+')':'')} · ${g.counts.pending} pending`; });
+  const pend=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status)).sort((a,b)=>a.due-b.due).slice(0,12)
+    .map(a=>`- ${a.title} (${courseById(a.course)?.code||''}) due ${a.noDue?'no date':fmtDate(a.due)} [${statusOf(a)}]`).join('\n');
+  return `My courses and current grades:\n${lines.join('\n')}\n\nMy upcoming work:\n${pend||'none'}`;
+}
+const AI_SYSTEM='You are NORTHSTAR, a study assistant inside a student dashboard. Help the student understand concepts, plan study time, summarize material, and generate practice questions. Teach and guide — do not complete assignments or answer quiz/exam questions for them. Be concise, practical, and encouraging.';
+async function aiAsk(prompt, system){
+  if(!AI) throw new Error('AI module not loaded.');
+  return AI.generate(prompt, {key:getAiKey(), model:getAiModel(), system:system||AI_SYSTEM});
+}
+const ruleCopilotReply = copilotReply;
+sendChat = async function(){
+  const inp=$('#chatInput'); const v=inp.value.trim(); if(!v) return;
+  addMsg('user', esc(v)); inp.value='';
+  if(getAiKey()){
+    addMsg('ai','<span class="muted">✧ Thinking…</span>');
+    try{
+      const reply=await aiAsk(aiContext()+'\n\nMy question: '+v);
+      const box=$('#chatBox'), last=box.lastElementChild; if(last) last.remove();
+      addMsg('ai', esc(reply).replace(/\n/g,'<br>'));
+    }catch(e){
+      const box=$('#chatBox'), last=box.lastElementChild; if(last) last.remove();
+      addMsg('ai', '<span style="color:#fda4af">AI error: '+esc(e.message)+'</span><br><span class="muted">Built-in guide:</span><br>'+ruleCopilotReply(v));
+    }
+  } else {
+    setTimeout(()=>addMsg('ai', ruleCopilotReply(v)), 350);
+  }
+};
+quickChat = async function(q){ const inp=$('#chatInput'); if(inp) inp.value=q; sendChat(); };
+async function askAiAboutAssignment(action){
+  const a=activeAssignment; if(!a) return;
+  const out=$('#aiOut'); if(!out) return;
+  if(!getAiKey()){ out.innerHTML='<p class="small muted">Add a free Gemini key in Settings to use AI tools.</p>'; return; }
+  const c=courseById(a.course);
+  const brief=(a.desc||'')+'\n\nRubric: '+((a.rubric&&a.rubric.length)?a.rubric.join('; '):'none provided');
+  let prompt='';
+  if(action==='explain') prompt=`Explain this assignment to me like a tutor. What is it asking, what are the key concepts, and what is a good approach? Do not do the work for me.\n\nCourse: ${c?c.code+' '+c.name:''}\nAssignment: ${a.title}\n${brief}`;
+  else if(action==='summarize') prompt=`Summarize this assignment brief in a few bullet points: what to do, the deliverable, and any constraints.\n\n${a.title}\n${brief}`;
+  else if(action==='practice') prompt=`Create 3 practice questions to help me prepare for this assignment. Give the questions first; I will ask for answers.\n\n${a.title}\n${brief}`;
+  else if(action==='feedback'){ const draft=($('#assignmentDraft')?.value||'').trim(); prompt=`Give me feedback on my draft for this assignment. Focus on structure, clarity, and rubric alignment. Do not rewrite it for me.\n\nAssignment: ${a.title}\nRubric: ${(a.rubric||[]).join('; ')}\n\nMy draft:\n${draft||'(no draft yet)'}`; }
+  out.innerHTML='<p class="small muted">✧ Thinking…</p>';
+  try{ const r=await aiAsk(prompt); out.innerHTML='<div class="ai-response">'+esc(r).replace(/\n/g,'<br>')+'</div>'; }
+  catch(e){ out.innerHTML='<p class="small" style="color:#fda4af">AI error: '+esc(e.message)+'</p>'; }
+}
+function saveAiSettings(){
+  const k=($('#geminiKey')?.value||'').trim(), m=($('#geminiModel')?.value||'').trim();
+  setAiKey(k); if(m) setAiModel(m);
+  const st=$('#aiStatus'); if(st) st.textContent = k ? 'Gemini key saved for this session ('+k.length+' chars, session storage only).' : 'No Gemini key set — the built-in guide is active.';
+  toast(k?'Gemini key saved for this session':'Gemini key cleared');
+}
+async function testAiKey(){
+  const st=$('#aiStatus'); if(st) st.textContent='Testing key…';
+  try{ await aiAsk('Reply with exactly: ok'); if(st) st.textContent='✓ Key works — Gemini is connected.'; toast('Gemini connected'); }
+  catch(e){ if(st) st.textContent='✗ '+e.message; }
+}
+function openInDashboard(url){
+  const m=$('#viewerOverlay'), f=$('#viewerFrame'), note=$('#viewerNote');
+  if(!m||!f) return;
+  f.src=url; m.classList.add('open');
+  if(note) note.textContent='If the page stays blank, Canvas blocks embedding — use “Open in new tab”.';
+}
+function closeViewer(){ const m=$('#viewerOverlay'); if(m) m.classList.remove('open'); const f=$('#viewerFrame'); if(f) f.src=''; }
+// Expose handlers that index.html calls via onclick (premium.js is an IIFE).
+window.addPeriod = addPeriod;
+window.deletePeriod = deletePeriod;
+window.saveAiSettings = saveAiSettings;
+window.testAiKey = testAiKey;
+window.askAiAboutAssignment = askAiAboutAssignment;
+window.openInDashboard = openInDashboard;
+window.closeViewer = closeViewer;
+
 syncCanvas = async function(){const c=getCredentials();if(!c){openConnect();toast('Connect Canvas first.');return;}
   const mode=c.proxy?'bridge':'direct';resetDebug(mode);
   pushEntry('info','Sync · '+(mode==='bridge'?'bridge mode':'direct mode'));
@@ -342,14 +520,18 @@ function refreshAll(){statusFilter='All';renderDashboard();initLedger();renderCo
 $('#syncLabel').textContent='Demo workspace · not synced';
 $('.side-user-meta .tiny').textContent='Your academic space';
 $('#view-lab .grid3').insertAdjacentHTML('beforebegin','<p class="small muted mt">The charts and flashcards below are examples, not analytics from your school.</p>');
-$('#view-copilot .section-title p').textContent='A rule-based study guide. Suggestions stay in this browser.';
+$('#view-copilot .section-title p').textContent='Powered by Google Gemini when a key is set (Settings); otherwise a built-in guide.';
 $('#view-copilot .chat-box').innerHTML='';addMsg('ai','<b>Welcome to your study guide.</b><br>Ask what is due or request a simple study plan. This guide uses templates, not an AI model.');
-$('#view-ledger .card-head p').textContent='Sample calculator only. Your school may use different grading weights.';
-$('#projGpa').parentElement.nextElementSibling.querySelector('.mono').textContent='Sample';
+$('#view-ledger .card-head p').textContent='Computed from synced scores and category weights; missing work counts as zero. Projections assume the selected average on pending work. GPA is an unweighted estimate, not an official transcript.';
+$('#projGpa').parentElement.nextElementSibling.querySelector('.mono').textContent='Estimate';
 $('#hsGpa').title='Illustrative demo projection only';
 $('#canvasStatus').textContent=hadOldToken?'An earlier version stored your token in plain text and may have sent it to a third-party proxy. Consider revoking it in Canvas and creating a new token.':'Demo mode: sample coursework is shown until you connect.';
 const existing=getCredentials();if(existing){$('#canvasUrl').value=existing.base;$('#canvasProxy').value=existing.proxy||'';$('#canvasStatus').textContent='Session found. Tap Sync Canvas to load your coursework.';}
 bootstrapDebug();
+renderPeriodsManager();
+if($('#geminiKey')) $('#geminiKey').value=getAiKey();
+if($('#geminiModel')) $('#geminiModel').value=getAiModel();
+if($('#aiStatus')) $('#aiStatus').textContent=getAiKey()?'Gemini key available for this session.':'No Gemini key set — the built-in guide is active.';
 refreshAll();
 if(existing) syncCanvas();
 })();

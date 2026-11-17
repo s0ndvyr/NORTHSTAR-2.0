@@ -55,6 +55,13 @@ assert.equal(e.kind, 'forbidden');
 assert.match(e.hint, /organization/i);
 assert.ok(!/Worker itself/.test(e.hint));
 
+// --- bridge 403: Canvas/WAF refused the User-Agent (body names it) ---
+e = dbg.buildEvent({mode:'bridge', status:403, contentType:'text/html', bodyPreview:'<!DOCTYPE html> <title>Not Authorized</title> <p>You are not authorized to access this site because you have not provided a valid user agent.</p>', path:'/api/v1/courses'});
+assert.equal(e.kind, 'forbidden');
+assert.match(e.verdict, /User-Agent/);
+assert.match(e.hint, /user agent/i);
+assert.ok(e.actions.some(a => /User-Agent/.test(a)));
+
 // --- bridge 502 upstream failures ---
 e = dbg.buildEvent({mode:'bridge', status:502, bodyError:'Canvas redirected the request; verify your Canvas origin', path:'/api/v1/courses'});
 assert.equal(e.kind, 'redirect');
