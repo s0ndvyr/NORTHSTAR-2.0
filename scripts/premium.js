@@ -1093,6 +1093,88 @@ const periodCard=$('#view-dashboard .section-title');
 $('#view-settings .head-actions .pill')?.replaceChildren(document.createTextNode(NORTHSTAR_RELEASE));
 const periodSelect=$('#fPeriod');
 if(periodSelect)periodSelect.value=phase3PeriodSelection||'current';
+
+/* Phase 3 dashboard data integrity: replace illustrative analytics with sourced work data. */
+function phase3DueByDay(){
+  const base=new Date();base.setHours(0,0,0,0);
+  const scope=phase3VisibleAssignments('current');
+  return Array.from({length:7},(_,i)=>{
+    const date=new Date(base);date.setDate(base.getDate()+i);
+    const items=scope.filter(a=>!CANVAS_SYNC.isResolved(a.status)&&a.status!=='Excused'&&!a.noDue&&new Date(a.due).toDateString()===date.toDateString());
+    return {date,items,count:items.length};
+  });
+}
+renderFocusBars=function(){
+  if(mode!=='live'){$('#focusBars').innerHTML='<p class="small muted">Connect Canvas to see your current-period due dates here.</p>';$('#hsHours').textContent='N/A';return;}
+  const days=phase3DueByDay(),max=Math.max(1,...days.map(d=>d.count)),total=days.reduce((n,d)=>n+d.count,0);
+  $('#focusBars').innerHTML=days.map((d,i)=>'<div class="bar-row"><span class="lbl">'+(i===0?'Today':d.date.toLocaleDateString('en-US',{weekday:'short'}))+'</span><div class="bar-track"><div class="bar-fill" style="width:'+(d.count/max*100)+'%;background:linear-gradient(90deg,#22d3ee,#38bdf8)"></div></div><span class="val">'+d.count+'</span></div>').join('');
+  $('#hsHours').textContent=total+' due / 7d';
+};
+renderRadar=function(){
+  const days=mode==='live'?phase3DueByDay():[];
+  if(!days.length){$('#radarChart').innerHTML='<p class="small muted">Connect Canvas to forecast published work in the current marking period.</p>';$('#radarNote').textContent='No live assignment data';return;}
+  const W=580,H=190,left=28,right=12,top=18,bottom=36,plotH=H-top-bottom,plotW=W-left-right;
+  const max=Math.max(1,...days.map(d=>d.count));
+  const step=plotW/days.length,barW=Math.min(44,step*.56);
+  const bars=days.map((d,i)=>{
+    const height=d.count/max*plotH,x=left+i*step+(step-barW)/2,y=top+plotH-height;
+    const label=i===0?'Today':d.date.toLocaleDateString('en-US',{weekday:'short'});
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(2,height).toFixed(1)+'" rx="6" fill="#22d3ee" opacity=".88"><title>'+label+': '+d.count+' open assignment(s) due</title></rect>'+
+      '<text x="'+(left+i*step+step/2).toFixed(1)+'" y="'+(H-12)+'" fill="#8796ac" font-size="10" text-anchor="middle">'+label+'</text>'+
+      '<text x="'+(left+i*step+step/2).toFixed(1)+'" y="'+Math.max(12,y-6).toFixed(1)+'" fill="#e6edf7" font-size="10" text-anchor="middle">'+d.count+'</text>';
+  }).join('');
+  $('#radarChart').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Open assignments due by day for the next seven days" style="width:100%;height:auto"><line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(W-right)+'" y2="'+(top+plotH)+'" stroke="rgba(255,255,255,.12)"/>'+bars+'</svg>';
+  $('#radarNote').textContent=(phase3CurrentPeriod()?.name||'Current date window')+' · '+days.reduce((n,d)=>n+d.count,0)+' open due';
+};
+renderHeatmap=function(){
+  const box=$('#heatmap');if(!box)return;
+  if(mode!=='live'){box.innerHTML='<span class="small muted">Connect Canvas to see submitted activity.</span>';$('#heatTotal').textContent='N/A';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  const counts=new Map();
+  ASSIGNMENTS.filter(a=>!phase3CourseIgnored(a.course)&&CANVAS_SYNC.isResolved(a.status)&&a.submittedAt).forEach(a=>{
+    const d=new Date(a.submittedAt);if(!Number.isFinite(d.getTime()))return;d.setHours(0,0,0,0);
+    const diff=Math.floor((today-d)/86400000);if(diff>=0&&diff<98){const k=d.toISOString().slice(0,10);counts.set(k,(counts.get(k)||0)+1);}
+  });
+  const max=Math.max(1,...counts.values());let total=0;
+  const cells=[];
+  for(let ago=97;ago>=0;ago--){
+    const d=new Date(today);d.setDate(today.getDate()-ago);const k=d.toISOString().slice(0,10),count=counts.get(k)||0;total+=count;
+    const alpha=count?(.2+.8*count/max):.035;
+    cells.push('<div class="heat-cell" title="'+k+': '+count+' submitted assignment(s)" aria-label="'+k+': '+count+' submissions" style="background:rgba(52,211,153,'+alpha.toFixed(2)+')"></div>');
+  }
+  box.innerHTML=cells.join('');
+  $('#heatTotal').textContent=total+' submissions / 14w';
+  const labels=$('#heatTotal').parentElement.nextElementSibling;
+  if(labels)labels.innerHTML='<span class="tiny muted">No submissions</span><span class="tiny muted">More activity →</span>';
+};
+function phase3RenderAcademicSignals(){
+  const box=$('#academicSignals');if(!box)return;
+  if(mode!=='live'){box.innerHTML='<p class="small muted">Connect Canvas to see academic signals from your coursework.</p>';return;}
+  const current=phase3VisibleAssignments('current'),open=current.filter(a=>!CANVAS_SYNC.isResolved(a.status)&&a.status!=='Excused');
+  const today=open.filter(a=>statusOf(a)==='Due Today'),late=open.filter(a=>['Overdue','Missing'].includes(statusOf(a))),week=phase3DueByDay().reduce((n,d)=>n+d.count,0);
+  const next=open.filter(a=>!a.noDue&&new Date(a.due)>new Date()).sort((a,b)=>a.due-b.due);
+  const rows=[
+    {title:today.length+' due today',detail:today.length?today.slice(0,2).map(a=>a.title).join(' · '):'No unfinished assignments are due today.'},
+    {title:week+' open assignment(s) due in the next 7 days',detail:next.length?'Next: '+next[0].title+' · '+relDue(next[0].due):'Your next seven days are clear.'},
+    {title:late.length+' missing or overdue',detail:late.length?late.slice(0,2).map(a=>a.title+' · '+statusOf(a)).join(' · '):'No missing or overdue work in this marking period.'}
+  ];
+  box.innerHTML=rows.map(r=>'<div class="insight"><b>'+esc(r.title)+'</b><span>'+esc(r.detail)+'</span></div>').join('');
+}
+const phase3SignalsDynamicOverview=dynamicOverview;
+dynamicOverview=function(){
+  phase3SignalsDynamicOverview();
+  if(mode==='live'){
+    const scoped=phase3VisibleAssignments('current'),open=scoped.filter(a=>!CANVAS_SYNC.isResolved(a.status)&&a.status!=='Excused');
+    const done=scoped.length-open.length;
+    $('#hsDone').textContent=done;
+    $('#hsStreak').textContent=open.length;
+    $('#hsGpa').textContent='N/A';
+    $('#hsGpa').title='Official GPA is not available from the connected Canvas grade data or imported StudentVUE grade rows.';
+  }else{
+    $('#hsGpa').textContent='N/A';$('#hsStreak').textContent='N/A';$('#hsDone').textContent='N/A';
+  }
+  phase3RenderAcademicSignals();
+};
 renderDashboard();
 initLedger();
 renderCourses();
