@@ -29,6 +29,7 @@
   }
   function pick(row,names){for(const name of names){const v=row[name];if(v!==undefined&&v!==null&&text(v)!=='')return v;}return null;}
   function normalizeRow(row,index,importedAt){
+    row=Object.fromEntries(Object.entries(row||{}).map(([name,value])=>[key(name).replace(/ /g,''),value]));
     const courseCode=text(pick(row,['coursecode','code','courseid','classcode']));
     const courseName=text(pick(row,['coursename','course','class','classname']));
     const period=text(pick(row,['markingperiod','gradingperiod','period','term','gradingterm']));
