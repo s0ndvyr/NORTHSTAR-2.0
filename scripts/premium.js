@@ -886,6 +886,9 @@ const phase3OriginalDeletePeriod=deletePeriod;
 deletePeriod=function(id){phase3OriginalDeletePeriod(id);initLedger();};
 const phase3OriginalImportPeriods=importPeriods;
 importPeriods=async function(input){await phase3OriginalImportPeriods(input);initLedger();};
+window.addPeriod=addPeriod;
+window.deletePeriod=deletePeriod;
+window.importPeriods=importPeriods;
 const phase3BaseInitLedger=initLedger;
 initLedger = function() {
   phase3BaseInitLedger();
