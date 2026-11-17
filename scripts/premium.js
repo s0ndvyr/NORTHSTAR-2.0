@@ -1170,7 +1170,7 @@ renderHeatmap=function(){
     cells.push('<div class="heat-cell" title="'+k+': '+count+' submitted assignment(s)" aria-label="'+k+': '+count+' submissions" style="background:rgba(52,211,153,'+alpha.toFixed(2)+')"></div>');
   }
   box.innerHTML=cells.join('');
-  $('#heatTotal').textContent=total+' submissions / 14w';
+  $('#heatTotal').textContent=total+' submission'+(total===1?'':'s')+' / 14w';
   const labels=$('#heatTotal').parentElement.nextElementSibling;
   if(labels)labels.innerHTML='<span class="tiny muted">No submissions</span><span class="tiny muted">More activity →</span>';
 };
