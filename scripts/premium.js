@@ -303,7 +303,7 @@ function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
     const sub=CANVAS_SYNC.submission(a.submission), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], canvasUrl:href, assignmentPublished:a.published!==false};
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], canvasUrl:href, assignmentPublished:a.published!==false,lockedForUser:!!a.locked_for_user,unlockAt:a.unlock_at||null,lockAt:a.lock_at||null};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
@@ -763,7 +763,7 @@ function phase3CourseIgnored(courseOrId) {
   return !!id && phase3IgnoredCourses.has(id);
 }
 function phase3ActiveCourses() { return COURSES.filter(c => !phase3CourseIgnored(c)); }
-function phase3IsPublished(a) { return a.assignmentPublished !== false && a.published !== false; }
+function phase3IsPublished(a) { return a.assignmentPublished !== false && a.published !== false && a.lockedForUser !== true; }
 function phase3PeriodFor(a) {
   if (!a || a.noDue || !a.due || !GRADES) return null;
   return GRADES.periodForDate(a.due, PERIODS);
@@ -898,7 +898,7 @@ function phase3RenderFocusAndPriorities() {
   const scoped=phase3VisibleAssignments('current');
   const open=scoped.filter(a=>!CANVAS_SYNC.isResolved(a.status)&&a.status!=='Excused');
   const queue=open.slice().sort(phase3QueueSort);
-  const top=queue[0], focus=$('#focusCard'), badge=$('#focusBadge');
+  const focusTop=queue.find(a=>statusOf(a)==='Due Today')||queue.find(a=>statusOf(a)==='In Progress'&&!a.noDue&&new Date(a.due)>=new Date())||queue.find(a=>statusOf(a)==='Upcoming')||queue[0];const top=focusTop, focus=$('#focusCard'), badge=$('#focusBadge');
   if(badge)badge.textContent=top?phase3DateMeta(top).toUpperCase():'CURRENT PERIOD CLEAR';
   if(focus){
     if(!top)focus.innerHTML='<p class="small muted">No published unfinished assignments in the current marking period. Your focus queue is clear.</p>';
