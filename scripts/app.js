@@ -247,7 +247,7 @@ function renderActivity(){ $("#activityList").innerHTML=ACTIVITY.slice(0,5).map(
 function filterAndGo(f){ statusFilter=f; showView("ledger"); renderLedger(); }
 
 /* ================= LEDGER ================= */
-const STATUSES=["All","Due Today","Upcoming","Overdue","In Progress","Submitted","Completed","Missing"];
+const STATUSES=["All","Due Today","Upcoming","Overdue","In Progress","Submitted","Awaiting Grading","Completed","Missing","Excused"];
 function initLedger(){
   $("#statusTabs").innerHTML = STATUSES.map(s=>`<button class="tab ${s===statusFilter?"active":""}" data-s="${s}">${s}</button>`).join("");
   $$("#statusTabs .tab").forEach(b=>b.onclick=()=>{statusFilter=b.dataset.s; initLedger(); renderLedger();});
@@ -397,14 +397,24 @@ addMsg("ai",`✦ <b>Welcome back, Christian.</b> I see <b>2 assignments due toda
 
 /* ===== SETTINGS, THEMES & PERSONALIZATION ===== */
 const DEFAULT_SETTINGS = {
-  theme: "obsidian",
+  theme: "midnight",
   accent: "#c4e87b",
   density: "comfortable",
   name: "Christian",
   targetGpa: "3.90",
   noAnim: false
 };
-let SETTINGS = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem("northstar_settings_v1") || "{}"));
+const THEME_NAMES = new Set(["obsidian","midnight","emerald","nordic","parchment","aurora","nebula","starlight","solar"]);
+let SETTINGS = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem("northstar_settings_v1") || "{}");
+    const merged = Object.assign({}, DEFAULT_SETTINGS, saved && typeof saved === "object" ? saved : {});
+    if (!THEME_NAMES.has(merged.theme) || merged.theme === "obsidian") merged.theme = DEFAULT_SETTINGS.theme;
+    if (!/^#[0-9a-f]{6}$/i.test(merged.accent)) merged.accent = DEFAULT_SETTINGS.accent;
+    if (!["compact","comfortable","spacious"].includes(merged.density)) merged.density = DEFAULT_SETTINGS.density;
+    return merged;
+  } catch { return Object.assign({}, DEFAULT_SETTINGS); }
+})();
 
 function saveSettings(){
   localStorage.setItem("northstar_settings_v1", JSON.stringify(SETTINGS));
@@ -442,7 +452,7 @@ function openSettings(){
   applySettings();
   showView("settings");
 }
-function setTheme(t){ SETTINGS.theme = t; saveSettings(); applySettings(); toast(`Theme: ${t}`); }
+function setTheme(t){ if(!THEME_NAMES.has(t)) return; SETTINGS.theme = t; saveSettings(); applySettings(); toast(`Theme: ${t}`); }
 function setAccent(c){ SETTINGS.accent = c; saveSettings(); applySettings(); }
 function setDensity(d){ SETTINGS.density = d; saveSettings(); applySettings(); }
 function toggleSetting(k){ SETTINGS[k] = !SETTINGS[k]; saveSettings(); applySettings(); }

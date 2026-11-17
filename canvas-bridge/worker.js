@@ -1,7 +1,7 @@
 // Deploy your own Cloudflare Worker. Edit both settings before deployment.
 // Only assignment text/URL submissions may write; it never stores tokens or forwards them in URLs.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
-const CANVAS_ORIGIN = 'https://YOUR-SCHOOL.instructure.com';
+const CANVAS_ORIGIN = 'https://nnps.instructure.com';
 const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 export default {

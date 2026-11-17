@@ -53,3 +53,9 @@ body{background:#090f14}body::before{background:radial-gradient(ellipse 65% 36% 
 .period-head h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0}
 .ai-response{font-size:13.5px;line-height:1.65;color:var(--text);background:rgba(196,232,123,.05);border:1px solid rgba(196,232,123,.14);border-radius:12px;padding:13px 15px;white-space:pre-wrap;overflow-wrap:anywhere}
 .set-lbl{display:block;font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+
+/* NORTHSTAR 0.4 — secure credential controls */
+.secret-field{display:flex;align-items:center;gap:8px;width:100%}
+.secret-field input{flex:1;min-width:0}
+.secret-field .btn{flex:0 0 auto;min-width:58px}
+#rememberCanvas,#rememberGemini{accent-color:var(--cyan);width:16px;height:16px;flex:0 0 auto}

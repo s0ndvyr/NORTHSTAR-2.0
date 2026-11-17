@@ -4,6 +4,6 @@
   "description": "A focused academic dashboard with Canvas coursework and local study tools.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0a1114",
-  "theme_color": "#0a1114"
+  "background_color": "#060818",
+  "theme_color": "#060818"
 }

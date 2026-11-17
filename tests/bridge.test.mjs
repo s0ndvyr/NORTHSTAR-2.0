@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 let source=await readFile(new URL('../canvas-bridge/worker.js',import.meta.url),'utf8');
-source=source.replace('https://YOUR-SCHOOL.instructure.com','https://school.instructure.com');
+source=source.replace('https://nnps.instructure.com','https://school.instructure.com');
 const worker=(await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'))).default;
 const origin='https://s0ndvyr.github.io';let upstream=[];
 globalThis.fetch=async(url,opts)=>{upstream.push({url,opts});return new Response(JSON.stringify([{id:1}]),{status:200,headers:{'Content-Type':'application/json'}})};

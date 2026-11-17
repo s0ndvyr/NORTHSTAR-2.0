@@ -38,9 +38,9 @@
       <button class="icon-btn hamburger" id="hamburger">☰</button>
       <div class="search"><span style="color:var(--muted)">⌕</span><input id="globalSearch" placeholder="Search assignments, courses, notes…"><kbd>/</kbd></div>
       <span class="pill hide-m"><span class="dot"></span> <span id="syncLabel">Demo workspace · not synced</span></span>
-      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / 03</span>
+      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / 04</span>
       <button class="icon-btn" id="bellBtn" title="Activity & Alerts">♪<span class="n" id="bellN">4</span></button>
-      <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings">⚙</button>
+      <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.82.55l-.05.07h-3.4l-.02-.08a1.7 1.7 0 0 0-1.28-1.27l-.08-.02-2.94 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34l-.08.03-1.7-2.94.06-.06A1.7 1.7 0 0 0 5.3 15.6l.03-.08v-3.4l-.08-.02a1.7 1.7 0 0 0-1.27-1.28l-.07-.02 1.7-2.94.08.03a1.7 1.7 0 0 0 1.82-.55l.05-.07h3.4l.02.08a1.7 1.7 0 0 0 1.28 1.27l.08.02 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.08-.03 1.7 2.94-.06.06a1.7 1.7 0 0 0-.55 1.82l-.03.08v3.4l.08.02a1.7 1.7 0 0 0 1.27 1.28z"/></svg></button>
       <button class="btn btn-primary btn-sm hide-m" onclick="openConnect()">⬡ Connect LMS</button>
       <div class="avatar">C</div>
     </div>
@@ -297,7 +297,7 @@
             <p class="sub">Customize your NORTHSTAR workspace. Changes save automatically.</p>
           </div>
           <div class="head-actions">
-            <span class="pill" style="font-family:var(--mono)">NORTHSTAR v2.2.0</span>
+            <span class="pill" style="font-family:var(--mono)">NORTHSTAR 0.4</span>
             <button class="btn btn-ghost btn-sm" onclick="resetSettings()">↺ Reset Defaults</button>
           </div>
         </div>
@@ -311,6 +311,10 @@
           <button class="swatch-btn" data-theme-val="emerald" onclick="setTheme('emerald')"><span class="swatch-dot" style="background:#071712"></span>Emerald</button>
           <button class="swatch-btn" data-theme-val="nordic" onclick="setTheme('nordic')"><span class="swatch-dot" style="background:#161d24"></span>Nordic</button>
           <button class="swatch-btn" data-theme-val="parchment" onclick="setTheme('parchment')"><span class="swatch-dot" style="background:#f6f3ec"></span>Parchment</button>
+          <button class="swatch-btn" data-theme-val="aurora" onclick="setTheme('aurora')"><span class="swatch-dot" style="background:linear-gradient(135deg,#071c23,#3e8b83)"></span>Aurora</button>
+          <button class="swatch-btn" data-theme-val="nebula" onclick="setTheme('nebula')"><span class="swatch-dot" style="background:linear-gradient(135deg,#100d2b,#713d9c)"></span>Nebula</button>
+          <button class="swatch-btn" data-theme-val="starlight" onclick="setTheme('starlight')"><span class="swatch-dot" style="background:linear-gradient(135deg,#050914,#526b9d)"></span>Starlight</button>
+          <button class="swatch-btn" data-theme-val="solar" onclick="setTheme('solar')"><span class="swatch-dot" style="background:linear-gradient(135deg,#21190e,#8a6230)"></span>Solar</button>
         </div>
       </div>
       <div class="set-group">
@@ -350,6 +354,8 @@
         <div class="card" style="max-width:720px;padding:24px;margin-top:16px">
           <div class="card-head"><div><h3>Marking Periods</h3><p>Your school’s grading periods. Assignments are organized by due date into these — old periods archive automatically. Canvas has no API for periods, so these are yours to define once.</p></div></div>
           <div id="periodsManager"></div>
+          <div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" type="button" onclick="exportPeriods()">Export marking periods</button><label class="btn btn-ghost btn-sm" for="periodImportFile">Import backup</label><input id="periodImportFile" type="file" accept="application/json,.json" hidden onchange="importPeriods(this)"></div>
+          <p class="tiny muted mt">Backups contain marking-period dates and names only. They never include Canvas or AI credentials.</p>
           <div class="divider"></div>
           <div class="flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
             <div style="flex:1;min-width:140px"><label class="set-lbl">Period name</label><input id="periodName" class="inp" placeholder="Marking Period 1" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px"></div>
@@ -359,12 +365,13 @@
           </div>
         </div>
         <div class="card" style="max-width:720px;padding:24px;margin-top:16px">
-          <div class="card-head"><div><h3>✧ AI — Google Gemini (free tier)</h3><p>Your key is kept in session storage, not persistent local storage; clear it when finished. AI calls go straight from your browser to Google.</p></div><span class="badge badge-violet">AI</span></div>
+          <div class="card-head"><div><h3>AI — Google Gemini (free tier)</h3><p>Your key can be remembered encrypted on this device. AI calls go directly from your browser to Google.</p></div><span class="badge badge-violet">AI</span></div>
           <label class="set-lbl">Gemini API key</label>
-          <input id="geminiKey" type="password" class="inp" placeholder="Paste a free key from Google AI Studio" autocomplete="off" autocapitalize="none" spellcheck="false" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
+          <div class="secret-field"><input id="geminiKey" type="password" class="inp" placeholder="Paste a free key from Google AI Studio" autocomplete="off" autocapitalize="none" spellcheck="false" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px"><button class="btn btn-ghost btn-sm" type="button" onclick="toggleSecretVisibility('geminiKey',this)">Show</button></div>
+          <label class="small muted mt" style="display:flex;gap:8px;align-items:center"><input id="rememberGemini" type="checkbox" checked> Remember this key encrypted on this device</label>
           <label class="set-lbl" style="margin-top:12px">Model (availability depends on your Google account)</label>
           <input id="geminiModel" class="inp" placeholder="gemini-2.0-flash" style="width:100%;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:13.5px">
-          <div class="flex mt" style="gap:8px"><button class="btn btn-primary btn-sm" onclick="saveAiSettings()">Save for this session</button><button class="btn btn-ghost btn-sm" onclick="testAiKey()">Test key</button></div>
+          <div class="flex mt" style="gap:8px"><button class="btn btn-primary btn-sm" onclick="saveAiSettings()">Save key</button><button class="btn btn-ghost btn-sm" onclick="testAiKey()">Test key</button></div>
           <p class="small muted mt" id="aiStatus">No Gemini key set — the built-in guide is active.</p>
           <p class="tiny muted mt">Get a free key at <b>Google AI Studio</b> (aistudio.google.com) → “Get API key”. The AI explains, summarizes, and quizzes — it never completes assignments for you.</p>
         </div>
@@ -382,12 +389,12 @@
 <!-- CONNECT MODAL -->
 <div class="overlay" id="connectOverlay" role="dialog" aria-modal="true" aria-labelledby="connectTitle">
   <div class="workspace connect-panel" style="max-width:800px">
-    <div class="ws-head"><div><span class="eyebrow">YOUR SCHOOL, CONNECTED</span><h2 id="connectTitle">Bring Canvas closer.</h2><p class="small muted mt">Connect to see your courses and assignments here. Nothing is submitted to Canvas.</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('connectOverlay')">✕</button></div>
+    <div class="ws-head"><div><span class="eyebrow">YOUR SCHOOL, CONNECTED</span><h2 id="connectTitle">Bring Canvas closer.</h2><p class="small muted mt">Connect to synchronize your courses, assignments, submissions, and available grades.</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('connectOverlay')">✕</button></div>
     <div class="ws-body"><div class="connect-grid"><div>
       <label class="field-label" for="canvasUrl">Canvas school URL</label><input class="select connect-input" id="canvasUrl" type="url" placeholder="https://school.instructure.com" autocomplete="url">
-      <label class="field-label" for="canvasToken">Canvas access token</label><input class="select connect-input" id="canvasToken" type="password" placeholder="Paste your Canvas token" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <label class="field-label" for="canvasToken">Canvas access token</label><div class="secret-field"><input class="select connect-input" id="canvasToken" type="password" placeholder="Paste your Canvas token" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="btn btn-ghost btn-sm" type="button" onclick="toggleSecretVisibility('canvasToken',this)" aria-label="Show Canvas token">Show</button></div>
       <label class="field-label" for="canvasProxy">Your private Canvas bridge URL <span class="muted">(optional)</span></label><input class="select connect-input" id="canvasProxy" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url">
-      <p class="small muted mt">Your token is kept only for this browser session. Never send it in chat. If your school blocks direct browser access, deploy the included private bridge and enter its URL above.</p>
+      <label class="small muted mt" style="display:flex;gap:8px;align-items:flex-start"><input id="rememberCanvas" type="checkbox" checked><span><b>Remember this connection on this device</b><br>Credentials are encrypted in browser storage. This protects against casual storage inspection, not malicious scripts running on this site. Disconnect to erase credentials; your last successful coursework snapshot stays available offline.</span></label>
       <div class="flex mt"><button class="btn btn-primary" id="connectAction" onclick="connectCanvas()">Connect &amp; sync</button><button class="btn btn-ghost" onclick="disconnectCanvas()">Disconnect</button></div><p class="small muted mt" id="canvasStatus" aria-live="polite">Demo mode: sample coursework is shown until you connect.</p>
     </div><div class="connect-explain"><span class="eyebrow">A QUICK HEADS-UP</span><h3>Good key.<br>Different obstacle.</h3><p>Some schools block websites from talking directly to Canvas. A correct token alone can’t bypass that browser restriction.</p><p>The included bridge is self-hosted and sends the token in an authorization header, never through a public CORS proxy or URL.</p><p><b>Available:</b> courses, assignments, due dates, points and submission status.<br><b>Not available:</b> StudentVUE sync or submissions from this app.</p></div></div>
       <details class="canvas-troubleshoot" id="canvasTroubleshoot">
@@ -448,7 +455,9 @@
 <script src="scripts/canvas-debug.js"></script>
 <script src="scripts/grades.js"></script>
 <script src="scripts/ai.js"></script>
+<script src="scripts/vault.js"></script>
 <script src="scripts/submissions.js"></script>
+<script src="scripts/canvas-sync.js"></script>
 <script src="scripts/premium.js"></script>
 </body>
 </html>

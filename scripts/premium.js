@@ -1,15 +1,19 @@
 /* NORTHSTAR: narrowly scoped Canvas integration and local-first workspace. */
-(() => {
+(async () => {
 'use strict';
 const DEMO_COURSES = structuredClone(COURSES);
 const DEMO_ASSIGNMENTS = structuredClone(ASSIGNMENTS);
-let mode = 'demo', activeAssignment = null;
+let mode = 'demo', activeAssignment = null, dataFreshness = 'demo', lastCanvasSync = null;
 let GROUPS = {}, COURSE_META = {};
-const GRADES = window.Grades, AI = window.NorthstarAI;
+let syncWarnings = [], syncCompleteness = 'unknown';
+let canvasSyncInFlight = null, lastAutoSyncTrigger = 0;
+const GRADES = window.Grades, AI = window.NorthstarAI, CANVAS_SYNC = window.NorthstarCanvasSync;
 const store = {
   get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
 };
+let persistentCredentials = null, persistentAiKey = '';
+let credentialsRemembered = false, aiKeyRemembered = false;
 // Earlier versions sent this token to third-party proxies and persisted it without encryption.
 const hadOldToken = !!localStorage.getItem('canvas_token');
 localStorage.removeItem('canvas_token');
@@ -24,8 +28,32 @@ const urlFrom = value => {
   if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash || (u.pathname !== '/' && u.pathname !== '')) throw Error('Use an HTTPS origin only, without a path, username, or query string.');
   return u.origin;
 };
-function getCredentials() { try { return JSON.parse(sessionStorage.getItem('northstar_canvas_session') || 'null'); } catch { return null; } }
-function setCredentials(c) { sessionStorage.setItem('northstar_canvas_session', JSON.stringify(c)); }
+function getCredentials() { return persistentCredentials; }
+async function setCredentials(c) {
+  persistentCredentials = c;
+  credentialsRemembered = !!$('#rememberCanvas')?.checked;
+  if (credentialsRemembered && window.NorthstarVault) {
+    try { await window.NorthstarVault.set('canvas-credentials', c); return true; }
+    catch (error) { credentialsRemembered = false; pushEntry('err', 'Encrypted device storage unavailable; this connection will last only until the page is closed.'); return false; }
+  }
+  if (window.NorthstarVault) await window.NorthstarVault.remove('canvas-credentials').catch(()=>{});
+  return false;
+}
+async function hydrateSavedSecrets() {
+  if (!window.NorthstarVault) return;
+  try {
+    persistentCredentials = await window.NorthstarVault.get('canvas-credentials', null);
+    persistentAiKey = await window.NorthstarVault.get('gemini-api-key', '');
+    credentialsRemembered = !!persistentCredentials; aiKeyRemembered = !!persistentAiKey;
+  } catch (error) { console.warn('NORTHSTAR secure storage unavailable:', error); }
+  // Migrate an existing tab-only session without writing plaintext to browser storage.
+  if (!persistentCredentials) { try { persistentCredentials = JSON.parse(sessionStorage.getItem('northstar_canvas_session') || 'null'); } catch {} }
+  if (!persistentAiKey) { try { persistentAiKey = sessionStorage.getItem('northstar_gemini_session') || ''; } catch {} }
+  // Migrate legacy tab-only values into encrypted device storage when the user has opted in.
+  if (persistentCredentials && $('#rememberCanvas')?.checked && !credentialsRemembered) { try { await window.NorthstarVault.set('canvas-credentials', persistentCredentials); credentialsRemembered = true; } catch {} }
+  if (persistentAiKey && $('#rememberGemini')?.checked && !aiKeyRemembered) { try { await window.NorthstarVault.set('gemini-api-key', persistentAiKey); aiKeyRemembered = true; } catch {} }
+  try { sessionStorage.removeItem('northstar_canvas_session'); sessionStorage.removeItem('northstar_gemini_session'); sessionStorage.removeItem('northstar_gemini_model'); } catch {}
+}
 /* ---------- connection debug console (lives inside the Connect modal) ---------- */
 const DBG = window.CanvasDebug || {redact:s=>String(s),redactStack:s=>String(s),parseRetryAfter:()=>null,buildEvent:()=>({kind:'unknown',httpError:'',hint:'',actions:[],verdict:''}),verdictForFailure:()=>({verdict:'',hint:''})};
 const debugState={entries:[],verdict:'',hint:'',attemptId:0,startedAt:0,mode:''};
@@ -253,30 +281,43 @@ async function allPages(creds, path) {
   }
   throw Error('Too many Canvas pages to sync safely. No changes were made.');
 }
-const typeOf = a => a.submission_types?.includes('discussion_topic') ? 'Discussion' : a.submission_types?.includes('online_quiz') ? 'Quiz' : a.submission_types?.includes('online_text_entry') ? 'Writing' : 'Homework';
+const typeOf = a => {
+  const types = Array.isArray(a.submission_types) ? a.submission_types : [];
+  if (types.includes('discussion_topic')) return 'Discussion';
+  if (types.includes('online_quiz')) return 'Quiz';
+  if (types.includes('external_tool')) return 'External Tool';
+  if (types.includes('online_upload')) return 'File Upload';
+  if (types.includes('online_text_entry')) return 'Writing';
+  if (types.includes('online_url')) return 'Website';
+  if (types.includes('media_recording')) return 'Media Recording';
+  if (types.includes('none')) return 'No Submission';
+  return 'Assignment';
+};
+function numberOrNull(value) { return CANVAS_SYNC.numberOrNull(value); }
+function courseEnrollmentGrade(course) { return CANVAS_SYNC.courseGrade(course); }
 function convertCourses(rows) {
   const palette=['#c4e87b','#9cd9bd','#c6bded','#eac988','#efa99c','#a7cce1'];
-  return rows.filter(c => Number.isInteger(c.id)).map((c,i)=>({id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:0, credits:0, modules:[], canvasId:c.id, canvasUrl: c.html_url}));
+  return rows.filter(c => Number.isInteger(c.id)).map((c,i)=>({id:'canvas_'+c.id, code:safe(c.course_code || 'COURSE'), name:safe(c.name || 'Untitled course'), prof:'Canvas course', office:'Not available', color:palette[i%palette.length], grade:0, credits:0, modules:[], canvasId:c.id, canvasUrl: c.html_url, canvasGrade:courseEnrollmentGrade(c)}));
 }
 function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
-    const sub=a.submission || {}, isDone = ['submitted','graded','pending_review'].includes(sub.workflow_state), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
+    const sub=CANVAS_SYNC.submission(a.submission), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:Number(a.points_possible)||0, priority:'Normal', status:sub.workflow_state==='graded'?'Completed':isDone?'Submitted':sub.missing?'Missing':'Not Started', progress:isDone?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score==null?null:Number(sub.score), excused:!!sub.excused, missing:!!sub.missing, late:!!sub.late, groupId:a.assignment_group_id, subState:sub.workflow_state, submissionTypes:a.submission_types||[], gradedAt:sub.graded_at, canvasUrl:href};
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], canvasUrl:href, assignmentPublished:a.published!==false};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
-const oldMomentum=renderMomentum; renderMomentum=function(){if(mode==='demo'){oldMomentum();return;}$('#momentumList').innerHTML=COURSES.map(c=>{const as=ASSIGNMENTS.filter(a=>a.course===c.id);const done=as.filter(a=>['Submitted','Completed'].includes(a.status)).length;const g=gradeForCourse(c.id);return `<div class="mom-row" onclick="openCourse('${c.id}')"><div class="flex" style="justify-content:space-between"><b class="small">${c.code}</b><span class="small muted">${done}/${as.length} submitted</span></div><div class="flex" style="justify-content:space-between;align-items:center;margin-top:4px"><span class="small" style="color:${c.color};font-weight:700">${fmtPct(g.percent)}${g.letter?' · '+g.letter:''}</span><span class="tiny muted">computed grade</span></div><div class="progress mt"><i style="width:${as.length?Math.round(done/as.length*100):0}%;background:${c.color}"></i></div></div>`;}).join('') || '<p class="small muted">No courses found.</p>';};
+const oldMomentum=renderMomentum; renderMomentum=function(){if(mode==='demo'){oldMomentum();return;}$('#momentumList').innerHTML=COURSES.map(c=>{const as=ASSIGNMENTS.filter(a=>a.course===c.id);const done=as.filter(a=>['Submitted','Completed','Awaiting Grading','Excused'].includes(a.status)).length;const g=gradeForCourse(c.id),official=c.canvasGrade||{},hasOfficial=official.currentPercent!==null||!!official.currentLetter,shownGrade=hasOfficial?(official.currentLetter||fmtPct(official.currentPercent)):(fmtPct(g.percent)+(g.letter?' · '+g.letter:''));return `<div class="mom-row" onclick="openCourse('${c.id}')"><div class="flex" style="justify-content:space-between"><b class="small">${c.code}</b><span class="small muted">${done}/${as.length} submitted</span></div><div class="flex" style="justify-content:space-between;align-items:center;margin-top:4px"><span class="small" style="color:${c.color};font-weight:700">${shownGrade}</span><span class="tiny muted">${hasOfficial?'Canvas current grade':'assignment estimate'}</span></div><div class="progress mt"><i style="width:${as.length?Math.round(done/as.length*100):0}%;background:${c.color}"></i></div></div>`;}).join('') || '<p class="small muted">No courses found.</p>';};
 const originalRelDue=relDue;
 relDue = d => new Date(d).getFullYear() >= 2999 ? 'No due date' : originalRelDue(d);
-statusOf = a => { if(a.status==='Completed'||a.status==='Submitted') return a.status; if(a.status==='Missing') return 'Missing'; if(a.noDue)return a.status; const now=new Date(), d=new Date(a.due); if(d<now)return 'Overdue'; if(d.toDateString()===now.toDateString())return 'Due Today'; return a.status; };
+statusOf = a => { if(CANVAS_SYNC.isResolved(a.status)) return a.status; if(a.status==='Missing') return 'Missing'; if(a.noDue)return a.status; const now=new Date(), d=new Date(a.due); if(d<now)return 'Overdue'; if(d.toDateString()===now.toDateString())return 'Due Today'; return a.status; };
 function dynamicOverview() {
-  const pending=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status));
+  const pending=ASSIGNMENTS.filter(a=>!CANVAS_SYNC.isResolved(a.status));
   const today=pending.filter(a=>statusOf(a)==='Due Today'), late=pending.filter(a=>['Overdue','Missing'].includes(statusOf(a)));
   const current=GRADES?GRADES.currentPeriod(PERIODS,new Date()):null;
   $('#heroSub').textContent=(current?current.name+' · ':'')+`${today.length} due today  ·  ${late.length} need attention  ·  ${pending.length} open`;
-  $('#syncLabel').textContent=mode==='live'?'Canvas connected · live data':'Demo workspace · not synced';
-  $('#dataState').textContent=mode==='live'?'CANVAS CONNECTED · Your synced coursework':'SAMPLE DATA · Connect Canvas to see your real coursework';$('#dataState').classList.toggle('live',mode==='live');
+  $('#syncLabel').textContent=mode!=='live'?'Demo workspace · not synced':dataFreshness==='cached'?'Saved Canvas data · offline':syncCompleteness==='partial'?'Canvas connected · some grade data unavailable':'Canvas connected · live data';
+  $('#dataState').textContent=mode!=='live'?'SAMPLE DATA · Connect Canvas to see your real coursework':dataFreshness==='cached'?'SAVED CANVAS SNAPSHOT · Last successful sync '+(lastCanvasSync?new Date(lastCanvasSync).toLocaleString():'time unavailable'):syncCompleteness==='partial'?'CANVAS CONNECTED · Some official grade details were unavailable':'CANVAS CONNECTED · Your synced coursework';$('#dataState').classList.toggle('live',mode==='live');
   $('#ledgerCount').textContent=`${$('#ledgerList').children.length} shown · ${ASSIGNMENTS.length} assignments · ${mode==='live'?'Canvas':'sample data'}`;
   $('#hsStreak').textContent='—'; $('#hsHours').textContent='Example';
   if(mode==='live') { $('#hsGpa').textContent='—'; $('#hsGpa').title='Unavailable'; }
@@ -289,12 +330,23 @@ function dynamicOverview() {
   $('#bellN').textContent=ACTIVITY.length;
 }
 renderDashboard = function(){ originalRenderDashboard(); dynamicOverview(); if(typeof SETTINGS !== 'undefined') applySettings(); };
-matchesStatus = function(a){if(statusFilter==='All')return true;const st=statusOf(a);if(statusFilter==='Upcoming')return !['Completed','Submitted'].includes(a.status)&&!a.noDue&&new Date(a.due)>new Date();if(statusFilter==='Missing')return a.status==='Missing'||st==='Overdue';if(statusFilter==='Completed')return a.status==='Completed'||a.status==='Submitted';return st===statusFilter||a.status===statusFilter;};
+matchesStatus = function(a){
+  if(statusFilter==='All')return true;
+  const st=statusOf(a);
+  if(statusFilter==='Upcoming')return !CANVAS_SYNC.isResolved(a.status)&&!a.noDue&&new Date(a.due)>new Date();
+  if(statusFilter==='Missing')return a.status==='Missing';
+  if(statusFilter==='Overdue')return st==='Overdue';
+  if(statusFilter==='Completed')return a.status==='Completed';
+  if(statusFilter==='Submitted')return a.status==='Submitted';
+  if(statusFilter==='Awaiting Grading')return a.status==='Awaiting Grading';
+  if(statusFilter==='Excused')return a.status==='Excused';
+  return st===statusFilter||a.status===statusFilter;
+};
 filterAndGo = function(f){statusFilter=f;showView('ledger');initLedger();};
 const oldRenderLedger=renderLedger;
 function ledgerRow(a){
   const c=courseById(a.course); const st=statusOf(a);
-  const stColor = st==="Overdue"||st==="Missing"?"badge-rose":st==="Due Today"?"badge-amber":st==="Completed"||st==="Submitted"?"badge-green":st==="In Progress"?"badge-cyan":"badge-violet";
+  const stColor = st==="Overdue"||st==="Missing"?"badge-rose":st==="Due Today"?"badge-amber":st==="Completed"||st==="Submitted"?"badge-green":st==="In Progress"||st==="Awaiting Grading"?"badge-cyan":"badge-violet";
   const barCls = st==="Overdue"||st==="Missing"?"rose":st==="Completed"||st==="Submitted"?"green":"";
   return `<div class="ledger-row" style="--lc:${c.color}" onclick="openWorkspace('${a.id}')">
     <div><h4>${esc(a.title)}</h4><div class="meta">${typeIcon(a.type)} ${a.type} · ${a.points} pts · ${a.priority} priority ${a.score!=null?`· <b style="color:#6ee7b7">${a.score}/${a.points}</b>`:""}</div></div>
@@ -353,12 +405,12 @@ function updateWhatIfLive(){
   $('#hsGpa').textContent = curGpa==null?'—':curGpa.toFixed(2);
 }
 const oldRenderCourses=renderCourses;
-renderCourses = function(){ if(mode==='demo') {oldRenderCourses();return;} $('#courseGrid').innerHTML=COURSES.map(c=>{const work=ASSIGNMENTS.filter(a=>a.course===c.id); const done=work.filter(a=>['Completed','Submitted'].includes(a.status)).length; const g=gradeForCourse(c.id); return `<button class="card course-card" style="--cc:${c.color};text-align:left" onclick="openCourse('${c.id}')"><span class="course-code">${c.code}</span><h3>${c.name}</h3><p class="muted small">Canvas course</p><div class="mini-stats"><div><b>${work.length}</b><span>Assignments</span></div><div><b>${done}</b><span>Submitted</span></div><div><b>${fmtPct(g.percent)}</b><span>Computed grade${g.letter?" · "+g.letter:""}</span></div></div></button>`;}).join('') || '<p class="muted">No active Canvas courses were returned.</p>'; };
-openCourse = function(id){ const c=courseById(id);if(!c)return;showView('courses');const list=ASSIGNMENTS.filter(a=>a.course===id).sort((a,b)=>a.due-b.due); $('#courseDetail').innerHTML=`<div class="card"><div class="card-head"><div><span class="eyebrow">${c.code}</span><h3 style="font:500 28px var(--serif);margin-top:8px">${c.name}</h3><p>${mode==='live'?'Canvas coursework':'Example course'}</p></div></div><h4 class="small">COURSEWORK</h4>${list.map(a=>`<button class="prio" style="width:100%;text-align:left" onclick="openWorkspace('${a.id}')"><div class="prio-info"><b>${esc(a.title)}</b><span>${a.type} · ${a.points} points</span></div><span class="small">${relDue(a.due)}</span></button>`).join('')||'<p class="small muted mt">No assignments found.</p>'}</div>`; $('#courseDetail').scrollIntoView({behavior:'smooth'}); };
+renderCourses = function(){ if(mode==='demo') {oldRenderCourses();return;} $('#courseGrid').innerHTML=COURSES.map(c=>{const work=ASSIGNMENTS.filter(a=>a.course===c.id); const done=work.filter(a=>CANVAS_SYNC.isResolved(a.status)).length; const g=gradeForCourse(c.id), official=c.canvasGrade||{}; const hasOfficial=official.currentPercent!==null||!!official.currentLetter; const gradeValue=hasOfficial?(official.currentLetter&&official.currentPercent!==null?official.currentLetter+' · '+fmtPct(official.currentPercent):(official.currentLetter||fmtPct(official.currentPercent))):(g.percent==null?'—':fmtPct(g.percent)+(g.letter?' · '+g.letter:'')); const gradeLabel=hasOfficial?'Canvas current grade':(syncWarnings.some(w=>w.startsWith(c.code+':'))?'Estimate · grade data incomplete':'Assignment estimate'); return `<button class="card course-card" style="--cc:${c.color};text-align:left" onclick="openCourse('${c.id}')"><span class="course-code">${c.code}</span><h3>${c.name}</h3><p class="muted small">Canvas course</p><div class="mini-stats"><div><b>${work.length}</b><span>Assignments</span></div><div><b>${done}</b><span>Submitted / excused</span></div><div><b>${gradeValue}</b><span>${gradeLabel}</span></div></div></button>`;}).join('') || '<p class="muted">No active Canvas courses were returned.</p>'; };
+openCourse = function(id){ const c=courseById(id);if(!c)return;showView('courses');const list=ASSIGNMENTS.filter(a=>a.course===id).sort((a,b)=>a.due-b.due); $('#courseDetail').innerHTML=`<div class="card"><div class="card-head"><div><span class="eyebrow">${c.code}</span><h3 style="font:500 28px var(--serif);margin-top:8px">${c.name}</h3><p>${mode==='live'?'Canvas coursework':'Example course'}</p>${c.canvasGrade&&(c.canvasGrade.currentPercent!==null||c.canvasGrade.currentLetter)?`<p class="small mt"><b>Official Canvas current grade:</b> ${esc(c.canvasGrade.currentLetter||fmtPct(c.canvasGrade.currentPercent))}${c.canvasGrade.currentPercent!==null?' · '+fmtPct(c.canvasGrade.currentPercent):''}</p>${c.canvasGrade.currentPeriodTitle?`<p class="small muted">Canvas grading period: ${esc(c.canvasGrade.currentPeriodTitle)}${c.canvasGrade.currentPeriodPercent!==null?' · '+fmtPct(c.canvasGrade.currentPeriodPercent):''}</p>`:''}`:''}</div></div><h4 class="small">COURSEWORK</h4>${list.map(a=>`<button class="prio" style="width:100%;text-align:left" onclick="openWorkspace('${a.id}')"><div class="prio-info"><b>${esc(a.title)}</b><span>${a.type} · ${a.points} points</span></div><span class="small">${relDue(a.due)}</span></button>`).join('')||'<p class="small muted mt">No assignments found.</p>'}</div>`; $('#courseDetail').scrollIntoView({behavior:'smooth'}); };
 openWorkspace = function(id){
   const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
-  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">View in dashboard</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
+  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">Open source ↗</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
   $('#workspace .ws-body').insertAdjacentHTML('beforeend', submissionPanel(a));
   const input=$('#assignmentDraft');input.value=localStorage.getItem(key)||'';input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};$('#wsOverlay').classList.add('open');
 };
@@ -383,8 +435,19 @@ window.submitAssignment=async function(){
     if(!confirm(`Submit to Canvas?\nCourse: ${c.name}\nAssignment: ${a.title}\nType: ${type}\n\n${preview.slice(0,1500)}${preview.length>1500?'\n… (preview truncated; your entire draft will be sent)':''}\n\nThis may create a new attempt and will not erase earlier submissions. Send now?`)) return;
     submissionBusy=true;button.disabled=true;status.textContent='Sending once… do not close this workspace.';
     const result=await window.NorthstarSubmissions.send({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,data});
-    a.status=result.workflow_state==='graded'?'Completed':'Submitted';a.subState=result.workflow_state;a.progress=100;
-    status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. Your local draft was kept.';
+    const normalized=CANVAS_SYNC.submission(result);
+    Object.assign(a,{
+      status:normalized.status, subState:normalized.workflowState,
+      progress:normalized.submitted?100:a.progress,
+      score:normalized.score, grade:normalized.grade,
+      excused:normalized.excused, missing:normalized.missing, late:normalized.late,
+      latePolicyStatus:normalized.latePolicyStatus,
+      submittedAt:normalized.submittedAt, gradedAt:normalized.gradedAt,
+      attempt:normalized.attempt,
+      gradeMatchesCurrentSubmission:normalized.gradeMatchesCurrentSubmission
+    });
+    const snapshotSaved=await persistCurrentSnapshot();
+    status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. Your local draft was kept.'+(snapshotSaved?' Offline coursework snapshot updated.':' Offline snapshot could not be updated; sync Canvas before relying on cached status.');
     refreshAll();
   }catch(e){status.textContent=e.message;}
   finally{submissionBusy=false;if(button) button.disabled=false;}
@@ -400,7 +463,7 @@ $('#noteTitleInput').addEventListener('input',updateNoteWords);
 $('#noteBody').addEventListener('input',()=>updateNoteWords());
 renderLab = function(){originalRenderLab();};
 rateFlash = function(r){const f=FLASHCARDS[flashIdx];f.mastery=Math.max(0,Math.min(100,f.mastery+(r==='Easy'?12:r==='Good'?6:-10)));toast('Confidence updated for this session');nextFlash();};
-copilotReply = function(raw){const q=raw.toLowerCase();const pending=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status)).sort((a,b)=>a.due-b.due);if(/due|deadline|today/.test(q))return pending.length?'<b>Up next:</b><br>'+pending.slice(0,5).map(a=>'• '+esc(a.title)+' · '+relDue(a.due)).join('<br>'):'No pending assignments in this view.';if(/plan|week|study/.test(q))return pending.length?'<b>Try a focus sprint for:</b><br>'+pending.slice(0,3).map((a,i)=>(i+1)+'. '+esc(a.title)).join('<br>'):'Your queue is clear. Try a focus sprint in Study Lab.';return 'I’m a simple, rule-based study guide, not an AI model. Ask “what is due?” or “plan my week” for suggestions based on your current assignments.';};
+copilotReply = function(raw){const q=raw.toLowerCase();const pending=ASSIGNMENTS.filter(a=>!CANVAS_SYNC.isResolved(a.status)).sort((a,b)=>a.due-b.due);if(/due|deadline|today/.test(q))return pending.length?'<b>Up next:</b><br>'+pending.slice(0,5).map(a=>'• '+esc(a.title)+' · '+relDue(a.due)).join('<br>'):'No pending assignments in this view.';if(/plan|week|study/.test(q))return pending.length?'<b>Try a focus sprint for:</b><br>'+pending.slice(0,3).map((a,i)=>(i+1)+'. '+esc(a.title)).join('<br>'):'Your queue is clear. Try a focus sprint in Study Lab.';return 'I’m a simple, rule-based study guide, not an AI model. Ask “what is due?” or “plan my week” for suggestions based on your current assignments.';};
 connectCanvas = async function(){
   let creds; try{const base=urlFrom($('#canvasUrl').value);const token=$('#canvasToken').value.trim();const proxy=$('#canvasProxy').value.trim()?urlFrom($('#canvasProxy').value):'';if(!token)throw Error('Enter your Canvas access token.');creds={base,token,proxy};}
   catch(e){resetDebug('');pushEntry('err','Validation failed — nothing was sent: '+e.message);summarizeConnect({kind:'invalid-input',message:e.message});$('#canvasStatus').textContent=e.message;return;}
@@ -410,25 +473,77 @@ connectCanvas = async function(){
   pushEntry('info',mode==='bridge'?('Bridge: '+creds.proxy+' — path forwarded as ?path=…; token sent only in the Authorization header'):('Canvas: '+creds.base));
   pushEntry('info','Token: '+creds.token.length+' characters · never displayed, logged, or copied');
   $('#canvasStatus').textContent='Connecting and loading courses…';$('#connectAction').disabled=true;
-  try{await pullCanvas(creds);setCredentials(creds);$('#canvasToken').value='';pushEntry('ok','Connected — '+COURSES.length+' courses and '+ASSIGNMENTS.length+' assignments loaded');summarizeConnect(null);$('#canvasStatus').textContent=`Connected: ${COURSES.length} courses and ${ASSIGNMENTS.length} assignments loaded. Token retained only for this browser session.`;toast('Canvas connected and coursework synced');}
+  try{const syncResult=await pullCanvasExclusive(creds);const remembered=await setCredentials(creds);$('#canvasToken').value=creds.token;pushEntry('ok','Connected — '+COURSES.length+' courses and '+ASSIGNMENTS.length+' assignments loaded · '+syncResult.completeness+' data');summarizeConnect(null);$('#canvasStatus').textContent=`Connected: ${COURSES.length} courses and ${ASSIGNMENTS.length} assignments loaded. ${syncResult.warnings.length?syncResult.warnings.length+' data-quality warning(s); review grade-source labels. ':''}${remembered?'Credentials encrypted and remembered on this device.':'Connection remains active until this page is closed.'}`;toast(syncResult.warnings.length?'Canvas connected with data warnings':'Canvas connected and coursework synced');}
   catch(e){pushEntry('err','Connection failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;toast('Canvas connection failed. See the debug console in this menu.');}finally{$('#connectAction').disabled=false;}
 };
+async function pullCanvasExclusive(creds){
+  if(canvasSyncInFlight) throw Error('A Canvas synchronization is already running. Wait for it to finish before starting another.');
+  const task=pullCanvas(creds);
+  canvasSyncInFlight=task;
+  try{return await task;}
+  finally{if(canvasSyncInFlight===task)canvasSyncInFlight=null;}
+}
 async function pullCanvas(creds){
-  const rawCourses=await allPages(creds,'/api/v1/courses?enrollment_state=active');const courses=convertCourses(rawCourses);let assignments=[];
-  GROUPS={}; COURSE_META={};
+  // Build a complete candidate snapshot off to the side. A failed refresh must never
+  // replace the last known-good courses, assignments, or grade metadata.
+  const courseQuery='/api/v1/courses?enrollment_state=active&enrollment_type=student&include%5B%5D=total_scores&include%5B%5D=current_grading_period_scores&include%5B%5D=grading_periods';
+  const rawCourses=await allPages(creds,courseQuery);
+  const courses=convertCourses(rawCourses);
+  const assignments=[], nextGroups={}, nextCourseMeta={}, warnings=[];
   for(const c of courses){
-    const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);assignments.push(...convertAssignments(rows,c,creds.base));
+    const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);
+    assignments.push(...convertAssignments(rows,c,creds.base));
+    try{
+      const detail=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
+      nextCourseMeta[c.id]={weighted:!!detail.apply_assignment_group_weights || !!detail.weighted_assignment_groups, scheme:Array.isArray(detail.grading_standard)?detail.grading_standard:null, dropLowest:Number(detail.drop_lowest)||0, dropHighest:Number(detail.drop_highest)||0};
+    }catch(e){
+      nextCourseMeta[c.id]={weighted:false,scheme:null,dropLowest:0,dropHighest:0,metadataUnavailable:true};
+      warnings.push(`${c.code}: course grading configuration could not be retrieved; computed grade is an estimate.`);
+    }
     try{
       const grows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignment_groups`);
-      GROUPS[c.id]=grows.filter(g=>Number.isInteger(g.id)).map(g=>({id:g.id,name:safe(g.name||'Group'),weight:Number(g.group_weight)||0,dropLowest:Number(g.rules?.drop_lowest)||0,dropHighest:Number(g.rules?.drop_highest)||0}));
-    }catch(e){ pushEntry('err','Assignment groups unavailable for '+c.code+' — grades will be unweighted. Redeploy the bridge with the latest worker.js.'); GROUPS[c.id]=[]; }
-    try{
-      const det=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
-      COURSE_META[c.id]={weighted:!!det.weighted_assignment_groups, scheme:Array.isArray(det.grading_standard)?det.grading_standard:null, dropLowest:Number(det.drop_lowest)||0, dropHighest:Number(det.drop_highest)||0};
-    }catch(e){ COURSE_META[c.id]={weighted:false,scheme:null,dropLowest:0,dropHighest:0}; }
+      nextGroups[c.id]=grows.filter(g=>Number.isInteger(g.id)).map(g=>({id:g.id,name:safe(g.name||'Group'),weight:Number(g.group_weight)||0,dropLowest:Number(g.rules?.drop_lowest)||0,dropHighest:Number(g.rules?.drop_highest)||0}));
+    }catch(e){
+      nextGroups[c.id]=[];
+      warnings.push(`${c.code}: assignment-group weights unavailable; NORTHSTAR cannot verify weighted grade calculations for this course.`);
+      pushEntry('err','Assignment groups unavailable for '+c.code+' — official Canvas course totals remain separate; local grade estimate may be incomplete.');
+    }
+    if(c.canvasGrade.currentPercent===null && c.canvasGrade.currentLetter===null && c.canvasGrade.finalPercent===null && c.canvasGrade.finalLetter===null){
+      warnings.push(`${c.code}: Canvas did not return official enrollment grade totals (possibly hidden or unavailable).`);
+    }
   }
-  COURSES.splice(0,COURSES.length,...courses);ASSIGNMENTS=assignments;mode='live';ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses`,time:'Just now'}); refreshAll();
+  const syncedAt=new Date().toISOString();
+  lastAutoSyncTrigger=Date.now();
+  const snapshot={version:2,courses,assignments,groups:nextGroups,courseMeta:nextCourseMeta,lastSyncedAt:syncedAt,snapshotUpdatedAt:syncedAt,warnings,completeness:warnings.length?'partial':'complete'};
+  // Commit in-memory state only after all required course and assignment pages succeed.
+  COURSES.splice(0,COURSES.length,...courses);
+  ASSIGNMENTS=assignments;
+  GROUPS=nextGroups;
+  COURSE_META=nextCourseMeta;
+  syncWarnings=warnings;
+  syncCompleteness=snapshot.completeness;
+  mode='live';dataFreshness='live';lastCanvasSync=syncedAt;
+  if(window.NorthstarVault){
+    try{await window.NorthstarVault.set('canvas-snapshot',snapshot);}
+    catch(error){pushEntry('err','Canvas is live, but the new offline snapshot could not be saved securely. The previous saved snapshot is retained.');}
+  }
+  ACTIVITY.splice(0,ACTIVITY.length,{icon:'↻',color:'#a7d9bd',title:'Canvas synced',sub:`${assignments.length} assignments · ${courses.length} courses${warnings.length?' · '+warnings.length+' data warnings':''}`,time:'Just now'});
+  if(warnings.length) pushEntry('err','Sync completed with '+warnings.length+' data-quality warning(s). Review the course grade-source indicators.');
+  refreshAll();
+  return snapshot;
 }
+async function persistCurrentSnapshot(){
+  if(!window.NorthstarVault)return false;
+  const snapshot={
+    version:2,courses:COURSES,assignments:ASSIGNMENTS,groups:GROUPS,
+    courseMeta:COURSE_META,lastSyncedAt:lastCanvasSync,
+    snapshotUpdatedAt:new Date().toISOString(),warnings:syncWarnings,
+    completeness:syncCompleteness
+  };
+  try{await window.NorthstarVault.set('canvas-snapshot',snapshot);return true;}
+  catch(error){pushEntry('err','Canvas submission was confirmed, but the offline snapshot could not be updated securely.');return false;}
+}
+
 /* ---------- exact grade math (via grades.js) ---------- */
 function gradeOptsFor(courseId){ const m=COURSE_META[courseId]||{weighted:false,scheme:null,dropLowest:0,dropHighest:0}; return {weighted:m.weighted,scheme:m.scheme,courseDropLowest:m.dropLowest,courseDropHighest:m.dropHighest}; }
 function gradeForCourse(courseId){
@@ -448,6 +563,26 @@ function addPeriod(){
   savePeriods(); renderPeriodsManager(); renderLedger(); renderDashboard(); toast('Marking period added: '+name);
 }
 function deletePeriod(id){ PERIODS=PERIODS.filter(p=>p.id!==id); savePeriods(); renderPeriodsManager(); renderLedger(); renderDashboard(); }
+function exportPeriods(){
+  const payload={format:'northstar-marking-periods',version:1,exportedAt:new Date().toISOString(),periods:PERIODS};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='northstar-marking-periods-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Marking-period backup exported');
+}
+async function importPeriods(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  try{
+    if(file.size>1024*1024)throw Error('Backup file is too large.');
+    const data=JSON.parse(await file.text()),rows=Array.isArray(data)?data:data.periods;
+    if((data.format&&data.format!=='northstar-marking-periods')||(data.version&&data.version!==1)||!Array.isArray(rows))throw Error('This is not a supported NORTHSTAR marking-period backup.');
+    const valid=rows.map((p,i)=>{const name=String(p.name||'').trim(),start=String(p.start||''),end=String(p.end||'');if(!name||!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||Number.isNaN(Date.parse(start))||Number.isNaN(Date.parse(end))||end<start)throw Error('Invalid marking period at row '+(i+1)+'.');return {id:String(p.id||'p'+Date.now()+'_'+i),name,start,end};});
+    if(!confirm(`Import ${valid.length} marking period(s)? Existing periods will be kept; matching names and date ranges will not be duplicated.`))return;
+    const seen=new Set(PERIODS.map(p=>p.name.toLowerCase()+'|'+p.start+'|'+p.end));
+    valid.forEach(p=>{const key=p.name.toLowerCase()+'|'+p.start+'|'+p.end;if(!seen.has(key)){PERIODS.push(p);seen.add(key);}});
+    PERIODS.sort((a,b)=>a.start.localeCompare(b.start));savePeriods();renderPeriodsManager();renderLedger();renderDashboard();toast('Marking periods restored');
+  }catch(error){toast('Import failed: '+error.message);}finally{input.value='';}
+}
+window.exportPeriods=exportPeriods;window.importPeriods=importPeriods;
+window.toggleSecretVisibility=function(id,button){const field=document.getElementById(id);if(!field)return;const show=field.type==='password';field.type=show?'text':'password';button.textContent=show?'Hide':'Show';button.setAttribute('aria-label',(show?'Hide':'Show')+' '+(id==='canvasToken'?'Canvas token':'Gemini key'));};
 function renderPeriodsManager(){
   const box=$('#periodsManager'); if(!box) return;
   const now=new Date(), cur=GRADES?GRADES.currentPeriod(PERIODS,now):null;
@@ -457,14 +592,19 @@ function renderPeriodsManager(){
   }).join('') : '<p class="small muted">No marking periods yet. Add your school’s periods above — assignments will be organized by them, and old periods archive automatically.</p>';
 }
 
-/* ---------- AI study tools (Gemini free tier, session-only key) ---------- */
-function getAiKey(){ try{ return sessionStorage.getItem('northstar_gemini_session')||''; }catch{ return ''; } }
-function setAiKey(k){ try{ sessionStorage.setItem('northstar_gemini_session', k||''); }catch{} }
-function getAiModel(){ try{ return sessionStorage.getItem('northstar_gemini_model')||(AI?AI.DEFAULT_MODEL:'gemini-2.0-flash'); }catch{ return AI?AI.DEFAULT_MODEL:'gemini-2.0-flash'; } }
-function setAiModel(m){ try{ sessionStorage.setItem('northstar_gemini_model', m||''); }catch{} }
+/* ---------- AI study tools (Gemini free tier, optional encrypted device key) ---------- */
+function getAiKey(){ return persistentAiKey || ''; }
+async function setAiKey(k){
+  persistentAiKey = k || ''; aiKeyRemembered = !!$('#rememberGemini')?.checked;
+  if (aiKeyRemembered && persistentAiKey && window.NorthstarVault) { await window.NorthstarVault.set('gemini-api-key', persistentAiKey); return true; }
+  if (window.NorthstarVault) await window.NorthstarVault.remove('gemini-api-key').catch(()=>{});
+  return false;
+}
+function getAiModel(){ return store.get('northstar_gemini_model_v1', AI?AI.DEFAULT_MODEL:'gemini-2.0-flash'); }
+function setAiModel(m){ store.set('northstar_gemini_model_v1', m || (AI?AI.DEFAULT_MODEL:'gemini-2.0-flash')); }
 function aiContext(){
   const lines=COURSES.map(c=>{ const g=gradeForCourse(c.id); return `${c.code} ${c.name}: ${g.percent==null?'no grade yet':g.percent.toFixed(1)+'%'+(g.letter?' ('+g.letter+')':'')} · ${g.counts.pending} pending`; });
-  const pend=ASSIGNMENTS.filter(a=>!['Completed','Submitted'].includes(a.status)).sort((a,b)=>a.due-b.due).slice(0,12)
+  const pend=ASSIGNMENTS.filter(a=>!CANVAS_SYNC.isResolved(a.status)).sort((a,b)=>a.due-b.due).slice(0,12)
     .map(a=>`- ${a.title} (${courseById(a.course)?.code||''}) due ${a.noDue?'no date':fmtDate(a.due)} [${statusOf(a)}]`).join('\n');
   return `My courses and current grades:\n${lines.join('\n')}\n\nMy upcoming work:\n${pend||'none'}`;
 }
@@ -507,11 +647,12 @@ async function askAiAboutAssignment(action){
   try{ const r=await aiAsk(prompt); out.innerHTML='<div class="ai-response">'+esc(r).replace(/\n/g,'<br>')+'</div>'; }
   catch(e){ out.innerHTML='<p class="small" style="color:#fda4af">AI error: '+esc(e.message)+'</p>'; }
 }
-function saveAiSettings(){
+async function saveAiSettings(){
   const k=($('#geminiKey')?.value||'').trim(), m=($('#geminiModel')?.value||'').trim();
-  setAiKey(k); if(m) setAiModel(m);
-  const st=$('#aiStatus'); if(st) st.textContent = k ? 'Gemini key saved for this session ('+k.length+' chars, session storage only).' : 'No Gemini key set — the built-in guide is active.';
-  toast(k?'Gemini key saved for this session':'Gemini key cleared');
+  try { const remembered=await setAiKey(k); if(m) setAiModel(m);
+    const st=$('#aiStatus'); if(st) st.textContent = k ? (remembered?'Gemini key encrypted and remembered on this device.':'Gemini key active until this page is closed.') : 'No Gemini key set — the built-in guide is active.';
+    toast(k?'Gemini key saved':'Gemini key cleared');
+  } catch(error) { const st=$('#aiStatus'); if(st) st.textContent='Could not save securely: '+error.message; toast('Secure key storage failed'); }
 }
 async function testAiKey(){
   const st=$('#aiStatus'); if(st) st.textContent='Testing key…';
@@ -519,10 +660,12 @@ async function testAiKey(){
   catch(e){ if(st) st.textContent='✗ '+e.message; }
 }
 function openInDashboard(url){
-  const m=$('#viewerOverlay'), f=$('#viewerFrame'), note=$('#viewerNote');
-  if(!m||!f) return;
-  f.src=url; m.classList.add('open');
-  if(note) note.textContent='If the page stays blank, Canvas blocks embedding — use “Open in new tab”.';
+  let target;try{target=new URL(url);}catch{toast('This assignment does not have a valid external link.');return;}
+  if(target.protocol!=='https:'){toast('Only secure HTTPS assignment links can be opened.');return;}
+  // Google Drive/Docs and many Canvas resources deliberately reject iframe embedding.
+  // Open the authenticated destination directly instead of showing a misleading 403 panel.
+  const opened=window.open(target.href,'_blank','noopener,noreferrer');
+  if(!opened) toast('Your browser blocked the new tab. Use the Canvas link in the assignment details.');
 }
 function closeViewer(){ const m=$('#viewerOverlay'); if(m) m.classList.remove('open'); const f=$('#viewerFrame'); if(f) f.src=''; }
 // Expose handlers that index.html calls via onclick (premium.js is an IIFE).
@@ -534,17 +677,40 @@ window.askAiAboutAssignment = askAiAboutAssignment;
 window.openInDashboard = openInDashboard;
 window.closeViewer = closeViewer;
 
-syncCanvas = async function(){const c=getCredentials();if(!c){openConnect();toast('Connect Canvas first.');return;}
-  const mode=c.proxy?'bridge':'direct';resetDebug(mode);
-  pushEntry('info','Sync · '+(mode==='bridge'?'bridge mode':'direct mode'));
-  pushEntry('info',mode==='bridge'?('Bridge: '+c.proxy):('Canvas: '+c.base));
+syncCanvas = async function(options={}){
+  const quiet=!!options.quiet, c=getCredentials();
+  if(!c){if(!quiet){openConnect();toast('Connect Canvas first.');}return;}
+  if(canvasSyncInFlight){if(!quiet)toast('Canvas is already synchronizing. Please wait.');return;}
+  const syncMode=c.proxy?'bridge':'direct';resetDebug(syncMode);
+  pushEntry('info','Sync · '+(syncMode==='bridge'?'bridge mode':'direct mode'));
+  pushEntry('info',syncMode==='bridge'?('Bridge: '+c.proxy):('Canvas: '+c.base));
   pushEntry('info','Token: '+c.token.length+' characters · never displayed, logged, or copied');
-  toast('Syncing Canvas…');
-  try{await pullCanvas(c);pushEntry('ok','Sync complete — '+COURSES.length+' courses, '+ASSIGNMENTS.length+' assignments');summarizeConnect(null);toast('Canvas sync complete');}
-  catch(e){pushEntry('err','Sync failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the debug console.');}};
-window.disconnectCanvas = function(){sessionStorage.removeItem('northstar_canvas_session');$('#canvasToken').value='';if(debugState.attemptId)pushEntry('info','Disconnected — session token cleared from this tab');dbgSetDot('idle');dbgHeader('disconnected');COURSES.splice(0,COURSES.length,...structuredClone(DEMO_COURSES));ASSIGNMENTS=structuredClone(DEMO_ASSIGNMENTS);mode='demo';ACTIVITY.splice(0);refreshAll();$('#canvasStatus').textContent='Disconnected. Sample data is shown. Your local notes remain on this device.';};
+  if(!quiet)toast('Syncing Canvas…');
+  try{const result=await pullCanvasExclusive(c);pushEntry('ok','Sync complete — '+COURSES.length+' courses, '+ASSIGNMENTS.length+' assignments · '+result.completeness+' data');summarizeConnect(null);if(!quiet)toast(result.warnings.length?'Canvas synced with '+result.warnings.length+' data warning(s)':'Canvas sync complete');}
+  catch(e){pushEntry('err','Sync failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;if(!quiet){$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the debug console.');}else toast('Canvas refresh failed. Your last saved coursework is still available.');}
+};
+window.disconnectCanvas = async function(){
+  // Disconnect removes the credential, not the student's academic history.
+  // Keep the last successful snapshot available as read-only offline data.
+  persistentCredentials=null;
+  if(window.NorthstarVault) await window.NorthstarVault.remove('canvas-credentials').catch(()=>{});
+  try{sessionStorage.removeItem('northstar_canvas_session');}catch{}
+  $('#canvasToken').value='';
+  if(debugState.attemptId)pushEntry('info','Disconnected — saved credential cleared; last successful Canvas snapshot retained');
+  dbgSetDot('idle');dbgHeader('disconnected');
+  if(mode==='live'){
+    dataFreshness='cached';
+    $('#canvasStatus').textContent='Disconnected. Your last successful Canvas snapshot remains available offline. Reconnect to refresh it.';
+  }else{
+    mode='demo';dataFreshness='demo';lastCanvasSync=null;
+    COURSES.splice(0,COURSES.length,...structuredClone(DEMO_COURSES));
+    ASSIGNMENTS=structuredClone(DEMO_ASSIGNMENTS);
+    $('#canvasStatus').textContent='Disconnected. Sample data is shown. Your local notes and settings remain on this device.';
+  }
+  refreshAll();
+};
 function refreshAll(){statusFilter='All';renderDashboard();initLedger();renderCourses();renderNotes();renderLab();renderAutopilot();}
-// Do not claim unimplemented AI, analytics, submission, or encrypted storage.
+// Keep demo-only metrics and rule-based assistant behavior clearly labeled.
 $('#syncLabel').textContent='Demo workspace · not synced';
 $('.side-user-meta .tiny').textContent='Your academic space';
 $('#view-lab .grid3').insertAdjacentHTML('beforebegin','<p class="small muted mt">The charts and flashcards below are examples, not analytics from your school.</p>');
@@ -554,12 +720,30 @@ $('#view-ledger .card-head p').textContent='Computed from synced scores and cate
 $('#projGpa').parentElement.nextElementSibling.querySelector('.mono').textContent='Estimate';
 $('#hsGpa').title='Illustrative demo projection only';
 $('#canvasStatus').textContent=hadOldToken?'An earlier version stored your token in plain text and may have sent it to a third-party proxy. Consider revoking it in Canvas and creating a new token.':'Demo mode: sample coursework is shown until you connect.';
-const existing=getCredentials();if(existing){$('#canvasUrl').value=existing.base;$('#canvasProxy').value=existing.proxy||'';$('#canvasStatus').textContent='Session found. Tap Sync Canvas to load your coursework.';}
+await hydrateSavedSecrets();
+if(window.NorthstarVault){
+  try{const cached=await window.NorthstarVault.get('canvas-snapshot',null);if(cached&&[1,2].includes(cached.version)&&Array.isArray(cached.courses)&&Array.isArray(cached.assignments)){COURSES.splice(0,COURSES.length,...cached.courses);ASSIGNMENTS=cached.assignments;GROUPS=cached.groups||{};COURSE_META=cached.courseMeta||{};syncWarnings=Array.isArray(cached.warnings)?cached.warnings:[];syncCompleteness=cached.completeness||(cached.version===1?'unknown':'complete');mode='live';dataFreshness='cached';lastCanvasSync=cached.lastSyncedAt||null;refreshAll();}}catch(error){console.warn('Could not restore the last Canvas snapshot:',error);}
+}
+const existing=getCredentials();if(existing){$('#canvasUrl').value=existing.base;$('#canvasProxy').value=existing.proxy||'';$('#canvasToken').value=existing.token||'';$('#canvasStatus').textContent=credentialsRemembered?'Saved encrypted connection found. Synchronizing Canvas…':'Session connection found. Tap Sync Canvas to load your coursework.';}
+// Refresh stale coursework when Safari returns to the foreground or connectivity returns.
+// This is event-driven (not a background polling loop) and rate-limited to protect Canvas.
+function maybeRefreshCanvas(force=false){
+  if(document.visibilityState!=='visible'||!getCredentials()||canvasSyncInFlight)return;
+  const now=Date.now(),last=lastCanvasSync?Date.parse(lastCanvasSync):0;
+  if(!force&&last&&now-last<5*60*1000)return;
+  if(now-lastAutoSyncTrigger<60*1000)return;
+  lastAutoSyncTrigger=now;
+  syncCanvas({quiet:true});
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')maybeRefreshCanvas(false);});
+window.addEventListener('online',()=>maybeRefreshCanvas(true));
 bootstrapDebug();
 renderPeriodsManager();
 if($('#geminiKey')) $('#geminiKey').value=getAiKey();
+if($('#rememberCanvas')) $('#rememberCanvas').checked=credentialsRemembered || !existing;
+if($('#rememberGemini')) $('#rememberGemini').checked=aiKeyRemembered || !persistentAiKey;
 if($('#geminiModel')) $('#geminiModel').value=getAiModel();
-if($('#aiStatus')) $('#aiStatus').textContent=getAiKey()?'Gemini key available for this session.':'No Gemini key set — the built-in guide is active.';
+if($('#aiStatus')) $('#aiStatus').textContent=getAiKey()?(aiKeyRemembered?'Gemini key encrypted and remembered on this device.':'Gemini key available for this session.'):'No Gemini key set — the built-in guide is active.';
 refreshAll();
 if(existing) syncCanvas();
 })();

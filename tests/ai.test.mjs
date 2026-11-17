@@ -6,7 +6,8 @@ const AI = require('../scripts/ai.js');
 const KEY = 'AIza-test-secret-key-12345';
 const okFetch = async (url, opts) => {
   assert.ok(url.includes('generativelanguage.googleapis.com'));
-  assert.ok(url.includes('key=' + KEY));
+  assert.ok(!url.includes(KEY), 'API key must not be placed in the URL');
+  assert.equal(opts.headers['x-goog-api-key'], KEY, 'API key is sent in the request header');
   assert.equal(opts.method, 'POST');
   const body = JSON.parse(opts.body);
   assert.ok(body.contents[0].parts[0].text.length > 0);

@@ -1,6 +1,5 @@
-/* NORTHSTAR AI: Google Gemini (free tier) client. The API key is session-only,
-   held in memory, and redacted from every error message. Requests go directly
-   from the browser to Google — never through the Canvas bridge. */
+/* NORTHSTAR AI: Google Gemini client. API keys are sent in the x-goog-api-key
+   header, never in the request URL, and redacted from every error message. */
 (function (global) {
   'use strict';
   var DEFAULT_MODEL = 'gemini-2.0-flash';
@@ -13,7 +12,7 @@
   }
 
   function endpoint(model, key) {
-    return ENDPOINT + encodeURIComponent(model || DEFAULT_MODEL) + ':generateContent?key=' + encodeURIComponent(key || '');
+    return ENDPOINT + encodeURIComponent(model || DEFAULT_MODEL) + ':generateContent';
   }
 
   function friendlyError(status, bodyText, key) {
@@ -39,7 +38,7 @@
     try {
       res = await fetchImpl(endpoint(model, key), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify(body),
         signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(30000) : undefined
       });
