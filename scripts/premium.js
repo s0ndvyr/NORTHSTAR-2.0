@@ -1057,8 +1057,10 @@ openCourse=function(id){
   const course=courseById(id);if(!course)return;
   const history=window.NorthstarStudentVue?window.NorthstarStudentVue.historyForCourse(course,phase3StudentVue):[];
   const detail=$('#courseDetail');if(!detail)return;
+  const grade=phase3GradeFor(course);
+  const currentHtml=grade.source==='StudentVUE import'?'<div class="card mt"><div class="eyebrow">STUDENTVUE CURRENT GRADE</div><h3 style="font:500 28px var(--serif);margin-top:8px">'+esc(grade.value)+'</h3><p class="small muted">Imported from StudentVUE · '+new Date(grade.record.importedAt).toLocaleDateString()+'</p></div>':'';
   const historyHtml=history.length?'<div class="card mt"><div class="card-head"><div><h3>StudentVUE grade history</h3><p>Imported grade records · source and marking period retained</p></div><span class="badge badge-cyan">'+history.length+' records</span></div>'+history.map(r=>'<div class="period-row"><div style="flex:1;min-width:0"><b>'+esc(r.period)+'</b><div class="tiny muted">'+esc(r.schoolYear||'School year not provided')+(r.asOf?' · '+esc(r.asOf):'')+'</div></div><b class="mono">'+esc(r.display||'N/A')+'</b></div>').join('')+'</div>':'';
-  if(historyHtml)detail.insertAdjacentHTML('beforeend',historyHtml);
+  if(currentHtml)detail.insertAdjacentHTML('beforeend',currentHtml);if(historyHtml)detail.insertAdjacentHTML('beforeend',historyHtml);
 };
 const phase3BaseRenderCourses=renderCourses;
 renderCourses=function(){
