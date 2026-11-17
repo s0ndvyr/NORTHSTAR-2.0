@@ -24,6 +24,7 @@ const dom = new JSDOM(html, {
     window.NorthstarVault = {get: async (k, fallback) => vault.has(k) ? vault.get(k) : fallback, set: async (k, v) => { vault.set(k, v); return true; }, remove: async k => vault.delete(k)};
     window.__testVault = vault;
     window.open = () => ({closed:false});
+    window.scrollTo = () => {};
     window.HTMLElement.prototype.scrollIntoView = function () {};
     window.alert = () => {};
     window.confirm = () => true;
@@ -112,7 +113,8 @@ assert.ok(window.document.getElementById('courseGrid').textContent.includes('Can
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('Marking Period 2'), 'current grading-period title comes from the student enrollment');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('91.0%'), 'official current grading-period percentage is displayed');
-const studentVueInput={value:'',files:[{name:'studentvue-export.csv',size:220,text:async()=> 'Course Code,Course Name,Marking Period,Grade,Letter Grade,School Year,Is Current,As Of\\nMATH,Math,Marking Period 2,95,A,2026-2027,true,2026-11-17'}]};
+const studentVueCsv=['Course Code,Course Name,Marking Period,Grade,Letter Grade,School Year,Is Current,As Of','MATH,Math,Marking Period 2,95,A,2026-2027,true,2026-11-17'].join(String.fromCharCode(10));
+const studentVueInput={value:'',files:[{name:'studentvue-export.csv',size:220,text:async()=>studentVueCsv}]};
 await window.importStudentVueGrades(studentVueInput);
 assert.equal(window.__testVault.get('studentvue-grades').records[0].percent,95,'StudentVUE grade import is stored in the device vault');
 assert.equal(window.NorthstarStudentVue.load(),null,'StudentVUE grade import is not left in plaintext localStorage');
