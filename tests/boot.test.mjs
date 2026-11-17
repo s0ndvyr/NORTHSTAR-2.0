@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -24,6 +24,7 @@ const dom = new JSDOM(html, {
     window.NorthstarVault = {get: async (k, fallback) => vault.has(k) ? vault.get(k) : fallback, set: async (k, v) => { vault.set(k, v); return true; }, remove: async k => vault.delete(k)};
     window.__testVault = vault;
     window.open = () => ({closed:false});
+    window.scrollTo = () => {};
     window.HTMLElement.prototype.scrollIntoView = function () {};
     window.alert = () => {};
     window.confirm = () => true;
@@ -48,6 +49,8 @@ assert.ok(window.Grades, 'Grades module loaded');
 assert.ok(window.NorthstarAI, 'NorthstarAI module loaded');
 assert.ok(window.CanvasDebug, 'CanvasDebug module loaded');
 assert.ok(window.NorthstarCanvasSync, 'NorthstarCanvasSync module loaded');
+assert.ok(window.NorthstarStudentVue, 'NorthstarStudentVue grade import module loaded');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.3', 'release identifier matches Phase 3');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
@@ -66,6 +69,12 @@ window.document.getElementById('periodEnd').value = '2026-10-31';
 window.addPeriod();
 assert.ok(window.document.getElementById('periodsManager').textContent.includes('Marking Period 1'), 'period added and rendered');
 assert.ok(JSON.parse(window.localStorage.getItem('northstar_periods_v1')).length === 1, 'period persisted to localStorage');
+window.document.getElementById('periodName').value = 'Marking Period 2';
+window.document.getElementById('periodStart').value = '2026-11-01';
+window.document.getElementById('periodEnd').value = '2026-12-31';
+window.addPeriod();
+assert.equal(JSON.parse(window.localStorage.getItem('northstar_periods_v1')).length, 2, 'multiple periods persist');
+assert.ok(window.document.getElementById('fPeriod').options.length >= 4, 'ledger exposes current, all, and configured period filters');
 
 // ledger renders
 window.renderLedger();
@@ -100,13 +109,37 @@ await window.connectCanvas();
 window.renderCourses();
 window.renderWhatIf();
 assert.ok(window.document.getElementById('courseGrid').textContent.includes('88.5%'), 'official Canvas enrollment percentage is displayed');
-assert.ok(window.document.getElementById('courseGrid').textContent.includes('Canvas current grade'), 'official grade source is clearly labeled');
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('Canvas official current grade'), 'official grade source is clearly labeled');
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('Marking Period 2'), 'current grading-period title comes from the student enrollment');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('91.0%'), 'official current grading-period percentage is displayed');
+const studentVueCsv=['Course Code,Course Name,Marking Period,Grade,Letter Grade,School Year,Is Current,As Of','MATH,Math,Marking Period 2,95,A,2026-2027,true,2026-11-17'].join(String.fromCharCode(10));
+const studentVueInput={value:'',files:[{name:'studentvue-export.csv',size:220,text:async()=>studentVueCsv}]};
+await window.importStudentVueGrades(studentVueInput);
+assert.equal(window.__testVault.get('studentvue-grades').records[0].percent,95,'StudentVUE grade import is stored in the device vault');
+assert.equal(window.NorthstarStudentVue.load(),null,'StudentVUE grade import is not left in plaintext localStorage');
+window.renderCourses();
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('A · 95.0%'),'StudentVUE import is used as the separate grade source');
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('StudentVUE import'),'StudentVUE grade source is labeled');
+window.openCourse('canvas_1');
+assert.ok(window.document.getElementById('courseDetail').textContent.includes('StudentVUE grade history'),'historical StudentVUE records appear in course detail');
+
 window.openWorkspace('canvas_11_1');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submitted'), 'submitted but ungraded work is distinguished from incomplete work');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
+window.renderLedger();
+const activeLedger = window.document.getElementById('ledgerList').textContent;
+assert.ok(activeLedger.includes('Awaiting feedback'), 'current-period ledger includes current-period assignment');
+assert.ok(!activeLedger.includes('Test work'), 'current-period ledger excludes prior-period assignment');
+assert.ok(activeLedger.includes('Submitted 1 day ago'), 'submitted assignment shows elapsed submission time');
+assert.ok(!activeLedger.includes('60d overdue'), 'submitted assignment is never labeled overdue');
+window.toggleIgnoredCourse('canvas_1', true);
+window.renderLedger();
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('No published assignments'), 'ignored course is removed from the active ledger');
+assert.ok(window.document.getElementById('courseGrid').textContent.includes('IGNORED'), 'ignored course remains visible as ignored in course management');
+window.toggleIgnoredCourse('canvas_1', false);
+window.renderLedger();
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;

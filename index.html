@@ -38,7 +38,7 @@
       <button class="icon-btn hamburger" id="hamburger">☰</button>
       <div class="search"><span style="color:var(--muted)">⌕</span><input id="globalSearch" placeholder="Search assignments, courses, notes…"><kbd>/</kbd></div>
       <span class="pill hide-m"><span class="dot"></span> <span id="syncLabel">Demo workspace · not synced</span></span>
-      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / 04</span>
+      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / .4.3</span>
       <button class="icon-btn" id="bellBtn" title="Activity & Alerts">♪<span class="n" id="bellN">4</span></button>
       <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.82.55l-.05.07h-3.4l-.02-.08a1.7 1.7 0 0 0-1.28-1.27l-.08-.02-2.94 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34l-.08.03-1.7-2.94.06-.06A1.7 1.7 0 0 0 5.3 15.6l.03-.08v-3.4l-.08-.02a1.7 1.7 0 0 0-1.27-1.28l-.07-.02 1.7-2.94.08.03a1.7 1.7 0 0 0 1.82-.55l.05-.07h3.4l.02.08a1.7 1.7 0 0 0 1.28 1.27l.08.02 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.08-.03 1.7 2.94-.06.06a1.7 1.7 0 0 0-.55 1.82l-.03.08v3.4l.08.02a1.7 1.7 0 0 0 1.27 1.28z"/></svg></button>
       <button class="btn btn-primary btn-sm hide-m" onclick="openConnect()">⬡ Connect LMS</button>
@@ -52,7 +52,7 @@
           <div>
             <div class="eyebrow" id="dateLine">—</div>
             <h1 id="greeting">Good evening, <em>Christian</em>.</h1>
-            <p class="sub" id="heroSub">—</p>
+            <p class="sub" id="heroSub">—</p><div class="eyebrow mt" id="currentPeriodLabel">CURRENT MARKING PERIOD · NOT SET</div>
           </div>
           <div class="head-actions">
             <button class="btn btn-primary btn-sm" onclick="showView('lab')">◐ Start focus sprint</button>
@@ -71,11 +71,11 @@
           </div>
           <!-- Academic Health -->
           <div class="card span4">
-            <div class="card-head"><div><h3>Academic Health</h3><p>Illustrative score from overdue + deadlines</p></div><span class="badge badge-cyan">LIVE</span></div>
+            <div class="card-head"><div><h3>Current-Period Progress</h3><p>Published work completed in your active marking period</p></div><span class="badge badge-cyan">LIVE</span></div>
             <div class="flex" style="gap:18px">
               <div class="ring">
                 <svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/><circle id="statusRing" cx="50" cy="50" r="42" fill="none" stroke="#34d399" stroke-width="9" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="60"/></svg>
-                <div class="ring-center"><div><b id="statusPct">—</b><span>HEALTH</span></div></div>
+                <div class="ring-center"><div><b id="statusPct">—</b><span>COMPLETE</span></div></div>
               </div>
               <div style="flex:1;min-width:0">
                 <span class="badge badge-green" id="statusBadge">● On Track</span>
@@ -83,38 +83,35 @@
               </div>
             </div>
             <div class="flex mt" style="gap:8px">
-              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsGpa">3.82</b><div class="tiny muted">PROJECTED GPA</div></div>
-              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsStreak">12d 🔥</b><div class="tiny muted">STREAK</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsGpa">3.82</b><div class="tiny muted">OFFICIAL GPA</div></div>
+              <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsStreak">12d 🔥</b><div class="tiny muted">REMAINING</div></div>
               <div style="flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:9px"><b class="mono" style="font-size:16px" id="hsDone">—</b><div class="tiny muted">DONE</div></div>
             </div>
           </div>
           <!-- Focus Time -->
           <div class="card span4">
-            <div class="card-head"><div><h3>Focus Time</h3><p>Hours this week by day</p></div><span class="badge badge-violet" id="hsHours">18.5h</span></div>
+            <div class="card-head"><div><h3>Upcoming Workload</h3><p>Open assignments due by day</p></div><span class="badge badge-violet" id="hsHours">18.5h</span></div>
             <div id="focusBars"></div>
-            <p class="tiny muted mt">Best focus window: <b style="color:#e6edf7">10 AM – 12 PM</b> · example insight</p>
+            <p class="tiny muted mt">Counts are limited to the current marking period and exclude submitted work.</p>
           </div>
           <!-- AI Insights -->
           <div class="card span4">
-            <div class="card-head"><div><h3>AI Insights</h3><p>Copilot · human-in-the-loop</p></div><span class="badge badge-violet">✧ AI</span></div>
-            <div class="insight"><b>You're most productive 10 AM – 12 PM</b><span>Schedule hard work there</span></div>
-            <div class="insight"><b>2 overdue items need clearing</b><span>Homework 3 is oldest — start there</span></div>
-            <div class="insight"><b>Try a 25-minute sprint</b><span>For Thermodynamics PS6 tonight</span></div>
+            <div class="card-head"><div><h3>Academic Signals</h3><p>Live summaries from your current-period coursework</p></div><span class="badge badge-violet">✧ AI</span></div>
+            <div id="academicSignals"></div>
             <button class="btn btn-ghost btn-sm" style="width:100%" onclick="showView('copilot')">Open Copilot →</button>
           </div>
           <!-- Weekly Radar -->
           <div class="card span8">
-            <div class="card-head"><div><h3>Weekly Academic Radar</h3><p>Planned workload vs. actual focus hours</p></div><span class="badge badge-cyan">● LIVE</span></div>
+            <div class="card-head"><div><h3>7-Day Workload Forecast</h3><p>Published assignments due each day in the current marking period</p></div><span class="badge badge-cyan">● LIVE</span></div>
             <div id="radarChart"></div>
             <div class="flex mt" style="gap:16px">
-              <span class="small"><span class="dotc" style="display:inline-block;background:#22d3ee"></span> Planned</span>
-              <span class="small"><span class="dotc" style="display:inline-block;background:#818cf8"></span> Actual</span>
+              <span class="small"><span class="dotc" style="display:inline-block;background:#22d3ee"></span> Open assignments due</span>
               <span class="small muted" style="margin-left:auto" id="radarNote"></span>
             </div>
           </div>
           <!-- Task Completion gauge -->
           <div class="card span4">
-            <div class="card-head"><div><h3>Task Completion</h3><p>This semester</p></div></div>
+            <div class="card-head"><div><h3>Task Completion</h3><p>Current marking period</p></div></div>
             <div style="text-align:center;padding:6px 0">
               <svg width="190" height="110" viewBox="0 0 190 110" id="gaugeSvg"></svg>
               <div class="big-num" id="completionPct" style="margin-top:-52px">—</div>
@@ -135,7 +132,7 @@
             <div class="card-head"><div><h3>Today</h3><p>Schedule at a glance</p></div></div>
             <div id="todaySchedule"></div>
             <div class="divider"></div>
-            <div class="flex" style="justify-content:space-between"><h3 style="font-size:13px;font-weight:800">Focus Heatmap</h3><span class="badge badge-green" id="heatTotal">—</span></div>
+            <div class="flex" style="justify-content:space-between"><h3 style="font-size:13px;font-weight:800">Submission Activity</h3><span class="badge badge-green" id="heatTotal">—</span></div>
             <div class="heat mt" id="heatmap"></div>
             <div class="flex mt" style="justify-content:space-between"><span class="tiny muted">Less</span><span class="tiny muted">More →</span></div>
           </div>
@@ -167,6 +164,7 @@
         <div class="filters" id="statusTabs"></div>
         <div class="filters">
           <select class="select" id="fCourse"><option value="">All courses</option></select>
+          <select class="select" id="fPeriod" aria-label="Filter by marking period"><option value="current">Current marking period</option><option value="all">All marking periods</option></select>
           <select class="select" id="fType"><option value="">All types</option><option>Quiz</option><option>Writing</option><option>Homework</option><option>Project</option><option>Reading</option><option>Discussion</option></select>
           <select class="select" id="fPriority"><option value="">All priorities</option><option>High</option><option>Normal</option><option>Low</option></select>
           <select class="select" id="fSort"><option value="due">Sort: Due date</option><option value="points">Sort: Points</option><option value="course">Sort: Course</option></select>
@@ -297,7 +295,7 @@
             <p class="sub">Customize your NORTHSTAR workspace. Changes save automatically.</p>
           </div>
           <div class="head-actions">
-            <span class="pill" style="font-family:var(--mono)">NORTHSTAR 0.4</span>
+            <span class="pill" style="font-family:var(--mono)">NORTHSTAR / .4.3</span>
             <button class="btn btn-ghost btn-sm" onclick="resetSettings()">↺ Reset Defaults</button>
           </div>
         </div>
@@ -374,6 +372,22 @@
           <div class="flex mt" style="gap:8px"><button class="btn btn-primary btn-sm" onclick="saveAiSettings()">Save key</button><button class="btn btn-ghost btn-sm" onclick="testAiKey()">Test key</button></div>
           <p class="small muted mt" id="aiStatus">No Gemini key set — the built-in guide is active.</p>
           <p class="tiny muted mt">Get a free key at <b>Google AI Studio</b> (aistudio.google.com) → “Get API key”. The AI explains, summarizes, and quizzes — it never completes assignments for you.</p>
+        <div class="card" style="max-width:720px;padding:24px;margin-top:16px" id="studentVueSettings">
+          <div class="card-head"><div><h3>StudentVUE grade records</h3><p>Bring in official grades without sharing your StudentVUE password with NORTHSTAR.</p></div><span class="badge badge-cyan">GRADE SOURCE</span></div>
+          <p class="small muted" id="studentVueStatus" aria-live="polite">No StudentVUE grade records imported. Direct district API access has not been authorized or documented.</p>
+          <div class="flex mt" style="gap:8px;flex-wrap:wrap">
+            <a class="btn btn-ghost btn-sm" href="https://va-nnps-psv.edupoint.com/PXP2_Login_Student.aspx" target="_blank" rel="noopener noreferrer">Open StudentVUE ↗</a>
+            <label class="btn btn-primary btn-sm" for="studentVueImportFile">Import grade file</label>
+            <input id="studentVueImportFile" type="file" accept=".csv,.json,text/csv,application/json" hidden onchange="importStudentVueGrades(this)">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="downloadStudentVueTemplate()">Download CSV template</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="clearStudentVueGrades()">Clear imported grades</button>
+          </div>
+          <p class="tiny muted mt">Supported CSV/JSON grade records require course name or code, marking period, and grade. Imports are stored on this device, include their source and import date, and are not a live StudentVUE connection. Do not upload passwords or session data. For an approved district data-export/API option, contact the <a href="mailto:tsc@nn.k12.va.us">NNPS Technology Service Center</a> or your school Technology Support Specialist.</p>
+        </div>
+        <div class="card" style="max-width:720px;padding:24px;margin-top:16px" id="courseIgnoreSettings">
+          <div class="card-head"><div><h3>Courses included in NORTHSTAR</h3><p>Ignored courses remain visible in course management but are excluded from priorities, assignment workload, and grade projections.</p></div></div>
+          <div id="courseIgnoreList"><p class="small muted">Connect Canvas to manage your courses.</p></div>
+        </div>
         </div>
       </section>
 
@@ -458,6 +472,7 @@
 <script src="scripts/vault.js"></script>
 <script src="scripts/submissions.js"></script>
 <script src="scripts/canvas-sync.js"></script>
+<script src="scripts/studentvue.js"></script>
 <script src="scripts/premium.js"></script>
 </body>
 </html>
