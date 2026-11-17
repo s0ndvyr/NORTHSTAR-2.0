@@ -752,7 +752,7 @@ if(existing) syncCanvas();
 const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.3';
 const PHASE3_IGNORES_KEY = 'northstar_ignored_courses_v1';
 let phase3IgnoredCourses = new Set(store.get(PHASE3_IGNORES_KEY, []));
-let phase3StudentVue = window.NorthstarStudentVue ? window.NorthstarStudentVue.load() : null;
+let phase3StudentVue = null;
 let phase3PeriodSelection = store.get('northstar_ledger_period_v1', 'current');
 
 function phase3CurrentPeriod() {
@@ -979,33 +979,59 @@ window.toggleIgnoredCourse=function(id,ignored){
   store.set(PHASE3_IGNORES_KEY,[...phase3IgnoredCourses]);
   renderCourseIgnoreSettings();renderDashboard();renderLedger();renderCourses();renderWhatIf();
 };
+async function phase3ReadStudentVueRecords(){
+  if(window.NorthstarVault){
+    const secure=await window.NorthstarVault.get('studentvue-grades',null);
+    if(secure&&secure.format==='northstar-studentvue-grades'&&Array.isArray(secure.records))return secure;
+  }
+  // Migrate an earlier local import into encrypted device storage.
+  const legacy=window.NorthstarStudentVue?window.NorthstarStudentVue.load():null;
+  if(legacy&&window.NorthstarVault){
+    await window.NorthstarVault.set('studentvue-grades',legacy);
+    window.NorthstarStudentVue.remove();
+    return legacy;
+  }
+  return legacy;
+}
 function renderStudentVueSettings(){
   const el=$('#studentVueStatus');if(!el)return;
-  phase3StudentVue=window.NorthstarStudentVue?window.NorthstarStudentVue.load():null;
   if(!phase3StudentVue){el.textContent='No StudentVUE grade records imported. Direct district API access has not been authorized or documented.';return;}
   const count=phase3StudentVue.records.length;
-  el.textContent=count+' StudentVUE grade record(s) imported on '+new Date(phase3StudentVue.importedAt).toLocaleString()+'. These are imported records, not a live connection.';
+  el.textContent=count+' StudentVUE grade record(s) imported on '+new Date(phase3StudentVue.importedAt).toLocaleString()+'. Stored encrypted on this device; this is not a live connection.';
+}
+async function hydrateStudentVueGrades(){
+  try{
+    phase3StudentVue=await phase3ReadStudentVueRecords();
+    renderStudentVueSettings();
+    if(phase3StudentVue){renderDashboard();renderCourses();renderWhatIf();}
+  }catch(error){
+    const el=$('#studentVueStatus');if(el)el.textContent='Saved StudentVUE grades could not be opened from secure device storage.';
+  }
 }
 window.importStudentVueGrades=async function(input){
   const file=input&&input.files&&input.files[0];if(!file)return;
   try{
     if(file.size>2*1024*1024)throw new Error('Grade file exceeds the 2 MB limit.');
+    if(!window.NorthstarVault)throw new Error('Secure device storage is unavailable. No grade data was saved.');
     const raw=await file.text(),parsed=window.NorthstarStudentVue.parse(raw,file.name);
-    const prior=window.NorthstarStudentVue.load(),map=new Map();
+    const prior=phase3StudentVue||await phase3ReadStudentVueRecords(),map=new Map();
     (prior?.records||[]).forEach(r=>map.set(r.id,r));parsed.records.forEach(r=>map.set(r.id,r));
     const merged={...parsed,records:[...map.values()]};
-    window.NorthstarStudentVue.save(merged);phase3StudentVue=merged;
+    await window.NorthstarVault.set('studentvue-grades',merged);
+    window.NorthstarStudentVue.remove();phase3StudentVue=merged;
     renderStudentVueSettings();refreshAll();
-    toast('Imported '+parsed.records.length+' StudentVUE grade record(s). Review course matches and marking periods.');
+    toast('Imported '+parsed.records.length+' StudentVUE grade record(s). Encrypted on this device.');
   }catch(error){toast('StudentVUE import failed: '+error.message);const el=$('#studentVueStatus');if(el)el.textContent='Import failed: '+error.message;}
   finally{if(input)input.value='';}
 };
-window.clearStudentVueGrades=function(){
+window.clearStudentVueGrades=async function(){
   if(!confirm('Remove imported StudentVUE grade records from this device?'))return;
-  window.NorthstarStudentVue.remove();phase3StudentVue=null;renderStudentVueSettings();refreshAll();toast('Imported StudentVUE grades cleared.');
+  if(window.NorthstarVault)await window.NorthstarVault.remove('studentvue-grades').catch(()=>{});
+  if(window.NorthstarStudentVue)window.NorthstarStudentVue.remove();
+  phase3StudentVue=null;renderStudentVueSettings();refreshAll();toast('Imported StudentVUE grades cleared.');
 };
 window.downloadStudentVueTemplate=function(){
-  const csv='Course Code,Course Name,Marking Period,Grade,Letter Grade,School Year,Is Current,As Of\nBIO 101,Biology,Marking Period 1,92.5,A,2026-2027,true,2026-11-17\n';
+  const csv='Course Code,Course Name,Marking Period,Grade,Letter Grade,School Year,Is Current,As Of\n';
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   const link=document.createElement('a');link.href=url;link.download='northstar-studentvue-grade-template.csv';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
 };
@@ -1047,6 +1073,7 @@ aiContext=function(){
 };
 renderCourseIgnoreSettings();
 renderStudentVueSettings();
+hydrateStudentVueGrades();
 
 /* Phase 3 follow-through: calendar, course grade history, and initial UI refresh. */
 renderCalendar=function(){
