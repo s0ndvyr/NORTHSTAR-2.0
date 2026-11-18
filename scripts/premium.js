@@ -834,7 +834,7 @@ function phase3PeriodFor(a) {
 function phase3PeriodIdFor(a) { const p=phase3PeriodFor(a); return p ? p.id : null; }
 function phase3VisibleAssignments(selection) {
   const chosen = selection || phase3PeriodSelection || 'current';
-  let rows = ASSIGNMENTS.filter(a => phase3IsPublished(a) && !phase3CourseIgnored(a.course) && !!courseById(a.course));
+  let rows = ASSIGNMENTS.filter(a => phase3IsPublished(a) && !phase3CourseIgnored(a.course) && !!courseById(a.course) && !phase4IsHidden(a));
   if (chosen === 'all') return rows;
   if (chosen === 'current') {
     const current = phase3CurrentPeriod();
@@ -935,8 +935,10 @@ function phase3QueueSort(a,b) {
 renderLedger = function() {
   const periodEl=$('#fPeriod'), selection=periodEl?periodEl.value:phase3PeriodSelection;
   if(selection)phase3PeriodSelection=selection;
-  const fc=$('#fCourse')?.value||'', ft=$('#fType')?.value||'', fp=$('#fPriority')?.value||'', fs=$('#fSort')?.value||'due', q=($('#fSearch')?.value||'').toLowerCase();
-  let list=phase3VisibleAssignments(selection).filter(a=>matchesStatus(a)&&(!fc||a.course===fc)&&(!ft||a.type===ft)&&(!fp||a.priority===fp)&&(!q||String(a.title).toLowerCase().includes(q)));
+  const fc=$('#fCourse')?.value||'', ft=$('#fType')?.value||'', fp=$('#fPriority')?.value||'', fs=$('#fSort')?.value||'due', q=($('#fSearch')?.value||'').toLowerCase(), visibility=$('#fVisibility')?.value||'active';
+  let source=phase3VisibleAssignments(selection);
+  if(visibility!=='active'){const hidden=ASSIGNMENTS.filter(a=>phase3IsPublished(a)&&!phase3CourseIgnored(a.course)&&!!courseById(a.course)&&phase4IsHidden(a)&&phase4PeriodMatches(a,selection));source=visibility==='hidden'?hidden:source.concat(hidden);}
+  let list=source.filter(a=>matchesStatus(a)&&(!fc||a.course===fc)&&(!ft||a.type===ft)&&(!fp||a.priority===fp)&&(!q||String(a.title).toLowerCase().includes(q)));
   if(fs==='due')list.sort((a,b)=>a.due-b.due);else if(fs==='points')list.sort((a,b)=>b.points-a.points);else if(fs==='priority')list.sort(phase3QueueSort);else list.sort((a,b)=>(courseById(a.course)?.code||'').localeCompare(courseById(b.course)?.code||''));
   const total=source.length;
   $('#ledgerCount').textContent=list.length+' shown · '+total+' published assignments · '+(selection==='all'?'all marking periods':selection==='current'?(phase3CurrentPeriod()?.name||'current dated work'):(PERIODS.find(p=>p.id===selection)?.name||'selected marking period'))+' · '+(mode==='live'?'Canvas':'sample data');
@@ -962,7 +964,7 @@ initLedger = function() {
   select.value=[...select.options].some(o=>o.value===previous)?previous:'current';
   phase3PeriodSelection=select.value;
   select.onchange=()=>{phase3PeriodSelection=select.value;store.set('northstar_ledger_period_v1',phase3PeriodSelection);renderLedger();};
-  ['fCourse','fType','fPriority','fSort'].forEach(id=>{const el=$('#'+id);if(el)el.onchange=renderLedger;});
+  ['fCourse','fType','fPriority','fSort','fVisibility'].forEach(id=>{const el=$('#'+id);if(el)el.onchange=renderLedger;});
   const search=$('#fSearch');if(search)search.oninput=renderLedger;
   renderLedger();
 };
