@@ -10,6 +10,10 @@ function payload(type,value){
     if(!['http:','https:'].includes(url.protocol)) throw Error('Enter a valid HTTP or HTTPS URL.');
     return {submission:{submission_type:type,url:url.href}};
   }
+  if(type==='online_upload'){
+    const fileId=Number(value);if(!Number.isSafeInteger(fileId)||fileId<1)throw Error('Upload the file to Canvas before submitting.');
+    return {submission:{submission_type:type,file_ids:[fileId]}};
+  }
   throw Error('This submission type must be completed in Canvas.');
 }
 async function send({credentials,courseId,assignmentId,data,fetchImpl=global.fetch}){
