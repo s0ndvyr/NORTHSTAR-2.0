@@ -28,7 +28,7 @@ const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
   uploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example')return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};
+  if(new URL(url).hostname==='bridge.example'){const path=new URL(url).searchParams.get('path');if(opts.method==='GET'&&path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:7})};return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};}
   assert.equal(opts.method,'POST');
   assert.equal(opts.headers?.Authorization,undefined,'signed upload must never receive Canvas bearer token');
   const fields=[...opts.body.keys()];assert.deepEqual(fields,['key','policy','file'],'file must be appended last');
