@@ -22,7 +22,7 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
 }
-function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/self\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
+function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
 function validateWrite(path,data){
   if(!isObject(data))return 'JSON object required';
   const discussionPost=/^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/;
