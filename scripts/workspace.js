@@ -25,6 +25,25 @@ function transport(credentials,fetchImpl=root.fetch){
   }
   return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true)};
 }
+async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){
+  if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a file under 25 MB.');
+  const api=transport(credentials,fetchImpl),c=id(courseId),a=id(assignmentId);
+  const init=await api.post('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/self/files',{name:file.name,size:file.size,content_type:file.type||'application/octet-stream'});
+  const upload=Array.isArray(init.attachments)?init.attachments[0]:init;
+  if(!upload?.upload_url||!upload.upload_params||typeof upload.upload_params!=='object')throw Error('Canvas did not return a valid signed upload request.');
+  let target;try{target=new URL(upload.upload_url);}catch{throw Error('Canvas returned an invalid upload destination.');}
+  if(target.protocol!=='https:'||target.username||target.password)throw Error('Canvas upload destination must be a secure HTTPS URL.');
+  const FormDataCtor=root.FormData||globalThis.FormData;
+  if(!FormDataCtor)throw Error('This browser does not support secure file uploads.');
+  const form=new FormDataCtor();
+  for(const [key,value] of Object.entries(upload.upload_params))form.append(key,String(value));
+  form.append('file',file,file.name);
+  let response;try{response=await fetchImpl(target.href,{method:'POST',body:form,redirect:'follow'});}
+  catch{throw Error('Canvas accepted the upload request but the signed upload could not be confirmed. Check Canvas before retrying; no automatic retry was made.');}
+  let uploaded;try{uploaded=await response.json();}catch{throw Error('Canvas file upload response could not be verified. Check Canvas before retrying.');}
+  if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the file upload (HTTP '+response.status+').');
+  return uploaded;
+}
 async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   const api=transport(credentials,fetchImpl),c=id(courseId),q=id(quizId);
   const body=accessCode?{access_code:String(accessCode)}:{};
@@ -50,7 +69,7 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-const api={transport,startQuiz,saveQuizAnswers,completeQuiz};
+const api={transport,uploadAssignmentFile,startQuiz,saveQuizAnswers,completeQuiz};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
