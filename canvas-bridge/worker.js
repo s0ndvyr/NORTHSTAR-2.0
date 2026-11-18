@@ -20,7 +20,7 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
 }
-function isWritePath(path){return /^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions$/.test(path)||/^\\/api\\/v1\\/courses\\/\\d+\\/quizzes\\/\\d+\\/submissions$/.test(path)||/^\\/api\\/v1\\/quiz_submissions\\/\\d+\\/questions$/.test(path)||/^\\/api\\/v1\\/courses\\/\\d+\\/quizzes\\/\\d+\\/submissions\\/\\d+\\/complete$/.test(path);}\nfunction validateWrite(path,data){
+function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
   if(!isObject(data))return 'JSON object required';
   const assignment=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/;
   const quizStart=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/;
