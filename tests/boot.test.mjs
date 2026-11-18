@@ -167,6 +167,19 @@ await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz submitted'),'workspace reports completion after Canvas confirms it');
 
+window.openWorkspace('canvas_11_1');
+window.document.getElementById('phase4HideAssignment').click();
+assert.ok(JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'hide preference persists locally');
+window.document.getElementById('fVisibility').value='hidden';
+window.renderLedger();
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'),'hidden assignment is recoverable in the hidden ledger filter');
+window.document.getElementById('fVisibility').value='active';
+window.renderLedger();
+assert.ok(!window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'),'hidden assignment leaves active ledger');
+window.document.getElementById('phase4HideAssignment').click();
+assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'restore removes the local hide preference');
+
+
 window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;
