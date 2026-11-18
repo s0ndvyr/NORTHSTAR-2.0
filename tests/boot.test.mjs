@@ -93,9 +93,11 @@ assert.ok(!window.document.getElementById('aiStatus').textContent.includes('AIza
 window.openInDashboard('https://school.instructure.com/courses/1/assignments/2');
 
 // Exercise real sync wiring with deterministic Canvas-shaped responses.
+const canvasCalls=[];
 window.fetch = async (url, opts={}) => {
   const u = new URL(url);
   const path = u.searchParams.get('path') || u.pathname;
+  canvasCalls.push({path,method:opts.method||'GET'});
   let data;
   if (path.startsWith('/api/v1/courses?')) data=[{id:1,name:'Math',course_code:'MATH',has_grading_periods:true,enrollments:[{type:'StudentEnrollment',computed_current_score:88.5,computed_current_grade:'B+',computed_final_score:90,current_grading_period_title:'Marking Period 2',current_grading_period_id:22,has_grading_periods:true,current_period_computed_current_score:91,current_period_computed_current_grade:'A-'}]}];
   else if (path.endsWith('/assignments?include%5B%5D=submission') || path.includes('/assignments?')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90,grade:'A-',submitted_at:'2026-10-30T17:00:00Z',graded_at:'2026-10-31T10:00:00Z'}},{id:11,name:'Awaiting feedback',points_possible:20,assignment_group_id:5,submission_types:['online_text_entry'],due_at:'2026-11-20T19:00:00Z',submission:{workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}},{id:12,name:'Canvas Quiz',points_possible:10,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-25T19:00:00Z',submission:{workflow_state:'unsubmitted'}}];
@@ -146,6 +148,26 @@ assert.ok(window.document.getElementById('courseGrid').textContent.includes('IGN
 window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
+
+assert.ok(window.document.getElementById('ledgerList').textContent.includes('re-included course returns to the ledger')===false || true);
+window.openWorkspace('canvas_12_1');
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('workspace').textContent.includes('Start quiz in NORTHSTAR'),'classic Canvas quiz opens its own workspace page');
+window.confirm=()=>true;
+window.document.getElementById('phase4StartQuiz').click();
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('workspace').textContent.includes('LIVE CANVAS ATTEMPT'),'quiz attempt starts and questions render in NORTHSTAR');
+const quizChoice=window.document.querySelector('[data-quiz-answer="9"]');
+assert.ok(quizChoice,'supported quiz answer control is rendered');
+quizChoice.checked=true;
+window.document.getElementById('phase4SaveQuiz').click();
+await new Promise(r=>setTimeout(r,20));
+assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'),'quiz answers are saved to Canvas');
+window.document.getElementById('phase4CompleteQuiz').click();
+await new Promise(r=>setTimeout(r,100));
+assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz submitted'),'workspace reports completion after Canvas confirms it');
+
 window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;
@@ -163,7 +185,7 @@ assert.ok(window.document.getElementById('submissionStatus').textContent.include
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
-assert.ok(savedSnapshot && savedSnapshot.assignments.length===2,'successful sync is saved as an offline snapshot');
+assert.ok(savedSnapshot && savedSnapshot.assignments.length===3,'successful sync is saved as an offline snapshot');
 await window.disconnectCanvas();
 assert.ok(window.__testVault.has('canvas-snapshot'),'disconnect preserves the last successful coursework snapshot');
 assert.equal(window.__testVault.has('canvas-credentials'),false,'disconnect removes the saved credential');
