@@ -71,4 +71,5 @@ const resumed=await W.resumeQuiz({credentials,courseId:11,quizId:22,submission:c
 assert.equal(resumed.questions.length,1,'existing attempt questions are restored');
 assert.equal(resumed.timing.time_left,90,'existing attempt timing is restored');
 assert(recoveryCalls.some(x=>new URL(x.url).searchParams.get('path').endsWith('/submission')));
+await assert.rejects(W.getCurrentQuizSubmission({credentials,courseId:11,quizId:22,fetchImpl:async()=>({ok:false,status:404,json:async()=>({message:'No current attempt'})})}),/No current attempt/);
 console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');
