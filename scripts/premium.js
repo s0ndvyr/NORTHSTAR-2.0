@@ -474,14 +474,16 @@ openWorkspace = function(id){
   $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">Open assignment ↗</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
   const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
   $('#workspace .ws-body').insertAdjacentHTML('beforeend', submissionPanel(a));
+  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;$('#submissionUrlWrap').hidden=t!=='online_url';$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
   const input=$('#assignmentDraft');input.value=localStorage.getItem(key)||'';input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};$('#wsOverlay').classList.add('open');
 };
 let submissionBusy=false;
 function submissionPanel(a){
   if(mode!=='live') return '';
-  const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url'].includes(t));
-  if(!types.length) return '<p class="small muted mt">This assignment requires Canvas (file uploads, quizzes, external tools, and discussions are not supported here).</p>';
-  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">This sends your own work to your teacher. Resubmission creates another attempt where allowed; it does not erase or unsubmit earlier attempts. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><label class="set-lbl" for="submissionUrl">Website URL (URL submissions only)</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
+  const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
+  if(!types.length) return '<p class="small muted mt">This assignment type must be completed in Canvas or its external learning tool. NORTHSTAR will not simulate a submission.</p>';
+  const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
+  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
 }
 window.submitAssignment=async function(){
   if(submissionBusy||!activeAssignment) return;
@@ -491,11 +493,19 @@ window.submitAssignment=async function(){
     if(!creds?.proxy) throw Error('Connect using your private bridge first. Direct-mode submissions are disabled.');
     const type=$('#submissionType').value;
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
+    const file=type==='online_upload'?$('#submissionFile')?.files?.[0]:null;
+    if(type==='online_upload'&&!file)throw Error('Choose a file before submitting.');
     const value=type==='online_url'?$('#submissionUrl').value:$('#assignmentDraft').value;
-    const data=window.NorthstarSubmissions.payload(type,value);
-    const preview=type==='online_url'?data.submission.url:value;
+    let data=type==='online_upload'?null:window.NorthstarSubmissions.payload(type,value);
+    const preview=type==='online_upload'?(file.name+' · '+Math.round(file.size/1024)+' KB'):type==='online_url'?data.submission.url:value;
     if(!confirm(`Submit to Canvas?\nCourse: ${c.name}\nAssignment: ${a.title}\nType: ${type}\n\n${preview.slice(0,1500)}${preview.length>1500?'\n… (preview truncated; your entire draft will be sent)':''}\n\nThis may create a new attempt and will not erase earlier submissions. Send now?`)) return;
-    submissionBusy=true;button.disabled=true;status.textContent='Sending once… do not close this workspace.';
+    submissionBusy=true;button.disabled=true;
+    if(type==='online_upload'){
+      status.textContent='Uploading file to Canvas… do not close this workspace.';
+      const uploaded=await window.NorthstarWorkspace.uploadAssignmentFile({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,file});
+      data=window.NorthstarSubmissions.payload('online_upload',String(uploaded.id));
+      status.textContent='File uploaded. Sending assignment submission to Canvas…';
+    }else status.textContent='Sending once… do not close this workspace.';
     const result=await window.NorthstarSubmissions.send({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,data});
     const normalized=CANVAS_SYNC.submission(result);
     Object.assign(a,{
