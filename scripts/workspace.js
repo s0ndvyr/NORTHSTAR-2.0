@@ -23,7 +23,21 @@ function transport(credentials,fetchImpl=root.fetch){
     catch{throw Error('Canvas request did not return a response. Check Canvas before retrying; NORTHSTAR will not retry a write automatically.');}
     return json(response);
   }
-  return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true)};
+  async function getBinary(path){
+    const api=new URL(path,base);
+    if(api.origin!==base.origin||!api.pathname.startsWith('/api/v1/'))throw Error('Canvas file path is outside your connected school.');
+    if(!credentials.proxy)throw Error('In-dashboard document viewing requires your private Canvas bridge.');
+    const bridge=new URL(credentials.proxy);if(bridge.protocol!=='https:')throw Error('Canvas bridge must use HTTPS.');
+    bridge.searchParams.set('path',api.pathname+api.search);
+    let response;try{response=await fetchImpl(bridge.href,{method:'GET',headers:{Authorization:'Bearer '+credentials.token,Accept:'application/pdf,application/octet-stream,*/*'},cache:'no-store',redirect:'error'});}
+    catch{throw Error('The PDF could not be downloaded through the private Canvas bridge.');}
+    if(!response.ok)throw Error('Canvas file download failed (HTTP '+response.status+').');
+    const contentType=response.headers.get('Content-Type')||'application/octet-stream';
+    const disposition=response.headers.get('Content-Disposition')||'';
+    const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^;"]+)/i);
+    return {bytes:new Uint8Array(await response.arrayBuffer()),contentType,filename:match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):''};
+  }
+  return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true),getBinary};
 }
 async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){
   if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a file under 25 MB.');
@@ -79,7 +93,13 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-const api={transport,uploadAssignmentFile,startQuiz,getQuizTime,saveQuizAnswers,completeQuiz,questionType,questionSupported};
+async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
+  const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
+  const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
+  const download=await api.getBinary('/api/v1/files/'+f+'/download');
+  return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
+}
+const api={transport,uploadAssignmentFile,downloadCanvasFile,startQuiz,getQuizTime,saveQuizAnswers,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
