@@ -3,8 +3,8 @@
 Last updated: 2026-11-17
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.3`
-Package version: `0.4.3`
+Release identifier: `NORTHSTAR / .4.4`
+Package version: `0.4.4`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -124,3 +124,86 @@ Official NNPS support contact: Technology Service Center, `tsc@nn.k12.va.us`, (7
 3. Ask NNPS whether a supported student-authorized API, Ed-Fi source, or approved grade export exists.
 4. Compare imported current and historical grades with StudentVUE before treating the imported source as validated.
 5. Keep the direct-integration item open until district authorization is answered or the import fallback is explicitly accepted.
+
+
+---
+
+# Phase 4 — Assignment Workspace (.4.4)
+
+**Status: implementation in progress.** Development is isolated on `northstar-0.4.4-phase-4-assignment-workspace`. Do not merge or deploy to the production Pages branch until the acceptance gates below pass.
+
+## Product objective
+
+NORTHSTAR becomes an academic work environment as well as an organizer. Canvas remains the source of truth for availability, attempt limits, submission records, grading and final quiz completion. NORTHSTAR must never claim a submission succeeded until Canvas confirms it.
+
+## Implemented in the .4.4 development branch
+
+- Visible version identity updated to `NORTHSTAR / .4.4`; package version is `0.4.4`.
+- New `scripts/workspace.js` provides bridge-only Canvas write transport, official quiz attempt start, question retrieval, answer saving, quiz completion, and signed file-upload flow.
+- Quiz assignments are matched to Canvas quiz IDs using the course quizzes endpoint. Quiz attempts start only after an explicit confirmation; Canvas validation token and attempt number are retained for answer updates and completion.
+- Native quiz workspace currently renders multiple-choice, true/false, multiple-answer, essay, short-answer, text-only and numerical/calculated questions. It displays an approximate countdown based on Canvas' returned start time, time limit and extra time; Canvas remains authoritative for timeout. Unsupported question types or hidden answer choices are not submitted by NORTHSTAR; the student is directed to continue the same attempt in Canvas.
+- Quiz completion requires a second explicit confirmation. If the quiz attempt starts but questions cannot be retrieved, NORTHSTAR preserves the returned attempt metadata and tells the student to continue in Canvas rather than starting another attempt.
+- Text-entry and URL assignment submissions remain supported. Resubmissions use Canvas' official submission endpoint and preserve earlier attempts.
+- Online file submissions first read `/api/v1/users/self` to obtain the authenticated student's Canvas user ID, then use Canvas' documented `/courses/:course/assignments/:assignment/submissions/:user_id/files` signed upload initialization endpoint. The file is sent to the returned HTTPS destination without forwarding the Canvas bearer token, then its returned Canvas file ID is submitted. The bridge validates file metadata and limits the upload to 25 MB.
+- Graded discussion assignments are mapped to discussion topic IDs. The workspace supports reading visible discussion entries, posting an initial response, and replying to an entry through Canvas' discussion API.
+- Assignments can be hidden/restored locally. Hidden items are excluded from active dashboard, Ledger and course views; the Ledger adds Active / Hidden / All visibility filters. This is a local NORTHSTAR preference and does not alter or delete the Canvas assignment.
+- Assignment workspace adds a best-effort in-dashboard resource preview for HTTPS Canvas/resource links with an explicit external-open fallback. Canvas and LTI providers may block iframe embedding or third-party cookies; NORTHSTAR does not bypass those controls.
+- Canvas bridge now has narrowly allowlisted read/write routes for quiz attempts, quiz answers, quiz completion, file upload initialization, file submissions, and discussion posts/replies. It rejects arbitrary methods, hosts, write routes, write query parameters, malformed payloads and unapproved submission types.
+- A Phase 4 GitHub Actions workflow checks syntax, runs unit suites and browser boot tests on the development branch and pull requests.
+
+## Supported Canvas paths and known boundaries
+
+| Canvas assignment path | NORTHSTAR behavior |
+|---|---|
+| Online text entry | Native draft and confirmed submit/resubmit |
+| Online URL | Native URL entry and confirmed submit/resubmit |
+| Online file upload | Signed upload and confirmed Canvas file-ID submission; 25 MB cap |
+| Classic Canvas quizzes | Native attempt and question workspace for supported question types |
+| Graded discussions | Native initial post and reply |
+| External LTI / third-party tools | Open the authenticated Canvas assignment/tool; tool-specific work remains in that provider |
+| New Quizzes or quiz types not exposed to the legacy Quiz API | Canvas fallback; no fake quiz editor or simulated completion |
+| Google Docs, media recording, student annotation, paper/offline work | Canvas/provider fallback unless an official supported API workflow is established |
+
+Canvas' public API supports quiz attempt creation, answer updates, and completion, but access depends on the school's Canvas configuration and the specific quiz type. The question API only returns possible answers when permissions allow. The bridge and UI therefore handle denied/unsupported responses explicitly.
+
+## Phase 4 security and reliability rules
+
+- Never send the Canvas token to a signed file-upload destination or any third-party LTI site.
+- Never auto-retry a write after a network error or ambiguous response. The user must check Canvas before retrying.
+- Require explicit confirmation before starting a quiz, publishing a discussion response, uploading a file, or submitting an assignment/quiz.
+- Do not use undocumented Canvas or LTI endpoints, scrape embedded third-party pages, or claim that an external tool was completed in NORTHSTAR.
+- Preserve the current Canvas attempt if question retrieval fails after attempt creation.
+- Canvas controls availability, due dates, late policies, attempt limits, IP restrictions and final grades.
+
+## Phase 4 verification status
+
+Automated CI is green on the .4.4 branch: JavaScript syntax checks, eight unit suites (including Canvas bridge allowlists, quiz lifecycle and signed-upload transport), and jsdom browser boot all passed. This verifies mocks and application startup, not the student's live Canvas account. Real Canvas quiz, file, discussion and resubmission tests remain user acceptance gates.
+
+- [x] Confirm GitHub Actions syntax, eight unit suites, and jsdom browser boot checks pass on the .4.4 development branch (run #44236628866).
+- [ ] Verify browser boot and responsive workspace behavior on iPad Safari.
+- [ ] Live-test a low-risk text-entry assignment and confirm Canvas submission state/attempt number.
+- [ ] Live-test a permitted file upload and confirm the uploaded file is attached to the Canvas submission.
+- [ ] Live-test a graded discussion post/reply and confirm Canvas records it.
+- [ ] Live-test a practice/ungraded classic Canvas quiz first; verify start, answer save, resume and completion.
+- [ ] Verify a locked/New Quizzes/unsupported quiz gracefully falls back without creating duplicate attempts.
+- [ ] Verify hide/restore persists after refresh and does not mutate Canvas data.
+- [ ] Redeploy the updated `canvas-bridge/worker.js` to Cloudflare and verify the configured Canvas origin and NORTHSTAR origin before enabling writes. This deployment is separate from GitHub Pages and is not automatic.
+- [ ] Review all write paths and file upload behavior for ambiguous network outcomes.
+- [ ] Create release PR, merge .4.4 to `main`, then verify GitHub Pages and Cloudflare bridge deployment separately.
+
+## Next engineering work
+
+1. Resolve any CI failures and add regression tests for the new upload/discussion/quiz paths.
+2. Finish workspace UI polish, progress/navigation, time limits, and safe handling for all Canvas question formats exposed to students.
+3. Validate the best-effort local resource viewer against Canvas and external LTI pages; keep explicit external fallback for providers that disallow embedding.
+4. Complete the iPad live acceptance checklist before merging .4.4.
+
+
+## Phase 4 hardening follow-up
+
+- Quiz question support is now classified in the dedicated workspace module so the renderer and completion gate share the same capability rules.
+- Text-only quiz items are treated as informational and are not sent as student answers.
+- Fill-in-multiple-blanks and other unimplemented formats are explicitly rejected by the NORTHSTAR completion gate; the student is directed to continue the same attempt in Canvas.
+- Multiple-choice, true/false, and multiple-answer questions require Canvas to expose answer choices before NORTHSTAR treats them as supported.
+- Added regression coverage for supported and unsupported question formats.
+- Updated the README to distinguish native completion from official Canvas/provider fallbacks and to document the required Cloudflare Worker redeployment and live-test safety gates.

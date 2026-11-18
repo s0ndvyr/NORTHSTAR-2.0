@@ -406,20 +406,118 @@ function updateWhatIfLive(){
 }
 const oldRenderCourses=renderCourses;
 renderCourses = function(){ if(mode==='demo') {oldRenderCourses();return;} $('#courseGrid').innerHTML=COURSES.map(c=>{const work=ASSIGNMENTS.filter(a=>a.course===c.id); const done=work.filter(a=>CANVAS_SYNC.isResolved(a.status)).length; const g=gradeForCourse(c.id), official=c.canvasGrade||{}; const hasOfficial=official.currentPercent!==null||!!official.currentLetter; const gradeValue=hasOfficial?(official.currentLetter&&official.currentPercent!==null?official.currentLetter+' · '+fmtPct(official.currentPercent):(official.currentLetter||fmtPct(official.currentPercent))):(g.percent==null?'—':fmtPct(g.percent)+(g.letter?' · '+g.letter:'')); const gradeLabel=hasOfficial?'Canvas current grade':(syncWarnings.some(w=>w.startsWith(c.code+':'))?'Estimate · grade data incomplete':'Assignment estimate'); return `<button class="card course-card" style="--cc:${c.color};text-align:left" onclick="openCourse('${c.id}')"><span class="course-code">${c.code}</span><h3>${c.name}</h3><p class="muted small">Canvas course</p><div class="mini-stats"><div><b>${work.length}</b><span>Assignments</span></div><div><b>${done}</b><span>Submitted / excused</span></div><div><b>${gradeValue}</b><span>${gradeLabel}</span></div></div></button>`;}).join('') || '<p class="muted">No active Canvas courses were returned.</p>'; };
-openCourse = function(id){ const c=courseById(id);if(!c)return;showView('courses');const list=ASSIGNMENTS.filter(a=>a.course===id).sort((a,b)=>a.due-b.due); $('#courseDetail').innerHTML=`<div class="card"><div class="card-head"><div><span class="eyebrow">${c.code}</span><h3 style="font:500 28px var(--serif);margin-top:8px">${c.name}</h3><p>${mode==='live'?'Canvas coursework':'Example course'}</p>${c.canvasGrade&&(c.canvasGrade.currentPercent!==null||c.canvasGrade.currentLetter)?`<p class="small mt"><b>Official Canvas current grade:</b> ${esc(c.canvasGrade.currentLetter||fmtPct(c.canvasGrade.currentPercent))}${c.canvasGrade.currentPercent!==null?' · '+fmtPct(c.canvasGrade.currentPercent):''}</p>${c.canvasGrade.currentPeriodTitle?`<p class="small muted">Canvas grading period: ${esc(c.canvasGrade.currentPeriodTitle)}${c.canvasGrade.currentPeriodPercent!==null?' · '+fmtPct(c.canvasGrade.currentPeriodPercent):''}</p>`:''}`:''}</div></div><h4 class="small">COURSEWORK</h4>${list.map(a=>`<button class="prio" style="width:100%;text-align:left" onclick="openWorkspace('${a.id}')"><div class="prio-info"><b>${esc(a.title)}</b><span>${a.type} · ${a.points} points</span></div><span class="small">${relDue(a.due)}</span></button>`).join('')||'<p class="small muted mt">No assignments found.</p>'}</div>`; $('#courseDetail').scrollIntoView({behavior:'smooth'}); };
+openCourse = function(id){ const c=courseById(id);if(!c)return;showView('courses');const list=ASSIGNMENTS.filter(a=>a.course===id&&!phase4IsHidden(a)).sort((a,b)=>a.due-b.due); $('#courseDetail').innerHTML=`<div class="card"><div class="card-head"><div><span class="eyebrow">${c.code}</span><h3 style="font:500 28px var(--serif);margin-top:8px">${c.name}</h3><p>${mode==='live'?'Canvas coursework':'Example course'}</p>${c.canvasGrade&&(c.canvasGrade.currentPercent!==null||c.canvasGrade.currentLetter)?`<p class="small mt"><b>Official Canvas current grade:</b> ${esc(c.canvasGrade.currentLetter||fmtPct(c.canvasGrade.currentPercent))}${c.canvasGrade.currentPercent!==null?' · '+fmtPct(c.canvasGrade.currentPercent):''}</p>${c.canvasGrade.currentPeriodTitle?`<p class="small muted">Canvas grading period: ${esc(c.canvasGrade.currentPeriodTitle)}${c.canvasGrade.currentPeriodPercent!==null?' · '+fmtPct(c.canvasGrade.currentPeriodPercent):''}</p>`:''}`:''}</div></div><h4 class="small">COURSEWORK</h4>${list.map(a=>`<button class="prio" style="width:100%;text-align:left" onclick="openWorkspace('${a.id}')"><div class="prio-info"><b>${esc(a.title)}</b><span>${a.type} · ${a.points} points</span></div><span class="small">${relDue(a.due)}</span></button>`).join('')||'<p class="small muted mt">No assignments found.</p>'}</div>`; $('#courseDetail').scrollIntoView({behavior:'smooth'}); };
+
+function phase4HiddenSet(){return new Set(store.get('northstar_hidden_assignments_v1',[]).map(String));}
+let phase4HiddenAssignments=phase4HiddenSet();
+function phase4IsHidden(a){return !!a&&phase4HiddenAssignments.has(String(a.id));}
+function phase4ToggleHidden(id){
+  const key=String(id);
+  if(phase4HiddenAssignments.has(key))phase4HiddenAssignments.delete(key);else phase4HiddenAssignments.add(key);
+  store.set('northstar_hidden_assignments_v1',[...phase4HiddenAssignments]);refreshAll();
+  const action=$('#phase4HideAssignment');if(action)action.textContent=phase4HiddenAssignments.has(key)?'Restore assignment':'Hide assignment';
+  toast(phase4HiddenAssignments.has(key)?'Assignment hidden from active views':'Assignment restored to active views');
+}
+function phase4PeriodMatches(a,selection){
+  if(selection==='all')return true;
+  if(selection==='current'){const p=phase3CurrentPeriod();if(p)return phase3PeriodIdFor(a)===p.id;const start=new Date();start.setHours(0,0,0,0);return !a.noDue&&new Date(a.due).getTime()>=start.getTime();}
+  return phase3PeriodIdFor(a)===selection;
+}
+function phase4QuestionMarkup(row,index){
+  const q=row.quiz_question||row.question||row,qid=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),prompt=asText(q.question_text||q.text||'Question'),answers=Array.isArray(q.answers)?q.answers:(Array.isArray(row.answers)?row.answers:[]),saved=row.answer;let control='';
+  if(['multiple_choice_question','true_false_question'].includes(type)&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this question in Canvas.</p>';
+  else if(['multiple_choice_question','true_false_question'].includes(type))control=answers.map((v,i)=>'<label class="quiz-choice"><input type="radio" name="quiz-q-'+qid+'" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(String(saved)===String(v.id)?'checked':'')+'><span>'+asText(v.text||v.html||('Option '+(i+1)))+'</span></label>').join('');
+  else if(type==='multiple_answers_question'&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this question in Canvas.</p>';
+  else if(type==='multiple_answers_question'){const selected=Array.isArray(saved)?saved.map(String):[];control=answers.map((v,i)=>'<label class="quiz-choice"><input type="checkbox" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(selected.includes(String(v.id))?'checked':'')+'><span>'+asText(v.text||v.html||('Option '+(i+1)))+'</span></label>').join('');}
+  else if(type==='text_only_question')control='<p class="small muted">Read-only quiz information.</p>';
+  else if(['essay_question','short_answer_question'].includes(type))control='<textarea class="editor quiz-text-answer" data-quiz-answer="'+qid+'" rows="'+(type==='essay_question'?7:3)+'" placeholder="Enter your response…">'+(typeof saved==='string'?safe(saved):'')+'</textarea>';
+  else if(['numerical_question','calculated_question'].includes(type))control='<input class="select" type="number" step="any" data-quiz-answer="'+qid+'" value="'+(saved==null?'':safe(saved))+'" placeholder="Enter a number">';
+  else control='<p class="small muted">This question format ('+safe(type||'unknown')+') is not yet supported in the NORTHSTAR quiz editor. Complete this question in Canvas.</p>';
+  return '<article class="card quiz-question" data-question-id="'+qid+'"><div class="eyebrow">QUESTION '+(index+1)+'</div><h3 class="quiz-prompt">'+prompt+'</h3><div class="quiz-answer-list">'+control+'</div></article>';
+}
+function phase4QuestionSupported(row){return !!window.NorthstarWorkspace?.questionSupported?.(row);}
+function phase4CollectQuizAnswers(questions){return questions.map(row=>{const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];if(type==='text_only_question'||!nodes.length)return null;let answer;if(type==='multiple_answers_question')answer=nodes.filter(n=>n.checked).map(n=>Number(n.value));else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);if(!chosen)return null;answer=Number(chosen.value);}else{answer=nodes[0].value;if(answer==='')return null;}return {id,answer};}).filter(Boolean);}
+let activeQuizSession=null;let phase4QuizTimer=null;let phase4QuizResyncTimer=null;
+async function openCanvasQuiz(a){
+  activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),quizId=a.quizId||a.canvasId;
+  $('#workspace').innerHTML='<div class="ws-head"><div><span class="eyebrow">'+safe(c.code)+' / CANVAS QUIZ</span><h2>'+safe(a.title)+'</h2><p class="small muted mt">Loading quiz details…</p></div><button class="ws-close" onclick="closeOverlay(\'wsOverlay\')">✕</button></div><div class="ws-body"></div>';$('#wsOverlay').classList.add('open');const hideQuizButton=document.createElement('button');hideQuizButton.id='phase4HideAssignment';hideQuizButton.className='btn btn-ghost btn-sm';hideQuizButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideQuizButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideQuizButton,$('#workspace .ws-head .ws-close'));
+  if(!creds?.proxy){$('#workspace .ws-body').innerHTML='<div class="card"><h3>Canvas bridge required</h3><p class="small muted mt">Connect through your private Canvas bridge before starting a quiz. No attempt has been created.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';return;}
+  try{const api=window.NorthstarWorkspace.transport(creds),quiz=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/quizzes/'+Number(quizId));$('#workspace .ws-head h2').textContent=quiz.title||a.title;$('#workspace .ws-head p').textContent=(quiz.question_count??'')+' questions · '+(quiz.time_limit?quiz.time_limit+' minute limit':'No time limit reported')+' · '+(quiz.points_possible??a.points)+' points';
+    $('#workspace .ws-body').innerHTML='<div class="grid2"><div class="card"><span class="eyebrow">QUIZ BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(quiz.description||a.desc||'')+'</div><div class="divider"></div><p class="small muted">Starting creates an official Canvas attempt. Canvas controls availability, time limits, attempt limits, access codes and grading.</p><label class="set-lbl" for="phase4QuizAccess">Access code (if required)</label><input id="phase4QuizAccess" class="select" type="password" autocomplete="off" placeholder="Optional access code"><button class="btn btn-primary mt" id="phase4StartQuiz">Start quiz in NORTHSTAR</button><p id="phase4QuizStatus" class="small muted mt" role="status">No attempt started.</p></div><div class="card"><span class="eyebrow">CANVAS STATUS</span><h3 class="mt">'+safe(quiz.workflow_state||'Status not reported')+'</h3><p class="small muted mt">New Quizzes, locked quizzes, IP restrictions and unsupported question formats may require Canvas itself.</p><a class="btn btn-ghost mt" href="'+safe(a.canvasUrl||quiz.html_url||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment ↗</a></div></div>';
+    $('#phase4StartQuiz').onclick=()=>phase4StartQuizAttempt(a,quiz,creds);
+  }catch(error){$('#workspace .ws-body').innerHTML='<div class="card"><h3>Quiz could not be loaded in NORTHSTAR</h3><p class="small muted mt">'+safe(error.message)+'</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';}
+}
+async function phase4StartQuizAttempt(a,quiz,creds){
+  const c=courseById(a.course),status=$('#phase4QuizStatus'),button=$('#phase4StartQuiz');if(!confirm('Start an official Canvas quiz attempt now? This may start the timer and count against your allowed attempts.'))return;button.disabled=true;status.textContent='Starting attempt with Canvas…';
+  try{const result=await window.NorthstarWorkspace.startQuiz({credentials:creds,courseId:c.canvasId,quizId:a.quizId||a.canvasId,accessCode:$('#phase4QuizAccess').value});activeQuizSession={assignment:a,submission:result.submission,questions:result.questions,timing:result.timing||null,accessCode:$('#phase4QuizAccess').value||'',timeLimit:Number(quiz.time_limit)||0,extraTime:Number(result.submission.extra_time)||0};phase4RenderQuizAttempt();}
+  catch(error){if(error.quizSubmission){activeQuizSession={assignment:a,submission:error.quizSubmission,questions:[],accessCode:$('#phase4QuizAccess').value||''};status.textContent='Canvas started an attempt, but NORTHSTAR could not load its questions. Do not start again; continue this attempt in Canvas.';button.disabled=true;const link=document.createElement('a');link.className='btn btn-ghost mt';link.href=a.canvasUrl||'#';link.target='_blank';link.rel='noopener noreferrer';link.textContent='Continue attempt in Canvas ↗';status.after(link);}else{status.textContent=error.message;button.disabled=false;}}
+}
+function phase4RenderQuizAttempt(){
+  const s=activeQuizSession;if(!s)return;const unsupported=s.questions.filter(row=>!phase4QuestionSupported(row));
+  $('#workspace .ws-head p').textContent='Attempt '+s.submission.attempt+' · '+s.questions.length+' questions · Canvas attempt in progress';
+  if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);
+  $('#workspace .ws-body').innerHTML='<div class="card mb"><span class="eyebrow">LIVE CANVAS ATTEMPT</span><p id="phase4QuizTimer" class="mono mt">'+(s.timeLimit?('Time limit: '+s.timeLimit+' minutes'):'No timer reported by Canvas')+'</p><p class="small muted mt">Save answers sends them to Canvas. Submit quiz permanently completes this attempt.</p><div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" id="phase4SaveQuiz">Save answers to Canvas</button><button class="btn btn-primary btn-sm" id="phase4CompleteQuiz">Submit quiz to Canvas</button></div><p id="phase4AttemptStatus" class="small muted mt" role="status">Attempt started. Answers have not yet been saved.</p></div><div class="quiz-question-stack">'+s.questions.map(phase4QuestionMarkup).join('')+'</div>'+(unsupported.length?'<div class="card mt"><p class="small muted">Some question types are not yet editable here. Complete those in Canvas before submitting.</p><a class="btn btn-ghost mt" href="'+safe(s.assignment.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>':'');
+  $('#phase4SaveQuiz').onclick=phase4SaveQuizAnswers;$('#phase4CompleteQuiz').onclick=phase4CompleteQuizAttempt;
+  if(s.timeLimit||Number.isFinite(Number(s.timing?.time_left))){const started=Date.parse(s.submission.started_at)||Date.now(),fallback=(s.timeLimit+s.extraTime)*60;let serverLeft=Number(s.timing?.time_left);if(!Number.isFinite(serverLeft))serverLeft=fallback-Math.floor((Date.now()-started)/1000);let syncedAt=Date.now();const tick=()=>{const remaining=Math.max(0,serverLeft-Math.floor((Date.now()-syncedAt)/1000)),node=$('#phase4QuizTimer');if(node){const mm=String(Math.floor(remaining/60)).padStart(2,'0'),ss=String(remaining%60).padStart(2,'0');node.textContent='Canvas time remaining · '+mm+':'+ss;if(remaining===0)node.textContent='Canvas time limit reached · verify attempt status in Canvas';}};tick();phase4QuizTimer=setInterval(tick,1000);phase4QuizResyncTimer=setInterval(async()=>{try{const timing=await window.NorthstarWorkspace.getQuizTime({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submissionId:s.submission.id});if(Number.isFinite(Number(timing.time_left))){serverLeft=Number(timing.time_left);syncedAt=Date.now();s.timing=timing;}}catch(error){}},30000);}
+}
+async function phase4SaveQuizAnswers(){
+  const s=activeQuizSession;if(!s)return;const status=$('#phase4AttemptStatus'),button=$('#phase4SaveQuiz');
+  try{const answers=phase4CollectQuizAnswers(s.questions);if(!answers.length)throw Error('No supported answers are entered yet.');button.disabled=true;status.textContent='Saving answers to Canvas…';await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});status.textContent=answers.length+' answer(s) saved to Canvas.';}
+  catch(error){status.textContent=error.message;}finally{button.disabled=false;}
+}
+async function phase4CompleteQuizAttempt(){
+  const s=activeQuizSession;if(!s)return;
+  if(s.questions.some(row=>!phase4QuestionSupported(row))){toast('This quiz contains question formats NORTHSTAR cannot safely edit. Continue the same attempt in Canvas before submitting.');return;}
+  if(!confirm('Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'))return;
+  const status=$('#phase4AttemptStatus'),button=$('#phase4CompleteQuiz');
+  try{button.disabled=true;status.textContent='Saving final answers to Canvas…';const answers=phase4CollectQuizAnswers(s.questions);if(answers.length)await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});status.textContent='Completing quiz attempt in Canvas…';await window.NorthstarWorkspace.completeQuiz({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submission:s.submission,accessCode:s.accessCode});status.textContent='Canvas confirmed completion. Refreshing coursework…';activeQuizSession=null;if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);await syncCanvas({quiet:true});refreshAll();$('#workspace .ws-body').innerHTML='<div class="card"><h2>Quiz submitted</h2><p class="small muted mt">Canvas confirmed completion. Your official score will appear when Canvas releases it.</p><button class="btn btn-primary mt" onclick="closeOverlay(\'wsOverlay\')">Return to coursework</button></div>';}
+  catch(error){status.textContent=error.message+' Check Canvas before retrying; NORTHSTAR will not automatically repeat a completion request.';button.disabled=false;}
+}
+
+
+async function openCanvasDiscussion(a){
+  activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),topicId=a.discussionTopicId||a.canvasId;
+  $('#workspace').innerHTML='<div class="ws-head"><div><span class="eyebrow">'+safe(c.code)+' / CANVAS DISCUSSION</span><h2>'+safe(a.title)+'</h2><p class="small muted mt">Loading discussion…</p></div><button class="ws-close" onclick="closeOverlay(\'wsOverlay\')">✕</button></div><div class="ws-body"></div>';
+  $('#wsOverlay').classList.add('open');
+  const assignmentLink=$('#workspace button[onclick^="openInDashboard"]');if(assignmentLink){const previewButton=document.createElement('button');previewButton.className='btn btn-ghost';previewButton.textContent='Try preview here';previewButton.onclick=()=>previewResourceInDashboard(a.canvasUrl,a.title);assignmentLink.insertAdjacentElement('afterend',previewButton);}
+  const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
+  if(!creds?.proxy){$('#workspace .ws-body').innerHTML='<div class="card"><p class="small muted">Connect through your private Canvas bridge to post a discussion response.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';return;}
+  try{
+    const api=window.NorthstarWorkspace.transport(creds);
+    const topic=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId));
+    let entries=[];try{const result=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');entries=Array.isArray(result)?result:result.entries||[];}catch(error){}
+    $('#workspace .ws-head h2').textContent=topic.title||a.title;
+    $('#workspace .ws-head p').textContent=(topic.require_initial_post?'Initial post required · ':'')+(entries.length+' visible discussion thread(s)');
+    $('#workspace .ws-body').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(topic.message||a.desc||'')+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…"></textarea><button class="btn btn-primary mt" id="phase4PostDiscussion">Post to Canvas</button><p id="phase4DiscussionStatus" class="small muted mt" role="status">Your draft stays here until you choose Post.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries">'+(entries.length?entries.map((e,i)=>'<article class="card mt"><p class="small">'+asText(e.message||'')+'</p><p class="tiny muted mt">'+safe(e.user_name||'Canvas participant')+' · '+(e.created_at?new Date(e.created_at).toLocaleString():'')+'</p><button class="btn btn-ghost btn-sm mt" data-discussion-reply="'+Number(e.id)+'">Reply</button><div id="phase4ReplyBox'+Number(e.id)+'"></div></article>').join(''):'<p class="small muted mt">No visible posts yet, or Canvas requires your initial post before displaying the thread.</p>')+'</div></div></div></div><div class="card mt"><p class="small muted">Posts and replies are published to Canvas immediately after confirmation. NORTHSTAR does not create a local-only substitute for a Canvas post.</p><a class="btn btn-ghost mt" href="'+safe(a.canvasUrl||topic.html_url||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';
+    $('#phase4PostDiscussion').onclick=()=>phase4SendDiscussionMessage(a,topicId,null);
+    $('[data-discussion-reply]').forEach(button=>button.onclick=()=>{const id=Number(button.dataset.discussionReply),box=$('#phase4ReplyBox'+id);box.innerHTML='<textarea class="editor" rows="3" id="phase4ReplyDraft'+id+'" placeholder="Write a reply…"></textarea><button class="btn btn-primary btn-sm mt" id="phase4ReplySend'+id+'">Post reply</button>';$('#phase4ReplySend'+id).onclick=()=>phase4SendDiscussionMessage(a,topicId,id);});
+  }catch(error){$('#workspace .ws-body').innerHTML='<div class="card"><h3>Discussion could not be loaded</h3><p class="small muted mt">'+safe(error.message)+'</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';}
+}
+async function phase4SendDiscussionMessage(a,topicId,replyTo){
+  const c=courseById(a.course),input=replyTo?$('#phase4ReplyDraft'+replyTo):$('#phase4DiscussionDraft'),status=$('#phase4DiscussionStatus'),message=(input?.value||'').trim();
+  if(!message){if(status)status.textContent='Write your response before posting.';return;}
+  if(!confirm((replyTo?'Post this reply':'Publish your discussion post')+' to Canvas now?'))return;
+  const button=replyTo?$('#phase4ReplySend'+replyTo):$('#phase4PostDiscussion');if(button)button.disabled=true;
+  try{const path='/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+(replyTo?'/entries/'+Number(replyTo)+'/replies':'/entries');await window.NorthstarWorkspace.transport(getCredentials()).post(path,{message});if(input)input.value='';if(status)status.textContent='Canvas confirmed your post. Refreshing assignment status…';await syncCanvas({quiet:true});refreshAll();if(status)status.textContent='Canvas confirmed your post. Your discussion is published.';toast('Discussion posted to Canvas');}
+  catch(error){if(status)status.textContent=error.message;if(button)button.disabled=false;}
+}
+
 openWorkspace = function(id){
-  const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
+  const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;if(mode==='live'&&a.type==='Quiz'){openCanvasQuiz(a);return;}if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
-  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">Open source ↗</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
+  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">Open assignment ↗</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
+  const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
   $('#workspace .ws-body').insertAdjacentHTML('beforeend', submissionPanel(a));
+  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;$('#submissionUrlWrap').hidden=t!=='online_url';$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
   const input=$('#assignmentDraft');input.value=localStorage.getItem(key)||'';input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};$('#wsOverlay').classList.add('open');
 };
 let submissionBusy=false;
 function submissionPanel(a){
   if(mode!=='live') return '';
-  const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url'].includes(t));
-  if(!types.length) return '<p class="small muted mt">This assignment requires Canvas (file uploads, quizzes, external tools, and discussions are not supported here).</p>';
-  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">This sends your own work to your teacher. Resubmission creates another attempt where allowed; it does not erase or unsubmit earlier attempts. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><label class="set-lbl" for="submissionUrl">Website URL (URL submissions only)</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
+  const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
+  if(!types.length) return '<p class="small muted mt">This assignment type must be completed in Canvas or its external learning tool. NORTHSTAR will not simulate a submission.</p>';
+  const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
+  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
 }
 window.submitAssignment=async function(){
   if(submissionBusy||!activeAssignment) return;
@@ -429,11 +527,19 @@ window.submitAssignment=async function(){
     if(!creds?.proxy) throw Error('Connect using your private bridge first. Direct-mode submissions are disabled.');
     const type=$('#submissionType').value;
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
+    const file=type==='online_upload'?$('#submissionFile')?.files?.[0]:null;
+    if(type==='online_upload'&&!file)throw Error('Choose a file before submitting.');
     const value=type==='online_url'?$('#submissionUrl').value:$('#assignmentDraft').value;
-    const data=window.NorthstarSubmissions.payload(type,value);
-    const preview=type==='online_url'?data.submission.url:value;
+    let data=type==='online_upload'?null:window.NorthstarSubmissions.payload(type,value);
+    const preview=type==='online_upload'?(file.name+' · '+Math.round(file.size/1024)+' KB'):type==='online_url'?data.submission.url:value;
     if(!confirm(`Submit to Canvas?\nCourse: ${c.name}\nAssignment: ${a.title}\nType: ${type}\n\n${preview.slice(0,1500)}${preview.length>1500?'\n… (preview truncated; your entire draft will be sent)':''}\n\nThis may create a new attempt and will not erase earlier submissions. Send now?`)) return;
-    submissionBusy=true;button.disabled=true;status.textContent='Sending once… do not close this workspace.';
+    submissionBusy=true;button.disabled=true;
+    if(type==='online_upload'){
+      status.textContent='Uploading file to Canvas… do not close this workspace.';
+      const uploaded=await window.NorthstarWorkspace.uploadAssignmentFile({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,file});
+      data=window.NorthstarSubmissions.payload('online_upload',String(uploaded.id));
+      status.textContent='File uploaded. Sending assignment submission to Canvas…';
+    }else status.textContent='Sending once… do not close this workspace.';
     const result=await window.NorthstarSubmissions.send({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,data});
     const normalized=CANVAS_SYNC.submission(result);
     Object.assign(a,{
@@ -492,7 +598,11 @@ async function pullCanvas(creds){
   const assignments=[], nextGroups={}, nextCourseMeta={}, warnings=[];
   for(const c of courses){
     const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);
-    assignments.push(...convertAssignments(rows,c,creds.base));
+    const converted=convertAssignments(rows,c,creds.base);assignments.push(...converted);
+    try{const quizRows=await allPages(creds,`/api/v1/courses/${c.canvasId}/quizzes`);const quizByAssignment=new Map(quizRows.filter(q=>Number.isInteger(q.assignment_id)&&Number.isInteger(q.id)).map(q=>[q.assignment_id,q.id]));converted.forEach(a=>{if(a.type==='Quiz')a.quizId=quizByAssignment.get(a.canvasId)||a.quizId||a.canvasId;});}
+    catch(error){if(converted.some(a=>a.type==='Quiz'))warnings.push(`${c.code}: Canvas quiz metadata unavailable; quiz assignments may need to open in Canvas.`);}
+    try{const topics=await allPages(creds,`/api/v1/courses/${c.canvasId}/discussion_topics`);const topicByAssignment=new Map(topics.filter(t=>Number.isInteger(t.id)&&Number.isInteger(t.assignment_id||t.assignment?.id)).map(t=>[t.assignment_id||t.assignment.id,t.id]));converted.forEach(a=>{if(a.type==='Discussion')a.discussionTopicId=topicByAssignment.get(a.canvasId)||null;});}
+    catch(error){if(converted.some(a=>a.type==='Discussion'))warnings.push(`${c.code}: Discussion topics could not be loaded through the Canvas API.`);}
     try{
       const detail=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
       nextCourseMeta[c.id]={weighted:!!detail.apply_assignment_group_weights || !!detail.weighted_assignment_groups, scheme:Array.isArray(detail.grading_standard)?detail.grading_standard:null, dropLowest:Number(detail.drop_lowest)||0, dropHighest:Number(detail.drop_highest)||0};
@@ -659,6 +769,19 @@ async function testAiKey(){
   try{ await aiAsk('Reply with exactly: ok'); if(st) st.textContent='✓ Key works — Gemini is connected.'; toast('Gemini connected'); }
   catch(e){ if(st) st.textContent='✗ '+e.message; }
 }
+
+function previewResourceInDashboard(url,title){
+  let target;try{target=new URL(url);}catch{toast('This resource does not have a valid link.');return;}
+  if(target.protocol!=='https:'){toast('Only secure HTTPS resources can be previewed.');return;}
+  const frame=$('#viewerFrame'),overlay=$('#viewerOverlay'),heading=$('#viewerOverlay .ws-head h2'),note=$('#viewerNote');
+  if(!frame||!overlay)return;
+  if(heading)heading.textContent=title||'Assignment resource';
+  if(note)note.textContent='Preview attempt. Canvas and external learning tools may block embedding; if the page is blank, use Open externally.';
+  let link=$('#viewerExternalLink');
+  if(!link){link=document.createElement('a');link.id='viewerExternalLink';link.className='btn btn-ghost btn-sm';link.target='_blank';link.rel='noopener noreferrer';$('#viewerOverlay .ws-head').insertBefore(link,$('#viewerOverlay .ws-head .ws-close'));}
+  link.href=target.href;link.textContent='Open externally ↗';
+  frame.src=target.href;overlay.classList.add('open');
+}
 function openInDashboard(url){
   let target;try{target=new URL(url);}catch{toast('This assignment does not have a valid external link.');return;}
   if(target.protocol!=='https:'){toast('Only secure HTTPS assignment links can be opened.');return;}
@@ -675,6 +798,7 @@ window.saveAiSettings = saveAiSettings;
 window.testAiKey = testAiKey;
 window.askAiAboutAssignment = askAiAboutAssignment;
 window.openInDashboard = openInDashboard;
+window.previewResourceInDashboard = previewResourceInDashboard;
 window.closeViewer = closeViewer;
 
 syncCanvas = async function(options={}){
@@ -749,7 +873,7 @@ if(existing) syncCanvas();
 /* ================= NORTHSTAR 0.4.3 · PHASE 3 ACADEMIC INTELLIGENCE =================
    StudentVUE grade imports remain clearly labeled as imports until an authorized
    district integration is supplied. The dashboard scope is always the active period. */
-const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.3';
+const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.4';
 const PHASE3_IGNORES_KEY = 'northstar_ignored_courses_v1';
 let phase3IgnoredCourses = new Set(store.get(PHASE3_IGNORES_KEY, []));
 let phase3StudentVue = null;
@@ -771,7 +895,7 @@ function phase3PeriodFor(a) {
 function phase3PeriodIdFor(a) { const p=phase3PeriodFor(a); return p ? p.id : null; }
 function phase3VisibleAssignments(selection) {
   const chosen = selection || phase3PeriodSelection || 'current';
-  let rows = ASSIGNMENTS.filter(a => phase3IsPublished(a) && !phase3CourseIgnored(a.course) && !!courseById(a.course));
+  let rows = ASSIGNMENTS.filter(a => phase3IsPublished(a) && !phase3CourseIgnored(a.course) && !!courseById(a.course) && !phase4IsHidden(a));
   if (chosen === 'all') return rows;
   if (chosen === 'current') {
     const current = phase3CurrentPeriod();
@@ -872,10 +996,12 @@ function phase3QueueSort(a,b) {
 renderLedger = function() {
   const periodEl=$('#fPeriod'), selection=periodEl?periodEl.value:phase3PeriodSelection;
   if(selection)phase3PeriodSelection=selection;
-  const fc=$('#fCourse')?.value||'', ft=$('#fType')?.value||'', fp=$('#fPriority')?.value||'', fs=$('#fSort')?.value||'due', q=($('#fSearch')?.value||'').toLowerCase();
-  let list=phase3VisibleAssignments(selection).filter(a=>matchesStatus(a)&&(!fc||a.course===fc)&&(!ft||a.type===ft)&&(!fp||a.priority===fp)&&(!q||String(a.title).toLowerCase().includes(q)));
+  const fc=$('#fCourse')?.value||'', ft=$('#fType')?.value||'', fp=$('#fPriority')?.value||'', fs=$('#fSort')?.value||'due', q=($('#fSearch')?.value||'').toLowerCase(), visibility=$('#fVisibility')?.value||'active';
+  let source=phase3VisibleAssignments(selection);
+  if(visibility!=='active'){const hidden=ASSIGNMENTS.filter(a=>phase3IsPublished(a)&&!phase3CourseIgnored(a.course)&&!!courseById(a.course)&&phase4IsHidden(a)&&phase4PeriodMatches(a,selection));source=visibility==='hidden'?hidden:source.concat(hidden);}
+  let list=source.filter(a=>matchesStatus(a)&&(!fc||a.course===fc)&&(!ft||a.type===ft)&&(!fp||a.priority===fp)&&(!q||String(a.title).toLowerCase().includes(q)));
   if(fs==='due')list.sort((a,b)=>a.due-b.due);else if(fs==='points')list.sort((a,b)=>b.points-a.points);else if(fs==='priority')list.sort(phase3QueueSort);else list.sort((a,b)=>(courseById(a.course)?.code||'').localeCompare(courseById(b.course)?.code||''));
-  const total=phase3VisibleAssignments(selection).length;
+  const total=source.length;
   $('#ledgerCount').textContent=list.length+' shown · '+total+' published assignments · '+(selection==='all'?'all marking periods':selection==='current'?(phase3CurrentPeriod()?.name||'current dated work'):(PERIODS.find(p=>p.id===selection)?.name||'selected marking period'))+' · '+(mode==='live'?'Canvas':'sample data');
   const html=list.map(phase3RenderLedgerRow).join('');
   $('#ledgerList').innerHTML=html||'<div class="card" style="text-align:center;padding:36px"><p class="muted">No published assignments match this marking period and filter. Try another marking period or clear a filter.</p></div>';
@@ -899,7 +1025,7 @@ initLedger = function() {
   select.value=[...select.options].some(o=>o.value===previous)?previous:'current';
   phase3PeriodSelection=select.value;
   select.onchange=()=>{phase3PeriodSelection=select.value;store.set('northstar_ledger_period_v1',phase3PeriodSelection);renderLedger();};
-  ['fCourse','fType','fPriority','fSort'].forEach(id=>{const el=$('#'+id);if(el)el.onchange=renderLedger;});
+  ['fCourse','fType','fPriority','fSort','fVisibility'].forEach(id=>{const el=$('#'+id);if(el)el.onchange=renderLedger;});
   const search=$('#fSearch');if(search)search.oninput=renderLedger;
   renderLedger();
 };

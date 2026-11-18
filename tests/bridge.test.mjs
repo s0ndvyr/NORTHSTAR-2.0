@@ -10,7 +10,7 @@ let res=await worker.fetch(request('/api/v1/courses?per_page=100&page=1'));asser
 res=await worker.fetch(request('/api/v1/courses/1/assignments?include[]=submission'));assert.equal(res.status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1/assignment_groups'))).status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1'))).status,200);
-for(const p of ['https://evil.example/api/v1/courses','/api/v1/users/self','/api/v1/courses?access_token=token','/api/v1/courses/1/assignments/1/submissions'])assert.equal((await worker.fetch(request(p))).status,403);
+for(const p of ['https://evil.example/api/v1/courses','/api/v1/courses?access_token=token','/api/v1/courses/1/assignments/1/submissions'])assert.equal((await worker.fetch(request(p))).status,403);
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'POST'}))).status,405);
 assert.equal((await worker.fetch(request('/api/v1/courses',{headers:{Origin:'https://evil.example'}}))).status,403);
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'OPTIONS'}))).status,204);
@@ -24,7 +24,6 @@ assert.deepEqual(JSON.parse(upstream.at(-1).opts.body),{submission:{submission_t
 assert.equal(upstream.length,before+1);
 before=upstream.length;
 for(const data of [
-  {submission:{submission_type:'online_upload',file_ids:[1]}},
   {submission:{submission_type:'online_url',url:'javascript:alert(1)'}},
   {submission:{submission_type:'online_text_entry',body:' '}},
   {submission:{submission_type:'online_text_entry',body:'x',user_id:2}},
@@ -35,4 +34,29 @@ assert.equal((await worker.fetch(post({},'https://evil.example'+submitPath))).st
 assert.equal((await worker.fetch(post({},'/api/v1/courses/1/quizzes/2'))).status,405);
 assert.equal((await worker.fetch(request(submitPath,{method:'DELETE'}))).status,405);
 assert.equal(upstream.length,before,'invalid writes never reach Canvas');
+
+
+const uploadInitPath='/api/v1/courses/1/assignments/2/submissions/7/files';
+assert.equal((await worker.fetch(request('/api/v1/users/self'))).status,200);
+assert.equal((await worker.fetch(post({name:'homework.pdf',size:1024,content_type:'application/pdf'},uploadInitPath))).status,200);
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[42]}}))).status,200);
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[]}}))).status,400);
+assert.equal((await worker.fetch(post({name:'too-big.pdf',size:26000000},uploadInitPath))).status,400);
+
+for(const p of ['/api/v1/courses/1/quizzes/2/submissions/8/time','/api/v1/courses/1/quizzes','/api/v1/courses/1/quizzes/2','/api/v1/courses/1/quizzes/2/questions','/api/v1/quiz_submissions/8/questions'])assert.equal((await worker.fetch(request(p))).status,200);
+assert.equal((await worker.fetch(post({access_code:'1234'},'/api/v1/courses/1/quizzes/2/submissions'))).status,200);
+assert.equal((await worker.fetch(post({attempt:1,validation_token:'v',quiz_questions:[{id:'9',answer:3}]},'/api/v1/quiz_submissions/8/questions'))).status,200);
+assert.equal((await worker.fetch(post({attempt:1,validation_token:'v'},'/api/v1/courses/1/quizzes/2/submissions/8/complete'))).status,200);
+
+for(const p of ['/api/v1/courses/1/discussion_topics','/api/v1/courses/1/discussion_topics/4','/api/v1/courses/1/discussion_topics/4/entries?per_page=50'])assert.equal((await worker.fetch(request(p))).status,200);
+assert.equal((await worker.fetch(post({message:'My initial response'},'/api/v1/courses/1/discussion_topics/4/entries'))).status,200);
+assert.equal((await worker.fetch(post({message:'My reply'},'/api/v1/courses/1/discussion_topics/4/entries/7/replies'))).status,200);
+assert.equal((await worker.fetch(post({message:' '},'/api/v1/courses/1/discussion_topics/4/entries'))).status,400);
+
+for(const [path,data] of [
+ ['/api/v1/courses/1/quizzes/2/submissions',{preview:true}],
+ ['/api/v1/quiz_submissions/8/questions',{attempt:1,validation_token:'v',quiz_questions:[{id:'9',answer:{bad:{nested:true}}}]}],
+ ['/api/v1/courses/1/quizzes/2/submissions/8/complete',{attempt:0,validation_token:'v'}]
+])assert.equal((await worker.fetch(post(data,path))).status,400);
+
 console.log('PASS: only validated assignment submission POSTs reach Canvas; other writes and impersonation rejected');
