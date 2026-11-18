@@ -181,13 +181,15 @@ function wireToolbar(){
  const color=$('#nsPdfColor'),width=$('#nsPdfWidth'),undo=$('[data-ns-undo]'),redo=$('[data-ns-redo]'),exportButton=$('[data-ns-export]');
  if(color)color.addEventListener('input',()=>pdfState.color=color.value);
  if(width)width.addEventListener('input',()=>pdfState.width=Number(width.value));
+ function takePageHistory(stack,page){for(let i=stack.length-1;i>=0;i--){if(stack[i].page===page)return stack.splice(i,1)[0];}return null;}
  if(undo)undo.addEventListener('click',()=>{
-  const item=pdfState.history.pop();if(!item||item.page!==pdfState.page)return;
-  const state=getPageState(item.page);pdfState.redo.push(JSON.stringify(state));
+  const item=takePageHistory(pdfState.history,pdfState.page);if(!item)return;
+  const state=getPageState(item.page);pdfState.redo.push({page:item.page,state:JSON.stringify(state)});
   Object.assign(state,JSON.parse(item.state));persistAnnotations();drawOverlay();
  });
  if(redo)redo.addEventListener('click',()=>{
-  const snapshot=pdfState.redo.pop();if(!snapshot)return;const state=getPageState(pdfState.page);pdfState.history.push({page:pdfState.page,state:JSON.stringify(state)});Object.assign(state,JSON.parse(snapshot));persistAnnotations();drawOverlay();
+  const item=takePageHistory(pdfState.redo,pdfState.page);if(!item)return;
+  const state=getPageState(pdfState.page);pdfState.history.push({page:pdfState.page,state:JSON.stringify(state)});Object.assign(state,JSON.parse(item.state));persistAnnotations();drawOverlay();
  });
  if(exportButton)exportButton.addEventListener('click',async()=>{try{const file=await exportAnnotatedPdf();downloadBlob(file);setSaveState('Annotated PDF exported.');}catch(error){setSaveState('Could not export PDF: '+error.message);}});
 }
@@ -199,7 +201,7 @@ async function exportAnnotatedPdf(){
   const index=Number(key)-1,page=pages[index];if(!page)return;const width=page.getWidth(),height=page.getHeight(),s=pdfState.annotations[key];
   (s.strokes||[]).forEach(stroke=>{
    const points=stroke.points||[];if(!points.length)return;
-   const viewport=pdfState.viewports[index]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]};
+   const viewport=pdfState.viewports[index+1]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]};
    const convert=p=>{const point=viewport.convertToPdfPoint(p.x*viewport.width,p.y*viewport.height);return {x:point[0],y:point[1]};};
    const first=convert(points[0]),last=convert(points[points.length-1]),color=stroke.color||'#c4e87b',match=color.match(/^#([0-9a-f]{6})$/i),hex=match?match[1]:'c4e87b',r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255,ink=rgb(r,g,b),thickness=Math.max(.8,stroke.width||pdfState.width);
    if(stroke.tool==='rectangle'){
@@ -218,7 +220,7 @@ async function exportAnnotatedPdf(){
     for(let i=1;i<points.length;i++)page.drawLine({start:convert(points[i-1]),end:convert(points[i]),thickness:thickness*(stroke.tool==='highlight'?4:1),color:ink,opacity:stroke.tool==='highlight'?.28:1});
    }
   });
-  (s.texts||[]).forEach(note=>{const color=String(note.color||'#c4e87b'),h=color.replace('#',''),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255,viewport=pdfState.viewports[index]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]},position=viewport.convertToPdfPoint(note.x*viewport.width,note.y*viewport.height);page.drawText(String(note.text||'').slice(0,500),{x:position[0],y:position[1],size:12,color:rgb(r,g,b),maxWidth:width*.7,lineHeight:14});});
+  (s.texts||[]).forEach(note=>{const color=String(note.color||'#c4e87b'),h=color.replace('#',''),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255,viewport=pdfState.viewports[index+1]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]},position=viewport.convertToPdfPoint(note.x*viewport.width,note.y*viewport.height);page.drawText(String(note.text||'').slice(0,500),{x:position[0],y:position[1],size:12,color:rgb(r,g,b),maxWidth:width*.7,lineHeight:14});});
  });
  const bytes=await pdf.save(),name=String(pdfState.file?.name||'assignment.pdf').replace(/\.pdf$/i,'')+'-northstar-annotated.pdf';
  return new File([bytes],name,{type:'application/pdf'});
