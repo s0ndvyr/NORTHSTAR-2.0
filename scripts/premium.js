@@ -531,6 +531,9 @@ function phase441RenderRoom(a,c,details,files){
   input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
   const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
+  phase441AnnotatedPdf=null;
+  const attachAnnotated=$('#nsUseAnnotatedPdf');if(attachAnnotated)attachAnnotated.onclick=async()=>{try{const file=await window.NorthstarAssignmentRoom.getAnnotatedFile();phase441AnnotatedPdf={assignmentId:a.id,file};const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent='Ready to submit: '+file.name+' · '+Math.ceil(file.size/1024)+' KB. The exported PDF will be uploaded to Canvas instead of the selected file.';if(typeSelect){typeSelect.value='online_upload';typeSelect.onchange();}phase441ShowTab('submit');}catch(error){const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent=error.message;}};
+
   const brief=$('#nsAssignmentBrief');brief.innerHTML='';if(details?.description&&window.NorthstarAssignmentRoom)brief.append(window.NorthstarAssignmentRoom.sanitizeHtml(details.description,getCredentials()?.base||'https://nnps.instructure.com'));else brief.textContent=a.desc||'No additional instructions were provided.';
   const filesNode=$('#nsAssignmentFiles');
   if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
@@ -576,13 +579,14 @@ async function openWorkspace(id,options){
 }
 window.openWorkspace=openWorkspace;
 
-let submissionBusy=false;
+let submissionBusy=false;let phase441AnnotatedPdf=null;
 function submissionPanel(a){
   if(mode!=='live') return '';
   const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
-  if(!types.length) return '<p class="small muted mt">This assignment type must be completed in Canvas or its external learning tool. NORTHSTAR will not simulate a submission.</p>';
+  if(!types.length){if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>PDF annotation assignment</h3><p class="small">NORTHSTAR can annotate and export the attached PDF in Document Studio. Canvas identifies this as a native DocViewer student-annotation submission. Its public student submission API does not document a supported way to post DocViewer annotation state, so NORTHSTAR will not pretend that an exported PDF is the official Canvas student-annotation submission.</p><p class="small mt">You can export an annotated PDF from Document Studio. To record the special Canvas DocViewer submission status, the institution’s supported DocViewer workflow is still required.</p></div>';
+  return '<p class="small muted mt">This assignment requires a provider-specific or unsupported Canvas workflow. NORTHSTAR will not simulate completion.</p>';}
   const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
-  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
+  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p><button type="button" class="btn btn-ghost btn-sm mt" id="nsUseAnnotatedPdf">Use annotated PDF from Document Studio</button><p class="tiny muted mt" id="nsAnnotatedPdfStatus">Open a PDF and annotate it to attach an exported copy.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
 }
 window.submitAssignment=async function(){
   if(submissionBusy||!activeAssignment) return;
@@ -592,7 +596,7 @@ window.submitAssignment=async function(){
     if(!creds?.proxy) throw Error('Connect using your private bridge first. Direct-mode submissions are disabled.');
     const type=$('#submissionType').value;
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
-    const file=type==='online_upload'?$('#submissionFile')?.files?.[0]:null;
+    const file=type==='online_upload'?(phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:$('#submissionFile')?.files?.[0]):null;
     if(type==='online_upload'&&!file)throw Error('Choose a file before submitting.');
     const value=type==='online_url'?$('#submissionUrl').value:$('#assignmentDraft').value;
     let data=type==='online_upload'?null:window.NorthstarSubmissions.payload(type,value);
@@ -619,6 +623,7 @@ window.submitAssignment=async function(){
     });
     const snapshotSaved=await persistCurrentSnapshot();
     status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. Your local draft was kept.'+(snapshotSaved?' Offline coursework snapshot updated.':' Offline snapshot could not be updated; sync Canvas before relying on cached status.');
+    if(phase441AnnotatedPdf?.assignmentId===a.id)phase441AnnotatedPdf=null;
     refreshAll();
   }catch(e){status.textContent=e.message;}
   finally{submissionBusy=false;if(button) button.disabled=false;}
