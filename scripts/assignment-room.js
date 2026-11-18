@@ -101,7 +101,7 @@ function drawOverlay(){
   const points=stroke.points||[];if(!points.length)return;
   ctx.save();ctx.globalAlpha=stroke.tool==='highlight'?.27:1;ctx.strokeStyle=stroke.color;ctx.fillStyle=stroke.color;ctx.lineCap='round';ctx.lineJoin='round';
   const avg=points.reduce((n,p)=>n+(p.pressure||.5),0)/points.length;
-  ctx.lineWidth=(stroke.tool==='highlight'?stroke.width*5:stroke.width)*Math.max(.6,avg)*w/900;
+  const strokeWidth=Number(stroke.width)||pdfState.width;ctx.lineWidth=(stroke.tool==='highlight'?strokeWidth*5:strokeWidth)*Math.max(.6,avg)*w/900;
   const first=points[0],last=points[points.length-1],x1=first.x*w,y1=first.y*h,x2=last.x*w,y2=last.y*h;
   if(stroke.tool==='rectangle'){ctx.strokeRect(x1,y1,x2-x1,y2-y1);}
   else if(stroke.tool==='ellipse'){ctx.beginPath();ctx.ellipse((x1+x2)/2,(y1+y2)/2,Math.abs(x2-x1)/2,Math.abs(y2-y1)/2,0,0,Math.PI*2);ctx.stroke();}
@@ -218,7 +218,7 @@ async function exportAnnotatedPdf(){
     for(let i=1;i<points.length;i++)page.drawLine({start:convert(points[i-1]),end:convert(points[i]),thickness:thickness*(stroke.tool==='highlight'?4:1),color:ink,opacity:stroke.tool==='highlight'?.28:1});
    }
   });
-  (s.texts||[]).forEach(note=>{const color=String(note.color||'#c4e87b'),h=color.replace('#',''),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;page.drawText(String(note.text||'').slice(0,500),{x:note.x*width,y:height-note.y*height,size:12,color:rgb(r,g,b),maxWidth:width*.7,lineHeight:14});});
+  (s.texts||[]).forEach(note=>{const color=String(note.color||'#c4e87b'),h=color.replace('#',''),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255,viewport=pdfState.viewports[index]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]},position=viewport.convertToPdfPoint(note.x*viewport.width,note.y*viewport.height);page.drawText(String(note.text||'').slice(0,500),{x:position[0],y:position[1],size:12,color:rgb(r,g,b),maxWidth:width*.7,lineHeight:14});});
  });
  const bytes=await pdf.save(),name=String(pdfState.file?.name||'assignment.pdf').replace(/\.pdf$/i,'')+'-northstar-annotated.pdf';
  return new File([bytes],name,{type:'application/pdf'});
