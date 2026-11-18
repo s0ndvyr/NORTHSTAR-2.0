@@ -3,6 +3,7 @@ import {createRequire} from 'node:module';
 const W=createRequire(import.meta.url)('../scripts/workspace.js');
 
 assert.equal(W.questionSupported({id:1,quiz_question:{id:1,question_type:'multiple_choice_question',answers:[{id:2,text:'A'}]}}),true);
+assert.equal(W.questionSupported({id:7,question_type:'multiple_choice_question',answers:[{id:8,text:'A'}]}),true,'flattened question records are supported too');
 assert.equal(W.questionSupported({id:2,quiz_question:{id:2,question_type:'true_false_question',answers:[{id:3,text:'True'}]}}),true);
 assert.equal(W.questionSupported({id:3,quiz_question:{id:3,question_type:'essay_question'}}),true);
 assert.equal(W.questionSupported({id:4,quiz_question:{id:4,question_type:'text_only_question'}}),true);
