@@ -47,7 +47,7 @@ async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetc
 }
 function questionType(row){const q=row?.quiz_question||row?.question||row||{};return String(q.question_type||q.type||'').toLowerCase();}
 function questionSupported(row){
-  const q=row?.quiz_question||row?.question||{},type=questionType(row);
+  const q=row?.quiz_question||row?.question||row||{},type=questionType(row);
   if(type==='text_only_question')return true;
   if(['multiple_choice_question','true_false_question','multiple_answers_question'].includes(type))return Array.isArray(q.answers)&&q.answers.length>0;
   return ['essay_question','short_answer_question','numerical_question','calculated_question'].includes(type);
