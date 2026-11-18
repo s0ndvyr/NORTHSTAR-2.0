@@ -19,7 +19,7 @@ assert.equal(JSON.parse(calls[0].opts.body).access_code,undefined);
 await W.saveQuizAnswers({credentials,submission:started.submission,answers:[{id:9,answer:1}],fetchImpl});
 assert.equal(JSON.parse(calls.at(-1).opts.body).quiz_questions[0].answer,1);
 await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl});
-assert(calls.at(-1).url.includes('/complete?path='));
+assert(new URL(calls.at(-1).url).searchParams.get('path').includes('/complete'));
 assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
 await assert.rejects(W.startQuiz({credentials:{base:credentials.base,token:'x'},courseId:11,quizId:22,fetchImpl}),/private Canvas bridge/);
 await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submission,answers:[],fetchImpl}),/no answers/i);
