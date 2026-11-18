@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-room.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -51,7 +51,7 @@ assert.ok(window.CanvasDebug, 'CanvasDebug module loaded');
 assert.ok(window.NorthstarCanvasSync, 'NorthstarCanvasSync module loaded');
 assert.ok(window.NorthstarStudentVue, 'NorthstarStudentVue grade import module loaded');
 assert.ok(window.NorthstarWorkspace, 'Canvas assignment and quiz workspace module loaded');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4', 'runtime release identifier matches Phase 4');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.1', 'runtime release identifier matches Phase 4.4.1');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
