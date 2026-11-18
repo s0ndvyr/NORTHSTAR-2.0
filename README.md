@@ -116,7 +116,7 @@ The first PDF toolset includes:
 - Per-assignment / per-document local annotation persistence.
 - Export a flattened annotated PDF. If the Canvas assignment accepts an online_upload, the exported PDF can be selected as the file to submit through Canvas' supported signed-upload flow.
 
-Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. For a Canvas assignment whose submission type is specifically student_annotation, NORTHSTAR does not claim that a flattened PDF export has updated Canvas' native DocViewer annotation state. That provider-specific submission still requires the official Canvas DocViewer workflow until a documented student submission API is available for it.
+Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. Canvas's public Submissions API does expose the student_annotation submission type and the annotatable_attachment_id field. However, the documented request does not describe how a third-party editor uploads its actual DocViewer ink/text annotation payload. NORTHSTAR therefore does not submit the attachment ID alone or claim a flattened PDF export has updated Canvas' native DocViewer annotation state. The official Canvas DocViewer workflow remains required for those special assignments unless a supported annotation-payload API is established.
 
 The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations.
 
