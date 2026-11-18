@@ -28,7 +28,8 @@ function transport(credentials,fetchImpl=root.fetch){
 async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){
   if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a file under 25 MB.');
   const api=transport(credentials,fetchImpl),c=id(courseId),a=id(assignmentId);
-  const init=await api.post('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/self/files',{name:file.name,size:file.size,content_type:file.type||'application/octet-stream'});
+  const currentUser=await api.get('/api/v1/users/self');if(!currentUser?.id)throw Error('Canvas did not identify the connected student account.');
+  const init=await api.post('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/'+id(currentUser.id)+'/files',{name:file.name,size:file.size,content_type:file.type||'application/octet-stream'});
   const upload=Array.isArray(init.attachments)?init.attachments[0]:init;
   if(!upload?.upload_url||!upload.upload_params||typeof upload.upload_params!=='object')throw Error('Canvas did not return a valid signed upload request.');
   let target;try{target=new URL(upload.upload_url);}catch{throw Error('Canvas returned an invalid upload destination.');}
