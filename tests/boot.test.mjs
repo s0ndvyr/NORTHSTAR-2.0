@@ -241,7 +241,7 @@ assert.ok(window.document.getElementById('submissionStatus').textContent.include
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
-assert.ok(savedSnapshot && savedSnapshot.assignments.length===3,'successful sync is saved as an offline snapshot');
+assert.ok(savedSnapshot && savedSnapshot.assignments.length===4,'successful sync is saved as an offline snapshot, including the New Quizzes assignment');
 await window.disconnectCanvas();
 window.closeAssignmentRoom();
 assert.ok(window.__testVault.has('canvas-snapshot'),'disconnect preserves the last successful coursework snapshot');
