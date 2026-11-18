@@ -51,6 +51,14 @@ assert.ok(window.CanvasDebug, 'CanvasDebug module loaded');
 assert.ok(window.NorthstarCanvasSync, 'NorthstarCanvasSync module loaded');
 assert.ok(window.NorthstarStudentVue, 'NorthstarStudentVue grade import module loaded');
 assert.ok(window.NorthstarWorkspace, 'Canvas assignment and quiz workspace module loaded');
+assert.ok(window.NorthstarAssignmentRoom, 'full-page assignment room and PDF studio module loaded');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('pen'), true, 'Apple Pencil pointer is recognized');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('touch'), false, 'finger touch is not accepted as Pencil ink');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('mouse'), false, 'mouse is not accepted as Pencil ink');
+const sanitizedBrief=window.NorthstarAssignmentRoom.sanitizeHtml('<p onclick="alert(1)">Instructions<script>alert(1)</script><a href="javascript:alert(2)">safe-looking link</a></p>','https://school.instructure.com');
+assert.equal(sanitizedBrief.textContent,'Instructionssafe-looking link','Canvas instructions are retained while scripts are removed');
+assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas event handlers are removed from instruction markup');
+assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
 assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.1', 'runtime release identifier matches Phase 4.4.1');
 
 // grade math via the exposed pure module
