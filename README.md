@@ -93,18 +93,6 @@ For DOM boot + mocked live sync, run `npm install` once and then `node tests/boo
 - The displayed app release is NORTHSTAR / .4.3; package version is 0.4.3.
 
 
-## NORTHSTAR / .4.4.2 — Quiz Continuity & Safe Recovery
-
-Phase 4.4.2 hardens the in-dashboard classic Canvas quiz workflow so leaving and reopening an assignment does not casually create a second attempt.
-
-- Before showing a Start button, NORTHSTAR asks Canvas for the current student's quiz submission. If Canvas reports an unfinished attempt, NORTHSTAR first tries to resume it using temporary attempt validation details retained in the current browser tab session.
-- If the same-tab session details are unavailable, NORTHSTAR blocks a new start and presents a clear route to continue the existing attempt in Canvas. It never starts a replacement attempt merely because NORTHSTAR cannot recover the validation token.
-- Supported question edits are saved to Canvas automatically after a short debounce. The explicit Save action remains available and reports whether Canvas confirmed the write. Failed or ambiguous writes are not automatically retried.
-- Quiz completion warns when supported questions remain unanswered. Unsupported question formats still block NORTHSTAR completion and must be handled in the same Canvas attempt.
-- Quiz attempt validation details are held in sessionStorage for the current tab session only. They are not written to localStorage or the long-lived credential vault. If the tab session is lost, the safe fallback is the existing Canvas attempt—not a duplicate attempt.
-- The repository Worker already allowlists Canvas' current-user quiz submission read route; the older read-only Worker supplied separately is not equivalent to the repository Worker. Deploy the repository's current `canvas-bridge/worker.js` when enabling Phase 4.4 write workflows.
-
-Canvas API references: [Quiz Submissions](https://canvas.instructure.com/doc/api/quiz_submissions.html) and [Quiz Submission Questions](https://www.sso.canvaslms.com/doc/api/quiz_submission_questions.html).
 ## NORTHSTAR / .4.4.1 — Native Assignment Experience
 
 Phase 4.4.1 changes the interaction model: supported assignments open as full-screen NORTHSTAR pages with an in-app work environment. Canvas remains the authoritative backend for course instructions, files, attempt state, submissions, due dates and grades. Ordinary assignment work no longer needs to open a Canvas page in another tab.
@@ -155,3 +143,16 @@ All assignment and quiz writes remain explicit, confirmed and sent through the p
 8. Verify unsupported assignment types show an honest provider limitation rather than a simulated submission.
 
 Automated tests use Canvas-shaped fixtures and mocked binary-file downloads. They verify the app route, markup sanitization, bridge allowlists, and PDF transport wiring; they do not replace live testing with the student's own Canvas account and Apple Pencil.
+
+## NORTHSTAR / .4.4.2 — Quiz Continuity & Safe Recovery
+
+Phase 4.4.2 hardens the in-dashboard classic Canvas quiz workflow so leaving and reopening an assignment does not casually create a second attempt.
+
+- Before showing a Start button, NORTHSTAR asks Canvas for the current student's quiz submission. If Canvas reports an unfinished attempt, NORTHSTAR first tries to resume it using temporary attempt validation details retained in the current browser tab session.
+- If the same-tab session details are unavailable, NORTHSTAR blocks a new start and presents a clear route to continue the existing attempt in Canvas. It never starts a replacement attempt merely because NORTHSTAR cannot recover the validation token.
+- Supported question edits are saved to Canvas automatically after a short debounce. The explicit Save action remains available and reports whether Canvas confirmed the write. Failed or ambiguous writes are not automatically retried.
+- Quiz completion warns when supported questions remain unanswered. Unsupported question formats still block NORTHSTAR completion and must be handled in the same Canvas attempt.
+- Quiz attempt validation details are held in sessionStorage for the current tab session only. They are not written to localStorage or the long-lived credential vault. If the tab session is lost, the safe fallback is the existing Canvas attempt—not a duplicate attempt.
+- The repository Worker already allowlists Canvas' current-user quiz submission read route; the older read-only Worker supplied separately is not equivalent to the repository Worker. Deploy the repository's current `canvas-bridge/worker.js` when enabling Phase 4.4 write workflows.
+
+Canvas API references: [Quiz Submissions](https://canvas.instructure.com/doc/api/quiz_submissions.html) and [Quiz Submission Questions](https://www.sso.canvaslms.com/doc/api/quiz_submission_questions.html).
