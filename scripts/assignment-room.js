@@ -76,7 +76,7 @@ function collectFiles(details,base){
  if(details.annotatable_attachment_id)add(details.annotatable_attachment_id,'Document to annotate','application/pdf','');
  return files;
 }
-const pdfState={assignment:null,file:null,bytes:null,doc:null,page:1,scale:1.15,tool:'select',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0};
+const pdfState={assignment:null,file:null,bytes:null,doc:null,page:1,scale:1.15,tool:'select',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{}};
 function pdfKey(){return 'northstar_pdf_markup_v1_'+String(pdfState.assignment?.id||'assignment')+'_'+String(pdfState.file?.id||'file');}
 function getPageState(page){const key=String(page);if(!pdfState.annotations[key])pdfState.annotations[key]={strokes:[],texts:[]};return pdfState.annotations[key];}
 function persistAnnotations(){try{localStorage.setItem(pdfKey(),JSON.stringify(pdfState.annotations));}catch{notify('The annotation could not be saved on this device. Export a copy to keep it.');}}
@@ -91,20 +91,27 @@ function loadPdfEngine(){
  return pdfState.pdfEnginePromise;
 }
 function renderToolbar(host){
- host.innerHTML='<div class="ns-pdf-toolbar"><div class="ns-pdf-tools" role="toolbar" aria-label="PDF annotation tools"><button type="button" data-ns-tool="select" class="is-active" title="Select and scroll">Select</button><button type="button" data-ns-tool="pen" title="Draw with Apple Pencil">Pencil</button><button type="button" data-ns-tool="highlight" title="Highlight with Apple Pencil">Highlight</button><button type="button" data-ns-tool="text" title="Place typed text on the PDF">Text</button><button type="button" data-ns-tool="eraser" title="Erase a pencil mark">Eraser</button></div><div class="ns-pdf-actions"><button type="button" data-ns-page="prev" aria-label="Previous page">←</button><span class="ns-pdf-page-indicator" id="nsPdfPageIndicator">Page 1 / 1</span><button type="button" data-ns-page="next" aria-label="Next page">→</button><button type="button" data-ns-zoom="out" aria-label="Zoom out">−</button><span id="nsPdfZoom">115%</span><button type="button" data-ns-zoom="in" aria-label="Zoom in">+</button><button type="button" data-ns-undo title="Undo last annotation">Undo</button><button type="button" data-ns-redo title="Redo annotation">Redo</button><button type="button" data-ns-export>Export PDF</button></div></div><div class="ns-pdf-stylebar"><label>Ink <input type="color" id="nsPdfColor" value="#c4e87b"></label><label>Size <input type="range" id="nsPdfWidth" min="1" max="8" step=".5" value="2.8"></label><label class="ns-pdf-text-entry">Text to place <input type="text" id="nsPdfText" maxlength="180" placeholder="Type, then tap the PDF"></label><span id="nsPdfInputHint">Pencil and highlighter marks accept Apple Pencil input only.</span></div><div class="ns-pdf-stage-scroll"><div class="ns-pdf-page"><canvas id="nsPdfCanvas" aria-label="PDF page"></canvas><canvas id="nsPdfInk" class="ns-pdf-ink" aria-label="PDF annotation layer"></canvas></div></div><div class="ns-pdf-foot"><span id="nsPdfSaveState">Annotations save on this device as you work.</span><span id="nsPdfFileName"></span></div>';
+ host.innerHTML='<div class="ns-pdf-toolbar"><div class="ns-pdf-tools" role="toolbar" aria-label="PDF annotation tools"><button type="button" data-ns-tool="select" class="is-active" title="Select and scroll">Select</button><button type="button" data-ns-tool="pen" title="Freehand draw with Apple Pencil">Pencil</button><button type="button" data-ns-tool="highlight" title="Highlight with Apple Pencil">Highlight</button><button type="button" data-ns-tool="text" title="Place typed text on the PDF">Text</button><button type="button" data-ns-tool="line" title="Draw a straight line with Apple Pencil">Line</button><button type="button" data-ns-tool="arrow" title="Draw an arrow with Apple Pencil">Arrow</button><button type="button" data-ns-tool="rectangle" title="Draw a rectangle with Apple Pencil">Box</button><button type="button" data-ns-tool="ellipse" title="Draw an ellipse with Apple Pencil">Circle</button><button type="button" data-ns-tool="eraser" title="Erase nearby annotations with Apple Pencil">Eraser</button></div><div class="ns-pdf-actions"><button type="button" data-ns-page="prev" aria-label="Previous page">←</button><span class="ns-pdf-page-indicator" id="nsPdfPageIndicator">Page 1 / 1</span><button type="button" data-ns-page="next" aria-label="Next page">→</button><button type="button" data-ns-zoom="out" aria-label="Zoom out">−</button><span id="nsPdfZoom">115%</span><button type="button" data-ns-zoom="in" aria-label="Zoom in">+</button><button type="button" data-ns-undo title="Undo last annotation">Undo</button><button type="button" data-ns-redo title="Redo annotation">Redo</button><button type="button" data-ns-export>Export PDF</button></div></div><div class="ns-pdf-stylebar"><label>Ink <input type="color" id="nsPdfColor" value="#c4e87b"></label><label>Size <input type="range" id="nsPdfWidth" min="1" max="8" step=".5" value="2.8"></label><label class="ns-pdf-text-entry">Text to place <input type="text" id="nsPdfText" maxlength="180" placeholder="Type, then tap the PDF"></label><span id="nsPdfInputHint">Pencil, shapes, highlighting and erasing accept Apple Pencil input only.</span></div><div class="ns-pdf-stage-scroll"><div class="ns-pdf-page"><canvas id="nsPdfCanvas" aria-label="PDF page"></canvas><canvas id="nsPdfInk" class="ns-pdf-ink" aria-label="PDF annotation layer"></canvas></div></div><div class="ns-pdf-foot"><span id="nsPdfSaveState">Annotations save on this device as you work.</span><span id="nsPdfFileName"></span></div>';
 }
 function drawOverlay(){
  const canvas=$('#nsPdfInk');if(!canvas||!pdfState.doc)return;
  const ctx=canvas.getContext('2d'),pageState=getPageState(pdfState.page),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);
  pageState.strokes.forEach(stroke=>{
-  if(!stroke.points.length)return;
-  ctx.save();ctx.globalAlpha=stroke.tool==='highlight'?.27:1;ctx.strokeStyle=stroke.color;ctx.lineCap='round';ctx.lineJoin='round';
-  const avg=stroke.points.reduce((n,p)=>n+(p.pressure||.5),0)/stroke.points.length;
-  ctx.lineWidth=(stroke.tool==='highlight'?pdfState.width*5:pdfState.width)*Math.max(.6,avg)*w/900;
-  ctx.beginPath();ctx.moveTo(stroke.points[0].x*w,stroke.points[0].y*h);
-  stroke.points.slice(1).forEach(p=>ctx.lineTo(p.x*w,p.y*h));if(stroke.points.length===1)ctx.lineTo(stroke.points[0].x*w+.1,stroke.points[0].y*h+.1);
-  ctx.stroke();ctx.restore();
+  const points=stroke.points||[];if(!points.length)return;
+  ctx.save();ctx.globalAlpha=stroke.tool==='highlight'?.27:1;ctx.strokeStyle=stroke.color;ctx.fillStyle=stroke.color;ctx.lineCap='round';ctx.lineJoin='round';
+  const avg=points.reduce((n,p)=>n+(p.pressure||.5),0)/points.length;
+  ctx.lineWidth=(stroke.tool==='highlight'?stroke.width*5:stroke.width)*Math.max(.6,avg)*w/900;
+  const first=points[0],last=points[points.length-1],x1=first.x*w,y1=first.y*h,x2=last.x*w,y2=last.y*h;
+  if(stroke.tool==='rectangle'){ctx.strokeRect(x1,y1,x2-x1,y2-y1);}
+  else if(stroke.tool==='ellipse'){ctx.beginPath();ctx.ellipse((x1+x2)/2,(y1+y2)/2,Math.abs(x2-x1)/2,Math.abs(y2-y1)/2,0,0,Math.PI*2);ctx.stroke();}
+  else if(stroke.tool==='line'||stroke.tool==='arrow'){
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    if(stroke.tool==='arrow'){const angle=Math.atan2(y2-y1,x2-x1),head=Math.max(10,ctx.lineWidth*4);ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-head*Math.cos(angle-Math.PI/6),y2-head*Math.sin(angle-Math.PI/6));ctx.moveTo(x2,y2);ctx.lineTo(x2-head*Math.cos(angle+Math.PI/6),y2-head*Math.sin(angle+Math.PI/6));ctx.stroke();}
+  }else{
+    ctx.beginPath();ctx.moveTo(x1,y1);points.slice(1).forEach(p=>ctx.lineTo(p.x*w,p.y*h));if(points.length===1)ctx.lineTo(x1+.1,y1+.1);ctx.stroke();
+  }
+  ctx.restore();
  });
  pageState.texts.forEach(note=>{
   ctx.save();ctx.fillStyle=note.color||pdfState.color;ctx.font='600 '+Math.max(13,Math.round(w/65))+'px -apple-system,BlinkMacSystemFont,sans-serif';
@@ -120,7 +127,7 @@ function renderPage(){
  const token=++pdfState.renderToken;
  return pdfState.doc.getPage(pdfState.page).then(page=>{
   if(token!==pdfState.renderToken)return;
-  const viewport=page.getViewport({scale:pdfState.scale}),ratio=Math.min(root.devicePixelRatio||1,2),canvas=$('#nsPdfCanvas'),ink=$('#nsPdfInk'),wrapper=canvas&&canvas.parentElement;
+  const viewport=page.getViewport({scale:pdfState.scale});pdfState.viewports=pdfState.viewports||{};pdfState.viewports[pdfState.page]=viewport;const ratio=Math.min(root.devicePixelRatio||1,2),canvas=$('#nsPdfCanvas'),ink=$('#nsPdfInk'),wrapper=canvas&&canvas.parentElement;
   if(!canvas||!ink||!wrapper)return;
   [canvas,ink].forEach(c=>{c.width=Math.floor(viewport.width*ratio);c.height=Math.floor(viewport.height*ratio);c.style.width=viewport.width+'px';c.style.height=viewport.height+'px';});
   wrapper.style.width=viewport.width+'px';wrapper.style.height=viewport.height+'px';
@@ -136,9 +143,10 @@ function addPoint(event,canvas){
 }
 function attachCanvasEvents(){
  const ink=$('#nsPdfInk');if(!ink)return;let active=null;
+ const pencilTools=['pen','highlight','eraser','line','arrow','rectangle','ellipse'];
  ink.addEventListener('pointerdown',event=>{
   const tool=pdfState.tool;
-  if(['pen','highlight','eraser'].includes(tool)&&!isPenPointer(event.pointerType)){setSaveState('Use Apple Pencil for drawing, highlighting and erasing.');return;}
+  if(pencilTools.includes(tool)&&!isPenPointer(event.pointerType)){setSaveState('Apple Pencil input only — finger and mouse drawing are disabled.');return;}
   if(tool==='select')return;
   event.preventDefault();const point=addPoint(event,ink);
   if(tool==='text'){
@@ -146,12 +154,18 @@ function attachCanvasEvents(){
    pushHistory();getPageState(pdfState.page).texts.push({x:point.x,y:point.y,text,color:pdfState.color});persistAnnotations();if(input)input.value='';drawOverlay();setSaveState('Text annotation saved on this device.');return;
   }
   if(tool==='eraser'){
-   const s=getPageState(pdfState.page),radius=.035;s.strokes=s.strokes.filter(stroke=>!stroke.points.some(p=>Math.hypot(p.x-point.x,p.y-point.y)<radius));persistAnnotations();drawOverlay();setSaveState('Nearby pencil mark erased.');return;
+   pushHistory();const state=getPageState(pdfState.page),radius=.035;
+   state.strokes=state.strokes.filter(stroke=>!(stroke.points||[]).some(p=>Math.hypot(p.x-point.x,p.y-point.y)<radius));
+   state.texts=state.texts.filter(note=>Math.hypot(note.x-point.x,note.y-point.y)>=radius);
+   persistAnnotations();drawOverlay();setSaveState('Nearby annotation erased.');return;
   }
-  pushHistory();active={tool:tool,color:pdfState.color,points:[point]};getPageState(pdfState.page).strokes.push(active);ink.setPointerCapture?.(event.pointerId);drawOverlay();
+  pushHistory();active={tool:tool,color:pdfState.color,width:pdfState.width,points:[point]};getPageState(pdfState.page).strokes.push(active);ink.setPointerCapture?.(event.pointerId);drawOverlay();
  });
  ink.addEventListener('pointermove',event=>{
-  if(!active)return;const points=event.getCoalescedEvents?event.getCoalescedEvents():[event];points.forEach(e=>active.points.push(addPoint(e,ink)));drawOverlay();
+  if(!active)return;const points=event.getCoalescedEvents?event.getCoalescedEvents():[event];
+  if(['line','arrow','rectangle','ellipse'].includes(active.tool)){active.points=[active.points[0],addPoint(points[points.length-1],ink)];}
+  else points.forEach(e=>active.points.push(addPoint(e,ink)));
+  drawOverlay();
  });
  const finish=()=>{if(!active)return;active=null;persistAnnotations();setSaveState('Saved on this device. Export the annotated PDF to submit a copy.');};
  ink.addEventListener('pointerup',finish);ink.addEventListener('pointercancel',finish);ink.addEventListener('lostpointercapture',finish);
@@ -160,7 +174,7 @@ function wireToolbar(){
  const host=pdfState.host;if(!host)return;
  host.querySelectorAll('[data-ns-tool]').forEach(button=>button.addEventListener('click',()=>{
   pdfState.tool=button.dataset.nsTool;host.querySelectorAll('[data-ns-tool]').forEach(b=>b.classList.toggle('is-active',b===button));
-  const hint=$('#nsPdfInputHint');if(hint)hint.textContent=pdfState.tool==='pen'||pdfState.tool==='highlight'||pdfState.tool==='eraser'?'Apple Pencil only — finger and mouse strokes are ignored.':pdfState.tool==='text'?'Type text above, then tap where it should appear.':'Scroll and select document content.';
+  const hint=$('#nsPdfInputHint');if(hint)hint.textContent=['pen','highlight','eraser','line','arrow','rectangle','ellipse'].includes(pdfState.tool)?'Apple Pencil only — finger and mouse drawing are ignored.':pdfState.tool==='text'?'Type text above, then tap where it should appear.':'Scroll and select document content.';
  }));
  host.querySelectorAll('[data-ns-page]').forEach(button=>button.addEventListener('click',()=>{pdfState.page=Math.max(1,Math.min(pdfState.doc.numPages,pdfState.page+(button.dataset.nsPage==='next'?1:-1)));renderPage();}));
  host.querySelectorAll('[data-ns-zoom]').forEach(button=>button.addEventListener('click',()=>{pdfState.scale=Math.max(.65,Math.min(2.25,pdfState.scale+(button.dataset.nsZoom==='in'?.15:-.15)));renderPage();}));
@@ -185,8 +199,24 @@ async function exportAnnotatedPdf(){
   const index=Number(key)-1,page=pages[index];if(!page)return;const width=page.getWidth(),height=page.getHeight(),s=pdfState.annotations[key];
   (s.strokes||[]).forEach(stroke=>{
    const points=stroke.points||[];if(!points.length)return;
-   const color=stroke.color||'#c4e87b',match=color.match(/^#([0-9a-f]{6})$/i),hex=match?match[1]:'c4e87b',r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255;
-   for(let i=1;i<points.length;i++)page.drawLine({start:{x:points[i-1].x*width,y:height-points[i-1].y*height},end:{x:points[i].x*width,y:height-points[i].y*height},thickness:Math.max(1,stroke.width||pdfState.width)*(stroke.tool==='highlight'?4:1),color:rgb(r,g,b),opacity:stroke.tool==='highlight'?.28:1});
+   const viewport=pdfState.viewports[index]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]};
+   const convert=p=>{const point=viewport.convertToPdfPoint(p.x*viewport.width,p.y*viewport.height);return {x:point[0],y:point[1]};};
+   const first=convert(points[0]),last=convert(points[points.length-1]),color=stroke.color||'#c4e87b',match=color.match(/^#([0-9a-f]{6})$/i),hex=match?match[1]:'c4e87b',r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255,ink=rgb(r,g,b),thickness=Math.max(.8,stroke.width||pdfState.width);
+   if(stroke.tool==='rectangle'){
+    page.drawRectangle({x:Math.min(first.x,last.x),y:Math.min(first.y,last.y),width:Math.abs(last.x-first.x),height:Math.abs(last.y-first.y),borderColor:ink,borderWidth:thickness,opacity:1});
+   }else if(stroke.tool==='ellipse'){
+    page.drawEllipse({x:(first.x+last.x)/2,y:(first.y+last.y)/2,xScale:Math.abs(last.x-first.x)/2,yScale:Math.abs(last.y-first.y)/2,borderColor:ink,borderWidth:thickness});
+   }else if(stroke.tool==='line'||stroke.tool==='arrow'){
+    page.drawLine({start:first,end:last,thickness,color:ink,opacity:1});
+    if(stroke.tool==='arrow'){
+     const angle=Math.atan2(last.y-first.y,last.x-first.x),head=Math.max(8,thickness*4);
+     for(const offset of [-Math.PI/6,Math.PI/6])page.drawLine({start:last,end:{x:last.x-head*Math.cos(angle+offset),y:last.y-head*Math.sin(angle+offset)},thickness,color:ink});
+    }
+   }else if(points.length===1){
+    page.drawCircle({x:first.x,y:first.y,size:Math.max(1,thickness/2),color:ink,opacity:stroke.tool==='highlight'?.28:1});
+   }else{
+    for(let i=1;i<points.length;i++)page.drawLine({start:convert(points[i-1]),end:convert(points[i]),thickness:thickness*(stroke.tool==='highlight'?4:1),color:ink,opacity:stroke.tool==='highlight'?.28:1});
+   }
   });
   (s.texts||[]).forEach(note=>{const color=String(note.color||'#c4e87b'),h=color.replace('#',''),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;page.drawText(String(note.text||'').slice(0,500),{x:note.x*width,y:height-note.y*height,size:12,color:rgb(r,g,b),maxWidth:width*.7,lineHeight:14});});
  });
@@ -195,7 +225,7 @@ async function exportAnnotatedPdf(){
 }
 function downloadBlob(file){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name||'annotated.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function openPdf(host,file,assignment,credentials){
- pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='select';pdfState.annotations={};pdfState.history=[];pdfState.redo=[];
+ pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='select';pdfState.annotations={};pdfState.history=[];pdfState.redo=[];pdfState.viewports={};
  try{pdfState.annotations=JSON.parse(localStorage.getItem(pdfKey())||'{}');}catch{}
  renderToolbar(host);const name=$('#nsPdfFileName');if(name)name.textContent=file.name;
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:credentials,courseId:assignment.canvasCourseId,fileId:file.id});
