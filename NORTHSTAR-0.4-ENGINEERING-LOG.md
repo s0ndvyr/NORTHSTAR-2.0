@@ -294,7 +294,7 @@ These features require separate official provider integrations and live acceptan
 
 ### Phase 4.4.2 acceptance checklist
 
-- [ ] CI passes syntax checks, all unit tests and browser boot tests.
+- [x] CI passes syntax checks, all unit tests and browser boot tests (Phase 3 and Phase 4 GitHub Actions runs passed on the release commit).
 - [ ] Verify a practice/ungraded classic quiz can start, autosave, navigate away and resume in the same tab.
 - [ ] Verify an unfinished attempt with no recoverable tab session does not offer a second Start action.
 - [ ] Verify an unsupported question type blocks NORTHSTAR completion and preserves the existing attempt.
