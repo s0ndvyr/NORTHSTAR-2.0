@@ -15,12 +15,13 @@ const calls=[];
 const fetchImpl=async(url,opts)=>{
   calls.push({url,opts});
   if(opts.method==='POST'&&new URL(url).searchParams.get('path')==='/api/v1/courses/11/quizzes/22/submissions')return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,validation_token:'validation-secret'}]})};
-  if(opts.method==='GET')return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};
+  if(opts.method==='GET'){const path=new URL(url).searchParams.get('path')||'';if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:180,end_at:'2026-11-18T05:00:00Z'})};return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};}
   return {ok:true,status:200,json:async()=>({ok:true})};
 };
 const started=await W.startQuiz({credentials,courseId:11,quizId:22,fetchImpl});
 assert.equal(started.submission.id,77);
 assert.equal(started.questions.length,1);
+assert.equal(started.timing.time_left,180,'Canvas timing endpoint supplies authoritative remaining time');
 assert(calls[0].url.startsWith('https://bridge.example/'));
 assert(!calls[0].url.includes('secret-token'));
 assert.equal(calls[0].opts.headers.Authorization,'Bearer secret-token');
