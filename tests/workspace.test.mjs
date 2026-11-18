@@ -35,6 +35,6 @@ const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentI
   return {ok:true,status:201,json:async()=>({id:55,display_name:'homework.txt'})};
 }});
 assert.equal(uploaded.id,55);
-assert.equal(uploadCalls.length,2);
+assert.equal(uploadCalls.length,3,'current-user lookup, upload initialization and signed file upload are all required');
 
 console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');
