@@ -53,9 +53,9 @@ If your school's Canvas security policy blocks external access, ask the Canvas a
 - Canvas and Gemini credentials can be stored in the encrypted IndexedDB vault. The encryption key is non-extractable and device-local. This is encryption at rest, not a defense against malicious same-origin JavaScript; secrets must still be treated as accessible to the running application. Disconnect Canvas or clear the Gemini key to erase them.
 - Notes/drafts stay device-local. Restricted Canvas and Google resources open at their authenticated HTTPS destination in a new tab instead of being embedded in an iframe that may return HTTP 403.
 - Phase 2 (text/URL): open an assignment workspace, choose an allowed type, and review/confirm before sending. Text entry sends the workspace draft as escaped plain text; URL entry sends the URL. These operations require a private bridge connection. Resubmitting creates another attempt where Canvas permits it; there is no student unsubmit/erase operation.
-- Redeploy `canvas-bridge/worker.js` with your existing origins before using submission controls. Only the exact assignment-submissions POST path is allowed, with validated JSON and a 200 KB request limit. File uploads, comments, impersonation fields, arbitrary writes, and other submission types are rejected.
+- The current private Worker permits narrowly validated text, URL, and file submissions; classic quiz attempt creation, answer saves and completion; and discussion posts/replies. Arbitrary Canvas write routes, impersonation fields, query-string writes, and unapproved submission payloads remain rejected.
 - Submission state normalization distinguishes missing, submitted, awaiting grading, graded, and excused work. If Canvas reports that the grade does not match the latest submission attempt, NORTHSTAR does not display the stale score as the current attempt. Every UI submission asks for confirmation naming the course/assignment and previewing the content. There are no automatic retries. On a network or unreadable-response failure, check Canvas before attempting again. Canvas enforces deadlines, availability, and attempt limits. Drafts are retained locally after submission.
-- File uploads and quiz-engine integration remain unfinished. Use Canvas for files, quizzes, discussions, and external tools. Quiz support still needs school-specific capability checks; no quiz answers are submitted here.
+- Phase 4 adds native workspaces for supported text/URL/file submissions, supported classic quiz question types, graded discussions, and PDF annotations/export. Unsupported quiz formats, New Quizzes or LTI tools that require provider authentication, and Canvas DocViewer student-annotation submission remain explicit fallbacks.
 - Demo charts and flashcards remain examples, not school analytics. No StudentVUE connection is provided.
 
 ## NORTHSTAR 0.4 foundation updates
@@ -156,3 +156,12 @@ Phase 4.4.2 hardens the in-dashboard classic Canvas quiz workflow so leaving and
 - The repository Worker already allowlists Canvas' current-user quiz submission read route; the older read-only Worker supplied separately is not equivalent to the repository Worker. Deploy the repository's current `canvas-bridge/worker.js` when enabling Phase 4.4 write workflows.
 
 Canvas API references: [Quiz Submissions](https://canvas.instructure.com/doc/api/quiz_submissions.html) and [Quiz Submission Questions](https://www.sso.canvaslms.com/doc/api/quiz_submission_questions.html).
+
+
+## Phase 4.4 — Native Assignment Workspace
+
+NORTHSTAR opens ordinary Canvas assignments, supported classic quizzes, and graded discussions in full-page in-app workspaces. The `.4.4.3` increment adds a formatted local writing editor with safe HTML sanitization, native preview for common image/audio/video/text attachments through the private bridge, in-app handling of assignment and file links where they can be mapped to Canvas records, and quiz question navigation/progress/flagging. Drafts remain device-local until the student explicitly submits.
+
+The private Cloudflare Worker must be deployed from the current `canvas-bridge/worker.js`. Canvas remains authoritative: write actions require confirmation and a confirmed Canvas response; ambiguous writes are never automatically retried. The bridge uses the exact configured Canvas and GitHub Pages origins.
+
+**Known boundaries:** PDF annotations are saved locally and can be flattened/exported as a file; this is not the same as submitting Canvas DocViewer student-annotation state. New Quizzes, LTI/external tools, provider-specific assessments, and file formats without a safe native renderer are not falsely represented as completed in NORTHSTAR. Those workflows may require the institution-approved provider experience.

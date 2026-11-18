@@ -59,7 +59,9 @@ const sanitizedBrief=window.NorthstarAssignmentRoom.sanitizeHtml('<p onclick="al
 assert.equal(sanitizedBrief.textContent,'Instructionssafe-looking link','Canvas instructions are retained while scripts are removed');
 assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas event handlers are removed from instruction markup');
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.2', 'runtime release identifier matches Phase 4.4.1');
+const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
+assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text allowlist strips scripts, handlers and unsafe links');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.3', 'runtime release identifier matches Phase 4.4.3');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
@@ -114,6 +116,8 @@ window.fetch = async (url, opts={}) => {
   else if(path==='/api/v1/courses/1/quizzes/22'&&opts?.method!=='POST') data={id:22,title:'Canvas Quiz',question_count:1,points_possible:10,workflow_state:'available',html_url:'https://school.instructure.com/courses/1/quizzes/22'};
   else if(path==='/api/v1/courses/1/quizzes/22/submissions'&&opts?.method==='POST') data={quiz_submissions:[{id:77,attempt:1,validation_token:'quiz-validation',started_at:new Date().toISOString()}]};
   else if(path.startsWith('/api/v1/quiz_submissions/77/questions')) data={quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Choose A',answers:[{id:1,text:'A'},{id:2,text:'B'}]}}]};
+  else if (path==='/api/v1/users/self') data={id:7,name:'Test Student'};
+  else if (path.startsWith('/api/v1/courses/1/assignments/11/submissions/7?')) data={submission_history:[{attempt:1,workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}],submission_comments:[{author_name:'Instructor',comment:'Good start. Add one more example.',created_at:'2026-11-17T12:00:00Z'}],rubric_assessment:{}};
   else if (path.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
   else data={weighted_assignment_groups:true};
   return {ok:true,status:200,headers:{get:n=>n.toLowerCase()==='content-type'?'application/json':null},json:async()=>data,text:async()=>JSON.stringify(data)};
@@ -145,6 +149,8 @@ assert.ok(window.document.getElementById('workspace').textContent.includes('Subm
 assert.ok(window.document.body.classList.contains('assignment-room-open'),'opening an assignment transitions into a full-screen in-app route');
 assert.ok(window.document.getElementById('nsAssignmentBrief'),'assignment instructions render in the native page');
 assert.ok(window.document.getElementById('nsRoomBack'),'the page provides in-app dashboard navigation');
+assert.ok(window.document.getElementById('nsSubmissionHistory').textContent.includes('Attempt 1'),'submission attempt history is displayed in the assignment details');
+assert.ok(window.document.getElementById('nsSubmissionHistory').textContent.includes('Good start.'),'instructor feedback comments are displayed');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
 window.renderLedger();
 const activeLedger = window.document.getElementById('ledgerList').textContent;
@@ -169,10 +175,16 @@ await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('LIVE CANVAS ATTEMPT'),'quiz attempt starts and questions render in NORTHSTAR');
 const quizChoice=window.document.querySelector('[data-quiz-answer="9"]');
 assert.ok(quizChoice,'supported quiz answer control is rendered');
+assert.ok(window.document.querySelector('[data-quiz-jump="1"]'),'quiz question navigator renders');
+assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('0 of 1'),'quiz progress begins unanswered');
+window.document.querySelector('[data-quiz-flag="9"]').click();
+assert.equal(window.document.querySelector('[data-quiz-flag="9"]').getAttribute('aria-pressed'),'true','question can be flagged for review');
 quizChoice.checked=true;
+quizChoice.dispatchEvent(new window.Event('change',{bubbles:true}));
 window.document.getElementById('phase4SaveQuiz').click();
 await new Promise(r=>setTimeout(r,20));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'),'quiz answers are saved to Canvas');
+assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('1 of 1'),'answered quiz question updates progress');
 window.document.getElementById('phase4CompleteQuiz').click();
 await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
@@ -192,7 +204,7 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 
 
 await window.openWorkspace('canvas_10_1');
-window.document.getElementById('assignmentDraft').value='My own work';
+window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
 let writes=0;
 window.fetch=async(url,opts)=>{writes++;return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};};
 // Credentials are already retained in the in-memory connection created above.

@@ -4,6 +4,8 @@ const S=createRequire(import.meta.url)('../scripts/submissions.js');
 assert.equal(S.payload('online_text_entry','<script>\nhi').submission.body,'<p>&lt;script&gt;<br>hi</p>');
 assert.throws(()=>S.payload('online_url','javascript:alert(1)'));
 assert.throws(()=>S.payload('online_text_entry','  '));
+assert.throws(()=>S.richTextPayload('<p> </p>'),/Enter your work/);
+assert.deepEqual(S.richTextPayload('plain text'),{submission:{submission_type:'online_text_entry',body:'<p>plain text</p>'}});
 assert.deepEqual(S.payload('online_upload','42'),{submission:{submission_type:'online_upload',file_ids:[42]}});
 assert.throws(()=>S.payload('online_upload','not-a-file-id'));
 let calls=0;

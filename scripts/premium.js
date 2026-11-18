@@ -433,10 +433,18 @@ function phase4QuestionMarkup(row,index){
   else if(['essay_question','short_answer_question'].includes(type))control='<textarea class="editor quiz-text-answer" data-quiz-answer="'+qid+'" rows="'+(type==='essay_question'?7:3)+'" placeholder="Enter your response…">'+(typeof saved==='string'?safe(saved):'')+'</textarea>';
   else if(['numerical_question','calculated_question'].includes(type))control='<input class="select" type="number" step="any" data-quiz-answer="'+qid+'" value="'+(saved==null?'':safe(saved))+'" placeholder="Enter a number">';
   else control='<p class="small muted">This question format ('+safe(type||'unknown')+') is not yet supported in the NORTHSTAR quiz editor. Complete this question in Canvas.</p>';
-  return '<article class="card quiz-question" data-question-id="'+qid+'"><div class="eyebrow">QUESTION '+(index+1)+'</div><h3 class="quiz-prompt">'+prompt+'</h3><div class="quiz-answer-list">'+control+'</div></article>';
+  return '<article class="card quiz-question" data-question-id="'+qid+'" data-question-index="'+index+'"><div class="ns-quiz-question-head"><span class="eyebrow">QUESTION '+(index+1)+'</span><button type="button" class="ns-quiz-flag" data-quiz-flag="'+qid+'" aria-pressed="false">Flag for review</button></div><h3 class="quiz-prompt">'+prompt+'</h3><div class="quiz-answer-list">'+control+'</div></article>';
 }
 function phase4QuestionSupported(row){return !!window.NorthstarWorkspace?.questionSupported?.(row);}
-function phase4CollectQuizAnswers(questions){return questions.map(row=>{const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];if(type==='text_only_question'||!nodes.length)return null;let answer;if(type==='multiple_answers_question')answer=nodes.filter(n=>n.checked).map(n=>Number(n.value));else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);if(!chosen)return null;answer=Number(chosen.value);}else{answer=nodes[0].value;if(answer==='')return null;}return {id,answer};}).filter(Boolean);}
+function phase4CollectQuizAnswers(questions){return questions.map(row=>{const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];if(type==='text_only_question'||!nodes.length)return null;let answer;if(type==='multiple_answers_question'){answer=nodes.filter(n=>n.checked).map(n=>Number(n.value));if(!answer.length)return null;}else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);if(!chosen)return null;answer=Number(chosen.value);}else{answer=nodes[0].value;if(answer==='')return null;}return {id,answer};}).filter(Boolean);}
+function phase4UpdateQuizProgress(){
+  const s=activeQuizSession;if(!s)return;
+  const eligible=s.questions.filter(row=>phase4QuestionSupported(row)&&String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase()!=='text_only_question');
+  const answers=new Set(phase4CollectQuizAnswers(s.questions).map(item=>Number(item.id)));
+  const count=$('#phase4QuizProgressText');if(count)count.textContent=answers.size+' of '+eligible.length+' supported questions answered';
+  const bar=$('#phase4QuizProgressBar');if(bar)bar.style.width=(eligible.length?Math.round(answers.size/eligible.length*100):100)+'%';
+  document.querySelectorAll('[data-quiz-jump]').forEach(button=>{const id=Number(button.dataset.questionId);const answered=answers.has(id);button.classList.toggle('is-answered',answered);button.setAttribute('aria-label','Question '+button.dataset.quizJump+' '+(answered?'answered':'not answered'));});
+}
 let activeQuizSession=null;let phase4QuizTimer=null;let phase4QuizResyncTimer=null;
 function phase4QuizSessionKey(a){const c=courseById(a.course),quizId=a.quizId||a.canvasId;return 'northstar_active_quiz_v1_'+String(c?.canvasId||'')+'_'+String(quizId||'');}
 function phase4ReadQuizSession(a){try{return JSON.parse(sessionStorage.getItem(phase4QuizSessionKey(a))||'null');}catch{return null;}}
@@ -507,13 +515,18 @@ async function phase4AutoSaveQuizAnswers(){
 }
 function phase4RenderQuizAttempt(){
   const s=activeQuizSession;if(!s)return;const unsupported=s.questions.filter(row=>!phase4QuestionSupported(row));
+  s.flaggedQuestionIds=Array.isArray(s.flaggedQuestionIds)?s.flaggedQuestionIds:[];
   $('#nsQuizSubhead').textContent='Attempt '+s.submission.attempt+' · '+s.questions.length+' questions · Canvas attempt in progress';
   if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);
-  $('#nsQuizBody').innerHTML='<div class="card mb"><span class="eyebrow">LIVE CANVAS ATTEMPT</span><p id="phase4QuizTimer" class="mono mt">'+(s.timeLimit?('Time limit: '+s.timeLimit+' minutes'):'No timer reported by Canvas')+'</p><p class="small muted mt">Save answers sends them to Canvas. Submit quiz permanently completes this attempt.</p><div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" id="phase4SaveQuiz">Save answers to Canvas</button><button class="btn btn-primary btn-sm" id="phase4CompleteQuiz">Submit quiz to Canvas</button></div><p id="phase4AttemptStatus" class="small muted mt" role="status">Attempt started. Answers have not yet been saved.</p></div><div class="quiz-question-stack">'+s.questions.map(phase4QuestionMarkup).join('')+'</div>'+(unsupported.length?'<div class="card mt"><p class="small muted">Some question types are not yet editable here. Complete those in Canvas before submitting.</p><a class="btn btn-ghost mt" href="'+safe(s.assignment.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>':'');
+  const navigator=s.questions.map((row,index)=>{const q=row.quiz_question||row.question||row;return '<button type="button" data-quiz-jump="'+(index+1)+'" data-question-id="'+Number(q.id||row.id)+'" title="Go to question '+(index+1)+'">'+(index+1)+'</button>';}).join('');
+  $('#nsQuizBody').innerHTML='<div class="card mb"><span class="eyebrow">LIVE CANVAS ATTEMPT</span><p id="phase4QuizTimer" class="mono mt">'+(s.timeLimit?('Time limit: '+s.timeLimit+' minutes'):'No timer reported by Canvas')+'</p><div class="ns-quiz-progress-track"><i id="phase4QuizProgressBar"></i></div><p id="phase4QuizProgressText" class="small muted mt">0 supported questions answered</p><p class="small muted mt">Save answers sends them to Canvas. Submit quiz permanently completes this attempt.</p><div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" id="phase4SaveQuiz">Save answers to Canvas</button><button class="btn btn-primary btn-sm" id="phase4CompleteQuiz">Submit quiz to Canvas</button></div><p id="phase4AttemptStatus" class="small muted mt" role="status">Attempt started. Answers have not yet been saved.</p></div><nav class="ns-quiz-navigator" aria-label="Quiz question navigation">'+navigator+'</nav><div class="quiz-question-stack">'+s.questions.map(phase4QuestionMarkup).join('')+'</div>'+(unsupported.length?'<div class="card mt"><p class="small muted">'+unsupported.length+' question(s) use formats NORTHSTAR cannot safely edit. Complete these in the same attempt in Canvas before submitting.</p><a class="btn btn-ghost mt" href="'+safe(s.assignment.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Continue unsupported questions in Canvas ↗</a></div>':'');
   $('#phase4SaveQuiz').onclick=phase4SaveQuizAnswers;$('#phase4CompleteQuiz').onclick=phase4CompleteQuizAttempt;
+  document.querySelectorAll('[data-quiz-jump]').forEach(button=>button.onclick=()=>{const target=document.querySelector('.quiz-question[data-question-index="'+(Number(button.dataset.quizJump)-1)+'"]');if(target)target.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
+  document.querySelectorAll('[data-quiz-flag]').forEach(button=>{const id=Number(button.dataset.quizFlag),flagged=s.flaggedQuestionIds.includes(id);button.setAttribute('aria-pressed',String(flagged));button.classList.toggle('is-flagged',flagged);if(flagged)button.textContent='Flagged';button.onclick=()=>{const at=s.flaggedQuestionIds.indexOf(id);if(at>=0)s.flaggedQuestionIds.splice(at,1);else s.flaggedQuestionIds.push(id);button.setAttribute('aria-pressed',String(at<0));button.classList.toggle('is-flagged',at<0);button.textContent=at<0?'Flagged':'Flag for review';};});
   const quizStack=document.querySelector('.quiz-question-stack');
   phase4LastQuizSavedSignature=phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions));
-  if(quizStack){quizStack.addEventListener('input',phase4ScheduleQuizAutoSave);quizStack.addEventListener('change',phase4ScheduleQuizAutoSave);}
+  if(quizStack){const update=()=>{phase4UpdateQuizProgress();phase4ScheduleQuizAutoSave();};quizStack.addEventListener('input',update);quizStack.addEventListener('change',update);}
+  phase4UpdateQuizProgress();
   if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);
   if(s.timeLimit||Number.isFinite(Number(s.timing?.time_left))){const started=Date.parse(s.submission.started_at)||Date.now(),fallback=(s.timeLimit+s.extraTime)*60;let serverLeft=Number(s.timing?.time_left);if(!Number.isFinite(serverLeft))serverLeft=fallback-Math.floor((Date.now()-started)/1000);let syncedAt=Date.now();const tick=()=>{const remaining=Math.max(0,serverLeft-Math.floor((Date.now()-syncedAt)/1000)),node=$('#phase4QuizTimer');if(node){const mm=String(Math.floor(remaining/60)).padStart(2,'0'),ss=String(remaining%60).padStart(2,'0');node.textContent='Canvas time remaining · '+mm+':'+ss;if(remaining===0)node.textContent='Canvas time limit reached · verify attempt status in Canvas';}};tick();phase4QuizTimer=setInterval(tick,1000);phase4QuizResyncTimer=setInterval(async()=>{try{const timing=await window.NorthstarWorkspace.getQuizTime({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submissionId:s.submission.id});if(Number.isFinite(Number(timing.time_left))){serverLeft=Number(timing.time_left);syncedAt=Date.now();s.timing=timing;}}catch(error){}},30000);}
 }
@@ -571,7 +584,59 @@ function phase441ShowTab(tab){
   document.querySelectorAll('[data-ns-room-tab]').forEach(b=>b.classList.toggle('is-active',b.dataset.nsRoomTab===tab));
   document.querySelectorAll('.ns-room-panel[data-ns-room-panel]').forEach(p=>p.hidden=p.dataset.nsRoomPanel!==tab);
 }
-function phase441RenderRoom(a,c,details,files){
+let phase441ResourceObjectUrl=null;
+function phase441ResourceKind(file){
+  const type=String(file.contentType||'').toLowerCase(),name=String(file.name||'').toLowerCase();
+  if(type.includes('pdf')||name.endsWith('.pdf'))return 'PDF';
+  if(type.startsWith('image/')||/\.(png|jpe?g|gif|webp|svg|heic)$/i.test(name))return 'Image';
+  if(type.startsWith('video/')||/\.(mp4|m4v|webm|mov)$/i.test(name))return 'Video';
+  if(type.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|aac)$/i.test(name))return 'Audio';
+  if(type.startsWith('text/')||/\.(txt|csv|md|json|xml|log)$/i.test(name))return 'Text';
+  return 'File';
+}
+function phase441ReleaseResourceUrl(){if(phase441ResourceObjectUrl){URL.revokeObjectURL(phase441ResourceObjectUrl);phase441ResourceObjectUrl=null;}}
+window.addEventListener('northstar:assignment-room-exit',phase441ReleaseResourceUrl);
+window.addEventListener('northstar:assignment-room-exit',()=>{if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);});
+async function phase441OpenResource(file,a,c){
+  if(!file)return;
+  if(phase441ResourceKind(file)==='PDF')return phase441OpenPdf(file,a,c);
+  const stage=$('#nsDocumentStage');if(!stage)return;
+  phase441ReleaseResourceUrl();
+  if(file.size&&file.size>30000000){stage.innerHTML='<div class="ns-room-loading-error"><h3>This file is too large to preview here</h3><p>Files over 30 MB are not downloaded into the workspace. You can continue with the assignment and use the secure source link when available.</p></div>';return;}
+  stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ RESOURCE CENTER</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Retrieving this resource through your private Canvas bridge…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
+  try{
+    const result=await window.NorthstarWorkspace.downloadCanvasFile({credentials:getCredentials(),courseId:c.canvasId,fileId:file.id});
+    const ext=String(file.name||'').split('.').pop().toLowerCase(),known={txt:'text/plain',csv:'text/csv',md:'text/markdown',json:'application/json',xml:'application/xml',log:'text/plain',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',aac:'audio/aac'};
+    const mime=(result.contentType&&result.contentType!=='application/octet-stream'?result.contentType:(known[ext]||'application/octet-stream')).split(';')[0].toLowerCase();
+    if(mime==='application/pdf'||String.fromCharCode(...result.bytes.slice(0,5))==='%PDF-')return phase441OpenPdf(file,a,c);
+    if(mime.startsWith('text/')||mime==='application/json'||mime==='application/xml'){
+      const pre=document.createElement('pre');pre.className='ns-resource-text';pre.textContent=new TextDecoder('utf-8',{fatal:false}).decode(result.bytes);stage.replaceChildren(pre);return;
+    }
+    const blob=new Blob([result.bytes],{type:mime});phase441ResourceObjectUrl=URL.createObjectURL(blob);
+    if(mime.startsWith('image/')){const img=document.createElement('img');img.className='ns-resource-image';img.alt=file.name;img.src=phase441ResourceObjectUrl;stage.replaceChildren(img);return;}
+    if(mime.startsWith('video/')){const video=document.createElement('video');video.className='ns-resource-player';video.controls=true;video.playsInline=true;video.preload='metadata';video.src=phase441ResourceObjectUrl;stage.replaceChildren(video);return;}
+    if(mime.startsWith('audio/')){const audio=document.createElement('audio');audio.className='ns-resource-player';audio.controls=true;audio.preload='metadata';audio.src=phase441ResourceObjectUrl;stage.replaceChildren(audio);return;}
+    phase441ReleaseResourceUrl();
+    stage.innerHTML='<div class="ns-room-loading-error"><h3>This file type needs its own viewer</h3><p>'+esc(file.name)+' was downloaded securely, but NORTHSTAR does not yet have a safe native renderer for this format. Your assignment workspace and draft remain open.</p>'+(file.url?'<a class="btn btn-ghost mt" href="'+esc(file.url)+'" target="_blank" rel="noopener noreferrer">Open source resource ↗</a>':'')+'</div>';
+  }catch(error){stage.innerHTML='<div class="ns-room-loading-error"><h3>Resource could not be opened</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">The assignment page and your saved draft are still available.</p></div>';}
+}
+function phase441SubmissionDetailsMarkup(data,assignmentDetails){
+  if(!data)return '<p class="ns-room-help">Submission history and instructor feedback were not available from Canvas for this assignment.</p>';
+  const history=Array.isArray(data.submission_history)?data.submission_history:[];
+  const comments=Array.isArray(data.submission_comments)?data.submission_comments:[];
+  const rubric=data.rubric_assessment&&typeof data.rubric_assessment==='object'?data.rubric_assessment:{};
+  const criteria=Array.isArray(assignmentDetails?.rubric)?assignmentDetails.rubric:[];
+  const historyHtml=history.length?history.slice().sort((a,b)=>Number(b.attempt||0)-Number(a.attempt||0)).map(item=>{
+    const score=item.score===null||item.score===undefined?'Not graded':String(item.score)+(assignmentDetails?.points_possible!==undefined?' / '+assignmentDetails.points_possible:'');
+    const date=item.submitted_at?new Date(item.submitted_at).toLocaleString():'No submission timestamp';
+    return '<article class="ns-submission-attempt"><div><strong>Attempt '+safe(item.attempt||'—')+'</strong><span>'+safe(String(item.workflow_state||'unknown').replace(/_/g,' '))+'</span></div><p>'+safe(date)+'</p><p class="ns-submission-score">'+safe(score)+(item.grade?' · '+safe(item.grade):'')+'</p></article>';
+  }).join(''):'<p class="ns-room-help">Canvas has not returned any attempt-history records.</p>';
+  const commentHtml=comments.length?comments.map(comment=>'<article class="ns-submission-comment"><p>'+esc(asText(comment.comment||comment.text_comment||'Instructor comment'))+'</p><span>'+esc(comment.author_name||'Canvas instructor')+' · '+esc(comment.created_at?new Date(comment.created_at).toLocaleString():'')+'</span></article>').join(''):'<p class="ns-room-help">No submission comments were returned.</p>';
+  const rubricKeys=Object.keys(rubric);
+  const rubricHtml=rubricKeys.length?rubricKeys.map(id=>{const row=rubric[id]||{},criterion=criteria.find(item=>String(item.id)===String(id));return '<article class="ns-submission-rubric"><strong>'+esc(criterion?.description||criterion?.long_description||id)+'</strong><span>'+esc(row.points===null||row.points===undefined?'Points not released':row.points)+'</span>'+(row.comments?'<p>'+esc(asText(row.comments))+'</p>':'')+'</article>';}).join(''):'<p class="ns-room-help">No released rubric assessment was returned.</p>';
+  return '<div class="ns-submission-feedback"><span class="eyebrow">CANVAS RECORD</span><h4>Submission history</h4>'+historyHtml+'<h4>Instructor feedback</h4>'+commentHtml+'<h4>Rubric assessment</h4>'+rubricHtml+'</div>';
+}
+function phase441RenderRoom(a,c,details,files,submissionDetails){
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
   const hidden=phase4IsHidden(a);
   $('#workspace').innerHTML='<div class="ns-assignment-page">'+
@@ -586,31 +651,51 @@ function phase441RenderRoom(a,c,details,files){
     '<div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">ASSIGNMENT BRIEF</span><h3>Instructions &amp; requirements</h3></div><span class="tiny muted">'+(details?'Loaded from Canvas':'Local assignment details')+'</span></div><div class="ns-room-brief" id="nsAssignmentBrief"><p class="small muted">Loading instructions…</p></div></div>'+
     '</section><aside class="ns-room-sidebar"><div class="ns-room-card"><div class="ns-room-tabs" role="tablist" aria-label="Assignment workspace panels">'+
     '<button type="button" data-ns-room-tab="work" class="is-active">Your Work</button><button type="button" data-ns-room-tab="details">Details</button><button type="button" data-ns-room-tab="submit">Submit</button></div>'+
-    '<section class="ns-room-panel" data-ns-room-panel="work"><span class="eyebrow">PRIVATE WORKSPACE</span><h3 style="font:500 22px var(--serif);margin:8px 0 5px">Your draft</h3><p class="ns-room-help" style="margin:0 0 12px">Your writing saves automatically on this device. It is not submitted until you review and send it.</p><label for="assignmentDraft">Response, notes or working draft</label><textarea id="assignmentDraft" placeholder="Start working on your assignment…"></textarea><p id="draftStatus" class="ns-room-help">Saved locally, not submitted.</p><div class="ns-room-divider"></div><span class="eyebrow">STUDY ASSISTANCE</span><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'explain\')">Explain</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'summarize\')">Summarize</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'practice\')">Practice</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'feedback\')">Draft feedback</button></div><div id="aiOut" class="mt"><p class="small muted">Add a Gemini key in Settings to enable AI study tools.</p></div></section>'+
-    '<section class="ns-room-panel" data-ns-room-panel="details" hidden><span class="eyebrow">COURSEWORK DETAILS</span><h3 style="font:500 22px var(--serif);margin:8px 0 14px">Assignment details</h3><label>Course</label><p class="small">'+esc(c.name)+'</p><label style="margin-top:15px">Due date</label><p class="small">'+(a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due))+'</p><label style="margin-top:15px">Points possible</label><p class="small">'+a.points+'</p><label style="margin-top:15px">Submission status</label><p class="small">'+esc(statusOf(a))+'</p><label style="margin-top:15px">Submission method</label><p class="small">'+esc((a.submissionTypes||[]).join(', ')||'Not specified')+'</p><div class="ns-room-divider"></div><p class="ns-room-help">Canvas controls due dates, availability, attempt limits, grading and the official submission record.</p></section>'+
+    '<section class="ns-room-panel" data-ns-room-panel="work"><span class="eyebrow">PRIVATE WORKSPACE</span><h3 style="font:500 22px var(--serif);margin:8px 0 5px">Your draft</h3><p class="ns-room-help" style="margin:0 0 12px">Your writing saves automatically on this device. It is not submitted until you review and send it.</p><label for="assignmentDraft">Response, notes or working draft</label><div class="ns-rich-editor-shell"><div class="ns-rich-editor-toolbar" role="toolbar" aria-label="Writing formatting"><button type="button" data-ns-format="bold" aria-label="Bold"><strong>B</strong></button><button type="button" data-ns-format="italic" aria-label="Italic"><em>I</em></button><button type="button" data-ns-format="underline" aria-label="Underline"><u>U</u></button><span></span><button type="button" data-ns-format="insertUnorderedList" aria-label="Bulleted list">• List</button><button type="button" data-ns-format="insertOrderedList" aria-label="Numbered list">1. List</button><button type="button" data-ns-format="blockquote" aria-label="Quote">Quote</button></div><div id="assignmentDraft" class="ns-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Assignment response editor" data-placeholder="Start writing your response…"></div><div class="ns-rich-editor-footer"><span id="draftStatus" class="ns-room-help">Saved locally, not submitted.</span><span id="draftMetrics" class="ns-room-help">0 words · 0 characters</span></div></div><div class="ns-room-divider"></div><span class="eyebrow">STUDY ASSISTANCE</span><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'explain\')">Explain</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'summarize\')">Summarize</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'practice\')">Practice</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'feedback\')">Draft feedback</button></div><div id="aiOut" class="mt"><p class="small muted">Add a Gemini key in Settings to enable AI study tools.</p></div></section>'+
+    '<section class="ns-room-panel" data-ns-room-panel="details" hidden><span class="eyebrow">COURSEWORK DETAILS</span><h3 style="font:500 22px var(--serif);margin:8px 0 14px">Assignment details</h3><label>Course</label><p class="small">'+esc(c.name)+'</p><label style="margin-top:15px">Due date</label><p class="small">'+(a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due))+'</p><label style="margin-top:15px">Points possible</label><p class="small">'+a.points+'</p><label style="margin-top:15px">Submission status</label><p class="small">'+esc(statusOf(a))+'</p><label style="margin-top:15px">Submission method</label><p class="small">'+esc((a.submissionTypes||[]).join(', ')||'Not specified')+'</p><div class="ns-room-divider"></div><div id="nsSubmissionHistory">'+phase441SubmissionDetailsMarkup(submissionDetails,details)+'</div><div class="ns-room-divider"></div><p class="ns-room-help">Canvas controls due dates, availability, attempt limits, grading and the official submission record.</p></section>'+
     '<section class="ns-room-panel" data-ns-room-panel="submit" hidden><span class="eyebrow">CANVAS DELIVERY</span><div id="nsRoomSubmission"></div></section></div></aside></div></div>';
   $('#nsRoomBack').onclick=()=>window.closeAssignmentRoom();
   const hideButton=$('#phase4HideAssignment');hideButton.onclick=()=>phase4ToggleHidden(a.id);
   document.querySelectorAll('[data-ns-room-tab]').forEach(button=>button.onclick=()=>phase441ShowTab(button.dataset.nsRoomTab));
-  const input=$('#assignmentDraft'),key='northstar_draft_'+a.id;input.value=localStorage.getItem(key)||'';
-  input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};
+  const input=$('#assignmentDraft'),key='northstar_draft_'+a.id;
+  input.innerHTML=window.NorthstarSubmissions.sanitizeRichTextHtml(localStorage.getItem(key)||'');
+  const updateDraft=()=>{const html=window.NorthstarSubmissions.sanitizeRichTextHtml(input.innerHTML),plain=input.innerText||input.textContent||'';try{localStorage.setItem(key,html);$('#draftStatus').textContent='Saved on this device · not submitted';}catch{$('#draftStatus').textContent='Could not save on this device.';}const words=plain.trim()?plain.trim().split(/\s+/).length:0,metrics=$('#draftMetrics');if(metrics)metrics.textContent=words+' words · '+plain.length.toLocaleString()+' characters';};
+  input.addEventListener('input',updateDraft);
+  input.addEventListener('paste',event=>{event.preventDefault();const text=event.clipboardData?.getData('text/plain')||'';document.execCommand('insertText',false,text);});
+  document.querySelectorAll('[data-ns-format]').forEach(button=>{button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{input.focus();const action=button.dataset.nsFormat;if(action==='blockquote')document.execCommand('formatBlock',false,'blockquote');else document.execCommand(action,false,null);updateDraft();});});
+  updateDraft();
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
   const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
   phase441AnnotatedPdf=null;
   const attachAnnotated=$('#nsUseAnnotatedPdf');if(attachAnnotated)attachAnnotated.onclick=async()=>{try{const file=await window.NorthstarAssignmentRoom.getAnnotatedFile();phase441AnnotatedPdf={assignmentId:a.id,file};const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent='Ready to submit: '+file.name+' · '+Math.ceil(file.size/1024)+' KB. The exported PDF will be uploaded to Canvas instead of the selected file.';if(typeSelect){typeSelect.value='online_upload';typeSelect.onchange();}phase441ShowTab('submit');}catch(error){const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent=error.message;}};
 
   const brief=$('#nsAssignmentBrief');brief.innerHTML='';if(details?.description&&window.NorthstarAssignmentRoom)brief.append(window.NorthstarAssignmentRoom.sanitizeHtml(details.description,getCredentials()?.base||'https://nnps.instructure.com'));else brief.textContent=a.desc||'No additional instructions were provided.';
+  brief.addEventListener('click',event=>{
+    const link=event.target.closest('a[data-ns-resource-link]');if(!link)return;
+    let target;try{target=new URL(link.href);}catch{return;}
+    const origin=getCredentials()?.base;
+    if(origin&&target.origin===origin){
+      const assignmentMatch=target.pathname.match(/\/courses\/(\d+)\/assignments\/(\d+)/);
+      const quizMatch=target.pathname.match(/\/courses\/(\d+)\/quizzes\/(\d+)/);
+      const fileMatch=target.pathname.match(/\/files\/(\d+)(?:\/download)?/);
+      if(assignmentMatch){const next=ASSIGNMENTS.find(item=>Number(item.canvasId)===Number(assignmentMatch[2])&&Number(courseById(item.course)?.canvasId)===Number(assignmentMatch[1]));if(next){event.preventDefault();openWorkspace(next.id);return;}}
+      if(quizMatch){const next=ASSIGNMENTS.find(item=>Number(item.quizId||item.canvasId)===Number(quizMatch[2])&&Number(courseById(item.course)?.canvasId)===Number(quizMatch[1]));if(next){event.preventDefault();openWorkspace(next.id);return;}}
+      if(fileMatch){const attached=files.find(item=>Number(item.id)===Number(fileMatch[1]))||{id:Number(fileMatch[1]),name:link.textContent.trim()||'Canvas resource',url:link.href};event.preventDefault();phase441OpenResource(attached,a,c);return;}
+    }
+    event.preventDefault();if(typeof previewResourceInDashboard==='function')previewResourceInDashboard(target.href,link.textContent.trim()||'Assignment resource');
+  });
   const filesNode=$('#nsAssignmentFiles');
   if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
   else{
-    filesNode.innerHTML=files.map((file,i)=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span>▤</span><strong>'+esc(file.name)+'</strong><span>↗</span></button>').join('');
-    filesNode.querySelectorAll('[data-ns-file]').forEach(button=>button.onclick=()=>phase441OpenPdf(files.find(f=>String(f.id)===button.dataset.nsFile),a,c));
-    const firstPdf=files.find(f=>/\.pdf$/i.test(f.name)||String(f.contentType).toLowerCase().includes('pdf'));
-    if(firstPdf)phase441OpenPdf(firstPdf,a,c);
+    filesNode.innerHTML=files.map(file=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span class="ns-room-file-icon">'+(phase441ResourceKind(file)==='Image'?'▧':phase441ResourceKind(file)==='Video'?'▷':phase441ResourceKind(file)==='Audio'?'♫':phase441ResourceKind(file)==='Text'?'≡':'▤')+'</span><strong>'+esc(file.name)+'</strong><span class="ns-room-file-kind">'+phase441ResourceKind(file)+'</span></button>').join('');
+    filesNode.querySelectorAll('[data-ns-file]').forEach(button=>button.onclick=()=>phase441OpenResource(files.find(f=>String(f.id)===button.dataset.nsFile),a,c));
+    const firstPdf=files.find(f=>phase441ResourceKind(f)==='PDF');
+    const firstPreview=files.find(f=>phase441ResourceKind(f)!=='File');
+    if(firstPdf)phase441OpenPdf(firstPdf,a,c);else if(firstPreview)phase441OpenResource(firstPreview,a,c);
   }
 }
 async function phase441OpenPdf(file,a,c){
-  if(!file)return;
+  if(!file)return;phase441ReleaseResourceUrl();
   const stage=$('#nsDocumentStage');if(!stage)return;
   $('#nsAssignmentFiles')?.querySelectorAll('[data-ns-file]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.nsFile===String(file.id)?'true':'false'));
   stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ DOCUMENT STUDIO</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Loading the Canvas document into your workspace…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
@@ -618,6 +703,9 @@ async function phase441OpenPdf(file,a,c){
   catch(error){stage.innerHTML='<div class="ns-room-loading-error"><h3>Could not open this document here</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">Check that your private Canvas bridge has been updated and that this attachment is a supported PDF. Your assignment page and draft are still available.</p></div>';}
 }
 async function openWorkspace(id,options){
+  phase441ReleaseResourceUrl();
+  if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);
+  activeQuizSession=null;
   const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;
   options=options||{};activeAssignment=a;
   if(window.NorthstarAssignmentRoom)window.NorthstarAssignmentRoom.enter(id,{fromHistory:!!options.fromHistory});
@@ -626,7 +714,7 @@ async function openWorkspace(id,options){
   if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}
   a.canvasCourseId=c.canvasId;
   $('#workspace').innerHTML=window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code);
-  let details=null,files=[];
+  let details=null,files=[],submissionDetails=null;
   if(mode==='live'){
     try{
       const creds=getCredentials(),api=window.NorthstarWorkspace.transport(creds);
@@ -638,9 +726,13 @@ async function openWorkspace(id,options){
       if(details.points_possible!==undefined)a.points=numberOrNull(details.points_possible)??a.points;
       if(details.submission){const sub=CANVAS_SYNC.submission(details.submission);Object.assign(a,{status:sub.status,subState:sub.workflowState,progress:sub.submitted?100:a.progress,score:sub.score,grade:sub.grade,missing:sub.missing,late:sub.late,submittedAt:sub.submittedAt,gradedAt:sub.gradedAt,attempt:sub.attempt});}
       files=window.NorthstarAssignmentRoom.collectFiles(details,creds.base);
+      try{
+        const me=await api.get('/api/v1/users/self'),userId=Number(me?.id);
+        if(Number.isSafeInteger(userId)&&userId>0)submissionDetails=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'/submissions/'+userId+'?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment');
+      }catch(historyError){syncWarnings.push(c.code+': Submission history or feedback is unavailable: '+historyError.message);}
     }catch(error){syncWarnings.push(c.code+': Assignment detail could not be loaded in the in-app workspace: '+error.message);}
   }
-  phase441RenderRoom(a,c,details,files);
+  phase441RenderRoom(a,c,details,files,submissionDetails);
 }
 window.openWorkspace=openWorkspace;
 
@@ -663,8 +755,9 @@ window.submitAssignment=async function(){
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
     const file=type==='online_upload'?(phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:$('#submissionFile')?.files?.[0]):null;
     if(type==='online_upload'&&!file)throw Error('Choose a file before submitting.');
-    const value=type==='online_url'?$('#submissionUrl').value:$('#assignmentDraft').value;
-    let data=type==='online_upload'?null:window.NorthstarSubmissions.payload(type,value);
+    const editor=$('#assignmentDraft'),draftHtml=editor?.innerHTML||'',draftText=(editor?.innerText||editor?.textContent||'').trim();
+    const value=type==='online_url'?$('#submissionUrl').value:draftText;
+    let data=type==='online_upload'?null:type==='online_text_entry'?window.NorthstarSubmissions.richTextPayload(draftHtml):window.NorthstarSubmissions.payload(type,value);
     const preview=type==='online_upload'?(file.name+' · '+Math.round(file.size/1024)+' KB'):type==='online_url'?data.submission.url:value;
     if(!confirm(`Submit to Canvas?\nCourse: ${c.name}\nAssignment: ${a.title}\nType: ${type}\n\n${preview.slice(0,1500)}${preview.length>1500?'\n… (preview truncated; your entire draft will be sent)':''}\n\nThis may create a new attempt and will not erase earlier submissions. Send now?`)) return;
     submissionBusy=true;button.disabled=true;
@@ -887,7 +980,7 @@ async function askAiAboutAssignment(action){
   if(action==='explain') prompt=`Explain this assignment to me like a tutor. What is it asking, what are the key concepts, and what is a good approach? Do not do the work for me.\n\nCourse: ${c?c.code+' '+c.name:''}\nAssignment: ${a.title}\n${brief}`;
   else if(action==='summarize') prompt=`Summarize this assignment brief in a few bullet points: what to do, the deliverable, and any constraints.\n\n${a.title}\n${brief}`;
   else if(action==='practice') prompt=`Create 3 practice questions to help me prepare for this assignment. Give the questions first; I will ask for answers.\n\n${a.title}\n${brief}`;
-  else if(action==='feedback'){ const draft=($('#assignmentDraft')?.value||'').trim(); prompt=`Give me feedback on my draft for this assignment. Focus on structure, clarity, and rubric alignment. Do not rewrite it for me.\n\nAssignment: ${a.title}\nRubric: ${(a.rubric||[]).join('; ')}\n\nMy draft:\n${draft||'(no draft yet)'}`; }
+  else if(action==='feedback'){ const draft=(($('#assignmentDraft')?.innerText||$('#assignmentDraft')?.textContent)||'').trim(); prompt=`Give me feedback on my draft for this assignment. Focus on structure, clarity, and rubric alignment. Do not rewrite it for me.\n\nAssignment: ${a.title}\nRubric: ${(a.rubric||[]).join('; ')}\n\nMy draft:\n${draft||'(no draft yet)'}`; }
   out.innerHTML='<p class="small muted">✧ Thinking…</p>';
   try{ const r=await aiAsk(prompt); out.innerHTML='<div class="ai-response">'+esc(r).replace(/\n/g,'<br>')+'</div>'; }
   catch(e){ out.innerHTML='<p class="small" style="color:#fda4af">AI error: '+esc(e.message)+'</p>'; }

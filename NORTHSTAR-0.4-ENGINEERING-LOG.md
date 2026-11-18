@@ -3,8 +3,8 @@
 Last updated: 2026-11-18
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.4.1`
-Package version: `0.4.4.1`
+Release identifier: `NORTHSTAR / .4.4.3` (development branch; not yet production)
+Package version: `0.4.4.3`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -301,3 +301,28 @@ These features require separate official provider integrations and live acceptan
 - [ ] Verify unanswered-question warning and explicit final confirmation.
 - [ ] Verify a completed attempt clears temporary recovery data and permits a later Canvas-authorized attempt.
 - [ ] Test on iPad Safari with the current private Worker deployed.
+
+
+## NORTHSTAR / .4.4.3 — Writing, Resource Center & Quiz Navigation
+
+**Status: implementation added to the `.4.4` development PR; automated acceptance pending.**
+
+- Replaced the plain-text draft area with a contenteditable writing surface and a restrained formatting toolbar (bold, italic, underline, bullets, numbering and block quote). Draft markup is sanitized against a strict tag/attribute allowlist before device-local persistence and before Canvas submission. Rich text is subject to the current 16 KB bridge text-entry limit. Paste is normalized to plain text to avoid importing unsafe office markup.
+- Added safe in-app preview for supported image, audio, video and text attachments downloaded through the private Canvas bridge. PDF continues to use Document Studio. Unsupported office/provider formats receive an explicit explanation and source fallback rather than a fake preview. Downloads above the configured 30 MB preview cap are not loaded into memory.
+- Assignment description links now attempt internal routing for matching Canvas assignments/quizzes and file resources. Other secure links use the existing in-dashboard preview panel with a visible external fallback when the provider blocks embedding.
+- Quiz workspace now provides question navigation, answered-state progress, question flags, and rejects empty multiple-answer selections as unanswered.
+- Object URLs and quiz timers are released when leaving the assignment room.
+- These are client-side behaviors. GitHub Actions can validate fixtures and DOM behavior; only the owner's live iPad/Canvas session can prove school-specific files, quizzes, discussion permissions and actual submission outcomes.
+
+### Phase 4 exit criteria — still required
+
+- [ ] Run Phase 3/4 GitHub Actions after this commit.
+- [x] Owner confirmed Cloudflare Worker deployed on 2026-11-18 (repository source must still match the published Worker).
+- [ ] Live-test rich-text submission with a low-risk assignment and confirm the Canvas attempt/HTML.
+- [ ] Live-test file upload and at least one image/text/PDF resource preview.
+- [ ] Live-test quiz attempt detection, autosave, question navigation, flagging, resume and completion with an ungraded practice quiz.
+- [ ] Live-test discussion read/post/reply with a non-graded thread or permitted test space.
+- [ ] Test Canvas link routing from Dashboard, Ledger, Courses, Calendar, search and assignment instructions.
+- [ ] Test PDF annotation export, iPad Apple Pencil interaction, touch scrolling, and flattened file upload where allowed.
+- [ ] Review unsupported New Quizzes, LTI, DocViewer annotations and restricted external resources; verify each limitation has a clear fallback.
+- [ ] Complete iPad Safari regression, reduced-motion, theme, keyboard/VoiceOver, offline/draft and large-file checks before merging or labeling Phase 4 complete.
