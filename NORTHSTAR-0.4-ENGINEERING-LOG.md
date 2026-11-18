@@ -195,3 +195,13 @@ Canvas' public API supports quiz attempt creation, answer updates, and completio
 2. Finish workspace UI polish, progress/navigation, time limits, and safe handling for all Canvas question formats exposed to students.
 3. Validate the best-effort local resource viewer against Canvas and external LTI pages; keep explicit external fallback for providers that disallow embedding.
 4. Complete the iPad live acceptance checklist before merging .4.4.
+
+
+## Phase 4 hardening follow-up
+
+- Quiz question support is now classified in the dedicated workspace module so the renderer and completion gate share the same capability rules.
+- Text-only quiz items are treated as informational and are not sent as student answers.
+- Fill-in-multiple-blanks and other unimplemented formats are explicitly rejected by the NORTHSTAR completion gate; the student is directed to continue the same attempt in Canvas.
+- Multiple-choice, true/false, and multiple-answer questions require Canvas to expose answer choices before NORTHSTAR treats them as supported.
+- Added regression coverage for supported and unsupported question formats.
+- Updated the README to distinguish native completion from official Canvas/provider fallbacks and to document the required Cloudflare Worker redeployment and live-test safety gates.
