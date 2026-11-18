@@ -40,7 +40,9 @@ assert.equal(started.timing.time_left,180,'Canvas timing endpoint supplies autho
 assert(calls[0].url.startsWith('https://bridge.example/'));
 assert(!calls[0].url.includes('secret-token'));
 assert.equal(calls[0].opts.headers.Authorization,'Bearer secret-token');
-assert.equal(JSON.parse(calls[0].opts.body).access_code,undefined);
+const startCall=calls.find(call=>new URL(call.url).searchParams.get('path')==='/api/v1/courses/11/quizzes/22/submissions');
+assert.ok(startCall,'classic quiz start request was sent');
+assert.equal(JSON.parse(startCall.opts.body).access_code,undefined);
 await W.saveQuizAnswers({credentials,submission:started.submission,answers:[{id:9,answer:1}],fetchImpl});
 assert.equal(JSON.parse(calls.at(-1).opts.body).quiz_questions[0].answer,1);
 await W.updateQuizQuestionFlag({credentials,submission:started.submission,questionId:9,flagged:true,fetchImpl});
