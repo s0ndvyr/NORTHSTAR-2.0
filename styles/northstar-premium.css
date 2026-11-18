@@ -59,3 +59,16 @@ body{background:#090f14}body::before{background:radial-gradient(ellipse 65% 36% 
 .secret-field input{flex:1;min-width:0}
 .secret-field .btn{flex:0 0 auto;min-width:58px}
 #rememberCanvas,#rememberGemini{accent-color:var(--cyan);width:16px;height:16px;flex:0 0 auto}
+
+
+/* Phase 4 — native assignment and quiz workspace */
+.quiz-question-stack{display:grid;gap:14px;margin-top:16px}
+.quiz-question{padding:20px}
+.quiz-prompt{font:500 20px/1.45 var(--serif);margin:12px 0 16px;color:var(--text)}
+.quiz-answer-list{display:grid;gap:10px}
+.quiz-choice{display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025);cursor:pointer}
+.quiz-choice:focus-within{outline:2px solid var(--cyan);outline-offset:2px}
+.quiz-choice input{margin-top:4px;accent-color:var(--cyan);flex:0 0 auto}
+.quiz-text-answer{width:100%;min-height:110px}
+#phase4HideAssignment{margin-left:auto}
+@media(max-width:760px){.quiz-question{padding:15px}.quiz-prompt{font-size:18px}}
