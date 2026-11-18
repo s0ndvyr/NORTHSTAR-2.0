@@ -553,7 +553,9 @@ async function pullCanvas(creds){
   const assignments=[], nextGroups={}, nextCourseMeta={}, warnings=[];
   for(const c of courses){
     const rows=await allPages(creds,`/api/v1/courses/${c.canvasId}/assignments?include%5B%5D=submission`);
-    assignments.push(...convertAssignments(rows,c,creds.base));
+    const converted=convertAssignments(rows,c,creds.base);assignments.push(...converted);
+    try{const quizRows=await allPages(creds,`/api/v1/courses/${c.canvasId}/quizzes`);const quizByAssignment=new Map(quizRows.filter(q=>Number.isInteger(q.assignment_id)&&Number.isInteger(q.id)).map(q=>[q.assignment_id,q.id]));converted.forEach(a=>{if(a.type==='Quiz')a.quizId=quizByAssignment.get(a.canvasId)||a.quizId||a.canvasId;});}
+    catch(error){if(converted.some(a=>a.type==='Quiz'))warnings.push(`${c.code}: Canvas quiz metadata unavailable; quiz assignments may need to open in Canvas.`);}
     try{
       const detail=await canvasPage(creds,`/api/v1/courses/${c.canvasId}`);
       nextCourseMeta[c.id]={weighted:!!detail.apply_assignment_group_weights || !!detail.weighted_assignment_groups, scheme:Array.isArray(detail.grading_standard)?detail.grading_standard:null, dropLowest:Number(detail.drop_lowest)||0, dropHighest:Number(detail.drop_highest)||0};
