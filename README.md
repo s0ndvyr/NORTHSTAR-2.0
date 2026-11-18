@@ -39,7 +39,7 @@ GitHub Pages cannot run server-side code. The included `canvas-bridge/worker.js`
 1. In the Cloudflare dashboard, create a Worker. Replace its code with `canvas-bridge/worker.js`.
 2. The supplied Worker is configured for the Canvas origin provided in the accompanying Worker configuration (`https://nnps.instructure.com`) and the NORTHSTAR Pages origin (`https://s0ndvyr.github.io`). Verify both values against your current school and deployment before publishing. For localhost testing, use your exact origin, for example `http://localhost:8000`.
 3. Deploy. Paste the Worker’s origin (e.g. `https://northstar-bridge.example.workers.dev`) into Northstar's bridge field, then connect.
-4. Keep the bridge under your control. It forwards allowlisted GET requests for courses, assignments, assignment groups and course metadata plus validated text/URL assignment-submission POSTs to your configured Canvas host, and never stores or logs tokens in code. The origin check helps browsers enforce access but is **not authentication**: someone can forge an Origin header outside a browser. Monitor the deployment and add platform-level access controls/rate limits as appropriate. Treat the bridge operator and hosting provider as trusted with the token and Canvas responses.
+4. Keep the bridge under your control. It forwards narrowly allowlisted Canvas reads and validated writes for text/URL/file submissions, classic quiz attempts, and graded discussion posts/replies to your configured Canvas host. The Worker never stores or logs tokens in code. File-upload initialization is proxied, but the actual file bytes go directly to Canvas's signed HTTPS upload URL without the Canvas bearer token. The origin check helps browsers enforce access but is **not authentication**: someone can forge an Origin header outside a browser. Monitor the deployment and add platform-level access controls/rate limits as appropriate. Treat the bridge operator and hosting provider as trusted with the token and Canvas responses.
 
 If your school's Canvas security policy blocks external access, ask the Canvas administrator. The bridge cannot fix an expired token, inadequate permissions, or a blocked account.
 
@@ -91,3 +91,38 @@ For DOM boot + mocked live sync, run `npm install` once and then `node tests/boo
 - StudentVUE: Settings provides an external link to the NNPS StudentVUE portal and a CSV/JSON grade import path for user-supplied report data. The import retains course, marking period, school year, source, and import timestamp, is encrypted in the device vault, and displays current/historical records on course detail pages. It is an import workflow, not a live StudentVUE API connection. The importer never requests StudentVUE credentials.
 - NNPS public materials reviewed do not provide third-party API documentation, OAuth registration, or integration authorization. Do not collect StudentVUE passwords or use undocumented/reverse-engineered endpoints. Direct synchronization remains blocked pending district-approved documentation or written authorization.
 - The displayed app release is NORTHSTAR / .4.3; package version is 0.4.3.
+
+
+## NORTHSTAR / .4.4 — Phase 4 Assignment Workspace
+
+Phase 4 adds native work-completion flows for Canvas assignment types where Canvas exposes a supported student API. Canvas remains the source of truth; NORTHSTAR reports a submission only after receiving a valid Canvas confirmation.
+
+### Supported inside NORTHSTAR
+
+- **Writing / online text entry:** write in the assignment workspace, keep a local draft, review the exact content, then submit or resubmit to Canvas. HTML is escaped and sent as plain text formatting.
+- **Website / online URL:** enter and review an HTTP(S) URL, then submit or resubmit to Canvas.
+- **File upload:** choose a file up to 25 MB. NORTHSTAR asks Canvas for a signed upload destination, uploads the file directly to that HTTPS destination without forwarding the Canvas token, then submits the resulting Canvas file ID.
+- **Classic Canvas quizzes:** load the quiz brief, explicitly start an official attempt, retrieve available questions, save supported answers to Canvas, and explicitly complete the attempt. Canvas controls timing, access, attempt limits and grading. NORTHSTAR falls back to Canvas if a question format or quiz capability is unsupported.
+- **Graded discussions:** read available topic/thread content, publish an initial post, and reply to visible entries through the Canvas discussion API.
+- **Hide / restore assignments:** hide an assignment from NORTHSTAR's active dashboard, priority and course views; restore it through the Ledger's Hidden / All visibility filters. This is a local preference only and never changes or deletes the Canvas assignment.
+
+### Important integration boundaries
+
+- **New Quizzes, external LTI tools, Google Docs, media recordings, annotations, paper/offline work, and other provider-specific assignment types** remain in their official Canvas/provider workflow unless Canvas exposes a documented and supported student API for that exact workflow. NORTHSTAR opens the official assignment link rather than pretending to complete it.
+- Some classic quiz question types, hidden answer choices, and school-specific quiz restrictions are not supported. Continue the same attempt in Canvas if NORTHSTAR identifies an unsupported question. Do not start a second attempt just because question retrieval failed.
+- File uploads require the private Cloudflare bridge and the Canvas signed-upload flow. The bearer token is sent only to the configured Canvas host through the bridge; it is never sent to the signed upload destination.
+- All writes require the private HTTPS bridge. Direct-mode writes are disabled. Writes are user initiated, confirmed, and never automatically retried. If a request fails after sending, check Canvas before attempting again because the outcome may be unknown.
+- Hiding is not deleting, and a local draft is not a Canvas submission. Resubmission is subject to Canvas availability, due dates, and attempt limits.
+
+### Phase 4 deployment checklist
+
+1. Update the GitHub Pages files from the Phase 4 branch after it is merged to `main`.
+2. Redeploy `canvas-bridge/worker.js` in Cloudflare with the existing `CANVAS_ORIGIN` and `ALLOWED_ORIGIN` values. The Phase 4 Worker includes new routes for current-user lookup, signed file-upload initialization, classic quizzes, and discussions.
+3. Open NORTHSTAR, connect Canvas through the private bridge, and run Sync.
+4. Test first with a low-risk text-entry or URL assignment. Verify the attempt in Canvas before testing resubmission.
+5. Test file upload with a small non-sensitive file.
+6. Test a quiz only when you are comfortable starting an official attempt; starting may consume an attempt or start its timer.
+7. Test a discussion post only when you intend to publish it to the real course.
+8. Confirm Hide / Restore only affects NORTHSTAR's local views.
+
+The Phase 4 automated suite uses Canvas-shaped fixtures and mocked writes. It does not prove the school's live Canvas account permits each endpoint. Live acceptance testing must be performed by the student in their own account.
