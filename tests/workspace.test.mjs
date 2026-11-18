@@ -23,4 +23,18 @@ assert(new URL(calls.at(-1).url).searchParams.get('path').includes('/complete'))
 assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
 await assert.rejects(W.startQuiz({credentials:{base:credentials.base,token:'x'},courseId:11,quizId:22,fetchImpl}),/private Canvas bridge/);
 await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submission,answers:[],fetchImpl}),/no answers/i);
+
+const uploadCalls=[];
+const file=new File(['hello'],'homework.txt',{type:'text/plain'});
+const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
+  uploadCalls.push({url,opts});
+  if(new URL(url).hostname==='bridge.example')return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};
+  assert.equal(opts.method,'POST');
+  assert.equal(opts.headers?.Authorization,undefined,'signed upload must never receive Canvas bearer token');
+  const fields=[...opts.body.keys()];assert.deepEqual(fields,['key','policy','file'],'file must be appended last');
+  return {ok:true,status:201,json:async()=>({id:55,display_name:'homework.txt'})};
+}});
+assert.equal(uploaded.id,55);
+assert.equal(uploadCalls.length,2);
+
 console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');
