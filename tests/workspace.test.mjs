@@ -63,4 +63,12 @@ assert.deepEqual([...pdf.bytes],[37,80,68,70]);
 assert.equal(pdfFetchCalls.length,2,'PDF metadata and secure binary download are both requested');
 assert(pdfFetchCalls.every(x=>x.opts.headers.Authorization==='Bearer secret-token'),'Canvas authorization is kept on the private bridge requests');
 
+const recoveryCalls=[];
+const recoveryFetch=async(url,opts)=>{recoveryCalls.push({url,opts});const path=new URL(url).searchParams.get('path');if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,started_at:'2026-11-18T10:00:00Z',finished_at:null,workflow_state:'untaken'}]})};if(path.includes('/quiz_submissions/77/questions'))return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:1,quiz_question:{id:9,question_type:'multiple_choice_question',answers:[{id:1,text:'A'}]}}]})};if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:90})};throw Error('Unexpected recovery path '+path);};
+const current=await W.getCurrentQuizSubmission({credentials,courseId:11,quizId:22,fetchImpl:recoveryFetch});
+assert.equal(current.id,77,'current student attempt is discovered before a new attempt is offered');
+const resumed=await W.resumeQuiz({credentials,courseId:11,quizId:22,submission:current,validationToken:'validation-secret',accessCode:'',fetchImpl:recoveryFetch});
+assert.equal(resumed.questions.length,1,'existing attempt questions are restored');
+assert.equal(resumed.timing.time_left,90,'existing attempt timing is restored');
+assert(recoveryCalls.some(x=>new URL(x.url).searchParams.get('path').endsWith('/submission')));
 console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');

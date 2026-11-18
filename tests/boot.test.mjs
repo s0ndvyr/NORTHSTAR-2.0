@@ -59,7 +59,7 @@ const sanitizedBrief=window.NorthstarAssignmentRoom.sanitizeHtml('<p onclick="al
 assert.equal(sanitizedBrief.textContent,'Instructionssafe-looking link','Canvas instructions are retained while scripts are removed');
 assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas event handlers are removed from instruction markup');
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.1', 'runtime release identifier matches Phase 4.4.1');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.2', 'runtime release identifier matches Phase 4.4.1');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(

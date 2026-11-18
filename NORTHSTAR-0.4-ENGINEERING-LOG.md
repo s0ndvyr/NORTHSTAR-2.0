@@ -278,3 +278,26 @@ These features require separate official provider integrations and live acceptan
 - [x] Verify GitHub Pages production build/deploy.
 - [x] Verify the repository Cloudflare Workers build check.
 - [ ] Complete live iPad Safari / Apple Pencil / real Canvas acceptance.
+
+
+## Phase 4.4.2 — Quiz Continuity & Safe Recovery
+
+**Status: implementation on branch `northstar-0.4.4.2-quiz-continuity`; CI and review pending.** Release identity: `NORTHSTAR / .4.4.2`; package version: `0.4.4.2`.
+
+- Before offering a new classic quiz attempt, NORTHSTAR checks Canvas' current-user quiz submission endpoint.
+- An unfinished attempt is resumed only when the current tab still holds the matching attempt ID, attempt number, and validation token. Existing questions and Canvas time-left data are reloaded.
+- If attempt metadata is missing or cannot be verified, NORTHSTAR refuses to start another attempt and directs the student to the existing Canvas attempt.
+- Supported answers autosave to Canvas after a 1.2-second debounce. Writes are serialized; ambiguous failures are surfaced and never silently retried. Manual save remains available.
+- Quiz completion explicitly warns about unanswered supported questions and still refuses to complete when any unsupported question type remains.
+- Attempt validation data is stored in tab-scoped sessionStorage, not persistent localStorage or the long-lived credential vault. Losing the tab session may require continuing that attempt in Canvas.
+- The current repository Worker already permits the current-user quiz submission read route. The separately uploaded read-only Worker is older and must not replace the repository's validated read/write Worker.
+
+### Phase 4.4.2 acceptance checklist
+
+- [ ] CI passes syntax checks, all unit tests and browser boot tests.
+- [ ] Verify a practice/ungraded classic quiz can start, autosave, navigate away and resume in the same tab.
+- [ ] Verify an unfinished attempt with no recoverable tab session does not offer a second Start action.
+- [ ] Verify an unsupported question type blocks NORTHSTAR completion and preserves the existing attempt.
+- [ ] Verify unanswered-question warning and explicit final confirmation.
+- [ ] Verify a completed attempt clears temporary recovery data and permits a later Canvas-authorized attempt.
+- [ ] Test on iPad Safari with the current private Worker deployed.

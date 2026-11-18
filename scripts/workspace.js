@@ -5,7 +5,7 @@
 const id=v=>{const n=Number(v);if(!Number.isSafeInteger(n)||n<1)throw Error('Invalid Canvas identifier.');return n;};
 const json=async(response)=>{
   let data;try{data=await response.json();}catch{throw Error('Canvas returned an unreadable response. Check Canvas before retrying.');}
-  if(!response.ok)throw Error((data&&data.errors&&JSON.stringify(data.errors))||data?.message||('Canvas refused the request (HTTP '+response.status+').'));
+  if(!response.ok){const error=Error((data&&data.errors&&JSON.stringify(data.errors))||data?.message||('Canvas refused the request (HTTP '+response.status+').'));error.status=response.status;throw error;}
   return data;
 };
 function transport(credentials,fetchImpl=root.fetch){
@@ -78,6 +78,16 @@ async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   let timing=null;try{timing=await api.get('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(sub.id)+'/time');}catch(error){}
   return {submission:sub,questions,timing};
 }
+async function getCurrentQuizSubmission({credentials,courseId,quizId,fetchImpl}){const result=await transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submission');const rows=result?.quiz_submissions||result?.quiz_submission||[];return Array.isArray(rows)?(rows[0]||null):(rows&&typeof rows==='object'?rows:null);}
+async function resumeQuiz({credentials,courseId,quizId,submission,validationToken,accessCode='',fetchImpl}){
+ if(!submission?.id||!submission?.attempt||!validationToken)throw Error('The saved Canvas quiz session is incomplete. Do not start another attempt.');
+ const api=transport(credentials,fetchImpl),submissionId=id(submission.id);
+ const result=await api.get('/api/v1/quiz_submissions/'+submissionId+'/questions?include%5B%5D=quiz_question');
+ const questions=result.quiz_submission_questions||result;
+ if(!Array.isArray(questions))throw Error('Canvas did not return the existing quiz questions. Continue this attempt in Canvas; do not start another attempt.');
+ let timing=null;try{timing=await api.get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submissions/'+submissionId+'/time');}catch(error){}
+ return {submission,questions,timing,accessCode:String(accessCode||'')};
+}
 async function getQuizTime({credentials,courseId,quizId,submissionId,fetchImpl}){return transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submissions/'+id(submissionId)+'/time');}
 async function saveQuizAnswers({credentials,submission,answers,accessCode='',fetchImpl}){
   if(!submission?.id||!submission?.attempt||!submission?.validation_token)throw Error('The Canvas quiz session is incomplete. Reopen the quiz.');
@@ -99,7 +109,7 @@ async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
   const download=await api.getBinary('/api/v1/files/'+f+'/download');
   return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
 }
-const api={transport,uploadAssignmentFile,downloadCanvasFile,startQuiz,getQuizTime,saveQuizAnswers,completeQuiz,questionType,questionSupported};
+const api={transport,uploadAssignmentFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
