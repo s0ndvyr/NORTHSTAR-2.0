@@ -943,7 +943,7 @@ if(existing) syncCanvas();
 /* ================= NORTHSTAR 0.4.3 · PHASE 3 ACADEMIC INTELLIGENCE =================
    StudentVUE grade imports remain clearly labeled as imports until an authorized
    district integration is supplied. The dashboard scope is always the active period. */
-const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.4';
+const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.4.1';
 const PHASE3_IGNORES_KEY = 'northstar_ignored_courses_v1';
 let phase3IgnoredCourses = new Set(store.get(PHASE3_IGNORES_KEY, []));
 let phase3StudentVue = null;
