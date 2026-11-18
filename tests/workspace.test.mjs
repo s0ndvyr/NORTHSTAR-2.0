@@ -5,7 +5,7 @@ const credentials={base:'https://school.instructure.com',proxy:'https://bridge.e
 const calls=[];
 const fetchImpl=async(url,opts)=>{
   calls.push({url,opts});
-  if(opts.method==='POST'&&url.includes('/quizzes/22/submissions?path='))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,validation_token:'validation-secret'}]})};
+  if(opts.method==='POST'&&new URL(url).searchParams.get('path')==='/api/v1/courses/11/quizzes/22/submissions')return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,validation_token:'validation-secret'}]})};
   if(opts.method==='GET')return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};
   return {ok:true,status:200,json:async()=>({ok:true})};
 };
