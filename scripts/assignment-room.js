@@ -206,6 +206,7 @@ function getAnnotatedFile(){return exportAnnotatedPdf();}
 const api={enter,exit,close,routeId,loadingMarkup,sanitizeHtml,collectFiles,openPdf,getAnnotatedFile,isPenPointer,notify};
 root.NorthstarAssignmentRoom=api;
 root.closeAssignmentRoom=close;
+const appCloseOverlay=root.closeOverlay;root.closeOverlay=function(id){if(id==='wsOverlay')return close();if(typeof appCloseOverlay==='function')return appCloseOverlay.call(root,id);};
 root.addEventListener('popstate',()=>{
  const id=routeId();
  if(id){if(root.openWorkspace)root.openWorkspace(id,{fromHistory:true});}
