@@ -436,11 +436,21 @@ function phase4QuestionMarkup(row,index){
   return '<article class="card quiz-question" data-question-id="'+qid+'" data-question-index="'+index+'"><div class="ns-quiz-question-head"><span class="eyebrow">QUESTION '+(index+1)+'</span><button type="button" class="ns-quiz-flag" data-quiz-flag="'+qid+'" aria-pressed="false">Flag for review</button></div><h3 class="quiz-prompt">'+prompt+'</h3><div class="quiz-answer-list">'+control+'</div></article>';
 }
 function phase4QuestionSupported(row){return !!window.NorthstarWorkspace?.questionSupported?.(row);}
-function phase4CollectQuizAnswers(questions){return questions.map(row=>{const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];if(type==='text_only_question'||!nodes.length)return null;let answer;if(type==='multiple_answers_question'){answer=nodes.filter(n=>n.checked).map(n=>Number(n.value));if(!answer.length)return null;}else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);if(!chosen)return null;answer=Number(chosen.value);}else{answer=nodes[0].value;if(answer==='')return null;}return {id,answer};}).filter(Boolean);}
+function phase4CollectQuizAnswers(questions){
+  return questions.map(row=>{
+    const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];
+    if(type==='text_only_question'||!nodes.length||!phase4QuestionSupported(row))return null;
+    let answer=null;
+    if(type==='multiple_answers_question'){const selected=nodes.filter(n=>n.checked).map(n=>Number(n.value));answer=selected.length?selected:null;}
+    else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);answer=chosen?Number(chosen.value):null;}
+    else {const value=String(nodes[0].value??'');answer=value.trim()?value:null;}
+    return {id,answer};
+  }).filter(Boolean);
+}
 function phase4UpdateQuizProgress(){
   const s=activeQuizSession;if(!s)return;
   const eligible=s.questions.filter(row=>phase4QuestionSupported(row)&&String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase()!=='text_only_question');
-  const answers=new Set(phase4CollectQuizAnswers(s.questions).map(item=>Number(item.id)));
+  const answers=new Set(phase4CollectQuizAnswers(s.questions).filter(item=>item.answer!==null&&item.answer!==''&&(!Array.isArray(item.answer)||item.answer.length>0)).map(item=>Number(item.id)));
   const count=$('#phase4QuizProgressText');if(count)count.textContent=answers.size+' of '+eligible.length+' supported questions answered';
   const bar=$('#phase4QuizProgressBar');if(bar)bar.style.width=(eligible.length?Math.round(answers.size/eligible.length*100):100)+'%';
   document.querySelectorAll('[data-quiz-jump]').forEach(button=>{const id=Number(button.dataset.questionId);const answered=answers.has(id);button.classList.toggle('is-answered',answered);button.setAttribute('aria-label','Question '+button.dataset.quizJump+' '+(answered?'answered':'not answered'));});
@@ -448,18 +458,55 @@ function phase4UpdateQuizProgress(){
 let activeQuizSession=null;let phase4QuizTimer=null;let phase4QuizResyncTimer=null;
 function phase4QuizSessionKey(a){const c=courseById(a.course),quizId=a.quizId||a.canvasId;return 'northstar_active_quiz_v1_'+String(c?.canvasId||'')+'_'+String(quizId||'');}
 function phase4ReadQuizSession(a){try{return JSON.parse(sessionStorage.getItem(phase4QuizSessionKey(a))||'null');}catch{return null;}}
-function phase4PersistQuizSession(a,submission,accessCode){if(!submission?.id||!submission?.attempt||!submission?.validation_token)return false;try{sessionStorage.setItem(phase4QuizSessionKey(a),JSON.stringify({id:Number(submission.id),attempt:Number(submission.attempt),validation_token:String(submission.validation_token),accessCode:String(accessCode||''),started_at:submission.started_at||null}));return true;}catch{return false;}}
+function phase4PersistQuizSession(a,submission,accessCode,flaggedQuestionIds=[]){if(!submission?.id||!submission?.attempt||!submission?.validation_token)return false;try{sessionStorage.setItem(phase4QuizSessionKey(a),JSON.stringify({id:Number(submission.id),attempt:Number(submission.attempt),validation_token:String(submission.validation_token),accessCode:String(accessCode||''),started_at:submission.started_at||null,flaggedQuestionIds:Array.isArray(flaggedQuestionIds)?flaggedQuestionIds.map(Number).filter(Number.isSafeInteger):[]}));return true;}catch{return false;}}
 function phase4ClearQuizSession(a){try{sessionStorage.removeItem(phase4QuizSessionKey(a));}catch{}}
 function phase4IsActiveQuizSubmission(submission){return !!(submission&&submission.id&&submission.started_at&&!submission.finished_at&&!['complete','pending_review'].includes(String(submission.workflow_state||'').toLowerCase()));}
 function phase4ShowQuizRecoveryMessage(a,body,message){body.innerHTML='<div class="ns-room-loading-error"><h3>Existing Canvas attempt detected</h3><p>'+safe(message)+'</p><p class="ns-room-help">NORTHSTAR will not start another attempt while Canvas reports an unfinished one. Continue the same attempt in Canvas, or reopen NORTHSTAR in this same browser tab if its temporary session details are still available.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Continue current attempt in Canvas ↗</a></div>';}
+function phase4SafeNewQuizHtml(markup,base){
+  const holder=document.createElement('div');
+  if(window.NorthstarAssignmentRoom?.sanitizeHtml)holder.append(window.NorthstarAssignmentRoom.sanitizeHtml(String(markup||''),base));
+  else holder.textContent=String(markup||'').replace(/<[^>]*>/g,'');
+  return holder.innerHTML;
+}
+function phase4RenderNewQuizPreview(a,c,quiz,items,creds){
+  const body=$('#nsQuizBody');if(!body)return;
+  const rows=Array.isArray(items)?items:null;
+  const points=Number(quiz.points_possible);
+  const timeSeconds=Number(quiz.session_time_limit_in_seconds)||0;
+  const timeLabel=quiz.has_time_limit&&timeSeconds?Math.round(timeSeconds/60)+' minute limit':'No time limit reported';
+  const launch=a.canvasUrl||quiz.html_url||'';
+  const instructions=phase4SafeNewQuizHtml(quiz.instructions||a.desc||'No additional instructions were provided.',creds?.base||'');
+  const itemHtml=rows?.length?rows.map((item,index)=>{
+    const entry=item.entry||{};
+    const kind=String(entry.interaction_type_slug||item.entry_type||'Question').replace(/[-_]/g,' ');
+    const prompt=entry.item_body||entry.body||entry.instructions||'';
+    const safePrompt=prompt?phase4SafeNewQuizHtml(prompt,creds?.base||''):'<p class="ns-room-help">Question details are not available for this item.</p>';
+    const title=safe(entry.title||item.title||('Question '+(index+1)));
+    const pts=Number(item.points_possible);
+    return '<article class="ns-newquiz-item"><div class="ns-newquiz-item-head"><span>ITEM '+(index+1)+' · '+safe(kind)+'</span><b>'+(Number.isFinite(pts)?pts+' pts':'')+'</b></div><h3>'+title+'</h3><div class="ns-newquiz-prompt">'+safePrompt+'</div></article>';
+  }).join(''):'<div class="ns-room-empty"><div class="ns-room-empty-inner"><h3>Question preview unavailable</h3><p>The quiz itself was found, but Canvas did not return readable item content for this student session.</p></div></div>';
+  body.innerHTML='<div class="ns-newquiz-brief"><div><span class="eyebrow">NEW QUIZZES · CANVAS CONTENT</span><h2>'+safe(quiz.title||a.title)+'</h2><p>'+(Number.isFinite(points)?points+' points · ':'')+timeLabel+(quiz.workflow_state?' · '+safe(quiz.workflow_state.replace(/_/g,' ')):'')+'</p></div><div class="ns-newquiz-instructions">'+instructions+'</div><p class="ns-room-help">This preview is read-only. NORTHSTAR does not create a New Quizzes attempt or store New Quizzes answers. Use Canvas’s authenticated quiz player for the official timed attempt, answer submission and completion.</p><a class="btn btn-primary mt" href="'+safe(launch||'#')+'" target="_blank" rel="noopener noreferrer">Continue to official Canvas quiz ↗</a></div><div class="ns-newquiz-list"><div class="ns-newquiz-list-head"><span class="eyebrow">QUESTION PREVIEW</span><span class="ns-room-help">'+(rows?rows.length+' items':'Items not available')+'</span></div>'+itemHtml+'</div>';
+  $('#nsQuizTitle').textContent=quiz.title||a.title;
+  $('#nsQuizSubhead').textContent=(rows?rows.length+' items':'Question preview unavailable')+' · New Quizzes · official attempt remains in Canvas';
+}
 async function openCanvasQuiz(a){
   activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),quizId=a.quizId||a.canvasId;
-  $('#workspace').innerHTML='<div class="ns-assignment-page"><header class="ns-room-header"><button class="ns-room-back" onclick="closeAssignmentRoom()"><span>←</span> Back to coursework</button><div class="ns-room-title"><span class="eyebrow">'+safe(c.code)+' / CANVAS QUIZ</span><h1 id="nsQuizTitle">'+safe(a.title)+'</h1><p id="nsQuizSubhead">Loading official quiz details…</p></div><div class="ns-room-actions"><span class="ns-room-status">Canvas connected</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header><div class="ns-room-layout" style="grid-template-columns:minmax(0,1fr)"><section class="ns-room-main"><div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">ASSESSMENT WORKSPACE</span><h2>Quiz environment</h2><p>Official Canvas attempt · answers and completion sync to Canvas</p></div></div><div class="ns-room-panel" id="nsQuizBody">'+window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code)+'</div></div></section></div></div>';
+  $('#workspace').innerHTML='<div class="ns-assignment-page"><header class="ns-room-header"><button class="ns-room-back" onclick="closeAssignmentRoom()"><span>←</span> Back to coursework</button><div class="ns-room-title"><span class="eyebrow">'+safe(c.code)+' / CANVAS QUIZ</span><h1 id="nsQuizTitle">'+safe(a.title)+'</h1><p id="nsQuizSubhead">Loading official quiz details…</p></div><div class="ns-room-actions"><span class="ns-room-status">Canvas connected</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header><div class="ns-room-layout" style="grid-template-columns:minmax(0,1fr)"><section class="ns-room-main"><div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">ASSESSMENT WORKSPACE</span><h2>Quiz environment</h2><p>Canvas-authoritative assessment workspace</p></div></div><div class="ns-room-panel" id="nsQuizBody">'+window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code)+'</div></div></section></div></div>';
   $('#wsOverlay').classList.add('open');
   $('#phase4HideAssignment').onclick=()=>phase4ToggleHidden(a.id);
   if(!creds?.proxy){$('#nsQuizBody').innerHTML='<div class="ns-room-loading-error"><h3>Private Canvas bridge required</h3><p>A quiz attempt cannot be started safely until NORTHSTAR is connected through your private Canvas bridge. No attempt has been created.</p></div>';return;}
   try{
     const api=window.NorthstarWorkspace.transport(creds);
+    const newQuizPath='/api/quiz/v1/courses/'+Number(c.canvasId)+'/quizzes/'+Number(a.canvasId);
+    let newQuiz=null;
+    try{newQuiz=await api.get(newQuizPath);}catch(error){if(![403,404,405].includes(Number(error.status)))throw error;}
+    if(newQuiz){
+      let newItems=[];
+      try{const response=await api.get(newQuizPath+'/items');newItems=Array.isArray(response)?response:(Array.isArray(response?.items)?response.items:[]);}
+      catch(error){newItems=null;}
+      phase4RenderNewQuizPreview(a,c,newQuiz,newItems,creds);
+      return;
+    }
     const quiz=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/quizzes/'+Number(quizId));
     let currentSubmission=null;
     try{currentSubmission=await window.NorthstarWorkspace.getCurrentQuizSubmission({credentials:creds,courseId:c.canvasId,quizId});}
@@ -467,7 +514,7 @@ async function openCanvasQuiz(a){
     if(phase4IsActiveQuizSubmission(currentSubmission)){
       const saved=phase4ReadQuizSession(a);
       if(saved&&Number(saved.id)===Number(currentSubmission.id)&&Number(saved.attempt)===Number(currentSubmission.attempt)&&saved.validation_token){
-        try{const resumed=await window.NorthstarWorkspace.resumeQuiz({credentials:creds,courseId:c.canvasId,quizId,submission:currentSubmission,validationToken:saved.validation_token,accessCode:saved.accessCode||''});activeQuizSession={assignment:a,submission:resumed.submission,questions:resumed.questions,timing:resumed.timing||null,accessCode:resumed.accessCode||'',timeLimit:Number(quiz.time_limit)||0,extraTime:Number(resumed.submission.extra_time)||0};phase4RenderQuizAttempt();return;}
+        try{const resumed=await window.NorthstarWorkspace.resumeQuiz({credentials:creds,courseId:c.canvasId,quizId,submission:currentSubmission,validationToken:saved.validation_token,accessCode:saved.accessCode||''});activeQuizSession={assignment:a,submission:resumed.submission,questions:resumed.questions,timing:resumed.timing||null,accessCode:resumed.accessCode||'',flaggedQuestionIds:Array.isArray(saved.flaggedQuestionIds)?saved.flaggedQuestionIds:undefined,timeLimit:Number(quiz.time_limit)||0,extraTime:Number(resumed.submission.extra_time)||0};phase4RenderQuizAttempt();return;}
         catch(error){phase4ShowQuizRecoveryMessage(a,$('#nsQuizBody'),'Canvas reports an unfinished attempt, but NORTHSTAR could not safely restore its questions: '+error.message);return;}
       }
       phase4ShowQuizRecoveryMessage(a,$('#nsQuizBody'),'Canvas reports an unfinished attempt that was started earlier. The temporary validation details are not available in this tab, so NORTHSTAR cannot safely resume it through the API.');return;
@@ -501,30 +548,60 @@ async function phase4StartQuizAttempt(a,quiz,creds){
     }
   }
 }
-let phase4QuizSaveTimer=null,phase4QuizSaveInFlight=false,phase4QuizSavePending=false,phase4LastQuizSavedSignature='';
-function phase4QuizAnswersSignature(answers){return JSON.stringify(answers||[]);}
-function phase4ScheduleQuizAutoSave(){if(!activeQuizSession)return;if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);const status=$('#phase4AttemptStatus');if(status)status.textContent='Answer changed · saving to Canvas shortly…';phase4QuizSaveTimer=setTimeout(()=>phase4AutoSaveQuizAnswers(),1200);}
+let phase4QuizSaveTimer=null,phase4QuizSaveInFlight=false,phase4QuizSavePending=false,phase4LastQuizSavedSignature='',phase4LastQuizSavedAnswersSignature='';
+function phase4QuizAnswersSignature(answers,flags=[]){return JSON.stringify({answers:answers||[],flags:flags||[]});}
+function phase4ScheduleQuizAutoSave(){if(!activeQuizSession)return;if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);const status=$('#phase4AttemptStatus');if(status)status.textContent='Quiz response changed · saving to Canvas shortly…';phase4QuizSaveTimer=setTimeout(()=>phase4AutoSaveQuizAnswers(),1200);}
+function phase4CollectQuizFlags(s=activeQuizSession){
+  if(!s)return[];
+  const flagged=new Set((s.flaggedQuestionIds||[]).map(Number));
+  return s.questions.filter(phase4QuestionSupported).map(row=>{const q=row.quiz_question||row.question||row;return {id:Number(q.id||row.id),flagged:flagged.has(Number(q.id||row.id))};}).filter(item=>Number.isSafeInteger(item.id)&&item.id>0);
+}
+function phase4CurrentQuizSignature(s=activeQuizSession){
+  return s?phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions),phase4CollectQuizFlags(s)):'';
+}
+async function phase4SaveQuizState(s=activeQuizSession){
+  if(!s)return;
+  const answers=phase4CollectQuizAnswers(s.questions),flags=phase4CollectQuizFlags(s);
+  const desiredSignature=phase4QuizAnswersSignature(answers,flags);
+  const savedFlags=new Set((s.canvasFlaggedQuestionIds||[]).map(Number));
+  const answerSignature=phase4QuizAnswersSignature(answers);
+  if(answers.length&&answerSignature!==phase4LastQuizSavedAnswersSignature){
+    await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});
+    phase4LastQuizSavedAnswersSignature=answerSignature;
+  }
+  for(const flag of flags){
+    if(savedFlags.has(flag.id)===flag.flagged)continue;
+    await window.NorthstarWorkspace.updateQuizQuestionFlag({credentials:getCredentials(),submission:s.submission,questionId:flag.id,flagged:flag.flagged,accessCode:s.accessCode});
+    if(flag.flagged)savedFlags.add(flag.id);else savedFlags.delete(flag.id);
+    s.canvasFlaggedQuestionIds=[...savedFlags];
+  }
+  phase4LastQuizSavedSignature=desiredSignature;
+  phase4PersistQuizSession(s.assignment,s.submission,s.accessCode,s.flaggedQuestionIds);
+}
 async function phase4AutoSaveQuizAnswers(){
  const s=activeQuizSession;if(!s)return;if(phase4QuizSaveInFlight){phase4QuizSavePending=true;return;}
- const answers=phase4CollectQuizAnswers(s.questions),signature=phase4QuizAnswersSignature(answers);if(signature===phase4LastQuizSavedSignature)return;
- if(!answers.length){const status=$('#phase4AttemptStatus');if(status)status.textContent='No answer is ready to save yet.';return;}
- phase4QuizSaveInFlight=true;let saved=false;const status=$('#phase4AttemptStatus');
- try{if(status)status.textContent='Saving '+answers.length+' answer(s) to Canvas…';await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});phase4LastQuizSavedSignature=signature;saved=true;if(status)status.textContent=answers.length+' answer(s) saved to Canvas automatically.';}
- catch(error){if(status)status.textContent='Auto-save could not be confirmed: '+error.message+' Use “Save answers to Canvas” to try again after checking your connection.';}
- finally{phase4QuizSaveInFlight=false;const pending=phase4QuizSavePending;phase4QuizSavePending=false;if(saved&&pending&&phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions))!==phase4LastQuizSavedSignature)phase4ScheduleQuizAutoSave();}
+ const signature=phase4CurrentQuizSignature(s);if(signature===phase4LastQuizSavedSignature)return;
+ phase4QuizSaveInFlight=true;const status=$('#phase4AttemptStatus');let saved=false;
+ try{
+  if(status)status.textContent='Saving answers and review flags to Canvas…';
+  await phase4SaveQuizState(s);saved=true;
+  if(status)status.textContent='Answers and review flags saved to Canvas automatically.';
+ }catch(error){if(status)status.textContent='Save could not be confirmed: '+error.message+' Check Canvas before manually retrying; NORTHSTAR will not repeat an uncertain request.';}
+ finally{phase4QuizSaveInFlight=false;const pending=phase4QuizSavePending;phase4QuizSavePending=false;if(saved&&pending&&phase4CurrentQuizSignature(s)!==phase4LastQuizSavedSignature)phase4ScheduleQuizAutoSave();}
 }
 function phase4RenderQuizAttempt(){
   const s=activeQuizSession;if(!s)return;const unsupported=s.questions.filter(row=>!phase4QuestionSupported(row));
-  s.flaggedQuestionIds=Array.isArray(s.flaggedQuestionIds)?s.flaggedQuestionIds:[];
+  s.canvasFlaggedQuestionIds=Array.isArray(s.canvasFlaggedQuestionIds)?s.canvasFlaggedQuestionIds:s.questions.filter(row=>{const q=row.quiz_question||row.question||row;return !!(row.flagged||q.flagged);}).map(row=>{const q=row.quiz_question||row.question||row;return Number(q.id||row.id);});
+  s.flaggedQuestionIds=Array.isArray(s.flaggedQuestionIds)?s.flaggedQuestionIds:[...s.canvasFlaggedQuestionIds];
   $('#nsQuizSubhead').textContent='Attempt '+s.submission.attempt+' · '+s.questions.length+' questions · Canvas attempt in progress';
   if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);
   const navigator=s.questions.map((row,index)=>{const q=row.quiz_question||row.question||row;return '<button type="button" data-quiz-jump="'+(index+1)+'" data-question-id="'+Number(q.id||row.id)+'" title="Go to question '+(index+1)+'">'+(index+1)+'</button>';}).join('');
   $('#nsQuizBody').innerHTML='<div class="card mb"><span class="eyebrow">LIVE CANVAS ATTEMPT</span><p id="phase4QuizTimer" class="mono mt">'+(s.timeLimit?('Time limit: '+s.timeLimit+' minutes'):'No timer reported by Canvas')+'</p><div class="ns-quiz-progress-track"><i id="phase4QuizProgressBar"></i></div><p id="phase4QuizProgressText" class="small muted mt">0 supported questions answered</p><p class="small muted mt">Save answers sends them to Canvas. Submit quiz permanently completes this attempt.</p><div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" id="phase4SaveQuiz">Save answers to Canvas</button><button class="btn btn-primary btn-sm" id="phase4CompleteQuiz">Submit quiz to Canvas</button></div><p id="phase4AttemptStatus" class="small muted mt" role="status">Attempt started. Answers have not yet been saved.</p></div><nav class="ns-quiz-navigator" aria-label="Quiz question navigation">'+navigator+'</nav><div class="quiz-question-stack">'+s.questions.map(phase4QuestionMarkup).join('')+'</div>'+(unsupported.length?'<div class="card mt"><p class="small muted">'+unsupported.length+' question(s) use formats NORTHSTAR cannot safely edit. Complete these in the same attempt in Canvas before submitting.</p><a class="btn btn-ghost mt" href="'+safe(s.assignment.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Continue unsupported questions in Canvas ↗</a></div>':'');
   $('#phase4SaveQuiz').onclick=phase4SaveQuizAnswers;$('#phase4CompleteQuiz').onclick=phase4CompleteQuizAttempt;
   document.querySelectorAll('[data-quiz-jump]').forEach(button=>button.onclick=()=>{const target=document.querySelector('.quiz-question[data-question-index="'+(Number(button.dataset.quizJump)-1)+'"]');if(target)target.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
-  document.querySelectorAll('[data-quiz-flag]').forEach(button=>{const id=Number(button.dataset.quizFlag),flagged=s.flaggedQuestionIds.includes(id);button.setAttribute('aria-pressed',String(flagged));button.classList.toggle('is-flagged',flagged);if(flagged)button.textContent='Flagged';button.onclick=()=>{const at=s.flaggedQuestionIds.indexOf(id);if(at>=0)s.flaggedQuestionIds.splice(at,1);else s.flaggedQuestionIds.push(id);button.setAttribute('aria-pressed',String(at<0));button.classList.toggle('is-flagged',at<0);button.textContent=at<0?'Flagged':'Flag for review';};});
+  document.querySelectorAll('[data-quiz-flag]').forEach(button=>{const id=Number(button.dataset.quizFlag),flagged=s.flaggedQuestionIds.includes(id);button.setAttribute('aria-pressed',String(flagged));button.classList.toggle('is-flagged',flagged);if(flagged)button.textContent='Flagged';button.onclick=()=>{const at=s.flaggedQuestionIds.indexOf(id);if(at>=0)s.flaggedQuestionIds.splice(at,1);else s.flaggedQuestionIds.push(id);button.setAttribute('aria-pressed',String(at<0));button.classList.toggle('is-flagged',at<0);button.textContent=at<0?'Flagged':'Flag for review';phase4PersistQuizSession(s.assignment,s.submission,s.accessCode,s.flaggedQuestionIds);phase4ScheduleQuizAutoSave();};});
   const quizStack=document.querySelector('.quiz-question-stack');
-  phase4LastQuizSavedSignature=phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions));
+  phase4LastQuizSavedAnswersSignature=phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions));phase4LastQuizSavedSignature=phase4CurrentQuizSignature(s);
   if(quizStack){const update=()=>{phase4UpdateQuizProgress();phase4ScheduleQuizAutoSave();};quizStack.addEventListener('input',update);quizStack.addEventListener('change',update);}
   phase4UpdateQuizProgress();
   if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);
@@ -534,21 +611,21 @@ async function phase4SaveQuizAnswers(){
   const s=activeQuizSession;if(!s)return;const status=$('#phase4AttemptStatus'),button=$('#phase4SaveQuiz');
   if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}
   if(phase4QuizSaveInFlight){if(status)status.textContent='A Canvas save is already in progress. Wait for its confirmation.';return;}
-  const answers=phase4CollectQuizAnswers(s.questions);if(!answers.length){if(status)status.textContent='No supported answers are entered yet.';return;}
-  try{phase4QuizSaveInFlight=true;if(button)button.disabled=true;if(status)status.textContent='Saving answers to Canvas…';await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});phase4LastQuizSavedSignature=phase4QuizAnswersSignature(answers);if(status)status.textContent=answers.length+' answer(s) saved to Canvas.';}
-  catch(error){if(status)status.textContent=error.message;}
+  if(phase4CurrentQuizSignature(s)===phase4LastQuizSavedSignature){if(status)status.textContent='All answers and review flags are already saved to Canvas.';return;}
+  try{phase4QuizSaveInFlight=true;if(button)button.disabled=true;if(status)status.textContent='Saving answers and review flags to Canvas…';await phase4SaveQuizState(s);if(status)status.textContent='Answers and review flags saved to Canvas.';}
+  catch(error){if(status)status.textContent='Save could not be confirmed: '+error.message+' Check Canvas before retrying.';}
   finally{phase4QuizSaveInFlight=false;if(button)button.disabled=false;}
 }
 async function phase4CompleteQuizAttempt(){
   const s=activeQuizSession;if(!s)return;
   if(s.questions.some(row=>!phase4QuestionSupported(row))){toast('This quiz contains question formats NORTHSTAR cannot safely edit. Continue the same attempt in Canvas before submitting.');return;}
-  const answers=phase4CollectQuizAnswers(s.questions);
-  const unanswered=s.questions.filter(row=>phase4QuestionSupported(row)&&!['text_only_question'].includes(String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase())&&!answers.some(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id))).length;
+  const answers=phase4CollectQuizAnswers(s.questions),flags=phase4CollectQuizFlags(s);
+  const unanswered=s.questions.filter(row=>phase4QuestionSupported(row)&&!['text_only_question'].includes(String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase())&&!answers.some(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id)&&x.answer!==null&&x.answer!==''&&(!Array.isArray(x.answer)||x.answer.length>0))).length;
   if(phase4QuizSaveInFlight){toast('Wait for the current answer save to finish before submitting.');return;}
   const confirmation='Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'+(unanswered?'\n\n'+unanswered+' supported question(s) are unanswered. Submit anyway?':'');
   if(!confirm(confirmation))return;
   const status=$('#phase4AttemptStatus'),button=$('#phase4CompleteQuiz');
-  try{phase4QuizSaveInFlight=true;if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}button.disabled=true;$('#phase4SaveQuiz').disabled=true;status.textContent='Saving final answers to Canvas…';const signature=phase4QuizAnswersSignature(answers);if(answers.length&&signature!==phase4LastQuizSavedSignature){await window.NorthstarWorkspace.saveQuizAnswers({credentials:getCredentials(),submission:s.submission,answers,accessCode:s.accessCode});phase4LastQuizSavedSignature=signature;}status.textContent='Completing quiz attempt in Canvas…';await window.NorthstarWorkspace.completeQuiz({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submission:s.submission,accessCode:s.accessCode});phase4ClearQuizSession(s.assignment);phase4QuizSaveInFlight=false;status.textContent='Canvas confirmed completion. Refreshing coursework…';activeQuizSession=null;if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);await syncCanvas({quiet:true});refreshAll();$('#nsQuizBody').innerHTML='<div class="card"><h2>Quiz submitted</h2><p class="small muted mt">Canvas confirmed completion. Your official score will appear when Canvas releases it.</p><button class="btn btn-primary mt" onclick="closeOverlay(\'wsOverlay\')">Return to coursework</button></div>';}
+  try{phase4QuizSaveInFlight=true;if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}button.disabled=true;$('#phase4SaveQuiz').disabled=true;status.textContent='Saving final answers and review flags to Canvas…';if(phase4CurrentQuizSignature(s)!==phase4LastQuizSavedSignature)await phase4SaveQuizState(s);status.textContent='Completing quiz attempt in Canvas…';await window.NorthstarWorkspace.completeQuiz({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submission:s.submission,accessCode:s.accessCode});phase4ClearQuizSession(s.assignment);phase4QuizSaveInFlight=false;status.textContent='Canvas confirmed completion. Refreshing coursework…';activeQuizSession=null;if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);await syncCanvas({quiet:true});refreshAll();$('#nsQuizBody').innerHTML='<div class="card"><h2>Quiz submitted</h2><p class="small muted mt">Canvas confirmed completion. Your official score will appear when Canvas releases it.</p><button class="btn btn-primary mt" onclick="closeOverlay(\'wsOverlay\')">Return to coursework</button></div>';}
   catch(error){phase4QuizSaveInFlight=false;status.textContent=error.message+' Check Canvas before retrying; NORTHSTAR will not automatically repeat a completion request.';button.disabled=false;$('#phase4SaveQuiz').disabled=false;}
 }
 
@@ -740,7 +817,7 @@ let submissionBusy=false;let phase441AnnotatedPdf=null;
 function submissionPanel(a){
   if(mode!=='live') return '';
   const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
-  if(!types.length){if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>PDF annotation assignment</h3><p class="small">NORTHSTAR can annotate and export the attached PDF in Document Studio. Canvas identifies this as a native DocViewer student-annotation submission. Its public student submission API does not document a supported way to post DocViewer annotation state, so NORTHSTAR will not pretend that an exported PDF is the official Canvas student-annotation submission.</p><p class="small mt">You can export an annotated PDF from Document Studio. To record the special Canvas DocViewer submission status, the institution’s supported DocViewer workflow is still required.</p></div>';
+  if(!types.length){if((a.submissionTypes||[]).includes('external_tool')||(a.submissionTypes||[]).includes('basic_lti_launch'))return '<div class="ns-room-submission"><h3>Authenticated course tool</h3><p class="small">This activity is delivered by an external Canvas LTI provider. Its launch requires the official authenticated course session, so NORTHSTAR cannot safely create or submit provider work through the Canvas assignment API.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Launch provider through Canvas ↗</a></div>';if((a.submissionTypes||[]).includes('media_recording'))return '<div class="ns-room-submission"><h3>Media recording submission</h3><p class="small">Canvas accepts media recording submission references, but its public API does not provide a standard method to create or list the required media comment. Use the authenticated Canvas recorder for this assignment.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open Canvas recorder ↗</a></div>';if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>PDF annotation assignment</h3><p class="small">NORTHSTAR can annotate and export the attached PDF in Document Studio. Canvas accepts a student_annotation submission that references the original annotatable attachment. However, its documented student submission payload does not provide a supported way to transfer NORTHSTAR’s local Document Studio markup into Canvas DocViewer’s annotation state. An exported PDF is therefore a separate file submission, not a native DocViewer annotation record.</p><p class="small mt">You can export an annotated PDF from Document Studio. To record the special Canvas DocViewer submission status, the institution’s supported DocViewer workflow is still required.</p></div>';
   return '<p class="small muted mt">This assignment requires a provider-specific or unsupported Canvas workflow. NORTHSTAR will not simulate completion.</p>';}
   const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
   return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p><button type="button" class="btn btn-ghost btn-sm mt" id="nsUseAnnotatedPdf">Use annotated PDF from Document Studio</button><p class="tiny muted mt" id="nsAnnotatedPdfStatus">Open a PDF and annotate it to attach an exported copy.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;

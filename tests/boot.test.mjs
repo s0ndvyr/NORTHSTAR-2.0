@@ -107,11 +107,14 @@ const canvasCalls=[];
 window.fetch = async (url, opts={}) => {
   const u = new URL(url);
   const path = u.searchParams.get('path') || u.pathname;
-  canvasCalls.push({path,method:opts.method||'GET'});
-  let data;
+  canvasCalls.push({path,method:opts.method||'GET',body:opts.body?JSON.parse(opts.body):null});
+  let data,status=200;
   if (path.startsWith('/api/v1/courses?')) data=[{id:1,name:'Math',course_code:'MATH',has_grading_periods:true,enrollments:[{type:'StudentEnrollment',computed_current_score:88.5,computed_current_grade:'B+',computed_final_score:90,current_grading_period_title:'Marking Period 2',current_grading_period_id:22,has_grading_periods:true,current_period_computed_current_score:91,current_period_computed_current_grade:'A-'}]}];
-  else if (path.endsWith('/assignments?include%5B%5D=submission') || path.includes('/assignments?')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90,grade:'A-',submitted_at:'2026-10-30T17:00:00Z',graded_at:'2026-10-31T10:00:00Z'}},{id:11,name:'Awaiting feedback',points_possible:20,assignment_group_id:5,submission_types:['online_text_entry'],due_at:'2026-11-20T19:00:00Z',submission:{workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}},{id:12,name:'Canvas Quiz',points_possible:10,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-25T19:00:00Z',submission:{workflow_state:'unsubmitted'}}];
+  else if (path.endsWith('/assignments?include%5B%5D=submission') || path.includes('/assignments?')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90,grade:'A-',submitted_at:'2026-10-30T17:00:00Z',graded_at:'2026-10-31T10:00:00Z'}},{id:11,name:'Awaiting feedback',points_possible:20,assignment_group_id:5,submission_types:['online_text_entry'],due_at:'2026-11-20T19:00:00Z',submission:{workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}},{id:12,name:'Canvas Quiz',points_possible:10,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-25T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:13,name:'New Canvas Quiz',points_possible:5,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-26T19:00:00Z',submission:{workflow_state:'unsubmitted'}}];
   else if(path.startsWith('/api/v1/courses/1/quizzes?')) data=[{id:22,assignment_id:12,title:'Canvas Quiz',question_count:1,points_possible:10,html_url:'https://school.instructure.com/courses/1/quizzes/22'}];
+  else if(path==='/api/quiz/v1/courses/1/quizzes/12'){status=404;data={errors:['Not a New Quiz']};}
+  else if(path==='/api/quiz/v1/courses/1/quizzes/13') data={id:13,title:'New Canvas Quiz',instructions:'<p>Read the passage before answering.</p>',points_possible:5,workflow_state:'published',has_time_limit:false};
+  else if(path==='/api/quiz/v1/courses/1/quizzes/13/items') data=[{id:301,position:1,points_possible:5,entry_type:'Item',entry:{title:'Question One',item_body:'<p>What is the main idea?</p>',interaction_type_slug:'essay',interaction_data:{correct_answer:'DO NOT SHOW THIS'}}}];
   else if(path==='/api/v1/courses/1/discussion_topics') data=[];
   else if(path==='/api/v1/courses/1/quizzes/22'&&opts?.method!=='POST') data={id:22,title:'Canvas Quiz',question_count:1,points_possible:10,workflow_state:'available',html_url:'https://school.instructure.com/courses/1/quizzes/22'};
   else if(path==='/api/v1/courses/1/quizzes/22/submissions'&&opts?.method==='POST') data={quiz_submissions:[{id:77,attempt:1,validation_token:'quiz-validation',started_at:new Date().toISOString()}]};
@@ -120,7 +123,7 @@ window.fetch = async (url, opts={}) => {
   else if (path.startsWith('/api/v1/courses/1/assignments/11/submissions/7?')) data={submission_history:[{attempt:1,workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}],submission_comments:[{author_name:'Instructor',comment:'Good start. Add one more example.',created_at:'2026-11-17T12:00:00Z'}],rubric_assessment:{}};
   else if (path.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
   else data={weighted_assignment_groups:true};
-  return {ok:true,status:200,headers:{get:n=>n.toLowerCase()==='content-type'?'application/json':null},json:async()=>data,text:async()=>JSON.stringify(data)};
+  return {ok:status>=200&&status<300,status,headers:{get:n=>n.toLowerCase()==='content-type'?'application/json':null},json:async()=>data,text:async()=>JSON.stringify(data)};
 };
 window.document.getElementById('canvasUrl').value='https://school.instructure.com';
 window.document.getElementById('canvasProxy').value='https://bridge.example';
@@ -184,11 +187,29 @@ quizChoice.dispatchEvent(new window.Event('change',{bubbles:true}));
 window.document.getElementById('phase4SaveQuiz').click();
 await new Promise(r=>setTimeout(r,20));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'),'quiz answers are saved to Canvas');
+assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions/9/flag'&&x.method==='PUT'),'review flags use Canvas official PUT flag endpoint');
+assert.ok(canvasCalls.find(x=>x.path==='/api/v1/quiz_submissions/77/questions/9/flag').body.validation_token==='quiz-validation','flag request includes the current Canvas validation token');
+quizChoice.checked=false;
+quizChoice.dispatchEvent(new window.Event('change',{bubbles:true}));
+window.document.getElementById('phase4SaveQuiz').click();
+await new Promise(r=>setTimeout(r,20));
+assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'&&x.body.quiz_questions.some(q=>q.id==='9'&&q.answer===null)),'clearing a previously answered question is saved as unanswered');
+
 assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('1 of 1'),'answered quiz question updates progress');
 window.document.getElementById('phase4CompleteQuiz').click();
 await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz submitted'),'workspace reports completion after Canvas confirms it');
+
+await window.openWorkspace('canvas_13_1');
+await new Promise(r=>setTimeout(r,30));
+const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
+assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text sanitizer strips scripts, event handlers and unsafe links');
+assert.ok(window.document.getElementById('workspace').textContent.includes('New Quizzes'),'New Quiz opens an in-dashboard preview');
+assert.ok(window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'New Quiz item prompts are previewed inside NORTHSTAR');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Continue to official Canvas quiz'),'New Quiz attempt uses the official authenticated Canvas player');
+assert.equal(window.document.getElementById('phase4StartQuiz'),null,'NORTHSTAR never invents a New Quiz attempt start');
+assert.ok(!window.document.getElementById('workspace').textContent.includes('DO NOT SHOW THIS'),'New Quiz preview never renders answer/scoring payloads');
 
 await window.openWorkspace('canvas_11_1');
 window.document.getElementById('phase4HideAssignment').click();
@@ -214,7 +235,7 @@ assert.equal(writes,0,'cancel must not write');
 let confirmation='';
 window.confirm=msg=>{confirmation=msg;return true;};
 await window.submitAssignment();
-assert.equal(writes,1,'one confirmed write');
+assert.equal(writes,1,'one confirmed write; status: '+window.document.getElementById('submissionStatus').textContent+'; type: '+window.document.getElementById('submissionType').value+'; confirmation: '+confirmation);
 assert.ok(confirmation.includes('My own work')&&confirmation.includes('Math')&&confirmation.includes('Test work'));
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas confirmed'));
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));

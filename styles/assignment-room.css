@@ -178,3 +178,22 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
 .ns-submission-comment p,.ns-submission-rubric p{color:var(--text);font-size:11px;line-height:1.6;margin-bottom:7px;white-space:pre-wrap}
 .ns-submission-rubric{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 .ns-submission-rubric p{grid-column:1/-1}
+
+/* New Quizzes read-only preview; attempts remain with the official Canvas player. */
+.ns-newquiz-brief{padding:18px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,color-mix(in srgb,var(--text) 5%,transparent),color-mix(in srgb,var(--text) 2%,transparent))}
+.ns-newquiz-brief h2{font:500 25px var(--serif);color:var(--text);margin:7px 0}
+.ns-newquiz-brief>div:first-child>p{color:var(--muted);font-size:11px}
+.ns-newquiz-instructions{margin:15px 0;color:var(--text);font-size:13px;line-height:1.75}
+.ns-newquiz-instructions p{margin:0 0 9px}
+.ns-newquiz-list{margin-top:18px}
+.ns-newquiz-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0}
+.ns-newquiz-item{margin:9px 0;padding:17px;border:1px solid var(--border);border-radius:13px;background:color-mix(in srgb,var(--text) 2.5%,transparent)}
+.ns-newquiz-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.ns-newquiz-item-head b{color:var(--muted);font-size:10px;letter-spacing:0}
+.ns-newquiz-item h3{margin:10px 0;color:var(--text);font-size:14px;font-weight:700}
+.ns-newquiz-prompt{color:var(--text);font-size:13px;line-height:1.75;overflow-wrap:anywhere}
+.ns-newquiz-prompt p{margin:0 0 9px}
+.ns-newquiz-prompt img{max-width:100%;height:auto;object-fit:contain;border-radius:8px}
+.ns-newquiz-prompt table{max-width:100%;display:block;overflow:auto;border-collapse:collapse}
+.ns-newquiz-prompt td,.ns-newquiz-prompt th{padding:6px 9px;border:1px solid var(--border)}
+@media(max-width:760px){.ns-newquiz-brief{padding:14px}.ns-newquiz-brief h2{font-size:21px}.ns-newquiz-item{padding:13px}}

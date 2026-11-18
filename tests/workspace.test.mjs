@@ -28,6 +28,13 @@ assert.equal(calls[0].opts.headers.Authorization,'Bearer secret-token');
 assert.equal(JSON.parse(calls[0].opts.body).access_code,undefined);
 await W.saveQuizAnswers({credentials,submission:started.submission,answers:[{id:9,answer:1}],fetchImpl});
 assert.equal(JSON.parse(calls.at(-1).opts.body).quiz_questions[0].answer,1);
+await W.updateQuizQuestionFlag({credentials,submission:started.submission,questionId:9,flagged:true,fetchImpl});
+assert.equal(calls.at(-1).opts.method,'PUT','review flags use the dedicated Canvas PUT endpoint');
+assert.equal(new URL(calls.at(-1).url).searchParams.get('path'),'/api/v1/quiz_submissions/77/questions/9/flag');
+assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
+await W.updateQuizQuestionFlag({credentials,submission:started.submission,questionId:9,flagged:false,fetchImpl});
+assert.equal(new URL(calls.at(-1).url).searchParams.get('path'),'/api/v1/quiz_submissions/77/questions/9/unflag');
+
 await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl});
 assert(new URL(calls.at(-1).url).searchParams.get('path').includes('/complete'));
 assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);

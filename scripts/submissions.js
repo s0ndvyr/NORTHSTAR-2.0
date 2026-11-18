@@ -52,7 +52,7 @@ function richTextPayload(html){
   let plain=body.replace(/<[^>]*>/g,'').replace(/&nbsp;/g,' ').trim();
   if(typeof DOMParser!=='undefined')plain=new DOMParser().parseFromString(body,'text/html').body.textContent.trim();
   if(!plain)throw Error('Enter your work before submitting.');
-  const size=new TextEncoder().encode(body).length;
+  let size;try{size=typeof TextEncoder!=='undefined'?new TextEncoder().encode(body).length:encodeURIComponent(body).replace(/%[A-F0-9]{2}/gi,'x').length;}catch{throw Error('Your response contains characters that cannot be encoded safely. Remove unusual characters and try again.');}
   if(size>16000)throw Error('Your formatted response is '+size.toLocaleString()+' bytes. Canvas accepts up to 16 KB here; shorten it before submitting.');
   return {submission:{submission_type:'online_text_entry',body}};
 }

@@ -326,3 +326,11 @@ These features require separate official provider integrations and live acceptan
 - [ ] Test PDF annotation export, iPad Apple Pencil interaction, touch scrolling, and flattened file upload where allowed.
 - [ ] Review unsupported New Quizzes, LTI, DocViewer annotations and restricted external resources; verify each limitation has a clear fallback.
 - [ ] Complete iPad Safari regression, reduced-motion, theme, keyboard/VoiceOver, offline/draft and large-file checks before merging or labeling Phase 4 complete.
+
+
+### `.4.4.3` New Quizzes and assessment boundary
+
+- Added read-only preview of New Quiz instructions and item prompts using the official `/api/quiz/v1/courses/:course/quizzes/:assignment` and `/items` GET routes. Question rendering intentionally reads only `item_body`/stimulus content and does not render `interaction_data`, `scoring_data`, or answer feedback.
+- The quiz attempt itself is handed to the authenticated Canvas player. NORTHSTAR does not invent a New Quiz attempt start/answer/submit route.
+- The Worker and workspace transport now allow those two exact GET routes only; no New Quiz write path has been opened.
+- Confirm the NNPS token has access to the New Quizzes read endpoints and the new Worker source has been deployed before iPad live testing.

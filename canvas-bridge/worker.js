@@ -1,11 +1,13 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges', 'Vary':'Origin', 'Cache-Control':'no-store'};
+const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges', 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const isQuizFlagPath=path=>/^\/api\/v1\/quiz_submissions\/\d+\/questions\/\d+\/(?:flag|unflag)$/.test(path);
 const keysOnly=(o,keys)=>isObject(o)&&Object.keys(o).every(k=>keys.includes(k));
 function validAnswer(v){
+  if(v===null)return true;
   if(typeof v==='string')return v.length<=16000;
   if(typeof v==='number')return Number.isFinite(v);
   if(typeof v==='boolean')return true;
@@ -24,7 +26,9 @@ function allowedRead(path){
     /^\/api\/v1\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/(?:assignments|assignment_groups|quizzes)(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission|submissions\/\d+\/time))?(?:\?(?:[^#]*))?$/.test(path) ||
-    /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
+    /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+$/.test(path) ||
+    /^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+\/items$/.test(path);
 }
 function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
 function validateWrite(path,data){
@@ -97,25 +101,26 @@ export default {
   async fetch(request) {
     if(request.headers.get('Origin') !== ALLOWED_ORIGIN) return new Response('Origin not allowed',{status:403});
     if(request.method==='OPTIONS') return new Response(null,{status:204,headers:cors});
-    if(!['GET','POST'].includes(request.method)) return reply('Method not allowed',405);
+    if(!['GET','POST','PUT'].includes(request.method)) return reply('Method not allowed',405);
     const auth=request.headers.get('Authorization')||'';
     if(!/^Bearer \S+$/.test(auth)) return reply('Authorization required',401);
     const rawPath=new URL(request.url).searchParams.get('path')||'';
     let url;try{url=new URL(rawPath,CANVAS_ORIGIN);}catch{return reply('Invalid path',400);}
     if(url.origin!==CANVAS_ORIGIN||url.searchParams.has('access_token')||url.hash)return reply('Path not allowed',403);
-    if(request.method==='POST'&&url.search)return reply('Query parameters are not allowed on writes',403);
+    if(request.method!=='GET'&&url.search)return reply('Query parameters are not allowed on writes',403);
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     if(request.method==='GET'){
       const fileMatch=url.pathname.match(/^\/api\/v1\/files\/(\d+)\/download$/);
       if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
     }
     let body;
-    if(request.method==='POST'){
-      if(!isWritePath(url.pathname))return reply('Write path not allowed',405);
+    if(request.method==='POST'||request.method==='PUT'){
+      if(request.method==='POST'&&!isWritePath(url.pathname))return reply('Write path not allowed',405);
+      if(request.method==='PUT'&&!isQuizFlagPath(url.pathname))return reply('Write path not allowed',405);
       if(!request.headers.get('Content-Type')?.startsWith('application/json'))return reply('JSON required',415);
       const raw=await request.text();if(new TextEncoder().encode(raw).length>200000)return reply('Request too large',413);
       let data;try{data=JSON.parse(raw);}catch{return reply('Invalid JSON',400);}
-      const invalid=validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
+      const invalid=request.method==='PUT'?(!keysOnly(data,['attempt','validation_token','access_code'])||!Number.isSafeInteger(data.attempt)||data.attempt<1||typeof data.validation_token!=='string'||!data.validation_token||data.validation_token.length>512||(data.access_code!==undefined&&data.access_code!==null&&typeof data.access_code!=='string')?'Invalid quiz flag request':null):validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
       body=JSON.stringify(data);
     }
     try{

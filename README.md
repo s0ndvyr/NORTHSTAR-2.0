@@ -165,3 +165,8 @@ NORTHSTAR opens ordinary Canvas assignments, supported classic quizzes, and grad
 The private Cloudflare Worker must be deployed from the current `canvas-bridge/worker.js`. Canvas remains authoritative: write actions require confirmation and a confirmed Canvas response; ambiguous writes are never automatically retried. The bridge uses the exact configured Canvas and GitHub Pages origins.
 
 **Known boundaries:** PDF annotations are saved locally and can be flattened/exported as a file; this is not the same as submitting Canvas DocViewer student-annotation state. New Quizzes, LTI/external tools, provider-specific assessments, and file formats without a safe native renderer are not falsely represented as completed in NORTHSTAR. Those workflows may require the institution-approved provider experience.
+
+
+### New Quizzes behavior
+
+NORTHSTAR uses the official read-only New Quizzes endpoints to retrieve a quiz's instructions and available item prompts for an in-dashboard preview. The preview deliberately does not render answer/scoring payloads and does not create an attempt. Starting, timing, answering and submitting a New Quiz remains in the official authenticated Canvas quiz player because the documented New Quizzes REST resources expose quiz and item retrieval/authoring, not the student attempt workflow integrated here. The bridge only allows GET for the two New Quiz read routes; it does not permit New Quiz POST/PATCH/DELETE.
