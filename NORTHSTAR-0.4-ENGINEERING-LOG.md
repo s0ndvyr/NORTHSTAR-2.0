@@ -233,7 +233,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 - Export produces a flattened annotated PDF with the source document preserved. When an assignment permits online_upload, the exported PDF can be attached through Canvas' signed upload flow.
 - PDF.js and pdf-lib are version-pinned runtime ES modules from jsDelivr. PDF viewing/export therefore requires network access to those libraries.
 - Annotation source data stays in local browser storage until exported. It is not a Canvas DocViewer annotation session and is not uploaded automatically.
-- For Canvas assignments whose submission method is specifically student_annotation, NORTHSTAR does not claim that uploading a flattened PDF updates the official Canvas DocViewer annotation state. The official DocViewer workflow remains required for that special submission type until a documented student-facing endpoint is implemented and verified.
+- Canvas's public Submissions API does list student_annotation and annotatable_attachment_id. However, its documented request does not specify how a custom editor transmits the actual DocViewer ink/text annotation payload. NORTHSTAR does not submit the attachment ID alone or claim that a flattened PDF export updates Canvas' native DocViewer annotation state. The official Canvas DocViewer workflow remains required for those special assignments unless a supported annotation-payload API is established and verified.
 
 ## Canvas file retrieval and bridge
 
