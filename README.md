@@ -133,7 +133,7 @@ All assignment and quiz writes remain explicit, confirmed and sent through the p
 
 ### Phase 4.4.1 deployment checklist
 
-1. Merge the .4.4.1 release to main and confirm GitHub Pages has deployed it.
+1. Version .4.4.1 is merged to main. The GitHub Pages production build and deployment completed successfully.
 2. Redeploy the updated canvas-bridge/worker.js in Cloudflare, preserving the existing exact CANVAS_ORIGIN and ALLOWED_ORIGIN values. The updated Worker adds assignment-detail reads, secure file metadata/download handling and the existing quiz, file-submission and discussion routes.
 3. Open NORTHSTAR and connect Canvas using the private bridge.
 4. Open a low-risk assignment and verify its instructions and attached PDF appear inside the full-screen NORTHSTAR assignment page.
