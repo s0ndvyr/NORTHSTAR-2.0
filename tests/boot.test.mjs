@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-room.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -51,7 +51,15 @@ assert.ok(window.CanvasDebug, 'CanvasDebug module loaded');
 assert.ok(window.NorthstarCanvasSync, 'NorthstarCanvasSync module loaded');
 assert.ok(window.NorthstarStudentVue, 'NorthstarStudentVue grade import module loaded');
 assert.ok(window.NorthstarWorkspace, 'Canvas assignment and quiz workspace module loaded');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4', 'runtime release identifier matches Phase 4');
+assert.ok(window.NorthstarAssignmentRoom, 'full-page assignment room and PDF studio module loaded');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('pen'), true, 'Apple Pencil pointer is recognized');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('touch'), false, 'finger touch is not accepted as Pencil ink');
+assert.equal(window.NorthstarAssignmentRoom.isPenPointer('mouse'), false, 'mouse is not accepted as Pencil ink');
+const sanitizedBrief=window.NorthstarAssignmentRoom.sanitizeHtml('<p onclick="alert(1)">Instructions<script>alert(1)</script><a href="javascript:alert(2)">safe-looking link</a></p>','https://school.instructure.com');
+assert.equal(sanitizedBrief.textContent,'Instructionssafe-looking link','Canvas instructions are retained while scripts are removed');
+assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas event handlers are removed from instruction markup');
+assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.1', 'runtime release identifier matches Phase 4.4.1');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
@@ -132,8 +140,11 @@ assert.ok(window.document.getElementById('courseGrid').textContent.includes('Stu
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('StudentVUE grade history'),'historical StudentVUE records appear in course detail');
 
-window.openWorkspace('canvas_11_1');
+await await window.openWorkspace('canvas_11_1');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submitted'), 'submitted but ungraded work is distinguished from incomplete work');
+assert.ok(window.document.body.classList.contains('assignment-room-open'),'opening an assignment transitions into a full-screen in-app route');
+assert.ok(window.document.getElementById('nsAssignmentBrief'),'assignment instructions render in the native page');
+assert.ok(window.document.getElementById('nsRoomBack'),'the page provides in-app dashboard navigation');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
 window.renderLedger();
 const activeLedger = window.document.getElementById('ledgerList').textContent;
@@ -149,7 +160,7 @@ window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 
-window.openWorkspace('canvas_12_1');
+await window.openWorkspace('canvas_12_1');
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('Start quiz in NORTHSTAR'),'classic Canvas quiz opens its own workspace page');
 window.confirm=()=>true;
@@ -167,7 +178,7 @@ await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz submitted'),'workspace reports completion after Canvas confirms it');
 
-window.openWorkspace('canvas_11_1');
+await window.openWorkspace('canvas_11_1');
 window.document.getElementById('phase4HideAssignment').click();
 assert.ok(JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'hide preference persists locally');
 window.document.getElementById('fVisibility').value='hidden';
@@ -180,7 +191,7 @@ window.document.getElementById('phase4HideAssignment').click();
 assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'restore removes the local hide preference');
 
 
-window.openWorkspace('canvas_10_1');
+await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;
 window.fetch=async(url,opts)=>{writes++;return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};};
@@ -199,9 +210,11 @@ assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.can
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
 assert.ok(savedSnapshot && savedSnapshot.assignments.length===3,'successful sync is saved as an offline snapshot');
 await window.disconnectCanvas();
+window.closeAssignmentRoom();
 assert.ok(window.__testVault.has('canvas-snapshot'),'disconnect preserves the last successful coursework snapshot');
 assert.equal(window.__testVault.has('canvas-credentials'),false,'disconnect removes the saved credential');
 assert.ok(window.document.getElementById('canvasStatus').textContent.includes('remains available offline'),'disconnect explains that coursework remains available offline');
+assert.ok(window.NorthstarAssignmentRoom.routeId()===null,'leaving the assignment page clears the deep-link route');
 assert.equal(errors.length,0,errors.join(' | '));
 console.log('PASS: mocked live sync and app boots clean, grades compute, periods manage, AI key uses the device vault, external assignment links open outside the dashboard');
 process.exit(0);

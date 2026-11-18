@@ -47,4 +47,20 @@ const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentI
 assert.equal(uploaded.id,55);
 assert.equal(uploadCalls.length,3,'current-user lookup, upload initialization and signed file upload are all required');
 
+
+const pdfFetchCalls=[];
+const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImpl:async(url,opts)=>{
+  pdfFetchCalls.push({url,opts});
+  const path=new URL(url).searchParams.get('path');
+  if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf'})};
+  if(path==='/api/v1/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer};
+  throw Error('Unexpected PDF endpoint '+path);
+}});
+assert.equal(pdf.name,'worksheet.pdf');
+assert.equal(pdf.contentType,'application/pdf');
+assert.equal(pdf.size,4);
+assert.deepEqual([...pdf.bytes],[37,80,68,70]);
+assert.equal(pdfFetchCalls.length,2,'PDF metadata and secure binary download are both requested');
+assert(pdfFetchCalls.every(x=>x.opts.headers.Authorization==='Bearer secret-token'),'Canvas authorization is kept on the private bridge requests');
+
 console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');

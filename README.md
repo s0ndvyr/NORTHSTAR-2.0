@@ -93,36 +93,53 @@ For DOM boot + mocked live sync, run `npm install` once and then `node tests/boo
 - The displayed app release is NORTHSTAR / .4.3; package version is 0.4.3.
 
 
-## NORTHSTAR / .4.4 — Phase 4 Assignment Workspace
+## NORTHSTAR / .4.4.1 — Native Assignment Experience
 
-Phase 4 adds native work-completion flows for Canvas assignment types where Canvas exposes a supported student API. Canvas remains the source of truth; NORTHSTAR reports a submission only after receiving a valid Canvas confirmation.
+Phase 4.4.1 changes the interaction model: supported assignments open as full-screen NORTHSTAR pages with an in-app work environment. Canvas remains the authoritative backend for course instructions, files, attempt state, submissions, due dates and grades. Ordinary assignment work no longer needs to open a Canvas page in another tab.
 
-### Supported inside NORTHSTAR
+### Assignment page
 
-- **Writing / online text entry:** write in the assignment workspace, keep a local draft, review the exact content, then submit or resubmit to Canvas. HTML is escaped and sent as plain text formatting.
-- **Website / online URL:** enter and review an HTTP(S) URL, then submit or resubmit to Canvas.
-- **File upload:** choose a file up to 25 MB. NORTHSTAR asks Canvas for a signed upload destination, uploads the file directly to that HTTPS destination without forwarding the Canvas token, then submits the resulting Canvas file ID.
-- **Classic Canvas quizzes:** load the quiz brief, explicitly start an official attempt, retrieve available questions, save supported answers to Canvas, and explicitly complete the attempt. Canvas controls timing, access, attempt limits and grading. NORTHSTAR falls back to Canvas if a question format or quiz capability is unsupported.
-- **Graded discussions:** read available topic/thread content, publish an initial post, and reply to visible entries through the Canvas discussion API.
-- **Hide / restore assignments:** hide an assignment from NORTHSTAR's active dashboard, priority and course views; restore it through the Ledger's Hidden / All visibility filters. This is a local preference only and never changes or deletes the Canvas assignment.
+- Opening a standard assignment creates a deep-link route inside NORTHSTAR (#assignment/assignment-id), with a full-screen loading transition, a themed assignment header, instructions, resource list, private working area, assignment details, and submission controls.
+- Canvas assignment descriptions are rendered through a restrictive HTML allowlist. Script tags, embedded forms, executable content, inline event handlers and unsafe links are removed.
+- PDF attachments are fetched through the private Canvas bridge and displayed in NORTHSTAR's Document Studio. The browser remains on the NORTHSTAR assignment route.
+- Quiz attempts and graded discussions use the same full-screen assignment shell. Supported quiz questions, saving, and completion use the existing Canvas quiz APIs; discussion posts and replies use the Canvas discussion API.
+- Back navigation and browser history return to the previous NORTHSTAR view. The assignment page is not an iframe of Canvas.
 
-### Important integration boundaries
+### PDF Document Studio
 
-- **New Quizzes, external LTI tools, Google Docs, media recordings, annotations, paper/offline work, and other provider-specific assignment types** remain in their official Canvas/provider workflow unless Canvas exposes a documented and supported student API for that exact workflow. NORTHSTAR opens the official assignment link rather than pretending to complete it.
-- Some classic quiz question types, hidden answer choices, and school-specific quiz restrictions are not supported. Continue the same attempt in Canvas if NORTHSTAR identifies an unsupported question. Do not start a second attempt just because question retrieval failed.
-- File uploads require the private Cloudflare bridge and the Canvas signed-upload flow. The bearer token is sent only to the configured Canvas host through the bridge; it is never sent to the signed upload destination.
-- All writes require the private HTTPS bridge. Direct-mode writes are disabled. Writes are user initiated, confirmed, and never automatically retried. If a request fails after sending, check Canvas before attempting again because the outcome may be unknown.
-- Hiding is not deleting, and a local draft is not a Canvas submission. Resubmission is subject to Canvas availability, due dates, and attempt limits.
+The first PDF toolset includes:
 
-### Phase 4 deployment checklist
+- PDF page rendering, page navigation and zoom.
+- Apple Pencil-only freehand ink, highlighting, straight lines, arrows, rectangles and ellipses. The browser's Pointer Events pointerType is checked so touch and mouse are not accepted as Pencil ink.
+- Typed text notes placed at a chosen point on the page.
+- Pencil eraser, undo and redo.
+- Per-assignment / per-document local annotation persistence.
+- Export a flattened annotated PDF. If the Canvas assignment accepts an online_upload, the exported PDF can be selected as the file to submit through Canvas' supported signed-upload flow.
 
-1. Update the GitHub Pages files from the Phase 4 branch after it is merged to `main`.
-2. Redeploy `canvas-bridge/worker.js` in Cloudflare with the existing `CANVAS_ORIGIN` and `ALLOWED_ORIGIN` values. The Phase 4 Worker includes new routes for current-user lookup, signed file-upload initialization, classic quizzes, and discussions.
-3. Open NORTHSTAR, connect Canvas through the private bridge, and run Sync.
-4. Test first with a low-risk text-entry or URL assignment. Verify the attempt in Canvas before testing resubmission.
-5. Test file upload with a small non-sensitive file.
-6. Test a quiz only when you are comfortable starting an official attempt; starting may consume an attempt or start its timer.
-7. Test a discussion post only when you intend to publish it to the real course.
-8. Confirm Hide / Restore only affects NORTHSTAR's local views.
+Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. For a Canvas assignment whose submission type is specifically student_annotation, NORTHSTAR does not claim that a flattened PDF export has updated Canvas' native DocViewer annotation state. That provider-specific submission still requires the official Canvas DocViewer workflow until a documented student submission API is available for it.
 
-The Phase 4 automated suite uses Canvas-shaped fixtures and mocked writes. It does not prove the school's live Canvas account permits each endpoint. Live acceptance testing must be performed by the student in their own account.
+The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations.
+
+### Supported paths and provider boundaries
+
+- Online text entry / online URL: work in the NORTHSTAR assignment page, review, submit or resubmit to Canvas.
+- Online file upload: upload a file up to 25 MB through Canvas' signed upload flow. The Canvas bearer token is never sent to the signed file storage URL.
+- Classic quizzes: start an official Canvas attempt, answer supported question types in NORTHSTAR, save answers and complete the attempt. Canvas controls time, availability and grading.
+- Graded discussions: read visible threads and publish initial posts or replies in NORTHSTAR.
+- PDF attachments: read, annotate with Apple Pencil tools, export a flattened copy, and submit it where online_upload is permitted.
+- New Quizzes, unsupported question types, special DocViewer student_annotation submissions, external LTI tools, Google Docs workflows, media recordings, student annotation providers and other provider-specific workflows: NORTHSTAR does not fake completion or claim provider state was saved. A supported in-app API is required for true native completion.
+
+All assignment and quiz writes remain explicit, confirmed and sent through the private HTTPS bridge. NORTHSTAR never auto-retries a write after an ambiguous network failure; check Canvas before retrying. The bridge must be redeployed separately when canvas-bridge/worker.js changes.
+
+### Phase 4.4.1 deployment checklist
+
+1. Merge the .4.4.1 release to main and confirm GitHub Pages has deployed it.
+2. Redeploy the updated canvas-bridge/worker.js in Cloudflare, preserving the existing exact CANVAS_ORIGIN and ALLOWED_ORIGIN values. The updated Worker adds assignment-detail reads, secure file metadata/download handling and the existing quiz, file-submission and discussion routes.
+3. Open NORTHSTAR and connect Canvas using the private bridge.
+4. Open a low-risk assignment and verify its instructions and attached PDF appear inside the full-screen NORTHSTAR assignment page.
+5. Use a non-sensitive practice PDF to test Pencil-only drawing, text placement, erasing, undo/redo and PDF export on iPad Safari.
+6. Test a file upload only on an assignment that explicitly permits it. Verify the attempt and attachment in Canvas.
+7. Use an ungraded practice classic quiz to verify start, save, resume and completion.
+8. Verify unsupported assignment types show an honest provider limitation rather than a simulated submission.
+
+Automated tests use Canvas-shaped fixtures and mocked binary-file downloads. They verify the app route, markup sanitization, bridge allowlists, and PDF transport wiring; they do not replace live testing with the student's own Canvas account and Apple Pencil.
