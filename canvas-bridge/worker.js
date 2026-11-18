@@ -1,7 +1,7 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Vary':'Origin', 'Cache-Control':'no-store'};
+const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges', 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const keysOnly=(o,keys)=>isObject(o)&&Object.keys(o).every(k=>keys.includes(k));
@@ -18,6 +18,9 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/discussion_topics(?:\?(?:[^#]*))?$/.test(path) || /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+(?:\/entries)?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses(?:\?[^#]*)?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/v1\/courses\/\d+\/assignments\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/v1\/courses\/\d+\/files\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/v1\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/(?:assignments|assignment_groups|quizzes)(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission|submissions\/\d+\/time))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
@@ -63,6 +66,32 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
+async function downloadCanvasFile(fileId,authorization,userAgent){
+  const apiUrl=CANVAS_ORIGIN+'/api/v1/files/'+fileId;
+  const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
+  if(!metaResponse.ok)return new Response(metaResponse.body,{status:metaResponse.status,headers:{...cors,'Content-Type':metaResponse.headers.get('Content-Type')||'application/json'}});
+  let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
+  const raw=metadata.url||metadata.download_url;
+  if(typeof raw!=='string'||!raw)return reply('Canvas did not provide a file download URL',404);
+  let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return reply('Canvas returned an invalid file URL',502);}
+  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file URL did not pass the secure download check',502);
+  for(let hop=0;hop<6;hop++){
+    const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
+    // Forward the Canvas token only when the request is still on the exact configured Canvas origin.
+    if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
+    const response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});
+    if(response.status>=300&&response.status<400){
+      const location=response.headers.get('Location');if(!location)return reply('Canvas file redirect did not include a destination',502);
+      try{current=new URL(location,current);}catch{return reply('Canvas file redirect destination was invalid',502);}
+      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file redirect failed the secure download check',502);
+      continue;
+    }
+    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'};
+    for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
+    return new Response(response.body,{status:response.status,headers:responseHeaders});
+  }
+  return reply('Canvas file redirected too many times',502);
+}
 export default {
   async fetch(request) {
     if(request.headers.get('Origin') !== ALLOWED_ORIGIN) return new Response('Origin not allowed',{status:403});
@@ -75,6 +104,10 @@ export default {
     if(url.origin!==CANVAS_ORIGIN||url.searchParams.has('access_token')||url.hash)return reply('Path not allowed',403);
     if(request.method==='POST'&&url.search)return reply('Query parameters are not allowed on writes',403);
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
+    if(request.method==='GET'){
+      const fileMatch=url.pathname.match(/^\/api\/v1\/files\/(\d+)\/download$/);
+      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
+    }
     let body;
     if(request.method==='POST'){
       if(!isWritePath(url.pathname))return reply('Write path not allowed',405);
