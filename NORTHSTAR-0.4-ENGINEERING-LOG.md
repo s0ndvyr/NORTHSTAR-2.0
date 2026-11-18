@@ -130,7 +130,7 @@ Official NNPS support contact: Technology Service Center, `tsc@nn.k12.va.us`, (7
 
 # Phase 4 — Assignment Workspace (.4.4)
 
-**Status: implementation in progress.** Development is isolated on `northstar-0.4.4-phase-4-assignment-workspace`. Do not merge or deploy to the production Pages branch until the acceptance gates below pass.
+**Status: merged to `main`; awaiting live iPad/Canvas acceptance.** PR #5 merged as `4a8d10d15c4f23321e93ee56c3b0daf816d5b096`. The production GitHub Pages build/deploy and Cloudflare Workers build checks completed successfully. The personal Canvas bridge Worker still requires the user to publish the updated `canvas-bridge/worker.js` in their Cloudflare dashboard, as documented in the README.
 
 ## Product objective
 
@@ -141,7 +141,7 @@ NORTHSTAR becomes an academic work environment as well as an organizer. Canvas r
 - Visible version identity updated to `NORTHSTAR / .4.4`; package version is `0.4.4`.
 - New `scripts/workspace.js` provides bridge-only Canvas write transport, official quiz attempt start, question retrieval, answer saving, quiz completion, and signed file-upload flow.
 - Quiz assignments are matched to Canvas quiz IDs using the course quizzes endpoint. Quiz attempts start only after an explicit confirmation; Canvas validation token and attempt number are retained for answer updates and completion.
-- Native quiz workspace currently renders multiple-choice, true/false, multiple-answer, essay, short-answer, text-only and numerical/calculated questions. It displays an approximate countdown based on Canvas' returned start time, time limit and extra time; Canvas remains authoritative for timeout. Unsupported question types or hidden answer choices are not submitted by NORTHSTAR; the student is directed to continue the same attempt in Canvas.
+- Native quiz workspace currently renders multiple-choice, true/false, multiple-answer, essay, short-answer, text-only and numerical/calculated questions. It reads the official Canvas quiz time-left endpoint and resynchronizes the visible countdown every 30 seconds; Canvas remains authoritative for timeout. Unsupported question types or hidden answer choices are not submitted by NORTHSTAR; the student is directed to continue the same attempt in Canvas.
 - Quiz completion requires a second explicit confirmation. If the quiz attempt starts but questions cannot be retrieved, NORTHSTAR preserves the returned attempt metadata and tells the student to continue in Canvas rather than starting another attempt.
 - Text-entry and URL assignment submissions remain supported. Resubmissions use Canvas' official submission endpoint and preserve earlier attempts.
 - Online file submissions first read `/api/v1/users/self` to obtain the authenticated student's Canvas user ID, then use Canvas' documented `/courses/:course/assignments/:assignment/submissions/:user_id/files` signed upload initialization endpoint. The file is sent to the returned HTTPS destination without forwarding the Canvas bearer token, then its returned Canvas file ID is submitted. The bridge validates file metadata and limits the upload to 25 MB.
@@ -177,7 +177,7 @@ Canvas' public API supports quiz attempt creation, answer updates, and completio
 
 ## Phase 4 verification status
 
-Automated CI is green on the .4.4 branch: JavaScript syntax checks, eight unit suites (including Canvas bridge allowlists, quiz lifecycle and signed-upload transport), and jsdom browser boot all passed. This verifies mocks and application startup, not the student's live Canvas account. Real Canvas quiz, file, discussion and resubmission tests remain user acceptance gates.
+Automated CI is green on the merged .4.4 release: JavaScript syntax checks, eight unit suites (including Canvas bridge allowlists, quiz lifecycle, signed-upload transport and assignment hide/restore), and jsdom browser boot all passed. GitHub Pages production build/deploy and the Cloudflare Workers build checks also completed successfully. Automated tests use mocks and do not verify the student's live Canvas account. Real Canvas quiz, file, discussion and resubmission tests remain user acceptance gates.
 
 - [x] Confirm GitHub Actions syntax, eight unit suites, and jsdom browser boot checks pass on the .4.4 development branch (run #44236628866).
 - [ ] Verify browser boot and responsive workspace behavior on iPad Safari.
@@ -189,7 +189,9 @@ Automated CI is green on the .4.4 branch: JavaScript syntax checks, eight unit s
 - [ ] Verify hide/restore persists after refresh and does not mutate Canvas data.
 - [ ] Redeploy the updated `canvas-bridge/worker.js` to Cloudflare and verify the configured Canvas origin and NORTHSTAR origin before enabling writes. This deployment is separate from GitHub Pages and is not automatic.
 - [ ] Review all write paths and file upload behavior for ambiguous network outcomes.
-- [ ] Create release PR, merge .4.4 to `main`, then verify GitHub Pages and Cloudflare bridge deployment separately.
+- [x] Create release PR #5 and merge .4.4 to `main`.
+- [x] Verify GitHub Pages production build/deploy and Cloudflare Workers build checks completed successfully.
+- [ ] Publish the updated personal Canvas bridge Worker from `canvas-bridge/worker.js` in the Cloudflare dashboard; this is a separate Worker deployment and must be verified before live Canvas writes.
 
 ## Next engineering work
 
