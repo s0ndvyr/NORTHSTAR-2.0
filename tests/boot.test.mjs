@@ -184,6 +184,7 @@ window.document.querySelector('[data-quiz-flag="9"]').click();
 assert.equal(window.document.querySelector('[data-quiz-flag="9"]').getAttribute('aria-pressed'),'true','question can be flagged for review');
 quizChoice.checked=true;
 quizChoice.dispatchEvent(new window.Event('change',{bubbles:true}));
+assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('1 of 1'),'answered quiz question updates progress immediately');
 window.document.getElementById('phase4SaveQuiz').click();
 await new Promise(r=>setTimeout(r,20));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'),'quiz answers are saved to Canvas');
@@ -195,7 +196,7 @@ window.document.getElementById('phase4SaveQuiz').click();
 await new Promise(r=>setTimeout(r,20));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/quiz_submissions/77/questions'&&x.method==='POST'&&x.body.quiz_questions.some(q=>q.id==='9'&&q.answer===null)),'clearing a previously answered question is saved as unanswered');
 
-assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('1 of 1'),'answered quiz question updates progress');
+assert.ok(window.document.getElementById('phase4QuizProgressText').textContent.includes('0 of 1'),'clearing the response returns quiz progress to unanswered');
 window.document.getElementById('phase4CompleteQuiz').click();
 await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
