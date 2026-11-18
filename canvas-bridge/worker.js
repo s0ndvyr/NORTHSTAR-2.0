@@ -63,6 +63,7 @@ export default {
     const rawPath=new URL(request.url).searchParams.get('path')||'';
     let url;try{url=new URL(rawPath,CANVAS_ORIGIN);}catch{return reply('Invalid path',400);}
     if(url.origin!==CANVAS_ORIGIN||url.searchParams.has('access_token')||url.hash)return reply('Path not allowed',403);
+    if(request.method==='POST'&&url.search)return reply('Query parameters are not allowed on writes',403);
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     let body;
     if(request.method==='POST'){
