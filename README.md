@@ -143,16 +143,3 @@ All assignment and quiz writes remain explicit, confirmed and sent through the p
 8. Verify unsupported assignment types show an honest provider limitation rather than a simulated submission.
 
 Automated tests use Canvas-shaped fixtures and mocked binary-file downloads. They verify the app route, markup sanitization, bridge allowlists, and PDF transport wiring; they do not replace live testing with the student's own Canvas account and Apple Pencil.
-
-### Phase 4 deployment checklist
-
-1. Update the GitHub Pages files from the Phase 4 branch after it is merged to `main`.
-2. Redeploy `canvas-bridge/worker.js` in Cloudflare with the existing `CANVAS_ORIGIN` and `ALLOWED_ORIGIN` values. The Phase 4 Worker includes new routes for current-user lookup, signed file-upload initialization, classic quizzes, and discussions.
-3. Open NORTHSTAR, connect Canvas through the private bridge, and run Sync.
-4. Test first with a low-risk text-entry or URL assignment. Verify the attempt in Canvas before testing resubmission.
-5. Test file upload with a small non-sensitive file.
-6. Test a quiz only when you are comfortable starting an official attempt; starting may consume an attempt or start its timer.
-7. Test a discussion post only when you intend to publish it to the real course.
-8. Confirm Hide / Restore only affects NORTHSTAR's local views.
-
-The Phase 4 automated suite uses Canvas-shaped fixtures and mocked writes. It does not prove the school's live Canvas account permits each endpoint. Live acceptance testing must be performed by the student in their own account.
