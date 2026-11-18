@@ -509,6 +509,7 @@ async function phase4SendDiscussionMessage(a,topicId,replyTo){
   catch(error){if(status)status.textContent=error.message;if(button)button.disabled=false;}
 }
 
+function phase441StatusLabel(a){const current=statusOf(a);return current==='Awaiting Grading'?'Submitted · Awaiting grading':current;}
 function phase441ShowTab(tab){
   document.querySelectorAll('[data-ns-room-tab]').forEach(b=>b.classList.toggle('is-active',b.dataset.nsRoomTab===tab));
   document.querySelectorAll('.ns-room-panel[data-ns-room-panel]').forEach(p=>p.hidden=p.dataset.nsRoomPanel!==tab);
@@ -518,7 +519,7 @@ function phase441RenderRoom(a,c,details,files){
   const hidden=phase4IsHidden(a);
   $('#workspace').innerHTML='<div class="ns-assignment-page">'+
     '<header class="ns-room-header"><button class="ns-room-back" id="nsRoomBack" type="button"><span>←</span> Back to dashboard</button>'+
-    '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(a.type)+(period?' · '+esc(period.name):'')+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+a.points+' points</span><span>·</span><span id="nsRoomStatusText">'+esc(statusOf(a))+'</span></div></div>'+
+    '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(a.type)+(period?' · '+esc(period.name):'')+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+a.points+' points</span><span>·</span><span id="nsRoomStatusText">'+esc(phase441StatusLabel(a))+'</span></div></div>'+
     '<div class="ns-room-actions"><span class="ns-room-status">'+(mode==='live'?'Canvas connected':'Example workspace')+'</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(hidden?'Restore':'Hide')+'</button></div></header>'+
     '<div class="ns-room-layout"><section class="ns-room-main">'+
     '<div class="ns-room-card ns-room-document"><div class="ns-room-card-head"><div><span class="eyebrow">DOCUMENT STUDIO</span><h2>Assignment workspace</h2><p>Read, annotate and prepare your work without leaving NORTHSTAR.</p></div><span class="badge">NATIVE WORKSPACE</span></div>'+
