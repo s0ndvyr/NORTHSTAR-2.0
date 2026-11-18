@@ -20,18 +20,24 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
 }
-function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
+function isWritePath(path){return /^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions\\/self\\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
 function validateWrite(path,data){
   if(!isObject(data))return 'JSON object required';
   const assignment=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/;
   const quizStart=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/;
   const quizAnswers=/^\/api\/v1\/quiz_submissions\/\d+\/questions$/;
   const quizComplete=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/;
+  const uploadInit=/^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions\\/self\\/files$/;
+  if(uploadInit.test(path)){
+    if(!keysOnly(data,['name','size','content_type'])||typeof data.name!=='string'||!data.name.trim()||data.name.length>255||!Number.isSafeInteger(data.size)||data.size<1||data.size>25000000||(data.content_type!==undefined&&typeof data.content_type!=='string'))return 'Invalid upload initialization request';
+    return null;
+  }
   if(assignment.test(path)){
     const sub=data.submission;
     if(!keysOnly(data,['submission'])||!isObject(sub))return 'Invalid submission';
     const type=sub.submission_type,field=type==='online_text_entry'?'body':type==='online_url'?'url':null;
-    if(!field||!keysOnly(sub,['submission_type',field])||typeof sub[field]!=='string'||!sub[field].trim())return 'Only nonempty text or URL submissions are supported by this bridge';
+    if(type==='online_upload'){if(!keysOnly(sub,['submission_type','file_ids'])||!Array.isArray(sub.file_ids)||!sub.file_ids.length||sub.file_ids.length>10||!sub.file_ids.every(x=>Number.isSafeInteger(x)&&x>0))return 'Invalid uploaded file submission';return null;}
+    if(!field||!keysOnly(sub,['submission_type',field])||typeof sub[field]!=='string'||!sub[field].trim())return 'Unsupported assignment submission payload';
     if(field==='body'&&sub.body.length>16000)return 'Text submission exceeds Canvas 16 KB limit';
     if(field==='url'){try{if(!['https:','http:'].includes(new URL(sub.url).protocol))throw Error();}catch{return 'Invalid submission URL';}}
     return null;
