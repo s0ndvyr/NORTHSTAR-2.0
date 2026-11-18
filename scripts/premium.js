@@ -478,6 +478,7 @@ async function openCanvasDiscussion(a){
   activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),topicId=a.discussionTopicId||a.canvasId;
   $('#workspace').innerHTML='<div class="ws-head"><div><span class="eyebrow">'+safe(c.code)+' / CANVAS DISCUSSION</span><h2>'+safe(a.title)+'</h2><p class="small muted mt">Loading discussion…</p></div><button class="ws-close" onclick="closeOverlay(\'wsOverlay\')">✕</button></div><div class="ws-body"></div>';
   $('#wsOverlay').classList.add('open');
+  const assignmentLink=$('#workspace button[onclick^="openInDashboard"]');if(assignmentLink){const previewButton=document.createElement('button');previewButton.className='btn btn-ghost';previewButton.textContent='Try preview here';previewButton.onclick=()=>previewResourceInDashboard(a.canvasUrl,a.title);assignmentLink.insertAdjacentElement('afterend',previewButton);}
   const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
   if(!creds?.proxy){$('#workspace .ws-body').innerHTML='<div class="card"><p class="small muted">Connect through your private Canvas bridge to post a discussion response.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';return;}
   try{
@@ -767,6 +768,19 @@ async function testAiKey(){
   try{ await aiAsk('Reply with exactly: ok'); if(st) st.textContent='✓ Key works — Gemini is connected.'; toast('Gemini connected'); }
   catch(e){ if(st) st.textContent='✗ '+e.message; }
 }
+
+function previewResourceInDashboard(url,title){
+  let target;try{target=new URL(url);}catch{toast('This resource does not have a valid link.');return;}
+  if(target.protocol!=='https:'){toast('Only secure HTTPS resources can be previewed.');return;}
+  const frame=$('#viewerFrame'),overlay=$('#viewerOverlay'),heading=$('#viewerOverlay .ws-head h2'),note=$('#viewerNote');
+  if(!frame||!overlay)return;
+  if(heading)heading.textContent=title||'Assignment resource';
+  if(note)note.textContent='Preview attempt. Canvas and external learning tools may block embedding; if the page is blank, use Open externally.';
+  let link=$('#viewerExternalLink');
+  if(!link){link=document.createElement('a');link.id='viewerExternalLink';link.className='btn btn-ghost btn-sm';link.target='_blank';link.rel='noopener noreferrer';$('#viewerOverlay .ws-head').insertBefore(link,$('#viewerOverlay .ws-head .ws-close'));}
+  link.href=target.href;link.textContent='Open externally ↗';
+  frame.src=target.href;overlay.classList.add('open');
+}
 function openInDashboard(url){
   let target;try{target=new URL(url);}catch{toast('This assignment does not have a valid external link.');return;}
   if(target.protocol!=='https:'){toast('Only secure HTTPS assignment links can be opened.');return;}
@@ -783,6 +797,7 @@ window.saveAiSettings = saveAiSettings;
 window.testAiKey = testAiKey;
 window.askAiAboutAssignment = askAiAboutAssignment;
 window.openInDashboard = openInDashboard;
+window.previewResourceInDashboard = previewResourceInDashboard;
 window.closeViewer = closeViewer;
 
 syncCanvas = async function(options={}){
