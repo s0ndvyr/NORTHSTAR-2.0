@@ -303,7 +303,7 @@ function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
     const sub=CANVAS_SYNC.submission(a.submission), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], canvasUrl:href, assignmentPublished:a.published!==false,lockedForUser:!!a.locked_for_user,unlockAt:a.unlock_at||null,lockAt:a.lock_at||null};
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], allowedExtensions:a.allowed_extensions||[], annotatableAttachmentId:a.annotatable_attachment_id||null, canvasUrl:href, assignmentPublished:a.published!==false,lockedForUser:!!a.locked_for_user,unlockAt:a.unlock_at||null,lockAt:a.lock_at||null};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
@@ -502,15 +502,80 @@ async function phase4SendDiscussionMessage(a,topicId,replyTo){
   catch(error){if(status)status.textContent=error.message;if(button)button.disabled=false;}
 }
 
-openWorkspace = function(id){
-  const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;if(mode==='live'&&a.type==='Quiz'){openCanvasQuiz(a);return;}if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
+function phase441ShowTab(tab){
+  document.querySelectorAll('[data-ns-room-tab]').forEach(b=>b.classList.toggle('is-active',b.dataset.nsRoomTab===tab));
+  document.querySelectorAll('.ns-room-panel[data-ns-room-panel]').forEach(p=>p.hidden=p.dataset.nsRoomPanel!==tab);
+}
+function phase441RenderRoom(a,c,details,files){
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
-  $('#workspace').innerHTML=`<div class="ws-head"><div><span class="eyebrow">${c.code} / ${a.type}${period?' · '+esc(period.name):''}</span><h2>${esc(a.title)}</h2><p class="small muted mt">${a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)} · ${a.points} points · ${statusOf(a)}${a.score!=null?' · scored '+a.score+'/'+a.points:''}</p></div><button class="ws-close" aria-label="Close" onclick="closeOverlay('wsOverlay')">✕</button></div><div class="ws-body"><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Your workspace</h3><p>Private draft saved in this browser</p></div></div><textarea class="editor" id="assignmentDraft" placeholder="Plan your work, collect notes, or write a first draft…"></textarea><p id="draftStatus" class="small muted mt">Saved locally, not submitted.</p></div><div class="card mt"><div class="card-head"><div><h3>✧ AI study tools</h3><p>Gemini explains and quizzes — it never does the work for you</p></div><span class="badge badge-violet">AI</span></div><div class="flex" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('explain')">Explain brief</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('summarize')">Summarize</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('practice')">Practice questions</button><button class="btn btn-ghost btn-sm" onclick="askAiAboutAssignment('feedback')">Feedback on my draft</button></div><div id="aiOut" class="mt"><p class="small muted">Add a free Gemini key in Settings to enable these.</p></div></div></div><div><div class="card"><span class="eyebrow">THE BRIEF</span><p class="small mt" style="line-height:1.75">${esc(a.desc)}</p><div class="divider"></div>${a.canvasUrl?`<div class="flex" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="openInDashboard('${a.canvasUrl}')">Open assignment ↗</button><a class="btn btn-ghost" href="${a.canvasUrl}" target="_blank" rel="noopener noreferrer">Open in Canvas ↗</a></div>`:'<p class="small muted">This is sample coursework. Connect Canvas to see your assignments.</p>'}<p class="small muted mt">Text and URL submissions are available below through your private bridge. Other submission types must be completed in Canvas.</p></div></div></div></div>`;
-  const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
-  $('#workspace .ws-body').insertAdjacentHTML('beforeend', submissionPanel(a));
-  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;$('#submissionUrlWrap').hidden=t!=='online_url';$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
-  const input=$('#assignmentDraft');input.value=localStorage.getItem(key)||'';input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};$('#wsOverlay').classList.add('open');
-};
+  const hidden=phase4IsHidden(a);
+  $('#workspace').innerHTML='<div class="ns-assignment-page">'+
+    '<header class="ns-room-header"><button class="ns-room-back" id="nsRoomBack" type="button"><span>←</span> Back to dashboard</button>'+
+    '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(a.type)+(period?' · '+esc(period.name):'')+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+a.points+' points</span><span>·</span><span id="nsRoomStatusText">'+esc(statusOf(a))+'</span></div></div>'+
+    '<div class="ns-room-actions"><span class="ns-room-status">'+(mode==='live'?'Canvas connected':'Example workspace')+'</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(hidden?'Restore':'Hide')+'</button></div></header>'+
+    '<div class="ns-room-layout"><section class="ns-room-main">'+
+    '<div class="ns-room-card ns-room-document"><div class="ns-room-card-head"><div><span class="eyebrow">DOCUMENT STUDIO</span><h2>Assignment workspace</h2><p>Read, annotate and prepare your work without leaving NORTHSTAR.</p></div><span class="badge">NATIVE WORKSPACE</span></div>'+
+    '<div class="ns-room-files" id="nsAssignmentFiles"><span class="small muted">Checking assignment resources…</span></div>'+
+    '<div class="ns-room-document-body" id="nsDocumentStage"><div class="ns-room-empty"><div class="ns-room-empty-inner"><div class="ns-room-empty-mark">✦</div><h2>Your workspace is ready</h2><p>Assignment resources will appear here. Write your response in Your Work, or open an attached PDF to read and annotate it.</p></div></div></div>'+
+    '<div class="ns-room-resource-note"><strong>Apple Pencil tools:</strong> Pencil, highlighter and eraser strokes accept pen input only. Finger touch is reserved for scrolling and page navigation.</div></div>'+
+    '<div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">ASSIGNMENT BRIEF</span><h3>Instructions &amp; requirements</h3></div><span class="tiny muted">'+(details?'Loaded from Canvas':'Local assignment details')+'</span></div><div class="ns-room-brief" id="nsAssignmentBrief"><p class="small muted">Loading instructions…</p></div></div>'+
+    '</section><aside class="ns-room-sidebar"><div class="ns-room-card"><div class="ns-room-tabs" role="tablist" aria-label="Assignment workspace panels">'+
+    '<button type="button" data-ns-room-tab="work" class="is-active">Your Work</button><button type="button" data-ns-room-tab="details">Details</button><button type="button" data-ns-room-tab="submit">Submit</button></div>'+
+    '<section class="ns-room-panel" data-ns-room-panel="work"><span class="eyebrow">PRIVATE WORKSPACE</span><h3 style="font:500 22px var(--serif);margin:8px 0 5px">Your draft</h3><p class="ns-room-help" style="margin:0 0 12px">Your writing saves automatically on this device. It is not submitted until you review and send it.</p><label for="assignmentDraft">Response, notes or working draft</label><textarea id="assignmentDraft" placeholder="Start working on your assignment…"></textarea><p id="draftStatus" class="ns-room-help">Saved locally, not submitted.</p><div class="ns-room-divider"></div><span class="eyebrow">STUDY ASSISTANCE</span><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'explain\')">Explain</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'summarize\')">Summarize</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'practice\')">Practice</button><button class="btn btn-ghost btn-sm" type="button" onclick="askAiAboutAssignment(\'feedback\')">Draft feedback</button></div><div id="aiOut" class="mt"><p class="small muted">Add a Gemini key in Settings to enable AI study tools.</p></div></section>'+
+    '<section class="ns-room-panel" data-ns-room-panel="details" hidden><span class="eyebrow">COURSEWORK DETAILS</span><h3 style="font:500 22px var(--serif);margin:8px 0 14px">Assignment details</h3><label>Course</label><p class="small">'+esc(c.name)+'</p><label style="margin-top:15px">Due date</label><p class="small">'+(a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due))+'</p><label style="margin-top:15px">Points possible</label><p class="small">'+a.points+'</p><label style="margin-top:15px">Submission status</label><p class="small">'+esc(statusOf(a))+'</p><label style="margin-top:15px">Submission method</label><p class="small">'+esc((a.submissionTypes||[]).join(', ')||'Not specified')+'</p><div class="ns-room-divider"></div><p class="ns-room-help">Canvas controls due dates, availability, attempt limits, grading and the official submission record.</p></section>'+
+    '<section class="ns-room-panel" data-ns-room-panel="submit" hidden><span class="eyebrow">CANVAS DELIVERY</span><div id="nsRoomSubmission"></div></section></div></aside></div></div>';
+  $('#nsRoomBack').onclick=()=>window.closeAssignmentRoom();
+  const hideButton=$('#phase4HideAssignment');hideButton.onclick=()=>phase4ToggleHidden(a.id);
+  document.querySelectorAll('[data-ns-room-tab]').forEach(button=>button.onclick=()=>phase441ShowTab(button.dataset.nsRoomTab));
+  const input=$('#assignmentDraft'),key='northstar_draft_'+a.id;input.value=localStorage.getItem(key)||'';
+  input.oninput=()=>{try{localStorage.setItem(key,input.value);$('#draftStatus').textContent='Saved locally, not submitted.';}catch{$('#draftStatus').textContent='Could not save on this device.';}};
+  $('#nsRoomSubmission').innerHTML=submissionPanel(a);
+  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();
+  const brief=$('#nsAssignmentBrief');brief.innerHTML='';if(details?.description&&window.NorthstarAssignmentRoom)brief.append(window.NorthstarAssignmentRoom.sanitizeHtml(details.description,getCredentials()?.base||'https://nnps.instructure.com'));else brief.textContent=a.desc||'No additional instructions were provided.';
+  const filesNode=$('#nsAssignmentFiles');
+  if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
+  else{
+    filesNode.innerHTML=files.map((file,i)=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span>▤</span><strong>'+esc(file.name)+'</strong><span>↗</span></button>').join('');
+    filesNode.querySelectorAll('[data-ns-file]').forEach(button=>button.onclick=()=>phase441OpenPdf(files.find(f=>String(f.id)===button.dataset.nsFile),a,c));
+    const firstPdf=files.find(f=>/\.pdf$/i.test(f.name)||String(f.contentType).toLowerCase().includes('pdf'));
+    if(firstPdf)phase441OpenPdf(firstPdf,a,c);
+  }
+}
+async function phase441OpenPdf(file,a,c){
+  if(!file)return;
+  const stage=$('#nsDocumentStage');if(!stage)return;
+  $('#nsAssignmentFiles')?.querySelectorAll('[data-ns-file]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.nsFile===String(file.id)?'true':'false'));
+  stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ DOCUMENT STUDIO</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Loading the Canvas document into your workspace…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
+  try{await window.NorthstarAssignmentRoom.openPdf(stage,file,{id:a.id,title:a.title,canvasCourseId:c.canvasId},getCredentials());}
+  catch(error){stage.innerHTML='<div class="ns-room-loading-error"><h3>Could not open this document here</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">Check that your private Canvas bridge has been updated and that this attachment is a supported PDF. Your assignment page and draft are still available.</p></div>';}
+}
+async function openWorkspace(id,options){
+  const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;
+  options=options||{};activeAssignment=a;
+  if(window.NorthstarAssignmentRoom)window.NorthstarAssignmentRoom.enter(id,{fromHistory:!!options.fromHistory});
+  const c=courseById(a.course);if(!c)return;
+  if(mode==='live'&&a.type==='Quiz'){openCanvasQuiz(a);return;}
+  if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}
+  a.canvasCourseId=c.canvasId;
+  $('#workspace').innerHTML=window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code);
+  let details=null,files=[];
+  if(mode==='live'){
+    try{
+      const creds=getCredentials(),api=window.NorthstarWorkspace.transport(creds);
+      details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission');
+      a.desc=asText(details.description||a.desc||'').slice(0,1600)||a.desc;
+      a.submissionTypes=details.submission_types||a.submissionTypes||[];
+      a.allowedExtensions=details.allowed_extensions||a.allowedExtensions||[];
+      a.annotatableAttachmentId=details.annotatable_attachment_id||a.annotatableAttachmentId||null;
+      if(details.points_possible!==undefined)a.points=numberOrNull(details.points_possible)??a.points;
+      if(details.submission){const sub=CANVAS_SYNC.submission(details.submission);Object.assign(a,{status:sub.status,subState:sub.workflowState,progress:sub.submitted?100:a.progress,score:sub.score,grade:sub.grade,missing:sub.missing,late:sub.late,submittedAt:sub.submittedAt,gradedAt:sub.gradedAt,attempt:sub.attempt});}
+      files=window.NorthstarAssignmentRoom.collectFiles(details,creds.base);
+    }catch(error){syncWarnings.push(c.code+': Assignment detail could not be loaded in the in-app workspace: '+error.message);}
+  }
+  phase441RenderRoom(a,c,details,files);
+}
+window.openWorkspace=openWorkspace;
+
 let submissionBusy=false;
 function submissionPanel(a){
   if(mode!=='live') return '';
