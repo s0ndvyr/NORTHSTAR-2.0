@@ -231,7 +231,7 @@ async function openPdf(host,file,assignment,credentials){
  try{pdfState.annotations=JSON.parse(localStorage.getItem(pdfKey())||'{}');}catch{}
  renderToolbar(host);const name=$('#nsPdfFileName');if(name)name.textContent=file.name;
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:credentials,courseId:assignment.canvasCourseId,fileId:file.id});
- pdfState.bytes=api.bytes;const lib=await loadPdfEngine();pdfState.doc=await lib.getDocument({data:pdfState.bytes}).promise;
+ pdfState.bytes=api.bytes;if(!/pdf/i.test(api.contentType||'')&&!/\.pdf$/i.test(file.name)&&String.fromCharCode(...pdfState.bytes.slice(0,5))!=='%PDF-')throw Error('This attachment is not a PDF. Document Studio currently supports PDF files.');const lib=await loadPdfEngine();pdfState.doc=await lib.getDocument({data:pdfState.bytes.slice()}).promise;
  attachCanvasEvents();wireToolbar();await renderPage();setSaveState('Ready. Pencil input is enabled; touch is reserved for page navigation.');
 }
 function getAnnotatedFile(){return exportAnnotatedPdf();}
