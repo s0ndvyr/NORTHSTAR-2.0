@@ -36,7 +36,8 @@ assert.equal((await worker.fetch(request(submitPath,{method:'DELETE'}))).status,
 assert.equal(upstream.length,before,'invalid writes never reach Canvas');
 
 
-const uploadInitPath='/api/v1/courses/1/assignments/2/submissions/self/files';
+const uploadInitPath='/api/v1/courses/1/assignments/2/submissions/7/files';
+assert.equal((await worker.fetch(request('/api/v1/users/self'))).status,200);
 assert.equal((await worker.fetch(post({name:'homework.pdf',size:1024,content_type:'application/pdf'},uploadInitPath))).status,200);
 assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[42]}}))).status,200);
 assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[]}}))).status,400);
