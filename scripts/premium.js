@@ -468,6 +468,33 @@ async function phase4CompleteQuizAttempt(){
   catch(error){status.textContent=error.message+' Check Canvas before retrying; NORTHSTAR will not automatically repeat a completion request.';button.disabled=false;}
 }
 
+
+async function openCanvasDiscussion(a){
+  activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),topicId=a.discussionTopicId||a.canvasId;
+  $('#workspace').innerHTML='<div class="ws-head"><div><span class="eyebrow">'+safe(c.code)+' / CANVAS DISCUSSION</span><h2>'+safe(a.title)+'</h2><p class="small muted mt">Loading discussion…</p></div><button class="ws-close" onclick="closeOverlay(\'wsOverlay\')">✕</button></div><div class="ws-body"></div>';
+  $('#wsOverlay').classList.add('open');
+  const hideButton=document.createElement('button');hideButton.id='phase4HideAssignment';hideButton.className='btn btn-ghost btn-sm';hideButton.textContent=phase4IsHidden(a)?'Restore assignment':'Hide assignment';hideButton.onclick=()=>phase4ToggleHidden(a.id);$('#workspace .ws-head').insertBefore(hideButton,$('#workspace .ws-head .ws-close'));
+  if(!creds?.proxy){$('#workspace .ws-body').innerHTML='<div class="card"><p class="small muted">Connect through your private Canvas bridge to post a discussion response.</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';return;}
+  try{
+    const api=window.NorthstarWorkspace.transport(creds);
+    const topic=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId));
+    let entries=[];try{const result=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');entries=Array.isArray(result)?result:result.entries||[];}catch(error){}
+    $('#workspace .ws-head h2').textContent=topic.title||a.title;
+    $('#workspace .ws-head p').textContent=(topic.require_initial_post?'Initial post required · ':'')+(entries.length+' visible discussion thread(s)');
+    $('#workspace .ws-body').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(topic.message||a.desc||'')+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…"></textarea><button class="btn btn-primary mt" id="phase4PostDiscussion">Post to Canvas</button><p id="phase4DiscussionStatus" class="small muted mt" role="status">Your draft stays here until you choose Post.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries">'+(entries.length?entries.map((e,i)=>'<article class="card mt"><p class="small">'+asText(e.message||'')+'</p><p class="tiny muted mt">'+safe(e.user_name||'Canvas participant')+' · '+(e.created_at?new Date(e.created_at).toLocaleString():'')+'</p><button class="btn btn-ghost btn-sm mt" data-discussion-reply="'+Number(e.id)+'">Reply</button><div id="phase4ReplyBox'+Number(e.id)+'"></div></article>').join(''):'<p class="small muted mt">No visible posts yet, or Canvas requires your initial post before displaying the thread.</p>')+'</div></div></div></div><div class="card mt"><p class="small muted">Posts and replies are published to Canvas immediately after confirmation. NORTHSTAR does not create a local-only substitute for a Canvas post.</p><a class="btn btn-ghost mt" href="'+safe(a.canvasUrl||topic.html_url||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';
+    $('#phase4PostDiscussion').onclick=()=>phase4SendDiscussionMessage(a,topicId,null);
+    $('[data-discussion-reply]').forEach(button=>button.onclick=()=>{const id=Number(button.dataset.discussionReply),box=$('#phase4ReplyBox'+id);box.innerHTML='<textarea class="editor" rows="3" id="phase4ReplyDraft'+id+'" placeholder="Write a reply…"></textarea><button class="btn btn-primary btn-sm mt" id="phase4ReplySend'+id+'">Post reply</button>';$('#phase4ReplySend'+id).onclick=()=>phase4SendDiscussionMessage(a,topicId,id);});
+  }catch(error){$('#workspace .ws-body').innerHTML='<div class="card"><h3>Discussion could not be loaded</h3><p class="small muted mt">'+safe(error.message)+'</p><a class="btn btn-primary mt" href="'+safe(a.canvasUrl||'#')+'" target="_blank" rel="noopener noreferrer">Open assignment in Canvas ↗</a></div>';}
+}
+async function phase4SendDiscussionMessage(a,topicId,replyTo){
+  const c=courseById(a.course),input=replyTo?$('#phase4ReplyDraft'+replyTo):$('#phase4DiscussionDraft'),status=$('#phase4DiscussionStatus'),message=(input?.value||'').trim();
+  if(!message){if(status)status.textContent='Write your response before posting.';return;}
+  if(!confirm((replyTo?'Post this reply':'Publish your discussion post')+' to Canvas now?'))return;
+  const button=replyTo?$('#phase4ReplySend'+replyTo):$('#phase4PostDiscussion');if(button)button.disabled=true;
+  try{const path='/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+(replyTo?'/entries/'+Number(replyTo)+'/replies':'/entries');await window.NorthstarWorkspace.transport(getCredentials()).post(path,{message});if(input)input.value='';if(status)status.textContent='Canvas confirmed your post. Refreshing assignment status…';await syncCanvas({quiet:true});refreshAll();if(status)status.textContent='Canvas confirmed your post. Your discussion is published.';toast('Discussion posted to Canvas');}
+  catch(error){if(status)status.textContent=error.message;if(button)button.disabled=false;}
+}
+
 openWorkspace = function(id){
   const a=ASSIGNMENTS.find(x=>x.id===id);if(!a)return;if(mode==='live'&&a.type==='Quiz'){openCanvasQuiz(a);return;}if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}activeAssignment=a;const c=courseById(a.course);const key='northstar_draft_'+a.id;
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
