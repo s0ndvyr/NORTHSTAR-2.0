@@ -61,9 +61,11 @@ async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   let questionResult;try{questionResult=await api.get('/api/v1/quiz_submissions/'+id(sub.id)+'/questions?include%5B%5D=quiz_question');}catch(error){error.quizSubmission=sub;throw error;}
   const questions=questionResult.quiz_submission_questions||questionResult;
   if(!Array.isArray(questions)){const error=Error('Canvas started the quiz but returned an unsupported question response. Do not start another attempt; continue in Canvas.');error.quizSubmission=sub;throw error;}
-  let timing=null;try{timing=await api.get('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(sub.id)+'/time');}catch(error){}\n  return {submission:sub,questions,timing};
+  let timing=null;try{timing=await api.get('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(sub.id)+'/time');}catch(error){}
+  return {submission:sub,questions,timing};
 }
-async function getQuizTime({credentials,courseId,quizId,submissionId,fetchImpl}){return transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submissions/'+id(submissionId)+'/time');}\nasync function saveQuizAnswers({credentials,submission,answers,accessCode='',fetchImpl}){
+async function getQuizTime({credentials,courseId,quizId,submissionId,fetchImpl}){return transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submissions/'+id(submissionId)+'/time');}
+async function saveQuizAnswers({credentials,submission,answers,accessCode='',fetchImpl}){
   if(!submission?.id||!submission?.attempt||!submission?.validation_token)throw Error('The Canvas quiz session is incomplete. Reopen the quiz.');
   if(!Array.isArray(answers)||!answers.length)throw Error('There are no answers to save.');
   const clean=answers.map(x=>{if(!x||!Number.isSafeInteger(Number(x.id))||Number(x.id)<1||x.answer===undefined)throw Error('A quiz answer is invalid.');return {id:String(x.id),answer:x.answer};});
