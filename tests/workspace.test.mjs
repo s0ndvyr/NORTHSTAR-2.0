@@ -15,9 +15,24 @@ const calls=[];
 const fetchImpl=async(url,opts)=>{
   calls.push({url,opts});
   if(opts.method==='POST'&&new URL(url).searchParams.get('path')==='/api/v1/courses/11/quizzes/22/submissions')return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,validation_token:'validation-secret'}]})};
-  if(opts.method==='GET'){const path=new URL(url).searchParams.get('path')||'';if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:180,end_at:'2026-11-18T05:00:00Z'})};return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};}
+  if(opts.method==='GET'){
+  const path=new URL(url).searchParams.get('path')||'';
+  if(path.startsWith('/login/session_token'))return {ok:true,status:200,json:async()=>({session_url:'https://school.instructure.com/login?session_token=short-lived'})};
+  if(path.startsWith('/api/v1/courses/11/external_tools/sessionless_launch'))return {ok:true,status:200,json:async()=>({id:44,name:'Publisher Assessment',url:'https://publisher.example/lti/launch?state=opaque'})};
+  if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:180,end_at:'2026-11-18T05:00:00Z'})};
+  return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};
+}
   return {ok:true,status:200,json:async()=>({ok:true})};
 };
+const session=await W.getCanvasSessionUrl({credentials,returnTo:'/courses/11/assignments/33',fetchImpl});
+assert.equal(new URL(session.sessionUrl).origin,'https://school.instructure.com','Canvas session URL must match the connected school');
+assert.ok(new URL(session.sessionUrl).searchParams.has('session_token'));
+assert.equal(new URL(calls.at(-1).url).searchParams.get('path'),'/login/session_token?return_to=%2Fcourses%2F11%2Fassignments%2F33');
+await assert.rejects(W.getCanvasSessionUrl({credentials,returnTo:'https://evil.example/login',fetchImpl}),/supported Canvas/,'arbitrary off-domain return URLs are rejected before network access');
+const tool=await W.getExternalToolLaunch({credentials,courseId:11,assignmentId:33,fetchImpl});
+assert.equal(tool.name,'Publisher Assessment');
+assert.equal(new URL(tool.url).origin,'https://publisher.example','Canvas-issued LTI launch may use the registered provider origin');
+await assert.rejects(W.getExternalToolLaunch({credentials,courseId:11,assignmentId:33,fetchImpl:async()=>({ok:true,status:200,json:async()=>({url:'http://insecure.example/launch'})})}),/security validation/,'non-HTTPS provider launch URLs are rejected');
 const started=await W.startQuiz({credentials,courseId:11,quizId:22,fetchImpl});
 assert.equal(started.submission.id,77);
 assert.equal(started.questions.length,1);

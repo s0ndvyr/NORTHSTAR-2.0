@@ -334,3 +334,31 @@ These features require separate official provider integrations and live acceptan
 - The quiz attempt itself is handed to the authenticated Canvas player. NORTHSTAR does not invent a New Quiz attempt start/answer/submit route.
 - The Worker and workspace transport now allow those two exact GET routes only; no New Quiz write path has been opened.
 - Confirm the NNPS token has access to the New Quizzes read endpoints and the new Worker source has been deployed before iPad live testing.
+
+
+## NORTHSTAR / `.4.4.4` — Authenticated Canvas Sessions & LTI Launch
+
+**Implementation status: Worker/client foundation and host integration source added; live Canvas/provider acceptance still pending.**
+
+- Added `GET /login/session_token` to the private Worker with a strict allowlist: at most one `return_to` parameter, restricted to known Canvas assignment, quiz, file or external-tool routes. Arbitrary hosts, additional parameters, and non-Canvas return targets are rejected.
+- Added the Canvas-generated assignment LTI assessment launch read route. Only `launch_type=assessment` plus one numeric `assignment_id` is accepted; callers cannot choose an arbitrary external URL or inject launch parameters.
+- Added `getCanvasSessionUrl` and `getExternalToolLaunch` client helpers. Session URL origin must equal the connected Canvas origin; provider URLs must be HTTPS and must not contain embedded credentials.
+- New Quizzes, student annotation, and media recording pages now expose a Canvas-generated authenticated session launch. External tool assignments use Canvas's `sessionless_launch` response. Unsupported Canvas-hosted document types can open through Canvas's own viewer.
+- Added native iOS host bridge source: top-level persistent WKWebView, secure main-frame message validation, HTTPS-only destinations, back/forward/reload/close controls, and same-view popup handling. PWA iframe remains a best-effort fallback when no native host handler exists.
+- Added bridge and workspace tests for safe session return routes, rejection of unsafe destinations/extra query parameters, assignment-specific LTI launch constraints, session URL origin checks and HTTPS-only provider URLs.
+
+### Authentication architecture
+
+- Current single-student testing still uses a personal Canvas API token for REST calls and session URL creation.
+- To avoid requiring students to paste personal tokens, implement Canvas OAuth 2.0 Authorization Code flow in the Worker (client secret held only as a Worker secret, token refresh persisted in a private KV/Durable Object binding, short-lived app session cookie), or use an institution-installed LTI 1.3 tool launch plus approved Canvas service scopes.
+- Both OAuth Developer Key registration and LTI 1.3 installation require the institution's Canvas administrator. No password scraping or private endpoint impersonation is permitted.
+
+### Release acceptance still required
+
+- [ ] Run all unit, bridge, workspace and browser boot tests on this exact branch head.
+- [ ] Confirm the NNPS Canvas account is permitted to call `/login/session_token` and that the return URL opens the assignment page.
+- [ ] Test an ungraded New Quiz inside the native WKWebView: launch, timer, attempt state, save, resume and completion.
+- [ ] Test an assignment-specific sessionless LTI launch from the course and verify the provider can authenticate and submit.
+- [ ] Test a Canvas `student_annotation` assignment in native DocViewer and verify the official Canvas submission record.
+- [ ] Test a provider-specific Office/document assignment with its official authenticated viewer.
+- [ ] Install and test the native WKWebView host on iPadOS; the web PWA iframe is not a guaranteed substitute.

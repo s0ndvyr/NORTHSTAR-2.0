@@ -14,7 +14,7 @@ function transport(credentials,fetchImpl=root.fetch){
   if(base.protocol!=='https:'||base.origin!==credentials.base)throw Error('Canvas connection origin is invalid.');
   async function request(method,path,body,write=false){
     const api=new URL(path,base);
-    const standardPath=api.pathname.startsWith('/api/v1/'),newQuizRead=method==='GET'&&(/^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+$/.test(api.pathname)||/^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+\/items$/.test(api.pathname));if(api.origin!==base.origin||(!standardPath&&!newQuizRead))throw Error('Canvas API path is outside your connected school.');
+    const standardPath=api.pathname.startsWith('/api/v1/'),newQuizRead=method==='GET'&&(/^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+$/.test(api.pathname)||/^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+\/items$/.test(api.pathname)),sessionTokenRead=method==='GET'&&api.pathname==='/login/session_token'&&[...api.searchParams.keys()].every(key=>key==='return_to')&&api.searchParams.size<=1;if(api.origin!==base.origin||(!standardPath&&!newQuizRead&&!sessionTokenRead))throw Error('Canvas API path is outside your connected school.');
     if(write&&!credentials.proxy)throw Error('Connect through your private Canvas bridge to make changes.');
     let target=api.href;
     if(credentials.proxy){const bridge=new URL(credentials.proxy);if(bridge.protocol!=='https:')throw Error('Canvas bridge must use HTTPS.');bridge.searchParams.set('path',api.pathname+api.search);target=bridge.href;}
@@ -38,6 +38,31 @@ function transport(credentials,fetchImpl=root.fetch){
     return {bytes:new Uint8Array(await response.arrayBuffer()),contentType,filename:match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):''};
   }
   return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true),put:(path,body)=>request('PUT',path,body,true),getBinary};
+}
+function safeCanvasReturnTo(value){
+  if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.includes('#'))return false;
+  return /^\/courses\/\d+\/assignments\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/quizzes\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/files\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/external_tools\/\d+$/.test(value);
+}
+async function getCanvasSessionUrl({credentials,returnTo,fetchImpl=root.fetch}){
+  if(!safeCanvasReturnTo(returnTo))throw Error('Choose a supported Canvas assignment, quiz, file or external-tool destination.');
+  const base=new URL(credentials?.base||'');
+  const result=await transport(credentials,fetchImpl).get('/login/session_token?return_to='+encodeURIComponent(returnTo));
+  if(typeof result?.session_url!=='string'||!result.session_url)throw Error('Canvas did not return a temporary browser session URL.');
+  let session;try{session=new URL(result.session_url);}catch{throw Error('Canvas returned an invalid temporary session URL.');}
+  if(session.protocol!=='https:'||session.origin!==base.origin||session.username||session.password)throw Error('Canvas session URL did not match the connected school origin.');
+  return {sessionUrl:session.href,expiresAt:result.expires_at||null};
+}
+async function getExternalToolLaunch({credentials,courseId,assignmentId,fetchImpl=root.fetch}){
+  const c=id(courseId),a=id(assignmentId);
+  const path='/api/v1/courses/'+c+'/external_tools/sessionless_launch?launch_type=assessment&assignment_id='+a;
+  const result=await transport(credentials,fetchImpl).get(path);
+  if(typeof result?.url!=='string'||!result.url)throw Error('Canvas did not return an authenticated external-tool launch URL for this assignment.');
+  let launch;try{launch=new URL(result.url);}catch{throw Error('Canvas returned an invalid external-tool launch URL.');}
+  if(launch.protocol!=='https:'||launch.username||launch.password||launch.href.length>12000)throw Error('External-tool launch URL did not pass security validation.');
+  return {url:launch.href,name:String(result.name||'External course tool').slice(0,160),id:result.id??null};
 }
 async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){
   if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a file under 25 MB.');
@@ -116,7 +141,7 @@ async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
   const download=await api.getBinary('/api/v1/files/'+f+'/download');
   return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
 }
-const api={transport,uploadAssignmentFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
+const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

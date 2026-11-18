@@ -61,7 +61,7 @@ assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas even
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
 const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
 assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text allowlist strips scripts, handlers and unsafe links');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.3', 'runtime release identifier matches Phase 4.4.3');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.4', 'runtime release identifier matches Phase 4.4.4');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
@@ -205,7 +205,8 @@ await window.openWorkspace('canvas_13_1');
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('New Quizzes'),'New Quiz opens an in-dashboard preview');
 assert.ok(window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'New Quiz item prompts are previewed inside NORTHSTAR');
-assert.ok(window.document.getElementById('workspace').textContent.includes('Continue to official Canvas quiz'),'New Quiz attempt uses the official authenticated Canvas player');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Open official New Quizzes player inside NORTHSTAR'),'New Quiz player is launched inside NORTHSTAR');
+assert.ok(window.document.getElementById('nsLaunchNewQuiz'),'New Quiz preview provides an authenticated launch control');
 assert.equal(window.document.getElementById('phase4StartQuiz'),null,'NORTHSTAR never invents a New Quiz attempt start');
 assert.ok(!window.document.getElementById('workspace').textContent.includes('DO NOT SHOW THIS'),'New Quiz preview never renders answer/scoring payloads');
 

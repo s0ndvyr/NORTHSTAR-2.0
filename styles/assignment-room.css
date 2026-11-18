@@ -197,3 +197,8 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
 .ns-newquiz-prompt table{max-width:100%;display:block;overflow:auto;border-collapse:collapse}
 .ns-newquiz-prompt td,.ns-newquiz-prompt th{padding:6px 9px;border:1px solid var(--border)}
 @media(max-width:760px){.ns-newquiz-brief{padding:14px}.ns-newquiz-brief h2{font-size:21px}.ns-newquiz-item{padding:13px}}
+
+/* Authenticated Canvas assessment/provider launch presentation */
+#nsLaunchNewQuiz,.ns-room-submission .btn-primary{min-height:42px}
+#viewerOverlay .workspace{max-width:min(1200px,98vw);height:92vh}
+#viewerFrame{background:#fff}

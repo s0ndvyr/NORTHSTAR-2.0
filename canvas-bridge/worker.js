@@ -15,7 +15,26 @@ function validAnswer(v){
   if(isObject(v))return Object.keys(v).length<=30&&Object.values(v).every(x=>typeof x==='string'||(typeof x==='number'&&Number.isFinite(x)));
   return false;
 }
+function safeCanvasReturnTo(value){
+  if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.includes('#'))return false;
+  return /^\/courses\/\d+\/assignments\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/quizzes\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/files\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/external_tools\/\d+$/.test(value);
+}
 function allowedRead(path){
+  let requested;try{requested=new URL(path,CANVAS_ORIGIN);}catch{return false;}
+  if(requested.origin!==CANVAS_ORIGIN)return false;
+  if(requested.pathname==='/login/session_token'){
+    const keys=[...requested.searchParams.keys()];
+    if(keys.some(key=>key!=='return_to')||keys.length>1)return false;
+    const returnTo=requested.searchParams.get('return_to');
+    return returnTo===null||safeCanvasReturnTo(returnTo);
+  }
+  if(/^\/api\/v1\/courses\/\d+\/external_tools\/sessionless_launch$/.test(requested.pathname)){
+    const params=[...requested.searchParams.entries()];
+    return params.length===2&&requested.searchParams.get('launch_type')==='assessment'&&/^\d+$/.test(requested.searchParams.get('assignment_id')||'');
+  }
   return /^\/api\/v1\/users\/self$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/discussion_topics(?:\?(?:[^#]*))?$/.test(path) || /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+(?:\/entries)?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses(?:\?[^#]*)?$/.test(path) ||

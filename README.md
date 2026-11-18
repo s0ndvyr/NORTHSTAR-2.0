@@ -170,3 +170,23 @@ The private Cloudflare Worker must be deployed from the current `canvas-bridge/w
 ### New Quizzes behavior
 
 NORTHSTAR uses the official read-only New Quizzes endpoints to retrieve a quiz's instructions and available item prompts for an in-dashboard preview. The preview deliberately does not render answer/scoring payloads and does not create an attempt. Starting, timing, answering and submitting a New Quiz remains in the official authenticated Canvas quiz player because the documented New Quizzes REST resources expose quiz and item retrieval/authoring, not the student attempt workflow integrated here. The bridge only allows GET for the two New Quiz read routes; it does not permit New Quiz POST/PATCH/DELETE.
+
+
+## Authenticated Canvas experiences — `.4.4.4`
+
+NORTHSTAR now requests two official Canvas capabilities through the private bridge:
+
+- `GET /login/session_token` obtains a short-lived `session_url` for a restricted Canvas return path. It is used to open the official Canvas assignment page for New Quizzes, student-annotation DocViewer, media recording and Canvas-hosted document previews. NORTHSTAR does not store the session URL or put the user's API token in a URL.
+- `GET /api/v1/courses/:course_id/external_tools/sessionless_launch?launch_type=assessment&assignment_id=:assignment_id` asks Canvas to produce the assignment-specific LTI launch URL. NORTHSTAR does not fabricate an LTI JWT or provider launch URL.
+
+The Worker permits only the documented assessment launch shape and only same-school, known Canvas return paths for session creation. The client verifies that session URLs belong to the connected Canvas origin and that launch URLs use HTTPS.
+
+### Tokenless-looking sign-in vs authorization
+
+The current personal build still uses the student's existing Canvas API token for REST calls and for requesting the temporary session URL. The API token is sent only as a Bearer authorization header to the private Worker. The browser then uses the short-lived Canvas session URL; it does not need the API token to operate the Canvas page itself.
+
+To remove manual token entry for a real multi-user release, the next authentication milestone is Canvas OAuth 2.0 authorization code flow in the private Worker, or an institution-installed LTI 1.3 launch with the required service scopes. Canvas developer-key registration, allowed scopes and school administrator approval are required for those institutional app registrations. NORTHSTAR will never collect a Canvas password or scrape the school login form.
+
+### iPad Safari and native in-app content
+
+The GitHub Pages PWA uses the existing in-dashboard iframe as a best-effort fallback. Some Canvas/provider destinations can reject iframe embedding or Safari third-party cookies. `native/ios/NorthstarSecureContentPresenter.swift` supplies the message-handler bridge and a top-level persistent WKWebView with NORTHSTAR-owned navigation controls. The source must be added to an iOS host app target before that guaranteed native experience is available; this repository is still deployed as a web PWA, and the native host has not yet been built or installed.

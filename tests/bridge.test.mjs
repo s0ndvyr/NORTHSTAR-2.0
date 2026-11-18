@@ -4,10 +4,22 @@ let source=await readFile(new URL('../canvas-bridge/worker.js',import.meta.url),
 source=source.replace('https://nnps.instructure.com','https://school.instructure.com');
 const worker=(await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'))).default;
 const origin='https://s0ndvyr.github.io';let upstream=[];
-globalThis.fetch=async(url,opts)=>{upstream.push({url,opts});return new Response(JSON.stringify([{id:1}]),{status:200,headers:{'Content-Type':'application/json'}})};
+globalThis.fetch=async(url,opts)=>{
+  upstream.push({url,opts});
+  const target=new URL(url);
+  if(target.pathname==='/login/session_token')return new Response(JSON.stringify({session_url:'https://school.instructure.com/login?session_token=opaque-browser-session'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/courses/1/external_tools/sessionless_launch')return new Response(JSON.stringify({id:44,name:'Publisher Assessment',url:'https://publisher.example/lti/launch?state=one-time-state'}),{status:200,headers:{'Content-Type':'application/json'}});
+  return new Response(JSON.stringify([{id:1}]),{status:200,headers:{'Content-Type':'application/json'}});
+};
 const request=(path,opts={})=>new Request('https://bridge.example/?path='+encodeURIComponent(path),{...opts,headers:{Origin:origin,Authorization:'Bearer test-secret','User-Agent':'Mozilla/5.0 (test browser)',...(opts.headers||{})}});
 let res=await worker.fetch(request('/api/v1/courses?per_page=100&page=1'));assert.equal(res.status,200);assert.equal(upstream.length,1);assert.equal(upstream[0].url,'https://school.instructure.com/api/v1/courses?per_page=100&page=1');assert.equal(upstream[0].opts.headers.Authorization,'Bearer test-secret');assert.equal(upstream[0].opts.headers['User-Agent'],'Mozilla/5.0 (test browser)');assert(!upstream[0].url.includes('test-secret'));
 res=await worker.fetch(request('/api/v1/courses/1/assignments?include[]=submission'));assert.equal(res.status,200);
+assert.equal((await worker.fetch(request('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F2'))).status,200,'Canvas temporary authenticated web session route is allowlisted');
+assert.equal((await worker.fetch(request('/login/session_token?return_to=https%3A%2F%2Fevil.example%2F'))).status,403,'session return destinations must remain on supported Canvas pages');
+assert.equal((await worker.fetch(request('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F2&debug=true'))).status,403,'session-token query parameters are narrowly restricted');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/external_tools/sessionless_launch?launch_type=assessment&assignment_id=2'))).status,200,'Canvas assessment-specific LTI launch route is allowlisted');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/external_tools/sessionless_launch?launch_type=course&assignment_id=2'))).status,403,'only assignment assessment launches are allowed');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/external_tools/sessionless_launch?launch_type=assessment&assignment_id=2&url=https%3A%2F%2Fevil.example'))).status,403,'arbitrary external tool launch parameters are rejected');
 assert.equal((await worker.fetch(request('/api/v1/courses/1/assignment_groups'))).status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1'))).status,200);
 for(const p of ['https://evil.example/api/v1/courses','/api/v1/courses?access_token=token','/api/v1/courses/1/assignments/1/submissions'])assert.equal((await worker.fetch(request(p))).status,403);
