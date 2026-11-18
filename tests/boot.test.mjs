@@ -149,7 +149,6 @@ window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 
-assert.ok(window.document.getElementById('ledgerList').textContent.includes('re-included course returns to the ledger')===false || true);
 window.openWorkspace('canvas_12_1');
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('Start quiz in NORTHSTAR'),'classic Canvas quiz opens its own workspace page');
