@@ -215,7 +215,7 @@ Automated CI is green on the merged .4.4 release: JavaScript syntax checks, eigh
 
 # Phase 4.4.1 — Native Assignment Experience
 
-**Status: implementation on feature branch; acceptance pending.** Feature branch: northstar-0.4.4.1-native-assignment-experience. The objective is to make NORTHSTAR the full-screen work environment for supported coursework, while Canvas remains the system of record.
+**Status: merged to main; live Canvas/iPad acceptance pending.** PR #6 merged as `f7db388daede10ea735257aea3d5458620b47756` from `northstar-0.4.4.1-native-assignment-experience`. The GitHub Pages production build/deploy and repository Cloudflare Workers build checks passed. The personal Canvas bridge still requires a separate manual redeploy from `canvas-bridge/worker.js`.
 
 ## Product change
 
@@ -273,5 +273,8 @@ These features require separate official provider integrations and live acceptan
 - [x] Add secure bridge file download without forwarding the bearer token to cross-origin signed storage.
 - [x] Connect exported annotated PDFs to supported Canvas online_upload submission flow.
 - [x] Run syntax, unit and jsdom browser boot checks on the feature branch.
-- [ ] Redeploy the personal Canvas Worker and complete live iPad/Canvas acceptance.
-- [ ] Create and merge the .4.4.1 release PR; verify GitHub Pages deployment.
+- [ ] Redeploy the personal Canvas Worker from `canvas-bridge/worker.js` in the Cloudflare dashboard; this is separate from the repository's Cloudflare Workers build check.
+- [x] Create and merge PR #6 to `main`.
+- [x] Verify GitHub Pages production build/deploy.
+- [x] Verify the repository Cloudflare Workers build check.
+- [ ] Complete live iPad Safari / Apple Pencil / real Canvas acceptance.
