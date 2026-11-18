@@ -140,8 +140,11 @@ assert.ok(window.document.getElementById('courseGrid').textContent.includes('Stu
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('StudentVUE grade history'),'historical StudentVUE records appear in course detail');
 
-window.openWorkspace('canvas_11_1');
+await window.openWorkspace('canvas_11_1');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submitted'), 'submitted but ungraded work is distinguished from incomplete work');
+assert.ok(window.document.body.classList.contains('assignment-room-open'),'opening an assignment transitions into a full-screen in-app route');
+assert.ok(window.document.getElementById('nsAssignmentBrief'),'assignment instructions render in the native page');
+assert.ok(window.document.getElementById('nsRoomBack'),'the page provides in-app dashboard navigation');
 assert.ok(window.document.getElementById('whatifList').textContent.includes('90.0%'), 'live what-if renders');
 window.renderLedger();
 const activeLedger = window.document.getElementById('ledgerList').textContent;
@@ -157,7 +160,7 @@ window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 
-window.openWorkspace('canvas_12_1');
+await window.openWorkspace('canvas_12_1');
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('Start quiz in NORTHSTAR'),'classic Canvas quiz opens its own workspace page');
 window.confirm=()=>true;
@@ -188,7 +191,7 @@ window.document.getElementById('phase4HideAssignment').click();
 assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'restore removes the local hide preference');
 
 
-window.openWorkspace('canvas_10_1');
+await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').value='My own work';
 let writes=0;
 window.fetch=async(url,opts)=>{writes++;return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};};
@@ -210,6 +213,7 @@ await window.disconnectCanvas();
 assert.ok(window.__testVault.has('canvas-snapshot'),'disconnect preserves the last successful coursework snapshot');
 assert.equal(window.__testVault.has('canvas-credentials'),false,'disconnect removes the saved credential');
 assert.ok(window.document.getElementById('canvasStatus').textContent.includes('remains available offline'),'disconnect explains that coursework remains available offline');
+assert.ok(window.NorthstarAssignmentRoom.routeId()===null,'leaving the assignment page clears the deep-link route');
 assert.equal(errors.length,0,errors.join(' | '));
 console.log('PASS: mocked live sync and app boots clean, grades compute, periods manage, AI key uses the device vault, external assignment links open outside the dashboard');
 process.exit(0);
