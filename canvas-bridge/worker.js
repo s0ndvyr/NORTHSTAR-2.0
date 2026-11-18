@@ -20,14 +20,14 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
 }
-function isWritePath(path){return /^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions\\/self\\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
+function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/self\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
 function validateWrite(path,data){
   if(!isObject(data))return 'JSON object required';
   const assignment=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/;
   const quizStart=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/;
   const quizAnswers=/^\/api\/v1\/quiz_submissions\/\d+\/questions$/;
   const quizComplete=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/;
-  const uploadInit=/^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions\\/self\\/files$/;
+  const uploadInit=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/self\/files$/;
   if(uploadInit.test(path)){
     if(!keysOnly(data,['name','size','content_type'])||typeof data.name!=='string'||!data.name.trim()||data.name.length>255||!Number.isSafeInteger(data.size)||data.size<1||data.size>25000000||(data.content_type!==undefined&&typeof data.content_type!=='string'))return 'Invalid upload initialization request';
     return null;
