@@ -194,11 +194,11 @@ async function exportAnnotatedPdf(){
  return new File([bytes],name,{type:'application/pdf'});
 }
 function downloadBlob(file){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name||'annotated.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-async function openPdf(host,file,assignment){
+async function openPdf(host,file,assignment,credentials){
  pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='select';pdfState.annotations={};pdfState.history=[];pdfState.redo=[];
  try{pdfState.annotations=JSON.parse(localStorage.getItem(pdfKey())||'{}');}catch{}
  renderToolbar(host);const name=$('#nsPdfFileName');if(name)name.textContent=file.name;
- const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:root.getCanvasCredentials?.(),courseId:assignment.canvasCourseId,fileId:file.id});
+ const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:credentials,courseId:assignment.canvasCourseId,fileId:file.id});
  pdfState.bytes=api.bytes;const lib=await loadPdfEngine();pdfState.doc=await lib.getDocument({data:pdfState.bytes}).promise;
  attachCanvasEvents();wireToolbar();await renderPage();setSaveState('Ready. Pencil input is enabled; touch is reserved for page navigation.');
 }
