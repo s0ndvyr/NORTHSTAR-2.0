@@ -35,4 +35,15 @@ assert.equal((await worker.fetch(post({},'https://evil.example'+submitPath))).st
 assert.equal((await worker.fetch(post({},'/api/v1/courses/1/quizzes/2'))).status,405);
 assert.equal((await worker.fetch(request(submitPath,{method:'DELETE'}))).status,405);
 assert.equal(upstream.length,before,'invalid writes never reach Canvas');
+
+for(const p of ['/api/v1/courses/1/quizzes','/api/v1/courses/1/quizzes/2','/api/v1/courses/1/quizzes/2/questions','/api/v1/quiz_submissions/8/questions'])assert.equal((await worker.fetch(request(p))).status,200);
+assert.equal((await worker.fetch(post({access_code:'1234'},'/api/v1/courses/1/quizzes/2/submissions'))).status,200);
+assert.equal((await worker.fetch(post({attempt:1,validation_token:'v',quiz_questions:[{id:'9',answer:3}]},'/api/v1/quiz_submissions/8/questions'))).status,200);
+assert.equal((await worker.fetch(post({attempt:1,validation_token:'v'},'/api/v1/courses/1/quizzes/2/submissions/8/complete'))).status,200);
+for(const [path,data] of [
+ ['/api/v1/courses/1/quizzes/2/submissions',{preview:true}],
+ ['/api/v1/quiz_submissions/8/questions',{attempt:1,validation_token:'v',quiz_questions:[{id:'9',answer:{bad:{nested:true}}}]}],
+ ['/api/v1/courses/1/quizzes/2/submissions/8/complete',{attempt:0,validation_token:'v'}]
+])assert.equal((await worker.fetch(post(data,path))).status,400);
+
 console.log('PASS: only validated assignment submission POSTs reach Canvas; other writes and impersonation rejected');
