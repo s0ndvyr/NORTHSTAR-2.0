@@ -3,8 +3,8 @@
 Last updated: 2026-11-17
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.3`
-Package version: `0.4.3`
+Release identifier: `NORTHSTAR / .4.4`
+Package version: `0.4.4`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
