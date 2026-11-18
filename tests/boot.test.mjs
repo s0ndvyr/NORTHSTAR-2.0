@@ -210,6 +210,7 @@ assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.can
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
 assert.ok(savedSnapshot && savedSnapshot.assignments.length===3,'successful sync is saved as an offline snapshot');
 await window.disconnectCanvas();
+window.closeAssignmentRoom();
 assert.ok(window.__testVault.has('canvas-snapshot'),'disconnect preserves the last successful coursework snapshot');
 assert.equal(window.__testVault.has('canvas-credentials'),false,'disconnect removes the saved credential');
 assert.ok(window.document.getElementById('canvasStatus').textContent.includes('remains available offline'),'disconnect explains that coursework remains available offline');
