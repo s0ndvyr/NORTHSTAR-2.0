@@ -141,12 +141,13 @@ NORTHSTAR becomes an academic work environment as well as an organizer. Canvas r
 - Visible version identity updated to `NORTHSTAR / .4.4`; package version is `0.4.4`.
 - New `scripts/workspace.js` provides bridge-only Canvas write transport, official quiz attempt start, question retrieval, answer saving, quiz completion, and signed file-upload flow.
 - Quiz assignments are matched to Canvas quiz IDs using the course quizzes endpoint. Quiz attempts start only after an explicit confirmation; Canvas validation token and attempt number are retained for answer updates and completion.
-- Native quiz workspace currently renders multiple-choice, true/false, multiple-answer, essay, short-answer and numerical/calculated questions. Unsupported question types are not submitted by NORTHSTAR; the student is directed to continue the same attempt in Canvas.
+- Native quiz workspace currently renders multiple-choice, true/false, multiple-answer, essay, short-answer, text-only and numerical/calculated questions. It displays an approximate countdown based on Canvas' returned start time, time limit and extra time; Canvas remains authoritative for timeout. Unsupported question types or hidden answer choices are not submitted by NORTHSTAR; the student is directed to continue the same attempt in Canvas.
 - Quiz completion requires a second explicit confirmation. If the quiz attempt starts but questions cannot be retrieved, NORTHSTAR preserves the returned attempt metadata and tells the student to continue in Canvas rather than starting another attempt.
 - Text-entry and URL assignment submissions remain supported. Resubmissions use Canvas' official submission endpoint and preserve earlier attempts.
-- Online file submissions now use Canvas' signed upload initialization endpoint, upload the file to the returned HTTPS destination without forwarding the Canvas bearer token, then submit the returned Canvas file ID. The bridge validates file metadata and limits the upload to 25 MB.
+- Online file submissions first read `/api/v1/users/self` to obtain the authenticated student's Canvas user ID, then use Canvas' documented `/courses/:course/assignments/:assignment/submissions/:user_id/files` signed upload initialization endpoint. The file is sent to the returned HTTPS destination without forwarding the Canvas bearer token, then its returned Canvas file ID is submitted. The bridge validates file metadata and limits the upload to 25 MB.
 - Graded discussion assignments are mapped to discussion topic IDs. The workspace supports reading visible discussion entries, posting an initial response, and replying to an entry through Canvas' discussion API.
 - Assignments can be hidden/restored locally. Hidden items are excluded from active dashboard, Ledger and course views; the Ledger adds Active / Hidden / All visibility filters. This is a local NORTHSTAR preference and does not alter or delete the Canvas assignment.
+- Assignment workspace adds a best-effort in-dashboard resource preview for HTTPS Canvas/resource links with an explicit external-open fallback. Canvas and LTI providers may block iframe embedding or third-party cookies; NORTHSTAR does not bypass those controls.
 - Canvas bridge now has narrowly allowlisted read/write routes for quiz attempts, quiz answers, quiz completion, file upload initialization, file submissions, and discussion posts/replies. It rejects arbitrary methods, hosts, write routes, write query parameters, malformed payloads and unapproved submission types.
 - A Phase 4 GitHub Actions workflow checks syntax, runs unit suites and browser boot tests on the development branch and pull requests.
 
@@ -192,5 +193,5 @@ Canvas' public API supports quiz attempt creation, answer updates, and completio
 
 1. Resolve any CI failures and add regression tests for the new upload/discussion/quiz paths.
 2. Finish workspace UI polish, progress/navigation, time limits, and safe handling for all Canvas question formats exposed to students.
-3. Add a local resource viewer with explicit fallback for external links that disallow embedding.
+3. Validate the best-effort local resource viewer against Canvas and external LTI pages; keep explicit external fallback for providers that disallow embedding.
 4. Complete the iPad live acceptance checklist before merging .4.4.
