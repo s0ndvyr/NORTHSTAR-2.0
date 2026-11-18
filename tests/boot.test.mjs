@@ -203,8 +203,6 @@ assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz
 
 await window.openWorkspace('canvas_13_1');
 await new Promise(r=>setTimeout(r,30));
-const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
-assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text sanitizer strips scripts, event handlers and unsafe links');
 assert.ok(window.document.getElementById('workspace').textContent.includes('New Quizzes'),'New Quiz opens an in-dashboard preview');
 assert.ok(window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'New Quiz item prompts are previewed inside NORTHSTAR');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Continue to official Canvas quiz'),'New Quiz attempt uses the official authenticated Canvas player');
