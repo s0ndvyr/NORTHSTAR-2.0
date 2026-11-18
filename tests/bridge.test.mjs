@@ -24,7 +24,6 @@ assert.deepEqual(JSON.parse(upstream.at(-1).opts.body),{submission:{submission_t
 assert.equal(upstream.length,before+1);
 before=upstream.length;
 for(const data of [
-  {submission:{submission_type:'online_upload',file_ids:[1]}},
   {submission:{submission_type:'online_url',url:'javascript:alert(1)'}},
   {submission:{submission_type:'online_text_entry',body:' '}},
   {submission:{submission_type:'online_text_entry',body:'x',user_id:2}},
@@ -35,6 +34,13 @@ assert.equal((await worker.fetch(post({},'https://evil.example'+submitPath))).st
 assert.equal((await worker.fetch(post({},'/api/v1/courses/1/quizzes/2'))).status,405);
 assert.equal((await worker.fetch(request(submitPath,{method:'DELETE'}))).status,405);
 assert.equal(upstream.length,before,'invalid writes never reach Canvas');
+
+
+const uploadInitPath='/api/v1/courses/1/assignments/2/submissions/self/files';
+assert.equal((await worker.fetch(post({name:'homework.pdf',size:1024,content_type:'application/pdf'},uploadInitPath))).status,200);
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[42]}}))).status,200);
+assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[]}}))).status,400);
+assert.equal((await worker.fetch(post({name:'too-big.pdf',size:26000000},uploadInitPath))).status,400);
 
 for(const p of ['/api/v1/courses/1/quizzes','/api/v1/courses/1/quizzes/2','/api/v1/courses/1/quizzes/2/questions','/api/v1/quiz_submissions/8/questions'])assert.equal((await worker.fetch(request(p))).status,200);
 assert.equal((await worker.fetch(post({access_code:'1234'},'/api/v1/courses/1/quizzes/2/submissions'))).status,200);
