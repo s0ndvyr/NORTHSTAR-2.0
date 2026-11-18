@@ -31,9 +31,9 @@ async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   const result=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions',body);
   const sub=(result.quiz_submissions||[])[0]||result.quiz_submission||result;
   if(!sub?.id||!sub?.attempt||!sub?.validation_token)throw Error('Canvas started a quiz but did not return the required attempt details. Open the quiz in Canvas to continue.');
-  const questionResult=await api.get('/api/v1/quiz_submissions/'+id(sub.id)+'/questions?include%5B%5D=quiz_question');
+  let questionResult;try{questionResult=await api.get('/api/v1/quiz_submissions/'+id(sub.id)+'/questions?include%5B%5D=quiz_question');}catch(error){error.quizSubmission=sub;throw error;}
   const questions=questionResult.quiz_submission_questions||questionResult;
-  if(!Array.isArray(questions))throw Error('Canvas returned an unsupported quiz question response.');
+  if(!Array.isArray(questions)){const error=Error('Canvas started the quiz but returned an unsupported question response. Do not start another attempt; continue in Canvas.');error.quizSubmission=sub;throw error;}
   return {submission:sub,questions};
 }
 async function saveQuizAnswers({credentials,submission,answers,accessCode='',fetchImpl}){
