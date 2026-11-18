@@ -45,6 +45,13 @@ async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetc
   if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the file upload (HTTP '+response.status+').');
   return uploaded;
 }
+function questionType(row){const q=row?.quiz_question||row?.question||row||{};return String(q.question_type||q.type||'').toLowerCase();}
+function questionSupported(row){
+  const q=row?.quiz_question||row?.question||{},type=questionType(row);
+  if(type==='text_only_question')return true;
+  if(['multiple_choice_question','true_false_question','multiple_answers_question'].includes(type))return Array.isArray(q.answers)&&q.answers.length>0;
+  return ['essay_question','short_answer_question','numerical_question','calculated_question'].includes(type);
+}
 async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   const api=transport(credentials,fetchImpl),c=id(courseId),q=id(quizId);
   const body=accessCode?{access_code:String(accessCode)}:{};
@@ -70,7 +77,7 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-const api={transport,uploadAssignmentFile,startQuiz,saveQuizAnswers,completeQuiz};
+const api={transport,uploadAssignmentFile,startQuiz,saveQuizAnswers,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
