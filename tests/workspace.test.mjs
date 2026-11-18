@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const W=createRequire(import.meta.url)('../scripts/workspace.js');
+const credentials={base:'https://school.instructure.com',proxy:'https://bridge.example',token:'secret-token'};
+const calls=[];
+const fetchImpl=async(url,opts)=>{
+  calls.push({url,opts});
+  if(opts.method==='POST'&&url.includes('/quizzes/22/submissions?path='))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,validation_token:'validation-secret'}]})};
+  if(opts.method==='GET')return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};
+  return {ok:true,status:200,json:async()=>({ok:true})};
+};
+const started=await W.startQuiz({credentials,courseId:11,quizId:22,fetchImpl});
+assert.equal(started.submission.id,77);
+assert.equal(started.questions.length,1);
+assert(calls[0].url.startsWith('https://bridge.example/'));
+assert(!calls[0].url.includes('secret-token'));
+assert.equal(calls[0].opts.headers.Authorization,'Bearer secret-token');
+assert.equal(JSON.parse(calls[0].opts.body).access_code,undefined);
+await W.saveQuizAnswers({credentials,submission:started.submission,answers:[{id:9,answer:1}],fetchImpl});
+assert.equal(JSON.parse(calls.at(-1).opts.body).quiz_questions[0].answer,1);
+await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl});
+assert(calls.at(-1).url.includes('/complete?path='));
+assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
+await assert.rejects(W.startQuiz({credentials:{base:credentials.base,token:'x'},courseId:11,quizId:22,fetchImpl}),/private Canvas bridge/);
+await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submission,answers:[],fetchImpl}),/no answers/i);
+console.log('PASS: Canvas quiz start, question retrieval, answer save, completion, bridge-only writes and validation');
