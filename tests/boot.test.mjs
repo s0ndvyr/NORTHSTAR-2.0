@@ -140,7 +140,7 @@ assert.ok(window.document.getElementById('courseGrid').textContent.includes('Stu
 window.openCourse('canvas_1');
 assert.ok(window.document.getElementById('courseDetail').textContent.includes('StudentVUE grade history'),'historical StudentVUE records appear in course detail');
 
-await window.openWorkspace('canvas_11_1');
+await await window.openWorkspace('canvas_11_1');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submitted'), 'submitted but ungraded work is distinguished from incomplete work');
 assert.ok(window.document.body.classList.contains('assignment-room-open'),'opening an assignment transitions into a full-screen in-app route');
 assert.ok(window.document.getElementById('nsAssignmentBrief'),'assignment instructions render in the native page');
@@ -178,7 +178,7 @@ await new Promise(r=>setTimeout(r,100));
 assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&x.method==='POST'),'quiz completion is sent to Canvas');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Quiz submitted'),'workspace reports completion after Canvas confirms it');
 
-window.openWorkspace('canvas_11_1');
+await window.openWorkspace('canvas_11_1');
 window.document.getElementById('phase4HideAssignment').click();
 assert.ok(JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_v1')).includes('canvas_11_1'),'hide preference persists locally');
 window.document.getElementById('fVisibility').value='hidden';
