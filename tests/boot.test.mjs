@@ -119,6 +119,7 @@ window.fetch = async (url, opts={}) => {
   else if(path==='/api/v1/courses/1/quizzes/22'&&opts?.method!=='POST') data={id:22,title:'Canvas Quiz',question_count:1,points_possible:10,workflow_state:'available',html_url:'https://school.instructure.com/courses/1/quizzes/22'};
   else if(path==='/api/v1/courses/1/quizzes/22/submissions'&&opts?.method==='POST') data={quiz_submissions:[{id:77,attempt:1,validation_token:'quiz-validation',started_at:new Date().toISOString()}]};
   else if(path.startsWith('/api/v1/quiz_submissions/77/questions')) data={quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Choose A',answers:[{id:1,text:'A'},{id:2,text:'B'}]}}]};
+  else if (path.startsWith('/login/session_token')) data={session_url:'https://school.instructure.com/login?session_token=boot-session-token'};
   else if (path==='/api/v1/users/self') data={id:7,name:'Test Student'};
   else if (path.startsWith('/api/v1/courses/1/assignments/11/submissions/7?')) data={submission_history:[{attempt:1,workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}],submission_comments:[{author_name:'Instructor',comment:'Good start. Add one more example.',created_at:'2026-11-17T12:00:00Z'}],rubric_assessment:{}};
   else if (path.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
@@ -208,6 +209,12 @@ assert.ok(window.document.getElementById('workspace').textContent.includes('New 
 assert.ok(window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'New Quiz item prompts are previewed inside NORTHSTAR');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Open official New Quizzes player inside NORTHSTAR'),'New Quiz player is launched inside NORTHSTAR');
 assert.ok(window.document.getElementById('nsLaunchNewQuiz'),'New Quiz preview provides an authenticated launch control');
+window.document.getElementById('nsLaunchNewQuiz').click();
+await new Promise(r=>setTimeout(r,30));
+assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F13')),'New Quiz launch requests a short-lived Canvas browser session for the correct assignment');
+assert.ok(window.document.getElementById('viewerOverlay').classList.contains('open'),'authenticated Canvas player opens inside the NORTHSTAR content view');
+assert.ok(window.document.getElementById('viewerFrame').src.includes('boot-session-token'),'the Canvas-issued session URL is opened without exposing the API token in the URL');
+window.closeViewer();
 assert.equal(window.document.getElementById('phase4StartQuiz'),null,'NORTHSTAR never invents a New Quiz attempt start');
 assert.ok(!window.document.getElementById('workspace').textContent.includes('DO NOT SHOW THIS'),'New Quiz preview never renders answer/scoring payloads');
 
