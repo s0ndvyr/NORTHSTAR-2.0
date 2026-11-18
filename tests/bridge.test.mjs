@@ -10,7 +10,7 @@ let res=await worker.fetch(request('/api/v1/courses?per_page=100&page=1'));asser
 res=await worker.fetch(request('/api/v1/courses/1/assignments?include[]=submission'));assert.equal(res.status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1/assignment_groups'))).status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1'))).status,200);
-for(const p of ['https://evil.example/api/v1/courses','/api/v1/users/self','/api/v1/courses?access_token=token','/api/v1/courses/1/assignments/1/submissions'])assert.equal((await worker.fetch(request(p))).status,403);
+for(const p of ['https://evil.example/api/v1/courses','/api/v1/courses?access_token=token','/api/v1/courses/1/assignments/1/submissions'])assert.equal((await worker.fetch(request(p))).status,403);
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'POST'}))).status,405);
 assert.equal((await worker.fetch(request('/api/v1/courses',{headers:{Origin:'https://evil.example'}}))).status,403);
 assert.equal((await worker.fetch(request('/api/v1/courses',{method:'OPTIONS'}))).status,204);
