@@ -20,7 +20,7 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
 }
-function validateWrite(path,data){
+function isWritePath(path){return /^\\/api\\/v1\\/courses\\/\\d+\\/assignments\\/\\d+\\/submissions$/.test(path)||/^\\/api\\/v1\\/courses\\/\\d+\\/quizzes\\/\\d+\\/submissions$/.test(path)||/^\\/api\\/v1\\/quiz_submissions\\/\\d+\\/questions$/.test(path)||/^\\/api\\/v1\\/courses\\/\\d+\\/quizzes\\/\\d+\\/submissions\\/\\d+\\/complete$/.test(path);}\nfunction validateWrite(path,data){
   if(!isObject(data))return 'JSON object required';
   const assignment=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/;
   const quizStart=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/;
@@ -65,6 +65,7 @@ export default {
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     let body;
     if(request.method==='POST'){
+      if(!isWritePath(url.pathname))return reply('Write path not allowed',405);
       if(!request.headers.get('Content-Type')?.startsWith('application/json'))return reply('JSON required',415);
       const raw=await request.text();if(new TextEncoder().encode(raw).length>200000)return reply('Request too large',413);
       let data;try{data=JSON.parse(raw);}catch{return reply('Invalid JSON',400);}
