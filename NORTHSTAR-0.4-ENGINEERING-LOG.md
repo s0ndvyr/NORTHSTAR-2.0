@@ -177,7 +177,9 @@ Canvas' public API supports quiz attempt creation, answer updates, and completio
 
 ## Phase 4 verification status
 
-- [ ] Confirm all GitHub Actions checks pass on the latest .4.4 branch commit.
+Automated CI is green on the .4.4 branch: JavaScript syntax checks, eight unit suites (including Canvas bridge allowlists, quiz lifecycle and signed-upload transport), and jsdom browser boot all passed. This verifies mocks and application startup, not the student's live Canvas account. Real Canvas quiz, file, discussion and resubmission tests remain user acceptance gates.
+
+- [x] Confirm GitHub Actions syntax, eight unit suites, and jsdom browser boot checks pass on the .4.4 development branch (run #44236628866).
 - [ ] Verify browser boot and responsive workspace behavior on iPad Safari.
 - [ ] Live-test a low-risk text-entry assignment and confirm Canvas submission state/attempt number.
 - [ ] Live-test a permitted file upload and confirm the uploaded file is attached to the Canvas submission.
@@ -185,7 +187,7 @@ Canvas' public API supports quiz attempt creation, answer updates, and completio
 - [ ] Live-test a practice/ungraded classic Canvas quiz first; verify start, answer save, resume and completion.
 - [ ] Verify a locked/New Quizzes/unsupported quiz gracefully falls back without creating duplicate attempts.
 - [ ] Verify hide/restore persists after refresh and does not mutate Canvas data.
-- [ ] Redeploy the updated `canvas-bridge/worker.js` to Cloudflare and verify the configured Canvas origin and NORTHSTAR origin before enabling writes.
+- [ ] Redeploy the updated `canvas-bridge/worker.js` to Cloudflare and verify the configured Canvas origin and NORTHSTAR origin before enabling writes. This deployment is separate from GitHub Pages and is not automatic.
 - [ ] Review all write paths and file upload behavior for ambiguous network outcomes.
 - [ ] Create release PR, merge .4.4 to `main`, then verify GitHub Pages and Cloudflare bridge deployment separately.
 
