@@ -235,6 +235,8 @@ assert.equal(window.document.getElementById('viewerFrame').src,'https://docs.exa
 assert.equal(window.document.getElementById('viewerExternalLink').href,'https://docs.example.edu/document/123','an explicit fallback exists when a provider blocks framing');
 assert.equal(externalTabs,0,'resource handling does not immediately leave the dashboard');
 window.closeViewer();
+assert.equal(window.document.getElementById('viewerExternalLink').style.display,'none','closing the viewer hides the stale external fallback');
+assert.equal(window.document.getElementById('viewerExternalLink').hasAttribute('href'),false,'closing the viewer clears the previous short-lived/resource URL');
 
 assert.equal(window.document.getElementById('phase4StartQuiz'),null,'NORTHSTAR never invents a New Quiz attempt start');
 assert.ok(!window.document.getElementById('workspace').textContent.includes('DO NOT SHOW THIS'),'New Quiz preview never renders answer/scoring payloads');
@@ -277,5 +279,5 @@ assert.equal(window.__testVault.has('canvas-credentials'),false,'disconnect remo
 assert.ok(window.document.getElementById('canvasStatus').textContent.includes('remains available offline'),'disconnect explains that coursework remains available offline');
 assert.ok(window.NorthstarAssignmentRoom.routeId()===null,'leaving the assignment page clears the deep-link route');
 assert.equal(errors.length,0,errors.join(' | '));
-console.log('PASS: mocked live sync and app boots clean, grades compute, periods manage, AI key uses the device vault, external assignment links open outside the dashboard');
+console.log('PASS: mocked live sync and app boot, grades, periods, AI vault, native Canvas handoff and in-dashboard resource routing');
 process.exit(0);

@@ -1091,6 +1091,7 @@ function ensureViewerExternalLink(url,label){
   link.href=url;
   link.textContent=label||'Open externally ↗';
   link.hidden=false;
+  link.style.display='';
   link.setAttribute('aria-label',link.textContent.replace(/\s*↗$/,''));
   return link;
 }
@@ -1100,6 +1101,7 @@ function openCanvasExperienceInApp(url,title,note){
   if(target.protocol!=='https:'||target.username||target.password)throw Error('Secure Canvas experiences must use HTTPS and cannot contain embedded credentials.');
   const nativeBridge=window.webkit?.messageHandlers?.northstarSecureContent;
   if(nativeBridge&&typeof nativeBridge.postMessage==='function'){
+    closeViewer();
     nativeBridge.postMessage({action:'open',url:target.href,title:String(title||'Canvas experience').slice(0,160)});
     return 'native';
   }
@@ -1188,7 +1190,7 @@ function closeViewer(){
   const frame=$('#viewerFrame');
   if(frame){frame.src='about:blank';frame.referrerPolicy='no-referrer';}
   const link=$('#viewerExternalLink');
-  if(link){link.removeAttribute('href');link.hidden=true;}
+  if(link){link.removeAttribute('href');link.hidden=true;link.style.display='none';}
 }
 // Expose handlers that index.html calls via onclick (premium.js is an IIFE).
 window.addPeriod = addPeriod;

@@ -377,11 +377,11 @@ These features require separate official provider integrations and live acceptan
 
 ### Verified automated status at the preceding exact commit
 
-The preceding branch head c015541d7c07893ff3baf62439f9320d711d6be3 had successful Phase 3 and Phase 4 workflows (44371666502 and 44371666335). These tests use mock responses; they do not establish live NNPS Canvas, provider, Safari or Pencil behavior. The new .4.4.5 edits require fresh Actions runs.
+The .4.4.5 implementation commit df91fc51dd5031a12495cb37b9aa36d43bad2d4c passed the Phase 3 workflow (44456314835) and Phase 4 workflow (44456314798). The Phase 4 workflow also passed on the duplicate push run (44456305560). These tests use mock responses; they do not establish live NNPS Canvas, provider, Safari or Pencil behavior.
 
 ### Phase 4 exit gates - not to be marked complete until verified
 
-- [ ] Fresh Phase 3 and Phase 4 workflows pass on the exact final commit.
+- [x] Phase 3 and Phase 4 GitHub Actions pass on implementation commit `df91fc51dd5031a12495cb37b9aa36d43bad2d4c` (Phase 3 run `44456314835`; Phase 4 run `44456314798`).
 - [ ] Deploy the matching repository Worker source to the personal Cloudflare Worker and verify Canvas session-token/LTI routes against the actual account.
 - [ ] Test standard rich-text, URL and file submissions against a permitted low-risk assignment; confirm Canvas attempt history.
 - [ ] Test supported Classic Quiz lifecycle and recovery with a practice quiz; confirm the real Canvas attempt.
