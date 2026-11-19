@@ -41,9 +41,11 @@ public final class NorthstarSecureContentPresenter: NSObject, WKScriptMessageHan
               message.frameInfo.isMainFrame,
               message.frameInfo.securityOrigin.protocol == "https",
               message.frameInfo.securityOrigin.host == trustedDashboardHost,
+              message.frameInfo.securityOrigin.port == 443,
               let payload = message.body as? [String: Any],
               (payload["action"] as? String) == "open",
               let rawURL = payload["url"] as? String,
+              rawURL.count <= 12_000,
               let url = URL(string: rawURL),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               components.scheme == "https",
@@ -213,7 +215,7 @@ private final class NorthstarSecureContentViewController: UIViewController, WKNa
             return
         }
 
-        if let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme), url.user == nil, url.password == nil {
+        if url.scheme?.lowercased() == "https", url.user == nil, url.password == nil {
             decisionHandler(.allow)
             return
         }
@@ -227,7 +229,7 @@ private final class NorthstarSecureContentViewController: UIViewController, WKNa
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         // Canvas and LTI providers often use target="_blank" for help, authentication or resources.
         // Keep those navigations in this same top-level secure view.
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url, url.scheme == "https" {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url, url.scheme?.lowercased() == "https", url.user == nil, url.password == nil {
             webView.load(navigationAction.request)
         }
         return nil

@@ -819,7 +819,7 @@ let submissionBusy=false;let phase441AnnotatedPdf=null;
 function submissionPanel(a){
   if(mode!=='live') return '';
   const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
-  if(!types.length){if((a.submissionTypes||[]).includes('external_tool')||(a.submissionTypes||[]).includes('basic_lti_launch'))return '<div class="ns-room-submission"><h3>Authenticated course tool</h3><p class="small">NORTHSTAR asks Canvas to generate the official assessment launch for this assignment. The provider controls its own assessment and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasExternalTool()">Launch provider inside NORTHSTAR</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';if((a.submissionTypes||[]).includes('media_recording'))return '<div class="ns-room-submission"><h3>Media recording submission</h3><p class="small">The official Canvas recorder can be launched inside the NORTHSTAR secure content view. Canvas retains control of the recording and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas recorder inside NORTHSTAR</button></div>';if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>Canvas DocViewer annotation</h3><p class="small">This assignment uses Canvas’s native student-annotation workflow. NORTHSTAR opens the original assignment through a temporary authenticated Canvas session so DocViewer can save and submit its own annotation state.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'student-annotation\')">Open native DocViewer inside NORTHSTAR</button><p class="ns-room-help mt">Stay in DocViewer until Canvas confirms submission. An exported PDF is not substituted for native annotations.</p></div>';
+  if(!types.length){if((a.submissionTypes||[]).includes('external_tool')||(a.submissionTypes||[]).includes('basic_lti_launch'))return '<div class="ns-room-submission"><h3>Authenticated course tool</h3><p class="small">NORTHSTAR asks Canvas to generate the official assessment launch for this assignment. The provider controls its own assessment and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasExternalTool()">Launch provider inside NORTHSTAR</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';if((a.submissionTypes||[]).includes('media_recording'))return '<div class="ns-room-submission"><h3>Media recording submission</h3><p class="small">The original Canvas assignment opens in NORTHSTAR’s secure content view. Canvas retains control of the recorder and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas recorder inside NORTHSTAR</button><p id="nsMediaRecordingStatus" class="ns-room-help mt" role="status">No recorder session has been requested.</p></div>';if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>Canvas DocViewer annotation</h3><p class="small">This assignment uses Canvas’s native student-annotation workflow. NORTHSTAR opens the original assignment through a temporary authenticated Canvas session so DocViewer can save and submit its own annotation state.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'student-annotation\')">Open Canvas Student Annotation inside NORTHSTAR</button><p id="nsStudentAnnotationStatus" class="ns-room-help mt" role="status">No annotation session has been requested.</p><p class="ns-room-help mt">Choose Start Assignment, then Student Annotation. Stay in Canvas until it confirms submission. An exported PDF is not substituted for native annotations.</p></div>';
   return '<p class="small muted mt">This assignment requires a provider-specific or unsupported Canvas workflow. NORTHSTAR will not simulate completion.</p>';}
   const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
   return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p><button type="button" class="btn btn-ghost btn-sm mt" id="nsUseAnnotatedPdf">Use annotated PDF from Document Studio</button><p class="tiny muted mt" id="nsAnnotatedPdfStatus">Open a PDF and annotate it to attach an exported copy.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
@@ -1077,64 +1077,119 @@ async function testAiKey(){
   catch(e){ if(st) st.textContent='✗ '+e.message; }
 }
 
+function ensureViewerExternalLink(url,label){
+  let link=$('#viewerExternalLink');
+  if(!link){
+    link=document.createElement('a');
+    link.id='viewerExternalLink';
+    link.className='btn btn-ghost btn-sm';
+    link.target='_blank';
+    link.rel='noopener noreferrer';
+    link.referrerPolicy='no-referrer';
+    $('#viewerOverlay .ws-head').insertBefore(link,$('#viewerOverlay .ws-head .ws-close'));
+  }
+  link.href=url;
+  link.textContent=label||'Open externally ↗';
+  link.hidden=false;
+  link.setAttribute('aria-label',link.textContent.replace(/\s*↗$/,''));
+  return link;
+}
 function openCanvasExperienceInApp(url,title,note){
-  let target;try{target=new URL(url);}catch{throw Error('Canvas returned an invalid secure experience URL.');}
+  let target;
+  try{target=new URL(url);}catch{throw Error('Canvas returned an invalid secure experience URL.');}
   if(target.protocol!=='https:'||target.username||target.password)throw Error('Secure Canvas experiences must use HTTPS and cannot contain embedded credentials.');
   const nativeBridge=window.webkit?.messageHandlers?.northstarSecureContent;
-  if(nativeBridge&&typeof nativeBridge.postMessage==='function'){nativeBridge.postMessage({action:'open',url:target.href,title:String(title||'Canvas experience').slice(0,160)});return 'native';}
+  if(nativeBridge&&typeof nativeBridge.postMessage==='function'){
+    nativeBridge.postMessage({action:'open',url:target.href,title:String(title||'Canvas experience').slice(0,160)});
+    return 'native';
+  }
   const frame=$('#viewerFrame'),overlay=$('#viewerOverlay'),heading=$('#viewerOverlay .ws-head h2'),noteNode=$('#viewerNote');
   if(!frame||!overlay)throw Error('The NORTHSTAR secure content view is unavailable.');
   if(heading)heading.textContent=title||'Canvas experience';
-  if(noteNode)noteNode.textContent=(note||'Canvas is opening its official authenticated experience inside NORTHSTAR.')+' On iPad Safari, cross-site cookie or frame policies may prevent some pages from working in this embedded preview; the native WKWebView host uses a top-level persistent web view for those providers.';
-  frame.src=target.href;overlay.classList.add('open');return 'embedded';
+  if(noteNode)noteNode.textContent=(note||'Canvas is opening its official authenticated experience inside NORTHSTAR.')+' This browser preview may be blocked by Canvas/provider framing rules or cross-site cookie restrictions. Use the in-app native WKWebView host where installed, or the explicit external fallback if the provider refuses embedding.';
+  frame.referrerPolicy='no-referrer';
+  frame.src=target.href;
+  ensureViewerExternalLink(target.href,'Open in a separate browser tab ↗');
+  overlay.classList.add('open');
+  return 'embedded';
 }
 async function launchCanvasAssignmentExperience(kind){
-  const a=activeAssignment;if(!a)return;const c=courseById(a.course);if(!c?.canvasId||!a.canvasId)return;
-  const status=kind==='new-quiz'?$('#nsNewQuizLaunchStatus'):$('#submissionStatus');
+  const a=activeAssignment;
+  if(!a)return;
+  const c=courseById(a.course);
+  if(!c?.canvasId||!a.canvasId)return;
+  const status=kind==='new-quiz'?$('#nsNewQuizLaunchStatus'):kind==='student-annotation'?$('#nsStudentAnnotationStatus'):kind==='media-recording'?$('#nsMediaRecordingStatus'):$('#submissionStatus');
   if(status)status.textContent='Requesting a short-lived authenticated Canvas browser session…';
-  try{const returnTo='/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId);
+  try{
+    const returnTo='/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId);
     const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo});
-    const title=kind==='student-annotation'?'Canvas DocViewer · '+a.title:kind==='new-quiz'?'New Quizzes · '+a.title:kind==='media-recording'?'Canvas Media Recorder · '+a.title:a.title;
-    const host=openCanvasExperienceInApp(session.sessionUrl,title,'Canvas has issued a short-lived session URL. The official Canvas assignment page will handle the assessment or annotation and its submission state.');
-    if(status)status.textContent=host==='native'?'Canvas opened in NORTHSTAR’s secure native web view.':'Canvas opened in the embedded NORTHSTAR preview. If the page is blank or asks you to sign in repeatedly, this browser may block third-party session cookies.';
-  }catch(error){if(status)status.textContent='Could not start the authenticated Canvas session: '+error.message;toast('Canvas session could not be opened.');}
+    const title=kind==='student-annotation'?'Canvas Student Annotation · '+a.title:kind==='new-quiz'?'New Quizzes · '+a.title:kind==='media-recording'?'Canvas Media Recorder · '+a.title:a.title;
+    const note=kind==='student-annotation'
+      ?'Canvas has opened the original assignment. In that page, choose Start Assignment, then Student Annotation. Canvas—not NORTHSTAR—owns the official annotation state and submission confirmation.'
+      :'Canvas has issued a short-lived session URL. The official Canvas assignment page/player will handle this workflow and its submission state.';
+    const host=openCanvasExperienceInApp(session.sessionUrl,title,note);
+    if(status)status.textContent=host==='native'?'Canvas opened in NORTHSTAR’s secure native web view.':'Canvas opened in the embedded NORTHSTAR preview. If the page is blank or repeatedly asks you to sign in, use the visible browser fallback or the native WKWebView host.';
+  }catch(error){
+    if(status)status.textContent='Could not start the authenticated Canvas session: '+error.message;
+    toast('Canvas session could not be opened.');
+  }
 }
 async function launchCanvasExternalTool(){
-  const a=activeAssignment;if(!a)return;const c=courseById(a.course),status=$('#nsExternalToolStatus');
+  const a=activeAssignment;
+  if(!a)return;
+  const c=courseById(a.course),status=$('#nsExternalToolStatus');
   if(status)status.textContent='Asking Canvas to generate the assignment-specific LTI assessment launch…';
-  try{const launch=await window.NorthstarWorkspace.getExternalToolLaunch({credentials:getCredentials(),courseId:c.canvasId,assignmentId:a.canvasId});
-    const host=openCanvasExperienceInApp(launch.url,launch.name||('Course tool · '+a.title),'This is a Canvas-generated sessionless LTI assessment launch. The provider handles its own assessment and final submission.');
-    if(status)status.textContent=host==='native'?'Provider launched in NORTHSTAR’s secure native web view.':'Provider opened in the embedded preview. If the provider blocks framing, use the native WKWebView host for the reliable in-app route.';
-  }catch(error){if(status)status.textContent='Canvas could not create the external-tool launch: '+error.message;toast('External tool launch failed.');}
+  try{
+    const launch=await window.NorthstarWorkspace.getExternalToolLaunch({credentials:getCredentials(),courseId:c.canvasId,assignmentId:a.canvasId});
+    const host=openCanvasExperienceInApp(launch.url,launch.name||('Course tool · '+a.title),'This is a Canvas-generated sessionless LTI assessment launch. The provider owns its assessment, identity checks, timer, answers and final submission.');
+    if(status)status.textContent=host==='native'?'Provider launched in NORTHSTAR’s secure native web view.':'Provider opened in the embedded preview. If it blocks framing, use the visible browser fallback or the native WKWebView host.';
+  }catch(error){
+    if(status)status.textContent='Canvas could not create the external-tool launch: '+error.message;
+    toast('External tool launch failed.');
+  }
 }
 async function launchCanvasFileInApp(file,a,c){
   if(!file?.id||!a||!c?.canvasId)return;
-  try{const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo:'/courses/'+Number(c.canvasId)+'/files/'+Number(file.id)});openCanvasExperienceInApp(session.sessionUrl,file.name||'Canvas document','Canvas is opening its own authenticated document preview.');}
-  catch(error){toast('Canvas document preview failed: '+error.message);}
+  try{
+    const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo:'/courses/'+Number(c.canvasId)+'/files/'+Number(file.id)});
+    openCanvasExperienceInApp(session.sessionUrl,file.name||'Canvas document','Canvas is opening its own authenticated document preview.');
+  }catch(error){toast('Canvas document preview failed: '+error.message);}
 }
 window.launchCanvasAssignmentExperience=launchCanvasAssignmentExperience;
 window.launchCanvasExternalTool=launchCanvasExternalTool;
 function previewResourceInDashboard(url,title){
-  let target;try{target=new URL(url);}catch{toast('This resource does not have a valid link.');return;}
-  if(target.protocol!=='https:'){toast('Only secure HTTPS resources can be previewed.');return;}
+  let target;
+  try{target=new URL(url);}catch{toast('This resource does not have a valid link.');return;}
+  if(target.protocol!=='https:'||target.username||target.password){
+    toast('Only secure HTTPS resources without embedded credentials can be previewed.');
+    return;
+  }
   const frame=$('#viewerFrame'),overlay=$('#viewerOverlay'),heading=$('#viewerOverlay .ws-head h2'),note=$('#viewerNote');
   if(!frame||!overlay)return;
   if(heading)heading.textContent=title||'Assignment resource';
-  if(note)note.textContent='Preview attempt. Canvas and external learning tools may block embedding; if the page is blank, use Open externally.';
-  let link=$('#viewerExternalLink');
-  if(!link){link=document.createElement('a');link.id='viewerExternalLink';link.className='btn btn-ghost btn-sm';link.target='_blank';link.rel='noopener noreferrer';$('#viewerOverlay .ws-head').insertBefore(link,$('#viewerOverlay .ws-head .ws-close'));}
-  link.href=target.href;link.textContent='Open externally ↗';
-  frame.src=target.href;overlay.classList.add('open');
+  if(note)note.textContent='NORTHSTAR is attempting an in-dashboard preview. Some course and publisher sites block embedding; use the visible external fallback only when the embedded view cannot load.';
+  frame.referrerPolicy='no-referrer';
+  frame.src=target.href;
+  ensureViewerExternalLink(target.href,'Open externally ↗');
+  overlay.classList.add('open');
 }
 function openInDashboard(url){
-  let target;try{target=new URL(url);}catch{toast('This assignment does not have a valid external link.');return;}
-  if(target.protocol!=='https:'){toast('Only secure HTTPS assignment links can be opened.');return;}
-  // Google Drive/Docs and many Canvas resources deliberately reject iframe embedding.
-  // Open the authenticated destination directly instead of showing a misleading 403 panel.
-  const opened=window.open(target.href,'_blank','noopener,noreferrer');
-  if(!opened) toast('Your browser blocked the new tab. Use the Canvas link in the assignment details.');
+  let target;
+  try{target=new URL(url);}catch{toast('This assignment does not have a valid external link.');return;}
+  if(target.protocol!=='https:'||target.username||target.password){
+    toast('Only secure HTTPS assignment links can be opened.');
+    return;
+  }
+  previewResourceInDashboard(target.href,'Assignment resource');
 }
-function closeViewer(){ const m=$('#viewerOverlay'); if(m) m.classList.remove('open'); const f=$('#viewerFrame'); if(f) f.src=''; }
+function closeViewer(){
+  const overlay=$('#viewerOverlay');
+  if(overlay)overlay.classList.remove('open');
+  const frame=$('#viewerFrame');
+  if(frame){frame.src='about:blank';frame.referrerPolicy='no-referrer';}
+  const link=$('#viewerExternalLink');
+  if(link){link.removeAttribute('href');link.hidden=true;}
+}
 // Expose handlers that index.html calls via onclick (premium.js is an IIFE).
 window.addPeriod = addPeriod;
 window.deletePeriod = deletePeriod;

@@ -3,8 +3,8 @@
 Last updated: 2026-11-18
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.4.3` (development branch; not yet production)
-Package version: `0.4.4.3`
+Release identifier: `NORTHSTAR / .4.4.5` (development branch; not yet production)
+Package version: `0.4.4.5`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -362,3 +362,31 @@ These features require separate official provider integrations and live acceptan
 - [ ] Test a Canvas `student_annotation` assignment in native DocViewer and verify the official Canvas submission record.
 - [ ] Test a provider-specific Office/document assignment with its official authenticated viewer.
 - [ ] Install and test the native WKWebView host on iPadOS; the web PWA iframe is not a guaranteed substitute.
+
+
+## NORTHSTAR / .4.4.5 - Phase 4 In-App Routing & Native Host Hardening
+
+**Status: implementation and mocked regression coverage added to the Phase 4 development branch. This is not a production release.**
+
+- Ordinary HTTPS assignment/resource links now attempt the in-dashboard viewer first rather than immediately opening a new browser tab. The viewer has a visible external fallback because Canvas and external providers may block iframe embedding.
+- Authenticated Canvas/LTI session views set a no-referrer policy and expose an explicit fallback when the PWA must use an iframe. Short-lived session URLs are cleared from the iframe on close and are not placed in local storage or debug output.
+- Student Annotation copy now explains the actual handoff: the official assignment page opens first; the student then chooses Start Assignment, then Student Annotation. Canvas owns the saved annotation state and submission confirmation. An exported Document Studio PDF is not represented as native DocViewer annotation data.
+- The native Swift host validates the trusted dashboard origin and HTTPS port, limits message URL size, refuses plaintext HTTP navigation and refuses credential-bearing popup destinations. The host still must be integrated into and compiled as a real iOS app target before the JavaScript bridge exists on a device.
+- The browser boot suite now exercises both branches: the PWA iframe fallback and the native window.webkit.messageHandlers.northstarSecureContent handoff. It also verifies ordinary HTTPS resource links stay in the NORTHSTAR viewer first and that the escape link is explicit.
+- Version strings are synchronized to NORTHSTAR / .4.4.5 and package 0.4.4.5.
+
+### Verified automated status at the preceding exact commit
+
+The preceding branch head c015541d7c07893ff3baf62439f9320d711d6be3 had successful Phase 3 and Phase 4 workflows (44371666502 and 44371666335). These tests use mock responses; they do not establish live NNPS Canvas, provider, Safari or Pencil behavior. The new .4.4.5 edits require fresh Actions runs.
+
+### Phase 4 exit gates - not to be marked complete until verified
+
+- [ ] Fresh Phase 3 and Phase 4 workflows pass on the exact final commit.
+- [ ] Deploy the matching repository Worker source to the personal Cloudflare Worker and verify Canvas session-token/LTI routes against the actual account.
+- [ ] Test standard rich-text, URL and file submissions against a permitted low-risk assignment; confirm Canvas attempt history.
+- [ ] Test supported Classic Quiz lifecycle and recovery with a practice quiz; confirm the real Canvas attempt.
+- [ ] Test an intended non-graded discussion response and confirm Canvas records it.
+- [ ] Test PDF rendering/annotation/export/upload with Apple Pencil on iPad.
+- [ ] Test New Quizzes, Student Annotation, media recording, external LTI and provider-specific files on the real account. Record which ones can stay in the app and which ones need their provider's supported fallback.
+- [ ] Test iPad Safari themes, keyboard/VoiceOver, reduced motion, offline draft retention, large files, browser back and return navigation.
+- [ ] Integrate and compile the Swift presenter in a real iOS host app, then test the native WKWebView path on iPadOS. This repository alone is still a PWA.

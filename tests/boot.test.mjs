@@ -61,7 +61,7 @@ assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas even
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
 const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
 assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text allowlist strips scripts, handlers and unsafe links');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.4', 'runtime release identifier matches Phase 4.4.4');
+assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.5', 'runtime release identifier matches Phase 4.4.4');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
@@ -215,6 +215,27 @@ assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=
 assert.ok(window.document.getElementById('viewerOverlay').classList.contains('open'),'authenticated Canvas player opens inside the NORTHSTAR content view');
 assert.ok(window.document.getElementById('viewerFrame').src.includes('boot-session-token'),'the Canvas-issued session URL is opened without exposing the API token in the URL');
 window.closeViewer();
+
+// Exercise the native iOS host path as well as the PWA iframe fallback.
+const nativeMessages=[];
+window.webkit={messageHandlers:{northstarSecureContent:{postMessage(message){nativeMessages.push(message);}}}};
+window.document.getElementById('nsLaunchNewQuiz').click();
+await new Promise(r=>setTimeout(r,30));
+assert.equal(nativeMessages.length,1,'authenticated Canvas content uses the native message handler when the host is installed');
+assert.equal(nativeMessages[0].action,'open');
+assert.ok(nativeMessages[0].url.includes('boot-session-token'),'native handoff uses the Canvas-issued temporary session URL');
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'native handoff does not also open the PWA iframe');
+delete window.webkit;
+
+// Ordinary HTTPS resources are previewed inside NORTHSTAR before an external escape.
+let externalTabs=0;window.open=()=>{externalTabs++;return {};};
+window.openInDashboard('https://docs.example.edu/document/123');
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),true,'ordinary resource links open inside NORTHSTAR first');
+assert.equal(window.document.getElementById('viewerFrame').src,'https://docs.example.edu/document/123','resource preview receives the intended HTTPS destination');
+assert.equal(window.document.getElementById('viewerExternalLink').href,'https://docs.example.edu/document/123','an explicit fallback exists when a provider blocks framing');
+assert.equal(externalTabs,0,'resource handling does not immediately leave the dashboard');
+window.closeViewer();
+
 assert.equal(window.document.getElementById('phase4StartQuiz'),null,'NORTHSTAR never invents a New Quiz attempt start');
 assert.ok(!window.document.getElementById('workspace').textContent.includes('DO NOT SHOW THIS'),'New Quiz preview never renders answer/scoring payloads');
 

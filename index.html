@@ -39,7 +39,7 @@
       <button class="icon-btn hamburger" id="hamburger">☰</button>
       <div class="search"><span style="color:var(--muted)">⌕</span><input id="globalSearch" placeholder="Search assignments, courses, notes…"><kbd>/</kbd></div>
       <span class="pill hide-m"><span class="dot"></span> <span id="syncLabel">Demo workspace · not synced</span></span>
-      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / .4.4.4</span>
+      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / .4.4.5</span>
       <button class="icon-btn" id="bellBtn" title="Activity & Alerts">♪<span class="n" id="bellN">4</span></button>
       <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.82.55l-.05.07h-3.4l-.02-.08a1.7 1.7 0 0 0-1.28-1.27l-.08-.02-2.94 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34l-.08.03-1.7-2.94.06-.06A1.7 1.7 0 0 0 5.3 15.6l.03-.08v-3.4l-.08-.02a1.7 1.7 0 0 0-1.27-1.28l-.07-.02 1.7-2.94.08.03a1.7 1.7 0 0 0 1.82-.55l.05-.07h3.4l.02.08a1.7 1.7 0 0 0 1.28 1.27l.08.02 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.08-.03 1.7 2.94-.06.06a1.7 1.7 0 0 0-.55 1.82l-.03.08v3.4l.08.02a1.7 1.7 0 0 0 1.27 1.28z"/></svg></button>
       <button class="btn btn-primary btn-sm hide-m" onclick="openConnect()">⬡ Connect LMS</button>
@@ -297,7 +297,7 @@
             <p class="sub">Customize your NORTHSTAR workspace. Changes save automatically.</p>
           </div>
           <div class="head-actions">
-            <span class="pill" style="font-family:var(--mono)">NORTHSTAR / .4.4.2</span>
+            <span class="pill" style="font-family:var(--mono)">NORTHSTAR / .4.4.5</span>
             <button class="btn btn-ghost btn-sm" onclick="resetSettings()">↺ Reset Defaults</button>
           </div>
         </div>
@@ -461,7 +461,7 @@
 <div class="overlay" id="viewerOverlay">
   <div class="workspace" style="max-width:min(1200px,98vw);height:92vh;display:flex;flex-direction:column">
     <div class="ws-head"><div><span class="eyebrow">IN-DASHBOARD VIEW</span><h2>Canvas page</h2><p class="small muted mt" id="viewerNote"></p></div><button class="ws-close" aria-label="Close" onclick="closeViewer()">✕</button></div>
-    <div style="flex:1;min-height:0"><iframe id="viewerFrame" title="Canvas authenticated experience" allow="camera; microphone; fullscreen; clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;border-radius:12px;background:#fff"></iframe></div>
+    <div style="flex:1;min-height:0"><iframe id="viewerFrame" title="Canvas authenticated experience" allow="camera; microphone; fullscreen; clipboard-read; clipboard-write" referrerpolicy="no-referrer" style="width:100%;height:100%;border:0;border-radius:12px;background:#fff"></iframe></div>
   </div>
 </div>
 
