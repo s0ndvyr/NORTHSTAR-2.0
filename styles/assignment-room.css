@@ -115,3 +115,90 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
  #nsPdfInputHint{width:100%;margin:0}
 }
 @media(prefers-reduced-motion:reduce){#wsOverlay #workspace.workspace,.ns-loading-orb,.ns-loading-main span,.ns-loading-side span,.ns-loading-progress i{animation:none!important;transition:none!important}}
+
+/* .4.4.3 — native writing, resource preview and assessment controls */
+.ns-rich-editor-shell{overflow:hidden;border:1px solid var(--border2);border-radius:13px;background:rgba(2,8,20,.34)}
+.ns-rich-editor-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:7px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--border)}
+.ns-rich-editor-toolbar button{min-width:34px;min-height:31px;padding:5px 9px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);font-size:11px;font-weight:750}
+.ns-rich-editor-toolbar button:hover,.ns-rich-editor-toolbar button:focus-visible{border-color:var(--border2);background:rgba(255,255,255,.06);color:var(--text);outline:none}
+.ns-rich-editor-toolbar span{width:1px;height:20px;background:var(--border);margin:0 3px}
+.ns-rich-editor{min-height:260px;max-height:62vh;overflow:auto;padding:17px 18px;color:var(--text);font:400 14px/1.75 var(--sans);outline:none;overflow-wrap:anywhere}
+.ns-rich-editor:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+.ns-rich-editor p{margin:0 0 10px}.ns-rich-editor ul,.ns-rich-editor ol{padding-left:24px;margin:8px 0}.ns-rich-editor blockquote{margin:12px 0;padding:8px 13px;border-left:3px solid var(--accent);background:rgba(255,255,255,.035);color:var(--muted)}
+.ns-rich-editor-footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--border);background:rgba(255,255,255,.02)}
+.ns-rich-editor-footer .ns-room-help{margin:0;font-size:10px}
+.ns-room-file-kind{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.ns-room-file-icon{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:9px;background:rgba(255,255,255,.05);color:var(--accent);font-size:17px}
+.ns-resource-image{display:block;max-width:100%;max-height:75vh;margin:18px auto;object-fit:contain;border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.24)}
+.ns-resource-player{display:block;width:min(100%,900px);margin:40px auto}
+.ns-resource-text{max-height:70vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:20px;color:var(--text);font:12px/1.65 var(--mono);background:rgba(0,0,0,.2);border-radius:12px}
+.ns-quiz-question-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ns-quiz-flag{border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--muted);padding:5px 10px;font-size:10px;font-weight:750}
+.ns-quiz-flag.is-flagged{color:#fbbf24;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08)}
+.ns-quiz-progress-track{height:5px;margin-top:13px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.09)}
+.ns-quiz-progress-track i{display:block;width:0;height:100%;border-radius:inherit;background:var(--accent);transition:width .22s ease}
+.ns-quiz-navigator{position:sticky;top:65px;z-index:20;display:flex;gap:6px;flex-wrap:wrap;padding:9px 10px;margin:10px 0 14px;border:1px solid var(--border);border-radius:12px;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(16px)}
+.ns-quiz-navigator button{width:31px;height:31px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);font:11px var(--mono)}
+.ns-quiz-navigator button.is-answered{color:var(--text);border-color:color-mix(in srgb,var(--accent) 50%,var(--border));background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ns-quiz-navigator button:focus-visible,.ns-quiz-flag:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.quiz-question{scroll-margin-top:120px}
+@media(max-width:760px){.ns-rich-editor{min-height:220px;max-height:55vh;padding:13px;font-size:14px}.ns-rich-editor-footer{align-items:flex-start;flex-direction:column}.ns-quiz-navigator{top:58px}.ns-resource-image{max-height:55vh}}
+
+/* Theme-aware workspace surfaces: use the dashboard palette instead of fixed midnight colors. */
+.ns-room-header{background:color-mix(in srgb,var(--bg) 90%,transparent)}
+.ns-room-back{background:color-mix(in srgb,var(--text) 4%,transparent);color:var(--muted)}
+.ns-room-back:hover{background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text)}
+.ns-room-card{background:linear-gradient(150deg,color-mix(in srgb,var(--bg) 92%,var(--text) 8%),color-mix(in srgb,var(--bg) 97%,var(--text) 3%))}
+.ns-room-brief{color:var(--text)}
+.ns-room-brief a{color:var(--text);text-decoration-color:var(--border2)}
+.ns-room-file{background:color-mix(in srgb,var(--text) 3%,transparent);color:var(--muted)}
+.ns-room-file:hover{background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text)}
+.ns-room-file[aria-pressed="true"]{color:var(--text);border-color:var(--border2);background:color-mix(in srgb,var(--text) 8%,transparent)}
+.ns-room-tabs{background:color-mix(in srgb,var(--text) 3%,transparent)}
+.ns-room-tabs button.is-active{color:var(--text);background:color-mix(in srgb,var(--text) 9%,transparent);box-shadow:inset 0 0 0 1px var(--border)}
+.ns-room-panel textarea,.ns-room-panel input,.ns-room-panel select{background:color-mix(in srgb,var(--bg) 88%,var(--text) 12%);color:var(--text)}
+.ns-room-panel textarea:focus,.ns-room-panel input:focus,.ns-room-panel select:focus{border-color:var(--text);box-shadow:0 0 0 3px color-mix(in srgb,var(--text) 10%,transparent)}
+.ns-pdf-workbench{background:var(--bg)}
+.ns-pdf-toolbar,.ns-pdf-stylebar,.ns-pdf-foot{background:color-mix(in srgb,var(--bg) 90%,var(--text) 10%);border-color:var(--border);color:var(--text)}
+.ns-pdf-toolbar button{border-color:var(--border2);background:color-mix(in srgb,var(--text) 4%,transparent);color:var(--text)}
+.ns-pdf-toolbar button:hover{color:var(--text);background:color-mix(in srgb,var(--text) 9%,transparent)}
+.ns-pdf-toolbar button.is-active{border-color:var(--border2);color:var(--text);background:color-mix(in srgb,var(--text) 13%,transparent)}
+.ns-pdf-page-indicator,.ns-pdf-actions span{color:var(--muted)}
+.ns-pdf-text-entry input{background:var(--bg);border-color:var(--border2);color:var(--text)}
+#nsPdfInputHint{color:var(--muted)}
+.ns-pdf-stylebar input[type="range"]{accent-color:var(--text)}
+@media(prefers-reduced-motion:reduce){.ns-quiz-progress-track i,.ns-rich-editor-toolbar button,.ns-quiz-navigator button{transition:none!important}}
+
+.ns-submission-feedback h4{font:500 16px var(--serif);color:var(--text);margin:18px 0 8px}
+.ns-submission-attempt,.ns-submission-comment,.ns-submission-rubric{padding:11px 12px;margin:7px 0;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb,var(--text) 3%,transparent)}
+.ns-submission-attempt>div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ns-submission-attempt strong,.ns-submission-rubric strong{color:var(--text);font-size:11px}
+.ns-submission-attempt>div span,.ns-submission-attempt p,.ns-submission-comment span{color:var(--muted);font-size:10px}
+.ns-submission-score{margin-top:4px;color:var(--text)!important;font-weight:750}
+.ns-submission-comment p,.ns-submission-rubric p{color:var(--text);font-size:11px;line-height:1.6;margin-bottom:7px;white-space:pre-wrap}
+.ns-submission-rubric{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+.ns-submission-rubric p{grid-column:1/-1}
+
+/* New Quizzes read-only preview; attempts remain with the official Canvas player. */
+.ns-newquiz-brief{padding:18px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,color-mix(in srgb,var(--text) 5%,transparent),color-mix(in srgb,var(--text) 2%,transparent))}
+.ns-newquiz-brief h2{font:500 25px var(--serif);color:var(--text);margin:7px 0}
+.ns-newquiz-brief>div:first-child>p{color:var(--muted);font-size:11px}
+.ns-newquiz-instructions{margin:15px 0;color:var(--text);font-size:13px;line-height:1.75}
+.ns-newquiz-instructions p{margin:0 0 9px}
+.ns-newquiz-list{margin-top:18px}
+.ns-newquiz-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0}
+.ns-newquiz-item{margin:9px 0;padding:17px;border:1px solid var(--border);border-radius:13px;background:color-mix(in srgb,var(--text) 2.5%,transparent)}
+.ns-newquiz-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.ns-newquiz-item-head b{color:var(--muted);font-size:10px;letter-spacing:0}
+.ns-newquiz-item h3{margin:10px 0;color:var(--text);font-size:14px;font-weight:700}
+.ns-newquiz-prompt{color:var(--text);font-size:13px;line-height:1.75;overflow-wrap:anywhere}
+.ns-newquiz-prompt p{margin:0 0 9px}
+.ns-newquiz-prompt img{max-width:100%;height:auto;object-fit:contain;border-radius:8px}
+.ns-newquiz-prompt table{max-width:100%;display:block;overflow:auto;border-collapse:collapse}
+.ns-newquiz-prompt td,.ns-newquiz-prompt th{padding:6px 9px;border:1px solid var(--border)}
+@media(max-width:760px){.ns-newquiz-brief{padding:14px}.ns-newquiz-brief h2{font-size:21px}.ns-newquiz-item{padding:13px}}
+
+/* Authenticated Canvas assessment/provider launch presentation */
+#nsLaunchNewQuiz,.ns-room-submission .btn-primary{min-height:42px}
+#viewerOverlay .workspace{max-width:min(1200px,98vw);height:92vh}
+#viewerFrame{background:#fff}

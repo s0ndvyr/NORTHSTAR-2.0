@@ -25,6 +25,7 @@ function exit(options){
   document.documentElement.classList.remove('assignment-room-open');
   const overlay=$('#wsOverlay');if(overlay)overlay.classList.remove('open');
   room.id=null;room.fromHistory=false;
+  root.dispatchEvent(new Event('northstar:assignment-room-exit'));
   if(typeof root.showView==='function')root.showView(room.previousView||'dashboard');
 }
 function close(){exit({fromHistory:false});}
@@ -62,11 +63,11 @@ function sanitizeHtml(markup,base){
 }
 function collectFiles(details,base){
  const files=[],seen=new Set();
- const add=(id,name,contentType,url)=>{
+ const add=(id,name,contentType,url,size)=>{
   const n=Number(id);if(!Number.isSafeInteger(n)||n<1||seen.has(n))return;
-  seen.add(n);files.push({id:n,name:String(name||('Canvas file '+n)),contentType:String(contentType||''),url:safeLink(url||'',base)||''});
+  seen.add(n);files.push({id:n,name:String(name||('Canvas file '+n)),contentType:String(contentType||''),url:safeLink(url||'',base)||'',size:Number(size)||null});
  };
- (Array.isArray(details.attachments)?details.attachments:[]).forEach(f=>add(f.id,f.display_name||f.filename,f['content-type']||f.content_type,f.url));
+ (Array.isArray(details.attachments)?details.attachments:[]).forEach(f=>add(f.id,f.display_name||f.filename,f['content-type']||f.content_type,f.url,f.size));
  const parser=new DOMParser(),doc=parser.parseFromString(String(details.description||''),'text/html');
  doc.querySelectorAll('a').forEach(a=>{
   const candidate=a.getAttribute('data-api-endpoint')||a.getAttribute('href')||'';

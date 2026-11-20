@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "northstar-2-0",
+  "main": "canvas-bridge/worker.js",
+  "compatibility_date": "2026-11-20",
+  "previews": {}
+}

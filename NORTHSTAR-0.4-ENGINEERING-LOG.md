@@ -3,8 +3,8 @@
 Last updated: 2026-11-18
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.4.1`
-Package version: `0.4.4.1`
+Release identifier: `NORTHSTAR / .4.4.5` (development branch; not yet production)
+Package version: `0.4.4.5`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -278,3 +278,115 @@ These features require separate official provider integrations and live acceptan
 - [x] Verify GitHub Pages production build/deploy.
 - [x] Verify the repository Cloudflare Workers build check.
 - [ ] Complete live iPad Safari / Apple Pencil / real Canvas acceptance.
+
+
+## Phase 4.4.2 — Quiz Continuity & Safe Recovery
+
+**Status: implementation on branch `northstar-0.4.4.2-quiz-continuity`; CI and review pending.** Release identity: `NORTHSTAR / .4.4.2`; package version: `0.4.4.2`.
+
+- Before offering a new classic quiz attempt, NORTHSTAR checks Canvas' current-user quiz submission endpoint.
+- An unfinished attempt is resumed only when the current tab still holds the matching attempt ID, attempt number, and validation token. Existing questions and Canvas time-left data are reloaded.
+- If attempt metadata is missing or cannot be verified, NORTHSTAR refuses to start another attempt and directs the student to the existing Canvas attempt.
+- Supported answers autosave to Canvas after a 1.2-second debounce. Writes are serialized; ambiguous failures are surfaced and never silently retried. Manual save remains available.
+- Quiz completion explicitly warns about unanswered supported questions and still refuses to complete when any unsupported question type remains.
+- Attempt validation data is stored in tab-scoped sessionStorage, not persistent localStorage or the long-lived credential vault. Losing the tab session may require continuing that attempt in Canvas.
+- The current repository Worker already permits the current-user quiz submission read route. The separately uploaded read-only Worker is older and must not replace the repository's validated read/write Worker.
+
+### Phase 4.4.2 acceptance checklist
+
+- [x] CI passes syntax checks, all unit tests and browser boot tests (Phase 3 and Phase 4 GitHub Actions runs passed on the release commit).
+- [ ] Verify a practice/ungraded classic quiz can start, autosave, navigate away and resume in the same tab.
+- [ ] Verify an unfinished attempt with no recoverable tab session does not offer a second Start action.
+- [ ] Verify an unsupported question type blocks NORTHSTAR completion and preserves the existing attempt.
+- [ ] Verify unanswered-question warning and explicit final confirmation.
+- [ ] Verify a completed attempt clears temporary recovery data and permits a later Canvas-authorized attempt.
+- [ ] Test on iPad Safari with the current private Worker deployed.
+
+
+## NORTHSTAR / .4.4.3 — Writing, Resource Center & Quiz Navigation
+
+**Status: implementation added to the `.4.4` development PR; automated acceptance pending.**
+
+- Replaced the plain-text draft area with a contenteditable writing surface and a restrained formatting toolbar (bold, italic, underline, bullets, numbering and block quote). Draft markup is sanitized against a strict tag/attribute allowlist before device-local persistence and before Canvas submission. Rich text is subject to the current 16 KB bridge text-entry limit. Paste is normalized to plain text to avoid importing unsafe office markup.
+- Added safe in-app preview for supported image, audio, video and text attachments downloaded through the private Canvas bridge. PDF continues to use Document Studio. Unsupported office/provider formats receive an explicit explanation and source fallback rather than a fake preview. Downloads above the configured 30 MB preview cap are not loaded into memory.
+- Assignment description links now attempt internal routing for matching Canvas assignments/quizzes and file resources. Other secure links use the existing in-dashboard preview panel with a visible external fallback when the provider blocks embedding.
+- Quiz workspace now provides question navigation, answered-state progress, question flags, and rejects empty multiple-answer selections as unanswered.
+- Object URLs and quiz timers are released when leaving the assignment room.
+- These are client-side behaviors. GitHub Actions can validate fixtures and DOM behavior; only the owner's live iPad/Canvas session can prove school-specific files, quizzes, discussion permissions and actual submission outcomes.
+
+### Phase 4 exit criteria — still required
+
+- [ ] Run Phase 3/4 GitHub Actions after this commit.
+- [x] Owner confirmed Cloudflare Worker deployed on 2026-11-18 (repository source must still match the published Worker).
+- [ ] Live-test rich-text submission with a low-risk assignment and confirm the Canvas attempt/HTML.
+- [ ] Live-test file upload and at least one image/text/PDF resource preview.
+- [ ] Live-test quiz attempt detection, autosave, question navigation, flagging, resume and completion with an ungraded practice quiz.
+- [ ] Live-test discussion read/post/reply with a non-graded thread or permitted test space.
+- [ ] Test Canvas link routing from Dashboard, Ledger, Courses, Calendar, search and assignment instructions.
+- [ ] Test PDF annotation export, iPad Apple Pencil interaction, touch scrolling, and flattened file upload where allowed.
+- [ ] Review unsupported New Quizzes, LTI, DocViewer annotations and restricted external resources; verify each limitation has a clear fallback.
+- [ ] Complete iPad Safari regression, reduced-motion, theme, keyboard/VoiceOver, offline/draft and large-file checks before merging or labeling Phase 4 complete.
+
+
+### `.4.4.3` New Quizzes and assessment boundary
+
+- Added read-only preview of New Quiz instructions and item prompts using the official `/api/quiz/v1/courses/:course/quizzes/:assignment` and `/items` GET routes. Question rendering intentionally reads only `item_body`/stimulus content and does not render `interaction_data`, `scoring_data`, or answer feedback.
+- The quiz attempt itself is handed to the authenticated Canvas player. NORTHSTAR does not invent a New Quiz attempt start/answer/submit route.
+- The Worker and workspace transport now allow those two exact GET routes only; no New Quiz write path has been opened.
+- Confirm the NNPS token has access to the New Quizzes read endpoints and the new Worker source has been deployed before iPad live testing.
+
+
+## NORTHSTAR / `.4.4.4` — Authenticated Canvas Sessions & LTI Launch
+
+**Implementation status: Worker/client foundation and host integration source added; live Canvas/provider acceptance still pending.**
+
+- Added `GET /login/session_token` to the private Worker with a strict allowlist: at most one `return_to` parameter, restricted to known Canvas assignment, quiz, file or external-tool routes. Arbitrary hosts, additional parameters, and non-Canvas return targets are rejected.
+- Added the Canvas-generated assignment LTI assessment launch read route. Only `launch_type=assessment` plus one numeric `assignment_id` is accepted; callers cannot choose an arbitrary external URL or inject launch parameters.
+- Added `getCanvasSessionUrl` and `getExternalToolLaunch` client helpers. Session URL origin must equal the connected Canvas origin; provider URLs must be HTTPS and must not contain embedded credentials.
+- New Quizzes, student annotation, and media recording pages now expose a Canvas-generated authenticated session launch. External tool assignments use Canvas's `sessionless_launch` response. Unsupported Canvas-hosted document types can open through Canvas's own viewer.
+- Added native iOS host bridge source: top-level persistent WKWebView, secure main-frame message validation, HTTPS-only destinations, back/forward/reload/close controls, and same-view popup handling. PWA iframe remains a best-effort fallback when no native host handler exists.
+- Added bridge and workspace tests for safe session return routes, rejection of unsafe destinations/extra query parameters, assignment-specific LTI launch constraints, session URL origin checks and HTTPS-only provider URLs.
+
+### Authentication architecture
+
+- Current single-student testing still uses a personal Canvas API token for REST calls and session URL creation.
+- To avoid requiring students to paste personal tokens, implement Canvas OAuth 2.0 Authorization Code flow in the Worker (client secret held only as a Worker secret, token refresh persisted in a private KV/Durable Object binding, short-lived app session cookie), or use an institution-installed LTI 1.3 tool launch plus approved Canvas service scopes.
+- Both OAuth Developer Key registration and LTI 1.3 installation require the institution's Canvas administrator. No password scraping or private endpoint impersonation is permitted.
+
+### Release acceptance still required
+
+- [ ] Run all unit, bridge, workspace and browser boot tests on this exact branch head.
+- [ ] Confirm the NNPS Canvas account is permitted to call `/login/session_token` and that the return URL opens the assignment page.
+- [ ] Test an ungraded New Quiz inside the native WKWebView: launch, timer, attempt state, save, resume and completion.
+- [ ] Test an assignment-specific sessionless LTI launch from the course and verify the provider can authenticate and submit.
+- [ ] Test a Canvas `student_annotation` assignment in native DocViewer and verify the official Canvas submission record.
+- [ ] Test a provider-specific Office/document assignment with its official authenticated viewer.
+- [ ] Install and test the native WKWebView host on iPadOS; the web PWA iframe is not a guaranteed substitute.
+
+
+## NORTHSTAR / .4.4.5 - Phase 4 In-App Routing & Native Host Hardening
+
+**Status: implementation and mocked regression coverage added to the Phase 4 development branch. This is not a production release.**
+
+- Ordinary HTTPS assignment/resource links now attempt the in-dashboard viewer first rather than immediately opening a new browser tab. The viewer has a visible external fallback because Canvas and external providers may block iframe embedding.
+- Authenticated Canvas/LTI session views set a no-referrer policy and expose an explicit fallback when the PWA must use an iframe. Short-lived session URLs are cleared from the iframe on close and are not placed in local storage or debug output.
+- Student Annotation copy now explains the actual handoff: the official assignment page opens first; the student then chooses Start Assignment, then Student Annotation. Canvas owns the saved annotation state and submission confirmation. An exported Document Studio PDF is not represented as native DocViewer annotation data.
+- The native Swift host validates the trusted dashboard origin and HTTPS port, limits message URL size, refuses plaintext HTTP navigation and refuses credential-bearing popup destinations. The host still must be integrated into and compiled as a real iOS app target before the JavaScript bridge exists on a device.
+- The browser boot suite now exercises both branches: the PWA iframe fallback and the native window.webkit.messageHandlers.northstarSecureContent handoff. It also verifies ordinary HTTPS resource links stay in the NORTHSTAR viewer first and that the escape link is explicit.
+- Version strings are synchronized to NORTHSTAR / .4.4.5 and package 0.4.4.5.
+
+### Verified automated status at the preceding exact commit
+
+The .4.4.5 implementation commit df91fc51dd5031a12495cb37b9aa36d43bad2d4c passed the Phase 3 workflow (44456314835) and Phase 4 workflow (44456314798). The Phase 4 workflow also passed on the duplicate push run (44456305560). These tests use mock responses; they do not establish live NNPS Canvas, provider, Safari or Pencil behavior.
+
+### Phase 4 exit gates - not to be marked complete until verified
+
+- [x] Phase 3 and Phase 4 GitHub Actions pass on implementation commit `df91fc51dd5031a12495cb37b9aa36d43bad2d4c` (Phase 3 run `44456314835`; Phase 4 run `44456314798`).
+- [ ] Deploy the matching repository Worker source to the personal Cloudflare Worker and verify Canvas session-token/LTI routes against the actual account.
+- [ ] Test standard rich-text, URL and file submissions against a permitted low-risk assignment; confirm Canvas attempt history.
+- [ ] Test supported Classic Quiz lifecycle and recovery with a practice quiz; confirm the real Canvas attempt.
+- [ ] Test an intended non-graded discussion response and confirm Canvas records it.
+- [ ] Test PDF rendering/annotation/export/upload with Apple Pencil on iPad.
+- [ ] Test New Quizzes, Student Annotation, media recording, external LTI and provider-specific files on the real account. Record which ones can stay in the app and which ones need their provider's supported fallback.
+- [ ] Test iPad Safari themes, keyboard/VoiceOver, reduced motion, offline draft retention, large files, browser back and return navigation.
+- [ ] Integrate and compile the Swift presenter in a real iOS host app, then test the native WKWebView path on iPadOS. This repository alone is still a PWA.
