@@ -9,6 +9,7 @@
     "test:boot": "node tests/boot.test.mjs"
   },
   "devDependencies": {
-    "jsdom": "^26.1.0"
+    "jsdom": "^26.1.0",
+    "wrangler": "4.165.0"
   }
 }
