@@ -1,0 +1,88 @@
+name: NORTHSTAR GitHub Pages — Production + Preview
+
+on:
+  push:
+    branches:
+      - main
+      - northstar-0.4.4.2-quiz-continuity
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: source-production
+
+      - name: Check out latest Phase 4 development source
+        uses: actions/checkout@v4
+        with:
+          ref: northstar-0.4.4.2-quiz-continuity
+          path: source-preview
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Assemble production and preview sites
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p _site/preview
+
+          copy_dashboard() {
+            local source="$1"
+            local destination="$2"
+
+            test -f "$source/index.html"
+            test -f "$source/manifest.json"
+            test -d "$source/styles"
+            test -d "$source/scripts"
+
+            cp "$source/index.html" "$destination/index.html"
+            cp "$source/manifest.json" "$destination/manifest.json"
+            cp -R "$source/styles" "$destination/styles"
+            cp -R "$source/scripts" "$destination/scripts"
+            touch "$destination/.nojekyll"
+          }
+
+          # Keep the existing main-branch dashboard at the normal Pages URL.
+          copy_dashboard source-production _site
+
+          # Publish the current Phase 4 development branch under /preview/.
+          copy_dashboard source-preview _site/preview
+
+          echo "Production version:"
+          grep -o 'NORTHSTAR /[^<]*' _site/index.html | head -n 1 || true
+          echo "Preview version:"
+          grep -o 'NORTHSTAR /[^<]*' _site/preview/index.html | head -n 1 || true
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy production and preview
+        id: deployment
+        uses: actions/deploy-pages@v4
