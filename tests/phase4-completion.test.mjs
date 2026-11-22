@@ -32,13 +32,13 @@ const fetchMock=async (url, options={}) => {
   if (target.origin==='https://bridge.example') {
     const path=target.searchParams.get('path');
     calls.push({kind:'bridge',path,method:options.method||'GET',body:options.body});
-    if (path.endsWith('/api/v1/users/self')) {
+    if ((options.method||'GET')==='GET') {
+      assert.equal(path,'/api/v1/users/self','multi-file uploader first resolves the student ID via Canvas');
       return new Response(JSON.stringify({id:7}),{status:200,headers:{'Content-Type':'application/json'}});
     }
-    if (/\\/api\\/v1\\/courses\\/1\\/assignments\\/9\\/submissions\\/7\\/files$/.test(path)) {
-      return new Response(JSON.stringify({upload_url:'https://upload.example/receive',upload_params:{token:'signed-upload'}}),{status:200,headers:{'Content-Type':'application/json'}});
-    }
-    throw new Error('Unexpected bridge request: '+path);
+    assert.equal(options.method,'POST');
+    assert.ok(path.endsWith('/submissions/7/files'),'upload initialization uses the numeric student submission route');
+    return new Response(JSON.stringify({upload_url:'https://upload.example/receive',upload_params:{token:'signed-upload'}}),{status:200,headers:{'Content-Type':'application/json'}});
   }
   if (target.origin==='https://upload.example') {
     calls.push({kind:'signed-upload',method:options.method,hasAuthorization:!!options.headers?.Authorization,body:options.body});
