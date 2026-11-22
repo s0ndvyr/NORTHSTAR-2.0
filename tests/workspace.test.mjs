@@ -96,18 +96,22 @@ assert.equal(quizUploadCalls.length,2,'quiz upload initialization and signed att
 const pdfFetchCalls=[];
 const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImpl:async(url,opts)=>{
   pdfFetchCalls.push({url,opts});
-  const path=new URL(url).searchParams.get('path');
-  if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf'})};
-  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer};
-  throw Error('Unexpected PDF endpoint '+path);
+  const parsed=new URL(url),path=parsed.searchParams.get('path');
+  if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived'})};
+  if(parsed.hostname==='cdn.inscloudgate.net')return {ok:true,status:200,url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived',headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'inline; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  throw Error('Unexpected PDF endpoint '+url);
 }});
 assert.equal(pdf.name,'worksheet.pdf');
 assert.equal(pdf.contentType,'application/pdf');
-assert.equal(pdf.workerVersion,'0.4.4.5 (3)');
-assert.equal(pdf.size,4);
-assert.deepEqual([...pdf.bytes],[37,80,68,70]);
-assert.equal(pdfFetchCalls.length,2,'PDF metadata and secure binary download are both requested');
-assert(pdfFetchCalls.every(x=>x.opts.headers.Authorization==='Bearer secret-token'),'Canvas authorization is kept on the private bridge requests');
+assert.equal(pdf.workerVersion,'browser-direct');
+assert.equal(pdf.size,6);
+assert.deepEqual([...pdf.bytes],[37,80,68,70,45,49]);
+assert.equal(pdfFetchCalls.length,2,'PDF metadata is fetched through the bridge, then the signed PDF is fetched directly from the student browser');
+assert.equal(pdfFetchCalls[0].opts.headers.Authorization,'Bearer secret-token','Canvas token is used only for metadata through the private bridge');
+assert.equal(pdfFetchCalls[1].opts.headers.Authorization,undefined,'Canvas bearer token is never sent to signed storage');
+assert.equal(pdfFetchCalls[1].opts.credentials,'omit','signed storage request does not send browser cookies');
+assert.equal(pdfFetchCalls[1].opts.redirect,'follow','browser follows Canvas storage redirects');
 
 const failedPdfError=await W.transport(credentials,async()=>({
   ok:false,status:406,
