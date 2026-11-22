@@ -210,29 +210,41 @@ async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fe
   // the Canvas bearer token to it.
   const raw=metadata.url||metadata.download_url;
   const trustedHost=host=>{const h=String(host||'').toLowerCase();const base=new URL(credentials.base).hostname.toLowerCase();return h===base||h.endsWith('.instructure.com')||h.endsWith('.canvas-user-content.com')||h.endsWith('.inscloudgate.net');};
+  const browserDelivery={attempted:false,result:'not_attempted',status:null,host:null,contentType:null};
   if(typeof raw==='string'&&raw){
     try{
       const target=new URL(raw,credentials.base);
       if(target.protocol==='https:'&&!target.username&&!target.password&&trustedHost(target.hostname)&&!target.searchParams.has('access_token')){
+        browserDelivery.attempted=true;browserDelivery.host=target.hostname;
         const response=await fetchImpl(target.href,{method:'GET',headers:{Accept:'application/pdf,application/octet-stream,*/*'},mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
         const finalUrl=response.url?new URL(response.url):target;
-        if(response.ok&&finalUrl.protocol==='https:'&&trustedHost(finalUrl.hostname)){
-          const contentType=response.headers.get('Content-Type')||metadata['content-type']||metadata.content_type||'application/octet-stream';
+        browserDelivery.host=trustedHost(finalUrl.hostname)?finalUrl.hostname:'untrusted-redirect';
+        browserDelivery.status=response.status;
+        browserDelivery.contentType=response.headers.get('Content-Type')||'';
+        if(!response.ok)browserDelivery.result='http_error';
+        else if(finalUrl.protocol!=='https:'||!trustedHost(finalUrl.hostname))browserDelivery.result='untrusted_redirect';
+        else{
           const bytes=new Uint8Array(await response.arrayBuffer());
           if(bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-'){
             const disposition=response.headers.get('Content-Disposition')||'';
             const match=disposition.match(/filename\\*?=(?:UTF-8''|")?([^;"]+)/i);
-            return {id:f,name:(match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'')||metadata.display_name||metadata.filename||('Canvas file '+f),contentType,bytes,size:bytes.byteLength,workerVersion:'browser-direct'};
+            return {id:f,name:(match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'')||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:browserDelivery.contentType||metadata['content-type']||metadata.content_type||'application/pdf',bytes,size:bytes.byteLength,workerVersion:'browser-direct'};
           }
+          browserDelivery.result='not_pdf';
         }
-      }
+      }else browserDelivery.result='url_not_trusted';
     }catch(error){
-      // Cross-origin storage may deny browser CORS or the signed URL may have expired.
-      // Fall through to the private bridge path; preserve the authoritative bridge diagnostics.
+      // Do not retain or report the temporary URL or browser exception text.
+      browserDelivery.result='browser_fetch_blocked';
     }
+  }else browserDelivery.result='metadata_url_missing';
+  try{
+    const download=await api.getBinary('/api/v1/courses/'+c+'/files/'+f+'/download');
+    return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength,workerVersion:download.workerVersion||''};
+  }catch(error){
+    error.browserDelivery=browserDelivery;
+    throw error;
   }
-  const download=await api.getBinary('/api/v1/courses/'+c+'/files/'+f+'/download');
-  return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength,workerVersion:download.workerVersion||''};
 }
 const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
