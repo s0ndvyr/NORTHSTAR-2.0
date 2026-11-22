@@ -101,7 +101,7 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 - Opening a standard assignment creates a deep-link route inside NORTHSTAR (#assignment/assignment-id), with a full-screen loading transition, a themed assignment header, instructions, resource list, private working area, assignment details, and submission controls.
 - Canvas assignment descriptions are rendered through a restrictive HTML allowlist. Script tags, embedded forms, executable content, inline event handlers and unsafe links are removed.
-- PDF attachments are fetched through the private Canvas bridge and displayed in NORTHSTAR's Document Studio. The browser remains on the NORTHSTAR assignment route.
+- PDF attachments first use the short-lived download URL returned by Canvas file metadata and fetch it directly from the student's browser, without forwarding the Canvas bearer token or browser cookies to storage. If browser CORS or the signed URL prevents that path, NORTHSTAR falls back to the private Canvas bridge. The browser remains on the NORTHSTAR assignment route.
 - Quiz attempts and graded discussions use the same full-screen assignment shell. Supported quiz questions, saving, and completion use the existing Canvas quiz APIs; discussion posts and replies use the Canvas discussion API.
 - Back navigation and browser history return to the previous NORTHSTAR view. The assignment page is not an iframe of Canvas.
 
@@ -118,7 +118,7 @@ The first PDF toolset includes:
 
 Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. Canvas's public Submissions API does expose the student_annotation submission type and the annotatable_attachment_id field. However, the documented request does not describe how a third-party editor uploads its actual DocViewer ink/text annotation payload. NORTHSTAR therefore does not submit the attachment ID alone or claim a flattened PDF export has updated Canvas' native DocViewer annotation state. The official Canvas DocViewer workflow remains required for those special assignments unless a supported annotation-payload API is established.
 
-The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations.
+The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations. When the browser-direct delivery attempt fails, the diagnostic report records only a safe result category, HTTP status, hostname and content type; it never includes the signed URL.
 
 ### Supported paths and provider boundaries
 
