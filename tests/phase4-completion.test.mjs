@@ -32,10 +32,10 @@ const fetchMock=async (url, options={}) => {
   if (target.origin==='https://bridge.example') {
     const path=target.searchParams.get('path');
     calls.push({kind:'bridge',path,method:options.method||'GET',body:options.body});
-    if (path==='/api/v1/users/self') {
+    if (path.endsWith('/api/v1/users/self')) {
       return new Response(JSON.stringify({id:7}),{status:200,headers:{'Content-Type':'application/json'}});
     }
-    if (path==='/api/v1/courses/1/assignments/9/submissions/7/files') {
+    if (/\\/api\\/v1\\/courses\\/1\\/assignments\\/9\\/submissions\\/7\\/files$/.test(path)) {
       return new Response(JSON.stringify({upload_url:'https://upload.example/receive',upload_params:{token:'signed-upload'}}),{status:200,headers:{'Content-Type':'application/json'}});
     }
     throw new Error('Unexpected bridge request: '+path);
