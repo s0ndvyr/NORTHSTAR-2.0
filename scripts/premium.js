@@ -924,7 +924,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   document.querySelectorAll('[data-ns-room-tab]').forEach(button=>button.onclick=()=>phase441ShowTab(button.dataset.nsRoomTab));
   const input=$('#assignmentDraft'),key=phase441ScopedStorageKey('draft_'+a.id);
   input.innerHTML=window.NorthstarSubmissions.sanitizeRichTextHtml(localStorage.getItem(key)||'');
-  const updateDraft=()=>{const html=window.NorthstarSubmissions.sanitizeRichTextHtml(input.innerHTML),plain=input.innerText||input.textContent||'';phase441PreparedDocx.delete(String(a.id));try{localStorage.setItem(key,html);$('#draftStatus').textContent='Saved on this device · not submitted';}catch{$('#draftStatus').textContent='Could not save on this device.';}const words=plain.trim()?plain.trim().split(/\s+/).length:0,metrics=$('#draftMetrics');if(metrics)metrics.textContent=words+' words · '+plain.length.toLocaleString()+' characters';const wordStatus=$('#nsPrepareDocxStatus');if(wordStatus)wordStatus.textContent='Draft changed. Prepare a fresh Word file before attaching it.';};
+  const updateDraft=()=>{const html=window.NorthstarSubmissions.sanitizeRichTextHtml(input.innerHTML),plain=input.innerText||input.textContent||'';phase441PreparedFile.delete(String(a.id));try{localStorage.setItem(key,html);$('#draftStatus').textContent='Saved on this device · not submitted';}catch{$('#draftStatus').textContent='Could not save on this device.';}const words=plain.trim()?plain.trim().split(/\s+/).length:0,metrics=$('#draftMetrics');if(metrics)metrics.textContent=words+' words · '+plain.length.toLocaleString()+' characters';const wordStatus=$('#nsPrepareDocxStatus');if(wordStatus)wordStatus.textContent='Draft changed. Prepare a fresh Word file before attaching it.';};
   input.addEventListener('input',updateDraft);
   input.addEventListener('paste',event=>{event.preventDefault();const text=event.clipboardData?.getData('text/plain')||'';document.execCommand('insertText',false,text);});
   document.querySelectorAll('[data-ns-format]').forEach(button=>{button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{input.focus();const action=button.dataset.nsFormat;if(action==='blockquote')document.execCommand('formatBlock',false,'blockquote');else document.execCommand(action,false,null);updateDraft();});});
@@ -936,7 +936,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
       if(!window.NorthstarDocumentExport?.createWordDocument)throw Error('The Word document exporter has not loaded. Reload NORTHSTAR and try again.');
       const file=await window.NorthstarDocumentExport.createWordDocument({html:input.innerHTML,title:a.title,filename:(a.title||'northstar-assignment')+'-response.docx'});
       if((a.submissionTypes||[]).includes('online_upload')){
-        phase441PreparedDocx.set(String(a.id),file);
+        phase441PreparedFile.set(String(a.id),file);
         if(wordStatus)wordStatus.textContent='Word file ready to attach: '+file.name+' · '+Math.ceil(file.size/1024)+' KB. Choose File upload in Submit to Canvas.';
         const select=$('#submissionType');if(select&&[...select.options].some(option=>option.value==='online_upload')){select.value='online_upload';select.onchange();}
         const fileList=$('#nsSelectedFiles');if(fileList)fileList.textContent=[file.name,...Array.from($('#submissionFile')?.files||[]).map(item=>item.name)].join(' · ');
@@ -948,7 +948,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
     }catch(error){if(wordStatus)wordStatus.textContent='Word export failed: '+error.message;}
     finally{docxButton.disabled=false;}
   };
-  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();const filePicker=$('#submissionFile');if(filePicker)filePicker.addEventListener('change',()=>{const files=Array.from(filePicker.files||[]),prepared=phase441PreparedDocx.get(String(a.id)),node=$('#nsSelectedFiles');if(node)node.textContent=[...(prepared?[prepared]:[]),...files].map(file=>file.name+' · '+Math.ceil(file.size/1024)+' KB').join('  |  ')||'No files selected.';});
+  const typeSelect=$('#submissionType');if(typeSelect)typeSelect.onchange=()=>{const t=typeSelect.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};if(typeSelect)typeSelect.onchange();const filePicker=$('#submissionFile');if(filePicker)filePicker.addEventListener('change',()=>{const files=Array.from(filePicker.files||[]),prepared=phase441PreparedFile.get(String(a.id)),node=$('#nsSelectedFiles');if(node)node.textContent=[...(prepared?[prepared]:[]),...files].map(file=>file.name+' · '+Math.ceil(file.size/1024)+' KB').join('  |  ')||'No files selected.';});
   phase441AnnotatedPdf=null;
   const attachAnnotated=$('#nsUseAnnotatedPdf');if(attachAnnotated)attachAnnotated.onclick=async()=>{try{const file=await window.NorthstarAssignmentRoom.getAnnotatedFile();phase441AnnotatedPdf={assignmentId:a.id,file};const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent='Ready to submit: '+file.name+' · '+Math.ceil(file.size/1024)+' KB. The exported PDF will be uploaded to Canvas instead of the selected file.';if(typeSelect){typeSelect.value='online_upload';typeSelect.onchange();}phase441ShowTab('submit');}catch(error){const node=$('#nsAnnotatedPdfStatus');if(node)node.textContent=error.message;}};
 
@@ -1025,7 +1025,7 @@ async function openWorkspace(id,options){
 }
 window.openWorkspace=openWorkspace;
 
-let submissionBusy=false;let phase441AnnotatedPdf=null;const phase441PendingUploads=new Map();const phase441PreparedDocx=new Map();
+let submissionBusy=false;let phase441AnnotatedPdf=null;const phase441PendingUploads=new Map();const phase441PreparedFile=new Map();
 function phase441ScopedStorageKey(key){return 'northstar_'+(String(location.pathname||'').includes('/preview/')?'preview_':'')+key;}
 function phase441FileSignature(file){return [file.name,file.size,file.lastModified||0,file.type||''].join('|');}
 async function phase441UploadSelectedFiles(files,a,c,credentials,status){
@@ -1083,7 +1083,7 @@ window.submitAssignment=async function(){
     const type=$('#submissionType')?.value;
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
     const annotated=phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:null;
-    const prepared=phase441PreparedDocx.get(String(a.id));
+    const prepared=phase441PreparedFile.get(String(a.id));
     const selectedFiles=type==='online_upload'?[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[]),...(annotated?[annotated]:[])]:[];
     if(type==='online_upload'&&!selectedFiles.length)throw Error('Choose at least one file before submitting.');
     if(type==='online_upload'&&selectedFiles.length>10)throw Error('Choose no more than 10 files for this Canvas submission.');
@@ -1114,7 +1114,7 @@ window.submitAssignment=async function(){
     });
     const snapshotSaved=await persistCurrentSnapshot();
     status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. '+(type==='online_upload'?selectedFiles.length+' file(s) attached. ':'')+'Your local draft was kept.'+(snapshotSaved?' Offline coursework snapshot updated.':' Offline snapshot could not be updated; sync Canvas before relying on cached status.');
-    phase441PendingUploads.delete(String(a.id));phase441PreparedDocx.delete(String(a.id));
+    phase441PendingUploads.delete(String(a.id));phase441PreparedFile.delete(String(a.id));
     if(phase441AnnotatedPdf?.assignmentId===a.id)phase441AnnotatedPdf=null;
     refreshAll();
   }catch(error){
