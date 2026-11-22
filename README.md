@@ -4,7 +4,9 @@ A redesigned, iPad-friendly academic dashboard for GitHub Pages. The interface s
 
 ## Run and publish
 
-Upload the contents of this folder to the root of your GitHub repository (replace the files with matching paths). GitHub Pages must be enabled on the `main` branch, root folder. Visit `https://s0ndvyr.github.io/NORTHSTAR/`. Or run a local server such as `python3 -m http.server 8000` and open `http://localhost:8000`.
+The GitHub Actions Pages workflow publishes the production application from `main` at [https://s0ndvyr.github.io/NORTHSTAR-2.0/](https://s0ndvyr.github.io/NORTHSTAR-2.0/). The latest tested development build is published under [https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/](https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/). Publishing is gated on the Phase 4 test workflow; the Pages workflow copies the release manifest and matching application assets for each channel.
+
+For local testing, run `python3 -m http.server 8000` from the repository root and open `http://localhost:8000`.
 
 ## Connect Canvas
 

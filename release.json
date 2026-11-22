@@ -1,20 +1,38 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.1",
-  "packageVersion": "0.4.6",
+  "northstarVersion": "4.4.6.2",
+  "packageVersion": "0.4.7",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
     "version": "1.1",
-    "status": "unchanged in 4.4.6.1; no Worker source or Cloudflare deployment was performed"
+    "status": "unchanged in 4.4.6.1 and 4.4.6.2; no Worker source or Cloudflare bridge deployment"
   },
   "deployment": {
-    "preview": "pending automated Pages deployment",
-    "production": "pending promotion to main"
+    "preview": "Published through the CI-gated GitHub Pages workflow after successful Phase 4 tests; verify the release-specific workflow run.",
+    "production": "Published from main through the CI-gated GitHub Pages workflow after successful Phase 4 tests; verify the release-specific workflow run."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.6.2",
+      "date": "2026-11-22",
+      "title": "Document Studio — interaction lifecycle and faithful text export",
+      "description": "Closes editor page-level hover listeners on unmount, preserves touch selection while using contextual text formatting, clears hover targets correctly, and improves PDF export for bulleted/numbered lists, paragraph spacing, justified text, and supported punctuation glyphs. Adds regression coverage for teardown and list conversion.",
+      "category": "PDF rendering/export",
+      "areas": [
+        "Editor lifecycle cleanup",
+        "iPad text-selection reliability",
+        "Rich-text list export",
+        "Justified alignment",
+        "Paragraph spacing",
+        "Regression coverage"
+      ],
+      "status": "Automated checks and deployment are recorded by the corresponding GitHub Actions release run.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.6.1",
       "date": "2026-11-22",
@@ -30,9 +48,14 @@
         "PDF export",
         "Legacy annotation migration"
       ],
-      "status": "Implementation release. Automated verification and deployment are recorded separately; original PDF text remains unchanged.",
+      "status": "Deployed to production and preview. GitHub Pages workflow run 45066524340 completed successfully for main commit a861a645cd0ce41dab60c06439b007ce470c09c3.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "a861a645cd0ce41dab60c06439b007ce470c09c3",
+          "label": "main release"
+        }
+      ]
     },
     {
       "version": "4.4.5.3",

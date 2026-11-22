@@ -3,12 +3,17 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.1',packageVersion:'0.4.6',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.2',packageVersion:'0.4.7',
  bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
- deployment:{preview:'pending',production:'pending'},
- releases:[{version:'4.4.6.1',date:'2026-11-22',title:'Document Studio — editable text foundation',
-  description:'Introduces a dedicated editable text-object layer, direct on-page text creation, selection, move and resize controls, contextual typography, rich-text storage, Pencil hover feedback, and formatted PDF export groundwork.',
-  category:'Document Studio',areas:['Text editing','Typography','Apple Pencil interaction','PDF export'],status:'Implementation in preview; awaiting full acceptance.'}]
+ deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
+ releases:[
+  {version:'4.4.6.2',date:'2026-11-22',title:'Document Studio — interaction lifecycle and faithful text export',
+   description:'Closes page-level hover listeners on unmount, preserves touch selection during contextual formatting, clears hover targets, and improves PDF export for lists, paragraph spacing, justified text, and supported punctuation glyphs.',
+   category:'PDF rendering/export',areas:['Editor lifecycle','Text selection','Lists','Justified alignment','Paragraph spacing'],status:'See the release-specific GitHub Actions deployment run.'},
+  {version:'4.4.6.1',date:'2026-11-22',title:'Document Studio — editable text-object foundation',
+   description:'Introduces direct on-page text creation, selection, edit, move and resize controls, contextual typography, rich-text persistence, Pencil hover feedback, and formatted PDF export.',
+   category:'Document Studio',areas:['Direct text editing','Typography','Apple Pencil interaction','PDF export'],status:'Deployed to production and preview.'}
+ ]
 };
 const $=selector=>root.document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));

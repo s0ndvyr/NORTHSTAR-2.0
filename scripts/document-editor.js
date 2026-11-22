@@ -99,7 +99,7 @@ function applyInlineStyle(editor,property,value){
 class Editor{
  constructor(options){
   this.options=options||{};this.page=null;this.layer=null;this.cursor=null;this.preview=null;this.context=null;
-  this.nodes=new Map();this.selected=null;this.editing=null;this.drag=null;this.tool='pen';this.mode='hand';this.range=null;this.saveTimer=0;
+  this.nodes=new Map();this.selected=null;this.editing=null;this.drag=null;this.tool='pen';this.mode='hand';this.range=null;this.saveTimer=0;this.pageMoveHandler=null;this.pageLeaveHandler=null;this.contextFocusOutHandler=null;this.contextFocusOutHandler=null;
  }
  texts(){return this.options.getTexts?this.options.getTexts():[];}
  allowed(pointerType){return this.options.canInteract?this.options.canInteract(pointerType):true;}
@@ -121,8 +121,10 @@ class Editor{
   this.layer.addEventListener('pointermove',event=>this.onObjectPointerMove(event));
   this.layer.addEventListener('pointerup',event=>this.finishDrag(event,false));
   this.layer.addEventListener('pointercancel',event=>this.finishDrag(event,true));
-  this.page.addEventListener('pointermove',event=>this.onHover(event),{passive:true});
-  this.page.addEventListener('pointerleave',()=>this.hideHover());
+  this.pageMoveHandler=event=>this.onHover(event);
+  this.pageLeaveHandler=()=>this.hideHover();
+  this.page.addEventListener('pointermove',this.pageMoveHandler,{passive:true});
+  this.page.addEventListener('pointerleave',this.pageLeaveHandler);
   this.exitHandler=()=>{if(this.editing)this.endEdit();if(this.saveTimer){root.clearTimeout(this.saveTimer);this.saveTimer=0;this.changed(true);}};
   root.addEventListener('northstar:assignment-room-exit',this.exitHandler);
   this.render();return true;
@@ -135,9 +137,14 @@ class Editor{
    if(this.saveTimer){root.clearTimeout(this.saveTimer);this.saveTimer=0;}
    this.changed(true);
   }
-  if(this.page){this.page.querySelectorAll('.ns-pdf-text-layer,.ns-doc-placement-preview,.ns-doc-pencil-cursor').forEach(node=>node.remove());}
+  if(this.context&&this.contextFocusOutHandler)this.context.removeEventListener('focusout',this.contextFocusOutHandler);
+  if(this.page){
+   if(this.pageMoveHandler)this.page.removeEventListener('pointermove',this.pageMoveHandler);
+   if(this.pageLeaveHandler)this.page.removeEventListener('pointerleave',this.pageLeaveHandler);
+   this.page.querySelectorAll('.ns-pdf-text-layer,.ns-doc-placement-preview,.ns-doc-pencil-cursor').forEach(node=>node.remove());
+  }
   if(this.exitHandler)root.removeEventListener('northstar:assignment-room-exit',this.exitHandler);
-  this.nodes.clear();this.layer=null;this.cursor=null;this.preview=null;this.page=null;this.context=null;this.selected=null;this.editing=null;
+  this.nodes.clear();this.layer=null;this.cursor=null;this.preview=null;this.page=null;this.context=null;this.selected=null;this.editing=null;this.pageMoveHandler=null;this.pageLeaveHandler=null;
  }
  setTool(tool){this.tool=String(tool||'pen');if(this.layer)this.layer.style.pointerEvents='none';this.nodes.forEach(node=>node.style.pointerEvents=(this.tool==='select'||node.dataset.id===this.editing)?'auto':'none');this.renderContext();}
  setMode(mode){this.mode=mode==='pencil'?'pencil':'hand';this.renderContext();}
@@ -159,7 +166,10 @@ class Editor{
    if(!textContent.dataset.bound){
     textContent.dataset.bound='true';
     textContent.addEventListener('input',()=>{const current=this.texts().find(item=>item.id===note.id);if(!current)return;this.captureEditor(current,textContent);const pageHeight=this.page?.getBoundingClientRect().height||0;if(pageHeight&&textContent.scrollHeight>textContent.clientHeight){current.height=clamp(Math.max(current.height,(textContent.scrollHeight+12)/pageHeight),.055,1-current.y);this.layoutNode(current);}if(this.saveTimer)root.clearTimeout(this.saveTimer);this.saveTimer=root.setTimeout(()=>this.changed(true),420);});
-    textContent.addEventListener('blur',()=>{if(this.editing===note.id)this.endEdit();});
+    textContent.addEventListener('blur',()=>{
+     const focused=root.document.activeElement;
+     if(this.editing===note.id&&!this.context?.contains(focused))this.endEdit();
+    });
    }
    node.classList.toggle('is-selected',note.id===this.selected);
    node.classList.toggle('is-editing',note.id===this.editing);
@@ -189,14 +199,26 @@ class Editor{
  bindToolbar(){
   if(!this.context)return;
   const bar=this.context;
-  bar.querySelectorAll('[data-doc-cmd]').forEach(button=>button.addEventListener('mousedown',event=>event.preventDefault()));
+  this.contextFocusOutHandler=event=>{
+   if(!this.editing)return;
+   const next=event.relatedTarget,activeEditor=this.nodes.get(this.editing)?.querySelector('.ns-doc-text-content');
+   if(bar.contains(next)||activeEditor?.contains(next))return;
+   this.endEdit();
+  };
+  bar.addEventListener('focusout',this.contextFocusOutHandler);
+  // Formatting buttons must not steal the active text selection; native
+  // selects and color inputs must retain their normal pointer interaction.
+  bar.querySelectorAll('[data-doc-cmd],[data-doc-list]').forEach(button=>button.addEventListener('mousedown',event=>event.preventDefault()));
+  bar.addEventListener('pointerdown',event=>{
+   if(event.target.closest('[data-doc-family],[data-doc-size],[data-doc-preset],[data-doc-align],[data-doc-color],[data-doc-background],[data-doc-line-height],[data-doc-paragraph-spacing]'))this.rememberRange();
+  });
   bar.querySelectorAll('[data-doc-cmd]').forEach(button=>button.addEventListener('click',()=>this.toggleFormat(button.dataset.docCmd)));
   const bind=(selector,fn,eventName)=>{const el=bar.querySelector(selector);if(el)el.addEventListener(eventName||'change',()=>fn(el.value));};
   bind('[data-doc-family]',value=>this.applyStyle('fontFamily',normalizeFamily(value)));
   bind('[data-doc-size]',value=>this.applyStyle('fontSize',clamp(value,6,96)));
   bind('[data-doc-align]',value=>this.applyStyle('align',value));
-  bind('[data-doc-color]',value=>this.applyStyle('color',value),'input');
-  bind('[data-doc-background]',value=>this.applyStyle('backgroundColor',value),'input');
+  bind('[data-doc-color]',value=>this.applyStyle('color',value),'change');
+  bind('[data-doc-background]',value=>this.applyStyle('backgroundColor',value),'change');
   bind('[data-doc-line-height]',value=>this.applyStyle('lineHeight',clamp(value,1,3)));
   bind('[data-doc-paragraph-spacing]',value=>this.applyStyle('paragraphSpacing',clamp(value,0,48)));
   bar.querySelectorAll('[data-doc-list]').forEach(button=>button.addEventListener('mousedown',event=>event.preventDefault()));
@@ -207,7 +229,6 @@ class Editor{
   action('[data-doc-done]',()=>this.endEdit());
   action('[data-doc-duplicate]',()=>this.duplicate());
   action('[data-doc-delete]',()=>this.remove());
-  bar.addEventListener('mousedown',event=>{if(event.target.closest('button,select,input'))event.preventDefault();});
  }
  rememberRange(){
   const selection=root.getSelection&&root.getSelection();
@@ -222,7 +243,7 @@ class Editor{
   this.before();
   const editor=this.editing&&this.nodes.get(this.editing)?.querySelector('.ns-doc-text-content');
   const props={fontFamily:'font-family',fontSize:'font-size',color:'color',backgroundColor:'background-color'};
-  if(editor&&props[key]){this.rememberRange();const changed=applyInlineStyle(editor,props[key],key==='fontFamily'?FAMILIES[value]:key==='fontSize'?value+'px':value);if(!changed)note[key]=value;else this.captureEditor(note,editor);}
+  if(editor&&props[key]){this.rememberRange();this.restoreRange();const changed=applyInlineStyle(editor,props[key],key==='fontFamily'?FAMILIES[value]:key==='fontSize'?value+'px':value);if(!changed)note[key]=value;else this.captureEditor(note,editor);}
   else note[key]=value;
   if(key==='fontFamily')note.fontFamily=value;
   if(key==='fontSize')note.fontSize=Number(value);
@@ -364,7 +385,7 @@ class Editor{
   this.preview.hidden=this.tool!=='text';
   if(this.tool==='text'){this.preview.style.left=x+'px';this.preview.style.top=y+'px';this.preview.style.width='180px';this.preview.style.height='54px';}
  }
- hideHover(){if(this.cursor)this.cursor.hidden=true;if(this.preview)this.preview.hidden=true;}
+ hideHover(){if(this.cursor)this.cursor.hidden=true;if(this.preview)this.preview.hidden=true;this.nodes.forEach(node=>node.classList.remove('is-hover-target'));}
 };
 const api={
  families:FAMILIES,presets:PRESETS,normalizeTextObject,migrateTextAnnotations,createTextObject,resizeTextObject,
