@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.1",
-  "packageVersion": "0.4.15",
+  "northstarVersion": "4.4.7.2",
+  "packageVersion": "0.4.16",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -16,6 +16,22 @@
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.7.2",
+      "date": "2026-11-22",
+      "title": "Canvas upload finalization — version-aligned diagnostics",
+      "description": "Carries forward the private-bridge three-step Canvas upload finalization and corrects stale Worker-version test expectations. Attachment diagnostics now read the app version from the release manifest instead of embedding an obsolete build string.",
+      "category": "Canvas integration",
+      "areas": [
+        "Assignment PDF submission",
+        "Canvas signed uploads",
+        "Authenticated upload finalization",
+        "Diagnostic version consistency"
+      ],
+      "status": "Awaiting Phase 4 CI, preview deployment, and live Canvas bridge acceptance.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.7.1",
       "date": "2026-11-22",
       "title": "Canvas file upload finalization",
@@ -28,7 +44,7 @@
         "Authenticated upload finalization",
         "Submission pipeline"
       ],
-      "status": "Awaiting Phase 4 CI, preview deployment, and live Canvas bridge acceptance.",
+      "status": "Superseded after its first Phase 4 run exposed stale Worker-version assertions. The upload implementation is carried forward in 4.4.7.2.",
       "historical": false,
       "commits": []
     },
