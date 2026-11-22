@@ -15,8 +15,6 @@ permissions:
 
 jobs:
   deploy:
-    # Until the two repository secrets are configured, keep this workflow safely skipped.
-    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out NORTHSTAR
@@ -25,9 +23,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check Cloudflare deployment credentials
+        id: credentials
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare secrets are not configured yet; deployment safely skipped."
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Install Wrangler
+        if: steps.credentials.outputs.configured == 'true'
         run: npm install
       - name: Deploy the NORTHSTAR Canvas bridge
+        if: steps.credentials.outputs.configured == 'true'
         run: npx wrangler deploy --config wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
