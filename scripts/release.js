@@ -3,13 +3,16 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.2',packageVersion:'0.4.7',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.3',packageVersion:'0.4.8',
  bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
+  {version:'4.4.6.3',date:'2026-11-22',title:'Manifest-driven version identity',
+   description:'Removes the legacy hardcoded version override from dashboard rendering. The version pill remains owned by the release manifest and Settings reads the current manifest version.',
+   category:'Bug fixes',areas:['Release manifest','Dashboard rendering','Version pill','Settings'],status:'See the release-specific GitHub Actions test and Pages deployment.'},
   {version:'4.4.6.2',date:'2026-11-22',title:'Document Studio — interaction lifecycle and faithful text export',
    description:'Closes page-level hover listeners on unmount, preserves touch selection during contextual formatting, clears hover targets, and improves PDF export for lists, paragraph spacing, justified text, and supported punctuation glyphs.',
-   category:'PDF rendering/export',areas:['Editor lifecycle','Text selection','Lists','Justified alignment','Paragraph spacing'],status:'See the release-specific GitHub Actions deployment run.'},
+   category:'PDF rendering/export',areas:['Editor lifecycle','Text selection','Lists','Justified alignment','Paragraph spacing'],status:'Preview artifact emitted by a stale workflow trigger; .2 suite failed a boot version assertion and the changes were carried into .3.'},
   {version:'4.4.6.1',date:'2026-11-22',title:'Document Studio — editable text-object foundation',
    description:'Introduces direct on-page text creation, selection, edit, move and resize controls, contextual typography, rich-text persistence, Pencil hover feedback, and formatted PDF export.',
    category:'Document Studio',areas:['Direct text editing','Typography','Apple Pencil interaction','PDF export'],status:'Deployed to production and preview.'}

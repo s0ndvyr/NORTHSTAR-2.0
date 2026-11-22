@@ -239,3 +239,8 @@ The new release.json manifest is the release-history source for the app version 
 The legacy pdf_markup_v1 local annotation key remains readable. On the next open, legacy text annotations are normalized with stable IDs and saved under pdf_markup_v2; the old copy is not deleted by migration.
 
 **Acceptance status:** automated regression, actual iPad Safari / Apple Pencil hardware behavior, authenticated live Canvas attachment acceptance, and production promotion must be recorded separately. Do not treat a successful build as proof of physical hardware acceptance.
+
+
+### NORTHSTAR 4.4.6.3 — Manifest-driven release identity
+
+The dashboard no longer carries a separate hardcoded release constant. Its dashboard refresh cannot overwrite the clickable version/changelog control; Settings reads the active NORTHSTAR release directly from the same release manifest. This prevents the UI from reverting to an older release label after the manifest loads.
