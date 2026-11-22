@@ -101,7 +101,7 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 - Opening a standard assignment creates a deep-link route inside NORTHSTAR (#assignment/assignment-id), with a full-screen loading transition, a themed assignment header, instructions, resource list, private working area, assignment details, and submission controls.
 - Canvas assignment descriptions are rendered through a restrictive HTML allowlist. Script tags, embedded forms, executable content, inline event handlers and unsafe links are removed.
-- PDF attachments are fetched through the private Canvas bridge and displayed in NORTHSTAR's Document Studio. The browser remains on the NORTHSTAR assignment route.
+- PDF attachments first use the short-lived Canvas file URL from metadata and fetch it directly from the student's browser without forwarding the Canvas bearer token or cookies to storage; the private bridge remains the fallback when browser CORS or the signed URL prevents direct delivery. The browser remains on the NORTHSTAR assignment route.
 - Quiz attempts and graded discussions use the same full-screen assignment shell. Supported quiz questions, saving, and completion use the existing Canvas quiz APIs; discussion posts and replies use the Canvas discussion API.
 - Back navigation and browser history return to the previous NORTHSTAR view. The assignment page is not an iframe of Canvas.
 
