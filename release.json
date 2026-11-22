@@ -10,8 +10,8 @@
     "status": "unchanged in 4.4.6.1, 4.4.6.2 and 4.4.6.3; no Worker source or private Cloudflare deployment"
   },
   "deployment": {
-    "preview": "Published by CI-gated GitHub Pages after the release commit's own successful Phase 4 test run; use the release-specific Actions run for verification.",
-    "production": "Published from main after its own successful Phase 4 test run; use the release-specific Pages deployment run for verification."
+    "preview": "Deployed successfully by GitHub Pages workflow run 45068083612 on 2026-11-22; artifact verified NORTHSTAR 4.4.6.3 / package 0.4.8.",
+    "production": "Deployed successfully by GitHub Pages workflow run 45068083612 on 2026-11-22 from main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -28,9 +28,18 @@
         "Settings",
         "Browser boot regression"
       ],
-      "status": "Awaiting .3 release-specific test and deployment verification.",
+      "status": "Deployed successfully to production and preview by GitHub Pages workflow run 45068083612. The Phase 4 suite passed on main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2 in workflow run 45068031155.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "816e34ca734ea4f88ecdaa576c413e418f11589f",
+          "label": "tested preview release"
+        },
+        {
+          "sha": "34e5bc02d0233d32df974dbfecdc919e8e7f04d2",
+          "label": "official main"
+        }
+      ]
     },
     {
       "version": "4.4.6.2",
@@ -46,12 +55,12 @@
         "Paragraph spacing",
         "Regression coverage"
       ],
-      "status": "Preview artifact was published by Pages workflow run 45067529386, but the .2-specific Phase 4 suite failed the boot version-label assertion. The .2 editor/export changes are included in 4.4.6.3 and must pass its own release gate before main promotion.",
+      "status": "Preview artifact deployed by Pages run 45067529386 from a stale earlier test event. The exact .2 Phase 4 suite failed its browser boot version-label assertion; .2 was not promoted to main and its editor/export fixes are included in 4.4.6.3.",
       "historical": false,
       "commits": [
         {
           "sha": "c34ef8fc987eda21fb96d470d967bbf0394ea585",
-          "label": "preview — test failure corrected in .3"
+          "label": "preview candidate; failed boot assertion"
         }
       ]
     },

@@ -14,6 +14,8 @@ assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata an
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
+assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.3'&&String(entry.status||'').includes('45068083612')),'the current release changelog records its successful Pages deployment');
+assert.ok(Array.isArray(manifest.releases.find(entry=>entry.version==='4.4.6.3').commits)&&manifest.releases.find(entry=>entry.version==='4.4.6.3').commits.some(commit=>commit.sha==='34e5bc02d0233d32df974dbfecdc919e8e7f04d2'),'the current release records its official main commit');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.5.3'&&entry.historical===true),'historical entries are explicitly marked reconstructed');
 assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js'),'the app exposes a clickable release-history entry point');
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));

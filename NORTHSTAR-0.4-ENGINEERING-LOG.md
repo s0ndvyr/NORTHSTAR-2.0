@@ -464,6 +464,9 @@ The .4.6.2 feature and interaction changes were present in the preview artifact,
 
 ### Verification boundaries
 
-- The .4.6.3 release commit must pass its own full Phase 4 tests and its preview deployment before merge.
+- [x] Phase 4 push suite passed on main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2 in workflow run 45068031155.
+- [x] Phase 3 and Phase 4 PR suites passed on release commit 816e34ca734ea4f88ecdaa576c413e418f11589f in runs 45067904876 and 45067904958.
+- [x] Preview Pages deployment passed in workflow run 45067949929; release metadata verified 4.4.6.3 / 0.4.8.
+- [x] Production + preview Pages deployment passed in workflow run 45068083612 on main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2.
 - No Canvas Worker source or Cloudflare private bridge deployment is part of this release.
 - Physical iPad Safari / Apple Pencil and authenticated live Canvas checks remain manual acceptance items.
