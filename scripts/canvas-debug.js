@@ -414,7 +414,14 @@
         failureType: clean(d.failureType || "http", 40),
         redirectCount: numberOrNull(d.redirectCount),
         redirectHosts: Array.isArray(d.redirectHosts) ? d.redirectHosts.slice(0, 6).map(function (host) { return clean(host, 180); }) : [],
-        courseScopedMetadata: !!d.courseScoped
+        courseScopedMetadata: !!d.courseScoped,
+        browserDelivery: input.browserDelivery && typeof input.browserDelivery === "object" ? {
+          attempted: !!input.browserDelivery.attempted,
+          result: clean(input.browserDelivery.result || "unknown", 40),
+          httpStatus: numberOrNull(input.browserDelivery.status),
+          host: clean(input.browserDelivery.host || "", 180),
+          contentType: clean(input.browserDelivery.contentType || "", 120)
+        } : null
       },
       assignment: {
         assignmentId: clean(input.assignmentId || "", 40),
