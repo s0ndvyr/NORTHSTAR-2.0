@@ -1,4 +1,5 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
+// Build marker: redeploy after deployment-workflow credential setup; behavior is unchanged.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
 const WORKER_BUILD = '0.4.4.5 (3)';
