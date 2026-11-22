@@ -249,3 +249,8 @@ The dashboard no longer carries a separate hardcoded release constant. Its dashb
 ### NORTHSTAR 4.4.6.4 — Test-pinned deployment protection
 
 GitHub Pages publication now checks the current heads of both `main` and the preview branch against completed successful Phase 4 push runs. The Pages workflow only proceeds when both exact heads have passed, and it checks out those commit SHAs rather than following moving branch names. A delayed older successful test event therefore cannot publish a newer untested branch tip. If either branch has no passing run for its current head, publication is held until that branch's own test completes successfully.
+
+
+### Canvas assignment file upload finalization — Phase 4.4.7.1
+
+NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker performs Canvas upload initialization, sends the signed multipart upload without a Canvas bearer token, then completes Canvas's authenticated `create_success` GET before returning the final file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow; it is not native DocViewer annotation synchronization.

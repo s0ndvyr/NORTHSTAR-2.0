@@ -8,12 +8,15 @@ const releaseJs=readFileSync(new URL('scripts/release.js',root),'utf8');
 const editorJs=readFileSync(new URL('scripts/document-editor.js',root),'utf8');
 const roomJs=readFileSync(new URL('scripts/assignment-room.js',root),'utf8');
 const premiumJs=readFileSync(new URL('scripts/premium.js',root),'utf8');
+const workerJs=readFileSync(new URL('canvas-bridge/worker.js',root),'utf8');
+const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.6.9','release manifest identifies the current .2 quality release');
+assert.equal(manifest.northstarVersion,'4.4.7.1','release manifest identifies the current .2 quality release');
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.1').status||'').includes('Awaiting Phase 4 CI'),'the current Canvas upload candidate remains pending until its own checks pass');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('45081377927'),'the current release records its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.6.9').commits.some(commit=>commit.sha==='fe5b69948d98969768fb5dc155f6f41ab1d861a8'),'the deployed release records its tested source commit');
@@ -26,8 +29,8 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.6.9'")&&releaseJs.includes("packageVersion:'0.4.14'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(pkg.northstarRelease==='4.4.6.9'&&pkg.version==='0.4.14','package metadata maps to the .2 release');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.7.1'")&&releaseJs.includes("packageVersion:'0.4.15'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(pkg.northstarRelease==='4.4.7.1'&&pkg.version==='0.4.15','package metadata maps to the .2 release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');
@@ -43,3 +46,9 @@ assert.ok(pagesWorkflow.includes("if: needs.freshness.outputs.publish == 'true' 
 assert.ok(!pagesWorkflow.includes('github.event.workflow_run.event == \'push\''),'a redundant workflow event filter cannot suppress a valid freshness-approved build');
 assert.ok(css.includes('.ns-release-dialog')&&css.includes('@media(max-width:640px)'));
 console.log('PASS: NORTHSTAR release manifest, package version, changelog history, and in-app release UI are aligned');
+
+assert.ok(workerJs.includes("action!==null"),'the Worker has a separate authenticated multipart upload action');
+assert.ok(workerJs.includes("redirect:'manual'"),'the Worker inspects signed storage redirects explicitly');
+assert.ok(workerJs.includes('/api/v1/files/')&&workerJs.includes('/create_success'),'the Worker finalizes uploaded files through Canvas');
+assert.ok(workspaceJs.includes("bridge.searchParams.set('action','upload-file')"),'the browser sends file bytes to the private bridge');
+assert.ok(workspaceJs.includes("redirect:'error'"),'the browser never follows a bridge redirect automatically');
