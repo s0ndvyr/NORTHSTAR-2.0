@@ -1,0 +1,71 @@
+# Automated Canvas Bridge deployment for the NORTHSTAR development branch.
+name: NORTHSTAR Canvas Bridge — Deploy
+
+on:
+  push:
+    branches:
+      - northstar-0.4.4.2-quiz-continuity
+    paths:
+      - canvas-bridge/**
+      - wrangler.jsonc
+      - .github/workflows/deploy-canvas-bridge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out NORTHSTAR
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Check Worker and application JavaScript syntax
+        run: |
+          for file in scripts/*.js canvas-bridge/*.js; do
+            node --check "$file"
+          done
+      - name: Validate Worker bundle without deploying
+        run: npx wrangler deploy --config wrangler.jsonc --keep-vars --dry-run
+      - name: Run NORTHSTAR regression tests
+        run: npm test
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Cloudflare deployment credentials
+        id: credentials
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare secrets are not configured yet; deployment safely skipped."
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Check out NORTHSTAR
+        if: steps.credentials.outputs.configured == 'true'
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        if: steps.credentials.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wrangler
+        if: steps.credentials.outputs.configured == 'true'
+        run: npm install
+      - name: Deploy the NORTHSTAR Canvas bridge
+        if: steps.credentials.outputs.configured == 'true'
+        run: npx wrangler deploy --config wrangler.jsonc --keep-vars
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

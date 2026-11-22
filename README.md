@@ -51,11 +51,11 @@ If your school's Canvas security policy blocks external access, ask the Canvas a
 - Live what-if sliders project the selected average on currently pending work. GPA is an unweighted estimate; course credits are not known.
 - Settings → AI: supply a Gemini key and model, choose whether to remember the key encrypted on this device, then test. Copilot and assignment study tools call Google directly; course/assignment context is sent to Google when requested. Free-tier availability and quotas depend on the account/model. Without a key the rule-based guide remains available.
 - Canvas and Gemini credentials can be stored in the encrypted IndexedDB vault. The encryption key is non-extractable and device-local. This is encryption at rest, not a defense against malicious same-origin JavaScript; secrets must still be treated as accessible to the running application. Disconnect Canvas or clear the Gemini key to erase them.
-- Notes/drafts stay device-local. Restricted Canvas and Google resources open at their authenticated HTTPS destination in a new tab instead of being embedded in an iframe that may return HTTP 403.
+- Notes/drafts stay device-local. HTTPS resources are previewed in the NORTHSTAR viewer first with a visible external fallback when a provider blocks embedding. Authenticated Canvas/LTI experiences prefer the native WKWebView host when it is installed; the GitHub Pages PWA uses a best-effort iframe.
 - Phase 2 (text/URL): open an assignment workspace, choose an allowed type, and review/confirm before sending. Text entry sends the workspace draft as escaped plain text; URL entry sends the URL. These operations require a private bridge connection. Resubmitting creates another attempt where Canvas permits it; there is no student unsubmit/erase operation.
-- Redeploy `canvas-bridge/worker.js` with your existing origins before using submission controls. Only the exact assignment-submissions POST path is allowed, with validated JSON and a 200 KB request limit. File uploads, comments, impersonation fields, arbitrary writes, and other submission types are rejected.
+- The current private Worker permits narrowly validated text, URL, and file submissions; classic quiz attempt creation, answer saves and completion; and discussion posts/replies. Arbitrary Canvas write routes, impersonation fields, query-string writes, and unapproved submission payloads remain rejected.
 - Submission state normalization distinguishes missing, submitted, awaiting grading, graded, and excused work. If Canvas reports that the grade does not match the latest submission attempt, NORTHSTAR does not display the stale score as the current attempt. Every UI submission asks for confirmation naming the course/assignment and previewing the content. There are no automatic retries. On a network or unreadable-response failure, check Canvas before attempting again. Canvas enforces deadlines, availability, and attempt limits. Drafts are retained locally after submission.
-- File uploads and quiz-engine integration remain unfinished. Use Canvas for files, quizzes, discussions, and external tools. Quiz support still needs school-specific capability checks; no quiz answers are submitted here.
+- Phase 4 adds native workspaces for supported text/URL/file submissions, supported classic quiz question types, graded discussions, and PDF annotations/export. Unsupported quiz formats, New Quizzes or LTI tools that require provider authentication, and Canvas DocViewer student-annotation submission remain explicit fallbacks.
 - Demo charts and flashcards remain examples, not school analytics. No StudentVUE connection is provided.
 
 ## NORTHSTAR 0.4 foundation updates
@@ -64,7 +64,7 @@ If your school's Canvas security policy blocks external access, ask the Canvas a
 - Session recovery: the last successful Canvas courses, assignments, official enrollment grade totals, group weights, sync quality warnings, and sync timestamp are stored as an encrypted version-2 snapshot. Version-1 snapshots remain readable. If the network is unavailable, NORTHSTAR can restore the last snapshot and label it as cached/offline rather than falsely calling it live.
 - Marking-period recovery: Settings supports validated JSON export/import. Imports merge and de-duplicate matching periods instead of silently replacing existing data.
 - Credentials: Canvas token and Gemini key fields retain the saved value in masked form, with explicit Show/Hide controls. Disconnect removes the stored Canvas credential and cached Canvas snapshot.
-- External assignment content: restricted Google/Canvas links are opened directly in a new tab; NORTHSTAR does not attempt to bypass iframe restrictions.
+- External assignment content: NORTHSTAR attempts an in-dashboard HTTPS preview first and offers a clearly labeled external fallback. The PWA cannot bypass provider iframe restrictions or Safari cookie policy.
 - Themes: added Aurora, Nebula, Starlight, and Solar palettes, plus restrained atmospheric background effects and reduced-motion handling. Midnight is now the default.
 - Gemini requests: API keys are sent in the `x-goog-api-key` header, not embedded in the request URL.
 
@@ -101,7 +101,7 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 - Opening a standard assignment creates a deep-link route inside NORTHSTAR (#assignment/assignment-id), with a full-screen loading transition, a themed assignment header, instructions, resource list, private working area, assignment details, and submission controls.
 - Canvas assignment descriptions are rendered through a restrictive HTML allowlist. Script tags, embedded forms, executable content, inline event handlers and unsafe links are removed.
-- PDF attachments first use the short-lived Canvas file URL from metadata and fetch it directly from the student's browser without forwarding the Canvas bearer token or cookies to storage; the private bridge remains the fallback when browser CORS or the signed URL prevents direct delivery. The browser remains on the NORTHSTAR assignment route.
+- PDF attachments first use the short-lived download URL returned by Canvas file metadata and fetch it directly from the student's browser, without forwarding the Canvas bearer token or browser cookies to storage. If browser CORS or the signed URL prevents that path, NORTHSTAR falls back to the private Canvas bridge. The browser remains on the NORTHSTAR assignment route.
 - Quiz attempts and graded discussions use the same full-screen assignment shell. Supported quiz questions, saving, and completion use the existing Canvas quiz APIs; discussion posts and replies use the Canvas discussion API.
 - Back navigation and browser history return to the previous NORTHSTAR view. The assignment page is not an iframe of Canvas.
 
@@ -143,3 +143,97 @@ All assignment and quiz writes remain explicit, confirmed and sent through the p
 8. Verify unsupported assignment types show an honest provider limitation rather than a simulated submission.
 
 Automated tests use Canvas-shaped fixtures and mocked binary-file downloads. They verify the app route, markup sanitization, bridge allowlists, and PDF transport wiring; they do not replace live testing with the student's own Canvas account and Apple Pencil.
+
+## NORTHSTAR / .4.4.2 — Quiz Continuity & Safe Recovery
+
+Phase 4.4.2 hardens the in-dashboard classic Canvas quiz workflow so leaving and reopening an assignment does not casually create a second attempt.
+
+- Before showing a Start button, NORTHSTAR asks Canvas for the current student's quiz submission. If Canvas reports an unfinished attempt, NORTHSTAR first tries to resume it using temporary attempt validation details retained in the current browser tab session.
+- If the same-tab session details are unavailable, NORTHSTAR blocks a new start and presents a clear route to continue the existing attempt in Canvas. It never starts a replacement attempt merely because NORTHSTAR cannot recover the validation token.
+- Supported question edits are saved to Canvas automatically after a short debounce. The explicit Save action remains available and reports whether Canvas confirmed the write. Failed or ambiguous writes are not automatically retried.
+- Quiz completion warns when supported questions remain unanswered. Unsupported question formats still block NORTHSTAR completion and must be handled in the same Canvas attempt.
+- Quiz attempt validation details are held in sessionStorage for the current tab session only. They are not written to localStorage or the long-lived credential vault. If the tab session is lost, the safe fallback is the existing Canvas attempt—not a duplicate attempt.
+- The repository Worker already allowlists Canvas' current-user quiz submission read route; the older read-only Worker supplied separately is not equivalent to the repository Worker. Deploy the repository's current `canvas-bridge/worker.js` when enabling Phase 4.4 write workflows.
+
+Canvas API references: [Quiz Submissions](https://canvas.instructure.com/doc/api/quiz_submissions.html) and [Quiz Submission Questions](https://www.sso.canvaslms.com/doc/api/quiz_submission_questions.html).
+
+
+## Phase 4.4 — Native Assignment Workspace
+
+NORTHSTAR opens ordinary Canvas assignments, supported classic quizzes, and graded discussions in full-page in-app workspaces. The `.4.4.3` increment adds a formatted local writing editor with safe HTML sanitization, native preview for common image/audio/video/text attachments through the private bridge, in-app handling of assignment and file links where they can be mapped to Canvas records, and quiz question navigation/progress/flagging. Drafts remain device-local until the student explicitly submits.
+
+The private Cloudflare Worker must be deployed from the current `canvas-bridge/worker.js`. Canvas remains authoritative: write actions require confirmation and a confirmed Canvas response; ambiguous writes are never automatically retried. The bridge uses the exact configured Canvas and GitHub Pages origins.
+
+**Known boundaries:** PDF annotations are saved locally and can be flattened/exported as a file; this is not the same as submitting Canvas DocViewer student-annotation state. New Quizzes, LTI/external tools, provider-specific assessments, and file formats without a safe native renderer are not falsely represented as completed in NORTHSTAR. Those workflows may require the institution-approved provider experience.
+
+
+### New Quizzes behavior
+
+NORTHSTAR uses the official read-only New Quizzes endpoints to retrieve a quiz's instructions and available item prompts for an in-dashboard preview. The preview deliberately does not render answer/scoring payloads and does not create an attempt. Starting, timing, answering and submitting a New Quiz remains in the official authenticated Canvas quiz player because the documented New Quizzes REST resources expose quiz and item retrieval/authoring, not the student attempt workflow integrated here. The bridge only allows GET for the two New Quiz read routes; it does not permit New Quiz POST/PATCH/DELETE.
+
+
+## Authenticated Canvas experiences — `.4.4.4`
+
+NORTHSTAR now requests two official Canvas capabilities through the private bridge:
+
+- `GET /login/session_token` obtains a short-lived `session_url` for a restricted Canvas return path. It is used to open the official Canvas assignment page for New Quizzes, student-annotation DocViewer, media recording and Canvas-hosted document previews. NORTHSTAR does not store the session URL or put the user's API token in a URL.
+- `GET /api/v1/courses/:course_id/external_tools/sessionless_launch?launch_type=assessment&assignment_id=:assignment_id` asks Canvas to produce the assignment-specific LTI launch URL. NORTHSTAR does not fabricate an LTI JWT or provider launch URL.
+
+The Worker permits only the documented assessment launch shape and only same-school, known Canvas return paths for session creation. The client verifies that session URLs belong to the connected Canvas origin and that launch URLs use HTTPS.
+
+### Tokenless-looking sign-in vs authorization
+
+The current personal build still uses the student's existing Canvas API token for REST calls and for requesting the temporary session URL. The API token is sent only as a Bearer authorization header to the private Worker. The browser then uses the short-lived Canvas session URL; it does not need the API token to operate the Canvas page itself.
+
+To remove manual token entry for a real multi-user release, the next authentication milestone is Canvas OAuth 2.0 authorization code flow in the private Worker, or an institution-installed LTI 1.3 launch with the required service scopes. Canvas developer-key registration, allowed scopes and school administrator approval are required for those institutional app registrations. NORTHSTAR will never collect a Canvas password or scrape the school login form.
+
+### iPad Safari and native in-app content
+
+The GitHub Pages PWA uses the existing in-dashboard iframe as a best-effort fallback. Some Canvas/provider destinations can reject iframe embedding or Safari third-party cookies. `native/ios/NorthstarSecureContentPresenter.swift` supplies the message-handler bridge and a top-level persistent WKWebView with NORTHSTAR-owned navigation controls. The source must be added to an iOS host app target before that guaranteed native experience is available; this repository is still deployed as a web PWA, and the native host has not yet been built or installed.
+
+
+## NORTHSTAR / Phase 4.4.5 - Assignment Workspace acceptance
+
+Phase 4 is the native assignment-workflow phase. The .4.4 branch provides full-page NORTHSTAR assignment workspaces for supported work, local rich-text writing drafts, text/URL/file submissions, supported Classic Quiz attempts, graded discussions, PDF Document Studio with Pencil-only ink and flattened export, submission history/comments/rubric display, and safe resource previews.
+
+### Provider workflows and what inside NORTHSTAR means
+
+- Standard writing, URL and file work: the work area and submission controls are NORTHSTAR-native. Canvas remains the source of truth for the resulting submission attempt and grade.
+- Classic quizzes: supported question types are rendered in NORTHSTAR and saved/completed through official Canvas Classic Quiz endpoints. Unsupported formats block NORTHSTAR completion rather than losing or guessing at answers.
+- New Quizzes: NORTHSTAR may show a read-only content preview, then requests a short-lived Canvas browser session for the official timed player. Answer state and final submission remain Canvas-owned; NORTHSTAR does not claim a custom New Quiz engine.
+- External LTI assessments: NORTHSTAR asks Canvas for the assignment-specific sessionless launch URL. The provider owns its editor, identity, attempt, timer, grade and final submission. A provider may require SSO or prohibit embedding.
+- Student Annotation / DocViewer and media recording: NORTHSTAR opens the original Canvas assignment in its secure content view. Select Start Assignment, then the appropriate Canvas tab/tool; Canvas remains responsible for native annotation/recording persistence and submission.
+- PDF Document Studio: drawing/highlighting/text/shape annotations are saved locally and can be flattened into a PDF for a permitted file upload. This is not a Canvas DocViewer annotation session.
+- General external links: NORTHSTAR tries the in-dashboard preview first and shows an explicit Open externally escape route if the destination refuses framing. The PWA cannot override X-Frame-Options, CSP frame-ancestors, SSO, or Safari cookie restrictions.
+
+### Native iPad host boundary
+
+The repository includes native/ios/NorthstarSecureContentPresenter.swift, which is the JavaScript bridge and persistent top-level WKWebView presenter for a real iOS app host. The JavaScript calls this bridge when the host installs it. The repository is currently a GitHub Pages PWA and does not contain a compiled/installed iOS app target, so the Swift source alone does not make this native top-level path active in Safari. Without that host, the PWA shows the full-screen in-dashboard iframe plus the external fallback.
+
+### Deploy and verify
+
+1. Run the GitHub Actions Phase 3 and Phase 4 suites for the exact branch head.
+2. Publish the current canvas-bridge/worker.js to the private Cloudflare Worker. GitHub Pages deployment does not deploy this Worker. Retain CANVAS_ORIGIN=https://nnps.instructure.com and ALLOWED_ORIGIN=https://s0ndvyr.github.io unless the account/site has intentionally changed.
+3. Connect the student's Canvas account through the private Worker. Never place the token in source, a URL, a production test fixture, or chat.
+4. Use a low-risk practice assignment to verify rich-text save/submit and check the actual attempt in Canvas.
+5. Use a permitted file assignment to verify each file is uploaded and appears in the submitted attempt.
+6. Use a practice Classic Quiz to verify start, autosave, recovery, unanswered warning, flag/unflag, and completion; verify the attempt in Canvas.
+7. Use a non-graded discussion only when posting is intended; verify the post/reply in Canvas.
+8. Test a PDF on iPad with Apple Pencil for pen-only input, touch scrolling, eraser, undo/redo, export and permitted file upload.
+9. Use school-provided New Quizzes, LTI, Student Annotation and media-recording examples to verify their official Canvas/provider players open and confirm submission.
+10. Complete theme, Safari, offline draft, reduced-motion, VoiceOver/keyboard, large-file and back-navigation regression before Phase 4 is declared accepted.
+
+Automated tests use controlled Canvas-shaped fixtures and a DOM harness. They cannot prove NNPS policy, Canvas permissions, provider SSO, iPad Pencil behavior, or that a real teacher receives a submitted attempt. Those are live acceptance checks, not claims of CI coverage.
+
+
+## NORTHSTAR 4.4.6 — Document Studio rebuild
+
+The 4.4.6 Document Studio adds a separate editable text-object layer above the PDF.js page. Text annotations are stored as structured objects with stable IDs, dimensions, font family/size, paragraph alignment, line spacing, colors, and sanitized rich-text markup. Users can create text directly on a page, select an object, enter editing mode, move it with its drag grip, resize it with corner handles, and use contextual typography controls.
+
+The editor preserves the source PDF. Export creates an annotated copy; it does not rewrite the PDF's original text layer or upload NORTHSTAR's local annotation model as a native Canvas DocViewer annotation session. PDF export maps the supported font families to PDF standard-font variants (Helvetica, Times Roman, and Courier) and uses safe character fallback for unsupported glyphs.
+
+The new release.json manifest is the release-history source for the app version pill and closable changelog dialog. package.json uses standard three-part npm semver and carries the exact NORTHSTAR micro-version in its northstarRelease metadata field. Every future independently reviewable app, bridge, infrastructure, or deployment-configuration change must increment the NORTHSTAR micro-version and add a manifest changelog entry. GitHub Pages deployment is gated on a successful Phase 4 test workflow.
+
+The legacy pdf_markup_v1 local annotation key remains readable. On the next open, legacy text annotations are normalized with stable IDs and saved under pdf_markup_v2; the old copy is not deleted by migration.
+
+**Acceptance status:** automated regression, actual iPad Safari / Apple Pencil hardware behavior, authenticated live Canvas attachment acceptance, and production promotion must be recorded separately. Do not treat a successful build as proof of physical hardware acceptance.

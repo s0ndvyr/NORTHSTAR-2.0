@@ -1,11 +1,15 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
+// Build marker: redeploy after deployment-workflow credential setup; behavior is unchanged.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges', 'Vary':'Origin', 'Cache-Control':'no-store'};
+const WORKER_BUILD = '0.4.4.5 (3)';
+const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id, X-Northstar-Failure, X-Northstar-Worker-Version', 'X-Northstar-Worker-Version':WORKER_BUILD, 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const isQuizFlagPath=path=>/^\/api\/v1\/quiz_submissions\/\d+\/questions\/\d+\/(?:flag|unflag)$/.test(path);
 const keysOnly=(o,keys)=>isObject(o)&&Object.keys(o).every(k=>keys.includes(k));
 function validAnswer(v){
+  if(v===null)return true;
   if(typeof v==='string')return v.length<=16000;
   if(typeof v==='number')return Number.isFinite(v);
   if(typeof v==='boolean')return true;
@@ -13,19 +17,42 @@ function validAnswer(v){
   if(isObject(v))return Object.keys(v).length<=30&&Object.values(v).every(x=>typeof x==='string'||(typeof x==='number'&&Number.isFinite(x)));
   return false;
 }
+function safeCanvasReturnTo(value){
+  if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.includes('#'))return false;
+  return /^\/courses\/\d+\/assignments\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/quizzes\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/files\/\d+$/.test(value) ||
+    /^\/courses\/\d+\/external_tools\/\d+$/.test(value);
+}
 function allowedRead(path){
+  let requested;try{requested=new URL(path,CANVAS_ORIGIN);}catch{return false;}
+  if(requested.origin!==CANVAS_ORIGIN)return false;
+  if(requested.pathname==='/login/session_token'){
+    const keys=[...requested.searchParams.keys()];
+    if(keys.some(key=>key!=='return_to')||keys.length>1)return false;
+    const returnTo=requested.searchParams.get('return_to');
+    return returnTo===null||safeCanvasReturnTo(returnTo);
+  }
+  if(/^\/api\/v1\/courses\/\d+\/external_tools\/sessionless_launch$/.test(requested.pathname)){
+    const params=[...requested.searchParams.entries()];
+    return params.length===2&&requested.searchParams.get('launch_type')==='assessment'&&/^\d+$/.test(requested.searchParams.get('assignment_id')||'');
+  }
   return /^\/api\/v1\/users\/self$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/discussion_topics(?:\?(?:[^#]*))?$/.test(path) || /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+(?:\/entries)?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses(?:\?[^#]*)?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/assignments\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/files\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/files\/\d+\/download$/.test(path) ||
+    /^\/api\/v1\/courses\/\d+\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/(?:assignments|assignment_groups|quizzes)(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission|submissions\/\d+\/time))?(?:\?(?:[^#]*))?$/.test(path) ||
-    /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path);
+    /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+$/.test(path) ||
+    /^\/api\/quiz\/v1\/courses\/\d+\/quizzes\/\d+\/items$/.test(path);
 }
-function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
+function isWritePath(path){return /^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/(?:\d+|self)\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/self\/files$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/.test(path)||/^\/api\/v1\/quiz_submissions\/\d+\/questions$/.test(path)||/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/.test(path);}
 function validateWrite(path,data){
   if(!isObject(data))return 'JSON object required';
   const discussionPost=/^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries(?:\/\d+\/replies)?$/;
@@ -34,7 +61,12 @@ function validateWrite(path,data){
   const quizStart=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions$/;
   const quizAnswers=/^\/api\/v1\/quiz_submissions\/\d+\/questions$/;
   const quizComplete=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/\d+\/complete$/;
-  const uploadInit=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+\/files$/;
+  const quizUploadInit=/^\/api\/v1\/courses\/\d+\/quizzes\/\d+\/submissions\/self\/files$/;
+  if(quizUploadInit.test(path)){
+    if(!keysOnly(data,['name'])||typeof data.name!=='string'||!data.name.trim()||data.name.length>255)return 'Invalid quiz upload initialization request';
+    return null;
+  }
+  const uploadInit=/^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/(?:\d+|self)\/files$/;
   if(uploadInit.test(path)){
     if(!keysOnly(data,['name','size','content_type'])||typeof data.name!=='string'||!data.name.trim()||data.name.length>255||!Number.isSafeInteger(data.size)||data.size<1||data.size>25000000||(data.content_type!==undefined&&typeof data.content_type!=='string'))return 'Invalid upload initialization request';
     return null;
@@ -67,61 +99,109 @@ function validateWrite(path,data){
   return 'Write path not allowed';
 }
 // Canvas file delivery redirects through Instructure-owned storage domains.
+ // Keep the bearer token on those verified domains because Canvas now requires
+ // authenticated file downloads; never forward it to arbitrary third-party hosts.
 const TRUSTED_CANVAS_FILE_HOST_SUFFIXES=['.instructure.com','.canvas-user-content.com','.inscloudgate.net'];
 function isTrustedCanvasFileHost(hostname){
   const host=String(hostname||'').toLowerCase();
   return host===new URL(CANVAS_ORIGIN).hostname||TRUSTED_CANVAS_FILE_HOST_SUFFIXES.some(suffix=>host.endsWith(suffix));
 }
-async function downloadCanvasFile(fileId,authorization,userAgent){
-  const apiUrl=CANVAS_ORIGIN+'/api/v1/files/'+fileId;
-  const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
-  if(!metaResponse.ok)return new Response(metaResponse.body,{status:metaResponse.status,headers:{...cors,'Content-Type':metaResponse.headers.get('Content-Type')||'application/json'}});
-  let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
+function fileDiagnosticContext(stage,response,requestId,context){
+  const details=context||{};
+  const headers=response?.headers;
+  return {
+    stage,
+    upstreamStatus:response?.status??null,
+    upstreamHost:details.upstreamHost||'',
+    upstreamContentType:headers?.get('Content-Type')||'',
+    upstreamServer:headers?.get('Server')||'',
+    upstreamRayId:headers?.get('cf-ray')||'',
+    redirectCount:Number(details.redirectCount)||0,
+    redirectHosts:Array.isArray(details.redirectHosts)?details.redirectHosts.slice(0,6):[],
+    courseScoped:!!details.courseScoped,
+    failureType:details.failureType||'http'
+  };
+}
+function fileDiagnosticFailure(stage,code,status,message,requestId,context,response){
+  const diagnostics=fileDiagnosticContext(stage,response||null,requestId,{...(context||{}),failureType:context?.failureType||'http'});
+  // Only safe metadata is logged: never bearer tokens, signed URLs, query strings, response bodies or file contents.
+  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',...diagnostics,requestId:requestId||null,code}));
+  const headers={...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Northstar-Stage':stage,'X-Northstar-Failure':diagnostics.failureType,...(diagnostics.upstreamStatus!==null?{'X-Northstar-Upstream-Status':String(diagnostics.upstreamStatus)}:{}),...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
+  return new Response(JSON.stringify({error:message,code,stage,upstreamStatus:diagnostics.upstreamStatus,requestId:requestId||null,diagnostics}),{status,headers});
+}
+function fileUpstreamFailure(stage,response,requestId,context){
+  const code=stage==='metadata'?'CANVAS_FILE_METADATA_FAILED':'CANVAS_FILE_CONTENT_FAILED';
+  const status=response.status>=400&&response.status<=599?response.status:502;
+  return fileDiagnosticFailure(stage,code,status,'Canvas rejected the file request',requestId,context,response);
+}
+function fileTransportFailure(stage,requestId,context){
+  const code=stage==='metadata'?'CANVAS_FILE_METADATA_NETWORK_FAILED':'CANVAS_FILE_CONTENT_NETWORK_FAILED';
+  const message=stage==='metadata'?'Could not reach Canvas while retrieving attachment metadata':'Could not reach the file host while downloading the attachment';
+  return fileDiagnosticFailure(stage,code,502,message,requestId,{...(context||{}),failureType:'network'});
+}
+function fileRedirectFailure(code,message,requestId,context){
+  return fileDiagnosticFailure('redirect',code,502,message,requestId,{...(context||{}),failureType:'redirect'});
+}
+async function downloadCanvasFile(fileId,courseId,authorization,userAgent,requestId){
+  const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
+  let metaResponse;
+  try{metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});}
+  catch{return fileTransportFailure('metadata',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
+  if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});
+  let metadata;try{metadata=await metaResponse.json();}catch{return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_INVALID',502,'Canvas file metadata was unreadable',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);}
   const raw=metadata.url||metadata.download_url;
-  if(typeof raw!=='string'||!raw)return reply('Canvas did not provide a file download URL',404);
-  let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return reply('Canvas returned an invalid file URL',502);}
-  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file URL did not pass the secure download check',502);
+  if(typeof raw!=='string'||!raw)return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_NO_DOWNLOAD_URL',502,'Canvas did not provide a file download URL',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);
+  let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return fileRedirectFailure('CANVAS_FILE_URL_INVALID','Canvas returned an invalid file destination',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
+  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_URL_UNSAFE','Canvas file destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,courseScoped:!!courseId});
+  const redirectHosts=[];
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
-    // Canvas requires authenticated downloads on its own storage hosts after redirects.
-    // Restrict forwarding to verified Instructure domains, never arbitrary external hosts.
+    // Canvas's authenticated file flow requires the bearer token on its own
+    // storage hosts after redirects. Restrict forwarding to verified Instructure domains.
     if(isTrustedCanvasFileHost(current.hostname))headers.Authorization=authorization;
-    const response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});
+    let response;
+    try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}
+    catch{return fileTransportFailure('content',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
     if(response.status>=300&&response.status<400){
-      const location=response.headers.get('Location');if(!location)return reply('Canvas file redirect did not include a destination',502);
-      try{current=new URL(location,current);}catch{return reply('Canvas file redirect destination was invalid',502);}
-      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file redirect failed the secure download check',502);
+      if(redirectHosts.length<6)redirectHosts.push(current.hostname);
+      const location=response.headers.get('Location');if(!location)return fileRedirectFailure('CANVAS_FILE_REDIRECT_LOCATION_MISSING','The file host returned a redirect without a destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
+      try{current=new URL(location,current);}catch{return fileRedirectFailure('CANVAS_FILE_REDIRECT_DESTINATION_INVALID','The file host returned an invalid redirect destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
+      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_REDIRECT_UNSAFE','The file redirect destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
       continue;
     }
-    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'};
+    if(!response.ok)return fileUpstreamFailure('content',response,requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
+    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Northstar-Stage':'complete',...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
     for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
     return new Response(response.body,{status:response.status,headers:responseHeaders});
   }
-  return reply('Canvas file redirected too many times',502);
+  return fileRedirectFailure('CANVAS_FILE_REDIRECT_LIMIT','The file host redirected too many times',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
 }
 export default {
   async fetch(request) {
     if(request.headers.get('Origin') !== ALLOWED_ORIGIN) return new Response('Origin not allowed',{status:403});
     if(request.method==='OPTIONS') return new Response(null,{status:204,headers:cors});
-    if(!['GET','POST'].includes(request.method)) return reply('Method not allowed',405);
+    if(!['GET','POST','PUT'].includes(request.method)) return reply('Method not allowed',405);
     const auth=request.headers.get('Authorization')||'';
     if(!/^Bearer \S+$/.test(auth)) return reply('Authorization required',401);
     const rawPath=new URL(request.url).searchParams.get('path')||'';
     let url;try{url=new URL(rawPath,CANVAS_ORIGIN);}catch{return reply('Invalid path',400);}
     if(url.origin!==CANVAS_ORIGIN||url.searchParams.has('access_token')||url.hash)return reply('Path not allowed',403);
-    if(request.method==='POST'&&url.search)return reply('Query parameters are not allowed on writes',403);
+    if(request.method!=='GET'&&url.search)return reply('Query parameters are not allowed on writes',403);
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     if(request.method==='GET'){
+      const courseFileMatch=url.pathname.match(/^\/api\/v1\/courses\/(\d+)\/files\/(\d+)\/download$/);
+      if(courseFileMatch){try{return await downloadCanvasFile(courseFileMatch[2],courseFileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0',request.headers.get('cf-ray')||'');}catch{return reply('Could not download the Canvas file',502);}}
       const fileMatch=url.pathname.match(/^\/api\/v1\/files\/(\d+)\/download$/);
-      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
+      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],null,auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0',request.headers.get('cf-ray')||'');}catch{return reply('Could not download the Canvas file',502);}}
     }
     let body;
-    if(request.method==='POST'){
-      if(!isWritePath(url.pathname))return reply('Write path not allowed',405);
+    if(request.method==='POST'||request.method==='PUT'){
+      if(request.method==='POST'&&!isWritePath(url.pathname))return reply('Write path not allowed',405);
+      if(request.method==='PUT'&&!isQuizFlagPath(url.pathname))return reply('Write path not allowed',405);
       if(!request.headers.get('Content-Type')?.startsWith('application/json'))return reply('JSON required',415);
       const raw=await request.text();if(new TextEncoder().encode(raw).length>200000)return reply('Request too large',413);
       let data;try{data=JSON.parse(raw);}catch{return reply('Invalid JSON',400);}
-      const invalid=validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
+      const invalid=request.method==='PUT'?(!keysOnly(data,['attempt','validation_token','access_code'])||!Number.isSafeInteger(data.attempt)||data.attempt<1||typeof data.validation_token!=='string'||!data.validation_token||data.validation_token.length>512||(data.access_code!==undefined&&data.access_code!==null&&typeof data.access_code!=='string')?'Invalid quiz flag request':null):validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
       body=JSON.stringify(data);
     }
     try{

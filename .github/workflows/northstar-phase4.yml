@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - main
-      - northstar-0.4.4.2-quiz-continuity
       - northstar-0.4.4-phase-4-assignment-workspace
       - northstar-0.4.4.1-native-assignment-experience
+      - northstar-0.4.4.2-quiz-continuity
   pull_request:
     branches:
       - main
@@ -29,5 +29,7 @@ jobs:
           for file in scripts/*.js canvas-bridge/*.js; do
             node --check "$file"
           done
+      - name: Validate Cloudflare Worker bundle without deploying
+        run: npx wrangler deploy --config wrangler.jsonc --dry-run
       - name: Run unit and browser boot tests
         run: npm test

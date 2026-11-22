@@ -1,0 +1,118 @@
+{
+  "product": "NORTHSTAR",
+  "phase": "4.4.6",
+  "northstarVersion": "4.4.6.1",
+  "packageVersion": "0.4.6",
+  "channel": "route-derived",
+  "releaseDate": "2026-11-22",
+  "bridge": {
+    "version": "1.1",
+    "status": "unchanged in 4.4.6.1; no Worker source or Cloudflare deployment was performed"
+  },
+  "deployment": {
+    "preview": "pending automated Pages deployment",
+    "production": "pending promotion to main"
+  },
+  "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
+  "releases": [
+    {
+      "version": "4.4.6.1",
+      "date": "2026-11-22",
+      "title": "Document Studio — editable text-object foundation",
+      "description": "Replaces the one-shot text-entry workflow with direct on-page text objects. Adds a separate DOM text layer, create/select/edit flows, move and resize handles, typography controls, rich-text markup persistence, Pencil hover cursor and placement previews, and formatted PDF export using supported PDF standard-font families.",
+      "category": "Document Studio",
+      "areas": [
+        "Direct text editing",
+        "Move and resize",
+        "Font family and size",
+        "Rich-text formatting",
+        "Pencil hover",
+        "PDF export",
+        "Legacy annotation migration"
+      ],
+      "status": "Implementation release. Automated verification and deployment are recorded separately; original PDF text remains unchanged.",
+      "historical": false,
+      "commits": []
+    },
+    {
+      "version": "4.4.5.3",
+      "date": "2026-11-22",
+      "title": "Two-finger navigation pointer capture",
+      "description": "Captures both touch pointers during two-finger document navigation and preserves the selected input model while the gesture completes. Verified in the Phase 4 automated workflow.",
+      "category": "Bug fixes",
+      "areas": [
+        "Touch navigation",
+        "Pointer capture",
+        "PDF Document Studio"
+      ],
+      "status": "Automated Phase 4 workflow passed; physical Pencil hardware acceptance remains separate.",
+      "historical": true,
+      "commits": [
+        {
+          "sha": "5ad9b3422254230208d1386ee5b2da40cafb4aae",
+          "label": "main"
+        },
+        {
+          "sha": "27c814f9e1f38f348e37153012e7ca6988158405",
+          "label": "preview"
+        }
+      ]
+    },
+    {
+      "version": "4.4.5.2",
+      "date": "2026-11-22",
+      "title": "Input mode persistence and tool independence",
+      "description": "Separates Hand/Finger and Apple Pencil input selection from the active annotation tool. Tool selection no longer silently changes the input mode, and the input choice persists when another PDF is opened.",
+      "category": "Editing and interaction",
+      "areas": [
+        "Hand/Finger mode",
+        "Apple Pencil mode",
+        "Tool independence",
+        "Document switching"
+      ],
+      "historical": true,
+      "commits": [
+        {
+          "sha": "11c59b6a965dac41e1a44f4df6c13be7c7190e77",
+          "label": "main"
+        }
+      ]
+    },
+    {
+      "version": "4.4.5.1",
+      "date": "2026-11-22",
+      "title": "All annotation tools in both input modes",
+      "description": "Introduces a shared pointer/tool capability model so the supported annotation tools can be used with finger or mouse in Hand mode and Apple Pencil in Pencil mode. Adds mode/tool regression checks.",
+      "category": "Editing and interaction",
+      "areas": [
+        "Pointer routing",
+        "Annotation tools",
+        "Mode safety",
+        "Regression tests"
+      ],
+      "historical": true,
+      "commits": [
+        {
+          "sha": "d06c098518c2c8ede5883914bdc21c828e2f64e8",
+          "label": "main"
+        }
+      ]
+    },
+    {
+      "version": "4.4.4.1",
+      "date": "2026-11-19",
+      "title": "Native assignment workspace and PDF Document Studio",
+      "description": "Introduces the in-dashboard assignment route, Canvas attachment retrieval, PDF.js rendering, page-level annotation tools, local annotation persistence, undo/redo, and flattened annotated-PDF export.",
+      "category": "Canvas integration",
+      "areas": [
+        "In-app assignment pages",
+        "Canvas file retrieval",
+        "PDF rendering",
+        "Annotation and export"
+      ],
+      "status": "Historical summary reconstructed from the repository engineering log and README; native Canvas DocViewer annotation-state submission is not claimed.",
+      "historical": true,
+      "commits": []
+    }
+  ]
+}

@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="styles/main.css">
 <link rel="stylesheet" href="styles/northstar-premium.css">
 <link rel="stylesheet" href="styles/assignment-room.css">
+<link rel="stylesheet" href="styles/release-notes.css">
 </head>
 <body>
 <div class="app">
@@ -39,7 +40,7 @@
       <button class="icon-btn hamburger" id="hamburger">☰</button>
       <div class="search"><span style="color:var(--muted)">⌕</span><input id="globalSearch" placeholder="Search assignments, courses, notes…"><kbd>/</kbd></div>
       <span class="pill hide-m"><span class="dot"></span> <span id="syncLabel">Demo workspace · not synced</span></span>
-      <span class="pill hide-m" id="versionPill" style="color:var(--cyan);border-color:rgba(34,211,238,.25)">NORTHSTAR / .4.4.1</span>
+      <button class="pill hide-m ns-version-pill" id="versionPill" type="button" aria-haspopup="dialog" aria-expanded="false" title="View NORTHSTAR release notes">NORTHSTAR / 4.4.6.1 <span class="ns-version-new" aria-hidden="true">NEW</span></button>
       <button class="icon-btn" id="bellBtn" title="Activity & Alerts">♪<span class="n" id="bellN">4</span></button>
       <button class="icon-btn" id="settingsBtn" onclick="showView('settings')" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.03a1.7 1.7 0 0 0-1.82.55l-.05.07h-3.4l-.02-.08a1.7 1.7 0 0 0-1.28-1.27l-.08-.02-2.94 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34l-.08.03-1.7-2.94.06-.06A1.7 1.7 0 0 0 5.3 15.6l.03-.08v-3.4l-.08-.02a1.7 1.7 0 0 0-1.27-1.28l-.07-.02 1.7-2.94.08.03a1.7 1.7 0 0 0 1.82-.55l.05-.07h3.4l.02.08a1.7 1.7 0 0 0 1.28 1.27l.08.02 2.94-1.7.06.06a1.7 1.7 0 0 0 1.88.34l.08-.03 1.7 2.94-.06.06a1.7 1.7 0 0 0-.55 1.82l-.03.08v3.4l.08.02a1.7 1.7 0 0 0 1.27 1.28z"/></svg></button>
       <button class="btn btn-primary btn-sm hide-m" onclick="openConnect()">⬡ Connect LMS</button>
@@ -297,7 +298,7 @@
             <p class="sub">Customize your NORTHSTAR workspace. Changes save automatically.</p>
           </div>
           <div class="head-actions">
-            <span class="pill" style="font-family:var(--mono)">NORTHSTAR / .4.4.1</span>
+            <span class="pill" style="font-family:var(--mono)">NORTHSTAR / .4.4.5</span>
             <button class="btn btn-ghost btn-sm" onclick="resetSettings()">↺ Reset Defaults</button>
           </div>
         </div>
@@ -412,7 +413,7 @@
       <label class="field-label" for="canvasProxy">Your private Canvas bridge URL <span class="muted">(optional)</span></label><input class="select connect-input" id="canvasProxy" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url">
       <label class="small muted mt" style="display:flex;gap:8px;align-items:flex-start"><input id="rememberCanvas" type="checkbox" checked><span><b>Remember this connection on this device</b><br>Credentials are encrypted in browser storage. This protects against casual storage inspection, not malicious scripts running on this site. Disconnect to erase credentials; your last successful coursework snapshot stays available offline.</span></label>
       <div class="flex mt"><button class="btn btn-primary" id="connectAction" onclick="connectCanvas()">Connect &amp; sync</button><button class="btn btn-ghost" onclick="disconnectCanvas()">Disconnect</button></div><p class="small muted mt" id="canvasStatus" aria-live="polite">Demo mode: sample coursework is shown until you connect.</p>
-    </div><div class="connect-explain"><span class="eyebrow">A QUICK HEADS-UP</span><h3>Good key.<br>Different obstacle.</h3><p>Some schools block websites from talking directly to Canvas. A correct token alone can’t bypass that browser restriction.</p><p>The included bridge is self-hosted and sends the token in an authorization header, never through a public CORS proxy or URL.</p><p><b>Available:</b> courses, assignments, submission status, supported writing/URL/file submissions, classic quiz attempts, and graded discussions.<br><b>Limits:</b> StudentVUE is an import, not a live sync. New Quizzes, external LTI tools, and unsupported Canvas question/submission types still open in Canvas.</p></div></div>
+    </div><div class="connect-explain"><span class="eyebrow">A QUICK HEADS-UP</span><h3>Good key.<br>Different obstacle.</h3><p>Some schools block websites from talking directly to Canvas. A correct token alone can’t bypass that browser restriction.</p><p>The included bridge is self-hosted and sends the token in an authorization header, never through a public CORS proxy or URL.</p><p><b>Available:</b> courses, assignments, submission status, supported writing/URL/file submissions, classic quiz attempts, and graded discussions.<br><b>Limits:</b> StudentVUE is an import, not a live sync. New Quizzes and external LTI assessments now request Canvas-generated authenticated launches. Student-annotation assignments use Canvas DocViewer through the secure content view. Some providers may require the native iPad WKWebView host when Safari blocks framing or cross-site cookies.</p></div></div>
       <details class="canvas-troubleshoot" id="canvasTroubleshoot">
         <summary><span>Connection not working?</span><span class="troubleshoot-hint">Open the checklist</span></summary>
         <p class="small muted">Work through these in order. Your checkmarks last only while this page is open.</p>
@@ -459,9 +460,9 @@
 
 <!-- IN-DASHBOARD VIEWER -->
 <div class="overlay" id="viewerOverlay">
-  <div class="workspace" style="max-width:1000px;height:86vh;display:flex;flex-direction:column">
+  <div class="workspace" style="max-width:min(1200px,98vw);height:92vh;display:flex;flex-direction:column">
     <div class="ws-head"><div><span class="eyebrow">IN-DASHBOARD VIEW</span><h2>Canvas page</h2><p class="small muted mt" id="viewerNote"></p></div><button class="ws-close" aria-label="Close" onclick="closeViewer()">✕</button></div>
-    <div style="flex:1;min-height:0"><iframe id="viewerFrame" title="Canvas page" style="width:100%;height:100%;border:0;border-radius:12px;background:#fff"></iframe></div>
+    <div style="flex:1;min-height:0"><iframe id="viewerFrame" title="Canvas authenticated experience" allow="camera; microphone; fullscreen; clipboard-read; clipboard-write" referrerpolicy="no-referrer" style="width:100%;height:100%;border:0;border-radius:12px;background:#fff"></iframe></div>
   </div>
 </div>
 
@@ -473,10 +474,13 @@
 <script src="scripts/ai.js"></script>
 <script src="scripts/vault.js"></script>
 <script src="scripts/submissions.js"></script>
+<script src="scripts/document-export.js"></script>
 <script src="scripts/canvas-sync.js"></script>
 <script src="scripts/studentvue.js"></script>
 <script src="scripts/workspace.js"></script>
 <script src="scripts/assignment-room.js"></script>
+<script src="scripts/document-editor.js"></script>
+<script src="scripts/release.js"></script>
 <script src="scripts/premium.js"></script>
 </body>
 </html>

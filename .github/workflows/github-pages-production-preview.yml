@@ -1,7 +1,7 @@
 name: NORTHSTAR GitHub Pages — Production + Preview
 
 on:
-  # Publish production and preview only after the Phase 4 suite passes.
+  # Publish only after the corresponding Phase 4 test suite succeeds.
   workflow_run:
     workflows:
       - NORTHSTAR Phase 4 tests
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   build:
     # workflow_run can also be fired by PR checks; publish only after a
-    # successful push test from the development branch.
+    # successful push test on the production or development branch.
     if: >-
       ${{ github.event_name != 'workflow_run' ||
           (github.event.workflow_run.conclusion == 'success' &&
@@ -65,6 +65,7 @@ jobs:
 
             cp "$source/index.html" "$destination/index.html"
             cp "$source/manifest.json" "$destination/manifest.json"
+            if [[ -f "$source/release.json" ]]; then cp "$source/release.json" "$destination/release.json"; fi
             cp -R "$source/styles" "$destination/styles"
             cp -R "$source/scripts" "$destination/scripts"
             touch "$destination/.nojekyll"
@@ -76,19 +77,40 @@ jobs:
           # Publish the latest tested development dashboard under /preview/.
           copy_dashboard source-preview _site/preview
 
-          # Fail the build if either side is not the expected source version.
-          grep -Fq 'NORTHSTAR / .4.4.1' _site/index.html
-          grep -Fq 'NORTHSTAR / .4.4.5 (3)' _site/preview/index.html
+          verify_release() {
+            local source="$1"
+            local label="$2"
+            if [[ ! -f "$source/release.json" ]]; then
+              echo "$label uses a legacy build without the NORTHSTAR release manifest."
+              return 0
+            fi
+            node -e '
+              const fs = require("fs");
+              const path = process.argv[1];
+              const release = JSON.parse(fs.readFileSync(path + "/release.json", "utf8"));
+              const pkg = JSON.parse(fs.readFileSync(path + "/package.json", "utf8"));
+              const html = fs.readFileSync(path + "/index.html", "utf8");
+              if (!release.northstarVersion || pkg.northstarRelease !== release.northstarVersion) throw new Error("Release manifest and package metadata disagree");
+              if (!html.includes("versionPill") || !html.includes("scripts/release.js")) throw new Error("Visible version/changelog controls are missing");
+              console.log("Verified " + process.argv[2] + " release: " + release.northstarVersion + " (package " + pkg.version + ")");
+            ' "$source" "$label"
+          }
+
+          verify_release source-production production
+          verify_release source-preview preview
+
           test -f _site/preview/styles/main.css
           test -f _site/preview/styles/assignment-room.css
+          test -f _site/preview/styles/release-notes.css
           test -f _site/preview/scripts/assignment-room.js
+          test -f _site/preview/scripts/document-editor.js
+          test -f _site/preview/scripts/release.js
           test -f _site/preview/scripts/workspace.js
           test -f _site/preview/manifest.json
+          test -f _site/preview/release.json
           test -f _site/preview/.nojekyll
 
-          echo "Verified production version: 0.4.4.1"
-          echo "Verified preview version: 0.4.4.5 (3)"
-          echo "Preview HTML and all referenced core asset directories are present."
+          echo "Preview includes the release manifest, Document Studio editor, and in-app changelog."
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
