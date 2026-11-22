@@ -82,43 +82,26 @@ async function getExternalToolLaunch({credentials,courseId,assignmentId,fetchImp
   if(launch.protocol!=='https:'||launch.username||launch.password||launch.href.length>12000)throw Error('External-tool launch URL did not pass security validation.');
   return {url:launch.href,name:String(result.name||'External course tool').slice(0,160),id:result.id??null};
 }
-async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){
+async function uploadCanvasFileThroughBridge({credentials,courseId,resourceId,kind,file,fetchImpl=root.fetch}){
+  if(!credentials?.proxy)throw Error('Connect through your private Canvas bridge to upload files.');
+  transport(credentials,fetchImpl);
+  if(!['assignment','quiz'].includes(kind))throw Error('Unsupported Canvas file upload context.');
+  const c=id(courseId),resource=id(resourceId);
   if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a non-empty file under 25 MB.');
-  const api=transport(credentials,fetchImpl),c=id(courseId),a=id(assignmentId);
-  const currentUser=await api.get('/api/v1/users/self');if(!currentUser?.id)throw Error('Canvas did not identify the connected student account.');
-  const init=await api.post('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/'+id(currentUser.id)+'/files',{name:file.name,size:file.size,content_type:file.type||'application/octet-stream'});
-  const upload=Array.isArray(init.attachments)?init.attachments[0]:init;
-  if(!upload?.upload_url||!upload.upload_params||typeof upload.upload_params!=='object')throw Error('Canvas did not return a valid signed upload request.');
-  let target;try{target=new URL(upload.upload_url);}catch{throw Error('Canvas returned an invalid upload destination.');}
-  if(target.protocol!=='https:'||target.username||target.password)throw Error('Canvas upload destination must be a secure HTTPS URL.');
-  const FormDataCtor=root.FormData||globalThis.FormData;
-  if(!FormDataCtor)throw Error('This browser does not support secure file uploads.');
-  const form=new FormDataCtor();
-  for(const [key,value] of Object.entries(upload.upload_params))form.append(key,String(value));
-  form.append('file',file,file.name);
-  let response;try{response=await fetchImpl(target.href,{method:'POST',body:form,redirect:'follow'});}
-  catch{throw Error('Canvas accepted the upload request but the signed upload could not be confirmed. Check Canvas before retrying; no automatic retry was made.');}
-  let uploaded;try{uploaded=await response.json();}catch{throw Error('Canvas file upload response could not be verified. Check Canvas before retrying.');}
-  if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the file upload (HTTP '+response.status+').');
-  return uploaded;
+  const FormDataCtor=root.FormData||globalThis.FormData;if(!FormDataCtor)throw Error('This browser does not support secure file uploads.');
+  let bridge;try{bridge=new URL(credentials.proxy);}catch{throw Error('Canvas bridge URL is invalid.');}
+  if(bridge.protocol!=='https:'||bridge.username||bridge.password)throw Error('Canvas bridge must use a secure HTTPS URL.');
+  bridge.searchParams.set('action','upload-file');bridge.searchParams.set('kind',kind);bridge.searchParams.set('course_id',String(c));bridge.searchParams.set('resource_id',String(resource));
+  const form=new FormDataCtor();form.append('file',file,file.name);
+  let response;try{response=await fetchImpl(bridge.href,{method:'POST',headers:{Authorization:'Bearer '+credentials.token,Accept:'application/json'},body:form,cache:'no-store',redirect:'error'});}catch{throw Error('The Canvas file upload could not be confirmed. No assignment submission was sent; check Canvas before retrying.');}
+  let result;try{result=await response.json();}catch{throw Error('Canvas file upload response was unreadable. No assignment submission was sent; check Canvas before retrying.');}
+  if(!response.ok)throw Error(result?.error||('Canvas file upload failed (HTTP '+response.status+').'));
+  if(!result||!Number.isSafeInteger(Number(result.id))||Number(result.id)<1)throw Error('Canvas did not confirm a finalized file ID. No assignment submission was sent.');
+  return result;
 }
-async function uploadQuizSubmissionFile({credentials,courseId,quizId,file,fetchImpl=root.fetch}) {
-  if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a non-empty quiz attachment under 25 MB.');
-  const api=transport(credentials,fetchImpl),c=id(courseId),q=id(quizId);
-  const init=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/self/files',{name:file.name});
-  const attachment=Array.isArray(init.attachments)?init.attachments[0]:init;
-  if(!attachment?.upload_url||!attachment.upload_params||typeof attachment.upload_params!=='object')throw Error('Canvas did not return a valid quiz attachment upload request.');
-  let target;try{target=new URL(attachment.upload_url);}catch{throw Error('Canvas returned an invalid quiz upload destination.');}
-  if(target.protocol!=='https:'||target.username||target.password)throw Error('Canvas quiz upload destination must be secure HTTPS.');
-  const FormDataCtor=root.FormData||globalThis.FormData;
-  if(!FormDataCtor)throw Error('This browser does not support secure quiz file uploads.');
-  const form=new FormDataCtor();
-  for(const [key,value] of Object.entries(attachment.upload_params))form.append(key,String(value));
-  form.append('file',file,file.name);
-  let response;try{response=await fetchImpl(target.href,{method:'POST',body:form,redirect:'follow'});}
-  catch{throw Error('The quiz file upload could not be confirmed. Check Canvas before selecting and uploading it again.');}
-  let uploaded;try{uploaded=await response.json();}catch{throw Error('Canvas quiz file upload response was unreadable. Check Canvas before retrying.');}
-  if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the quiz file upload (HTTP '+response.status+').');
+async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetchImpl=root.fetch}){return uploadCanvasFileThroughBridge({credentials,courseId,resourceId:assignmentId,kind:'assignment',file,fetchImpl});}
+async function uploadQuizSubmissionFile({credentials,courseId,quizId,file,fetchImpl=root.fetch}){
+  const uploaded=await uploadCanvasFileThroughBridge({credentials,courseId,resourceId:quizId,kind:'quiz',file,fetchImpl});
   return {id:Number(uploaded.id),name:String(uploaded.display_name||uploaded.filename||file.name),size:file.size,type:file.type||'application/octet-stream'};
 }
 async function uploadAssignmentFiles({credentials,courseId,assignmentId,files,onProgress,fetchImpl=root.fetch}){

@@ -2,7 +2,7 @@
 // Build marker: redeploy after deployment-workflow credential setup; behavior is unchanged.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const WORKER_BUILD = '0.4.4.5 (3)';
+const WORKER_BUILD = '0.4.15 (4.4.7.1)';
 const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id, X-Northstar-Failure, X-Northstar-Worker-Version', 'X-Northstar-Worker-Version':WORKER_BUILD, 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -176,6 +176,39 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
   }
   return fileRedirectFailure('CANVAS_FILE_REDIRECT_LIMIT','The file host redirected too many times',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
 }
+async function uploadCanvasFile(request,requestUrl,authorization){
+  const kind=requestUrl.searchParams.get('kind')||'',courseId=requestUrl.searchParams.get('course_id')||'',resourceId=requestUrl.searchParams.get('resource_id')||'';
+  const validId=value=>/^\d+$/.test(value)&&Number(value)>0&&Number.isSafeInteger(Number(value));
+  if(!['assignment','quiz'].includes(kind)||!validId(courseId)||!validId(resourceId))return reply('Invalid Canvas upload destination',400);
+  if(!/^multipart\/form-data\s*;/i.test(request.headers.get('Content-Type')||''))return reply('Multipart file upload required',415);
+  let incoming;try{incoming=await request.formData();}catch{return reply('The selected file could not be read',400);}
+  const keys=[...incoming.keys()],file=incoming.get('file');
+  if(keys.length!==1||keys[0]!=='file'||incoming.getAll('file').length!==1)return reply('Upload exactly one file',400);
+  if(!file||typeof file.arrayBuffer!=='function'||typeof file.name!=='string'||!file.name.trim()||!Number.isSafeInteger(file.size)||file.size<1||file.size>25000000)return reply('Choose a non-empty file under 25 MB',400);
+  const initPath=kind==='assignment'?'/api/v1/courses/'+courseId+'/assignments/'+resourceId+'/submissions/self/files':'/api/v1/courses/'+courseId+'/quizzes/'+resourceId+'/submissions/self/files';
+  const initBody=kind==='assignment'?{name:file.name,size:file.size,content_type:file.type||'application/octet-stream'}:{name:file.name};
+  let initResponse;try{initResponse=await fetch(CANVAS_ORIGIN+initPath,{method:'POST',headers:{Authorization:authorization,Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify(initBody),redirect:'manual'});}catch{return reply('Could not reach Canvas to initialize the file upload',502);}
+  if(!initResponse.ok)return reply('Canvas rejected file upload initialization (HTTP '+initResponse.status+')',502);
+  let init;try{init=await initResponse.json();}catch{return reply('Canvas returned an unreadable file upload request',502);}
+  const upload=Array.isArray(init.attachments)?init.attachments[0]:init;
+  if(!upload||typeof upload.upload_url!=='string'||!upload.upload_url||!isObject(upload.upload_params))return reply('Canvas did not return a valid signed upload request',502);
+  let uploadUrl;try{uploadUrl=new URL(upload.upload_url);}catch{return reply('Canvas returned an invalid signed upload destination',502);}
+  if(uploadUrl.protocol!=='https:'||uploadUrl.username||uploadUrl.password||uploadUrl.searchParams.has('access_token'))return reply('Canvas signed upload destination failed security validation',502);
+  const signedForm=new FormData();
+  for(const [key,value] of Object.entries(upload.upload_params)){if(!key||!['string','number','boolean'].includes(typeof value))return reply('Canvas returned unsupported signed upload parameters',502);signedForm.append(key,String(value));}
+  signedForm.append('file',file,file.name);
+  let storageResponse;try{storageResponse=await fetch(uploadUrl.href,{method:'POST',body:signedForm,redirect:'manual'});}catch{return reply('The signed file transfer could not be completed; no assignment submission was sent',502);}
+  const location=storageResponse.headers.get('Location');
+  if(!location)return reply('Canvas storage did not return the finalization location required to complete the upload (HTTP '+storageResponse.status+')',502);
+  if(!(storageResponse.status>=300&&storageResponse.status<400)&&!storageResponse.ok)return reply('Canvas storage rejected the file transfer (HTTP '+storageResponse.status+')',502);
+  let finalizeUrl;try{finalizeUrl=new URL(location,uploadUrl);}catch{return reply('Canvas storage returned an invalid finalization location',502);}
+  if(finalizeUrl.origin!==CANVAS_ORIGIN||!/^\/api\/v1\/files\/\d+\/create_success$/.test(finalizeUrl.pathname)||finalizeUrl.searchParams.has('access_token')||finalizeUrl.hash)return reply('Canvas file finalization destination failed security validation',502);
+  let finalResponse;try{finalResponse=await fetch(finalizeUrl.href,{method:'GET',headers:{Authorization:authorization,Accept:'application/json'},redirect:'manual'});}catch{return reply('Canvas could not finalize the uploaded file',502);}
+  if(!finalResponse.ok||finalResponse.status>=300&&finalResponse.status<400)return reply('Canvas did not confirm file finalization (HTTP '+finalResponse.status+')',502);
+  let result;try{result=await finalResponse.json();}catch{return reply('Canvas file finalization response was unreadable',502);}
+  if(!result||!Number.isSafeInteger(Number(result.id))||Number(result.id)<1)return reply('Canvas did not return a valid finalized file ID',502);
+  return new Response(JSON.stringify(result),{status:200,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+}
 export default {
   async fetch(request) {
     if(request.headers.get('Origin') !== ALLOWED_ORIGIN) return new Response('Origin not allowed',{status:403});
@@ -183,7 +216,14 @@ export default {
     if(!['GET','POST','PUT'].includes(request.method)) return reply('Method not allowed',405);
     const auth=request.headers.get('Authorization')||'';
     if(!/^Bearer \S+$/.test(auth)) return reply('Authorization required',401);
-    const rawPath=new URL(request.url).searchParams.get('path')||'';
+    const requestUrl=new URL(request.url),action=requestUrl.searchParams.get('action');
+    if(action!==null){
+      const expected=['action','kind','course_id','resource_id'];
+      if(action!=='upload-file'||requestUrl.searchParams.size!==expected.length||expected.some(key=>requestUrl.searchParams.getAll(key).length!==1)||[...requestUrl.searchParams.keys()].some(key=>!expected.includes(key)))return reply('Upload action parameters are not allowed',403);
+      if(request.method!=='POST')return reply('Method not allowed',405);
+      return uploadCanvasFile(request,requestUrl,auth);
+    }
+    const rawPath=requestUrl.searchParams.get('path')||'';
     let url;try{url=new URL(rawPath,CANVAS_ORIGIN);}catch{return reply('Invalid path',400);}
     if(url.origin!==CANVAS_ORIGIN||url.searchParams.has('access_token')||url.hash)return reply('Path not allowed',403);
     if(request.method!=='GET'&&url.search)return reply('Query parameters are not allowed on writes',403);

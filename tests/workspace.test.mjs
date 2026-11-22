@@ -62,37 +62,24 @@ await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submissio
 const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
-  uploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example'){const path=new URL(url).searchParams.get('path');if(opts.method==='GET'&&path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:7})};assert.equal(path,'/api/v1/courses/11/assignments/33/submissions/7/files','upload initialization uses the Canvas numeric student submission endpoint supported by the deployed bridge');return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};}
-  assert.equal(opts.method,'POST');
-  assert.equal(opts.headers?.Authorization,undefined,'signed upload must never receive Canvas bearer token');
-  const fields=[...opts.body.keys()];assert.deepEqual(fields,['key','policy','file'],'file must be appended last');
-  return {ok:true,status:201,json:async()=>({id:55,display_name:'homework.txt'})};
+  uploadCalls.push({url,opts});const target=new URL(url);
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('action'),'upload-file');
+  assert.equal(target.searchParams.get('kind'),'assignment');assert.equal(target.searchParams.get('course_id'),'11');assert.equal(target.searchParams.get('resource_id'),'33');
+  assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer secret-token');assert.equal(opts.headers['Content-Type'],undefined);
+  assert.equal(opts.redirect,'error');assert.deepEqual([...opts.body.keys()],['file']);assert.equal(opts.body.get('file').name,'homework.txt');
+  return new Response(JSON.stringify({id:55,display_name:'homework.txt',size:5}),{status:200,headers:{'Content-Type':'application/json'}});
 }});
-assert.equal(uploaded.id,55);
-assert.equal(uploadCalls.length,3,'current user lookup, upload initialization and signed file upload are required by the deployed bridge protocol');
-
+assert.equal(uploaded.id,55);assert.equal(uploadCalls.length,1,'the private bridge owns Canvas initialization, signed transfer and finalization');
 const quizUploadCalls=[];
 const quizFile=new File(['quiz response'],'quiz-response.txt',{type:'text/plain'});
 const quizUploaded=await W.uploadQuizSubmissionFile({credentials,courseId:11,quizId:22,file:quizFile,fetchImpl:async(url,opts)=>{
-  quizUploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example'){
-    assert.equal(opts.method,'POST');
-    assert.equal(new URL(url).searchParams.get('path'),'/api/v1/courses/11/quizzes/22/submissions/self/files','quiz file upload uses Canvas Quiz Submission Files API');
-    assert.deepEqual(JSON.parse(opts.body),{name:'quiz-response.txt'},'only the documented quiz upload filename is sent to Canvas');
-    return {ok:true,status:200,json:async()=>({attachments:[{upload_url:'https://quiz-upload.example/signed',upload_params:{key:'quiz-key'}}]})};
-  }
-  assert.equal(new URL(url).origin,'https://quiz-upload.example');
-  assert.equal(opts.method,'POST');
-  assert.equal(opts.headers?.Authorization,undefined,'Canvas bearer token is never forwarded to signed quiz upload storage');
-  assert.deepEqual([...opts.body.keys()],['key','file']);
-  return {ok:true,status:201,json:async()=>({id:909,display_name:'quiz-response.txt'})};
+  quizUploadCalls.push({url,opts});const target=new URL(url);
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('action'),'upload-file');
+  assert.equal(target.searchParams.get('kind'),'quiz');assert.equal(target.searchParams.get('course_id'),'11');assert.equal(target.searchParams.get('resource_id'),'22');
+  assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer secret-token');assert.deepEqual([...opts.body.keys()],['file']);
+  return new Response(JSON.stringify({id:909,display_name:'quiz-response.txt'}),{status:200,headers:{'Content-Type':'application/json'}});
 }});
-assert.equal(quizUploaded.id,909);
-assert.equal(quizUploaded.name,'quiz-response.txt');
-assert.equal(quizUploadCalls.length,2,'quiz upload initialization and signed attachment upload are required');
-
-
+assert.equal(quizUploaded.id,909);assert.equal(quizUploaded.name,'quiz-response.txt');assert.equal(quizUploadCalls.length,1);
 const pdfFetchCalls=[];
 const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImpl:async(url,opts)=>{
   pdfFetchCalls.push({url,opts});
