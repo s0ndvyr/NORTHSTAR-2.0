@@ -48,12 +48,12 @@ function transport(credentials,fetchImpl=root.fetch){
             : stage==='content'
               ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
               : 'Canvas file download failed (HTTP '+response.status+').';
-      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=upstreamStatus===null?null:Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.failureType=failureType;error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
+      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=upstreamStatus===null?null:Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.failureType=failureType;error.workerVersion=response.headers.get('X-Northstar-Worker-Version')||'';error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
     }
     const contentType=response.headers.get('Content-Type')||'application/octet-stream';
     const disposition=response.headers.get('Content-Disposition')||'';
     const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^;"]+)/i);
-    return {bytes:new Uint8Array(await response.arrayBuffer()),contentType,filename:match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):''};
+    return {bytes:new Uint8Array(await response.arrayBuffer()),contentType,filename:match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'',workerVersion:response.headers.get('X-Northstar-Worker-Version')||''};
   }
   return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true),put:(path,body)=>request('PUT',path,body,true),getBinary};
 }
