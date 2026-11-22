@@ -846,7 +846,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   $('#nsRoomBack').onclick=()=>window.closeAssignmentRoom();
   const hideButton=$('#phase4HideAssignment');hideButton.onclick=()=>phase4ToggleHidden(a.id);
   document.querySelectorAll('[data-ns-room-tab]').forEach(button=>button.onclick=()=>phase441ShowTab(button.dataset.nsRoomTab));
-  const input=$('#assignmentDraft'),key='northstar_draft_'+a.id;
+  const input=$('#assignmentDraft'),key=phase441ScopedStorageKey('draft_'+a.id);
   input.innerHTML=window.NorthstarSubmissions.sanitizeRichTextHtml(localStorage.getItem(key)||'');
   const updateDraft=()=>{const html=window.NorthstarSubmissions.sanitizeRichTextHtml(input.innerHTML),plain=input.innerText||input.textContent||'';try{localStorage.setItem(key,html);$('#draftStatus').textContent='Saved on this device · not submitted';}catch{$('#draftStatus').textContent='Could not save on this device.';}const words=plain.trim()?plain.trim().split(/\s+/).length:0,metrics=$('#draftMetrics');if(metrics)metrics.textContent=words+' words · '+plain.length.toLocaleString()+' characters';};
   input.addEventListener('input',updateDraft);
@@ -907,10 +907,16 @@ async function openWorkspace(id,options){
   if(mode==='live'){
     try{
       const creds=getCredentials(),api=window.NorthstarWorkspace.transport(creds);
-      details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission');
+      details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
       a.desc=asText(details.description||a.desc||'').slice(0,1600)||a.desc;
       a.submissionTypes=details.submission_types||a.submissionTypes||[];
       a.allowedExtensions=details.allowed_extensions||a.allowedExtensions||[];
+      a.canSubmit=details.can_submit===true;
+      a.lockedForUser=details.locked_for_user===true;
+      a.published=details.published!==false;
+      a.lockExplanation=details.lock_explanation||details.lock_info?.asset_string||'';
+      a.unlockAt=details.unlock_at||null;
+      a.groupAssignment=Number.isInteger(details.group_category_id)&&details.group_category_id>0;
       a.annotatableAttachmentId=details.annotatable_attachment_id||a.annotatableAttachmentId||null;
       if(details.points_possible!==undefined)a.points=numberOrNull(details.points_possible)??a.points;
       if(details.submission){const sub=CANVAS_SYNC.submission(details.submission);Object.assign(a,{status:sub.status,subState:sub.workflowState,progress:sub.submitted?100:a.progress,score:sub.score,grade:sub.grade,missing:sub.missing,late:sub.late,submittedAt:sub.submittedAt,gradedAt:sub.gradedAt,attempt:sub.attempt});}
@@ -925,55 +931,102 @@ async function openWorkspace(id,options){
 }
 window.openWorkspace=openWorkspace;
 
-let submissionBusy=false;let phase441AnnotatedPdf=null;
+let submissionBusy=false;let phase441AnnotatedPdf=null;const phase441PendingUploads=new Map();const phase441PreparedDocx=new Map();
+function phase441ScopedStorageKey(key){return 'northstar_'+(String(location.pathname||'').includes('/preview/')?'preview_':'')+key;}
+function phase441FileSignature(file){return [file.name,file.size,file.lastModified||0,file.type||''].join('|');}
+async function phase441UploadSelectedFiles(files,a,c,credentials,status){
+  const rows=Array.from(files||[]);
+  if(!rows.length)throw Error('Choose at least one file.');
+  if(rows.length>10)throw Error('Choose no more than 10 files for one submission.');
+  const total=rows.reduce((sum,file)=>sum+Number(file.size||0),0);
+  if(total>100000000)throw Error('Selected files exceed the 100 MB total upload limit.');
+  const allowed=(a.allowedExtensions||[]).map(value=>String(value).replace(/^\./,'').toLowerCase());
+  for(const file of rows){
+    if(!file.size||file.size>25000000)throw Error(file.name+' is empty or larger than the 25 MB per-file limit.');
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    if(allowed.length&&!allowed.includes(ext))throw Error(file.name+' is not an allowed file type for this Canvas assignment.');
+  }
+  const staged=phase441PendingUploads.get(String(a.id))||new Map();phase441PendingUploads.set(String(a.id),staged);const result=[];
+  for(let index=0;index<rows.length;index++){
+    const file=rows[index],key=phase441FileSignature(file);let record=staged.get(key);
+    if(!record){
+      status.textContent='Uploading '+(index+1)+' of '+rows.length+': '+file.name+'…';
+      try{
+        const uploaded=await window.NorthstarWorkspace.uploadAssignmentFile({credentials,courseId:c.canvasId,assignmentId:a.canvasId,file});
+        record={id:Number(uploaded.id),name:String(uploaded.display_name||uploaded.filename||file.name),size:file.size,type:file.type||'application/octet-stream'};
+        if(!Number.isSafeInteger(record.id)||record.id<1)throw Error('Canvas returned an invalid file ID for '+file.name+'.');
+        staged.set(key,record);
+      }catch(error){error.uploadedFiles=result.slice();error.failedFile=file.name;throw error;}
+    }else status.textContent='Reusing the Canvas upload already staged for '+file.name+'…';
+    result.push(record);
+  }
+  return result;
+}
 function submissionPanel(a){
   if(mode!=='live') return '';
-  const types=(a.submissionTypes||[]).filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
-  if(!types.length){if((a.submissionTypes||[]).includes('external_tool')||(a.submissionTypes||[]).includes('basic_lti_launch'))return '<div class="ns-room-submission"><h3>Authenticated course tool</h3><p class="small">NORTHSTAR asks Canvas to generate the official assessment launch for this assignment. The provider controls its own assessment and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasExternalTool()">Launch provider inside NORTHSTAR</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';if((a.submissionTypes||[]).includes('media_recording'))return '<div class="ns-room-submission"><h3>Media recording submission</h3><p class="small">The original Canvas assignment opens in NORTHSTAR’s secure content view. Canvas retains control of the recorder and submission.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas recorder inside NORTHSTAR</button><p id="nsMediaRecordingStatus" class="ns-room-help mt" role="status">No recorder session has been requested.</p></div>';if((a.submissionTypes||[]).includes('student_annotation'))return '<div class="ns-room-submission"><h3>Canvas DocViewer annotation</h3><p class="small">This assignment uses Canvas’s native student-annotation workflow. NORTHSTAR opens the original assignment through a temporary authenticated Canvas session so DocViewer can save and submit its own annotation state.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'student-annotation\')">Open Canvas Student Annotation inside NORTHSTAR</button><p id="nsStudentAnnotationStatus" class="ns-room-help mt" role="status">No annotation session has been requested.</p><p class="ns-room-help mt">Choose Start Assignment, then Student Annotation. Stay in Canvas until it confirms submission. An exported PDF is not substituted for native annotations.</p></div>';
-  return '<p class="small muted mt">This assignment requires a provider-specific or unsupported Canvas workflow. NORTHSTAR will not simulate completion.</p>';}
+  const allTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[],types=allTypes.filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
+  const blocked=a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true;
+  const reason=a.groupAssignment?'This is a group assignment. NORTHSTAR has not verified the group submission identity; use the official Canvas group submission flow.':a.canSubmit===false||a.lockedForUser===true||a.published===false?(a.lockExplanation||'Canvas reports that this assignment is locked, unpublished or unavailable for submission.'):'Canvas did not confirm that this assignment is currently open for submission.';
+  const lockNote=blocked?'<div class="ns-submission-availability" role="status"><strong>Submission is not available in NORTHSTAR.</strong><p>'+esc(reason)+' Your draft and documents remain available, but NORTHSTAR will not send an unverified submission.</p>'+(a.unlockAt?'<p>Unlocks: '+esc(new Date(a.unlockAt).toLocaleString())+'</p>':'')+'</div>':'';
+  const disabled=blocked?' disabled':'';
+  if(!types.length){
+    if(allTypes.includes('external_tool')||allTypes.includes('basic_lti_launch'))return '<div class="ns-room-submission">'+lockNote+'<h3>Authenticated course tool</h3><p class="small">Canvas generates the official LTI launch. The provider controls its own assessment, identity checks, timer, answers and final submission. NORTHSTAR opens the provider within the workspace when the provider permits embedding; otherwise use the visible external fallback.</p><button class="btn btn-primary mt" type="button"'+disabled+' onclick="launchCanvasExternalTool()">Launch provider inside NORTHSTAR</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';
+    if(allTypes.includes('media_recording'))return '<div class="ns-room-submission">'+lockNote+'<h3>Media recording submission</h3><p class="small">The original Canvas assignment opens in NORTHSTAR’s secure content view. Canvas retains control of the recorder and submission.</p><button class="btn btn-primary mt" type="button"'+disabled+' onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas recorder inside NORTHSTAR</button><p id="nsMediaRecordingStatus" class="ns-room-help mt" role="status">No recorder session has been requested.</p></div>';
+    if(allTypes.includes('student_annotation'))return '<div class="ns-room-submission">'+lockNote+'<h3>Canvas DocViewer annotation</h3><p class="small">Canvas owns the official annotation state. NORTHSTAR opens the authenticated Canvas Student Annotation workflow inside the workspace where supported.</p><button class="btn btn-primary mt" type="button"'+disabled+' onclick="launchCanvasAssignmentExperience(\'student-annotation\')">Open Canvas Student Annotation inside NORTHSTAR</button><p id="nsStudentAnnotationStatus" class="ns-room-help mt" role="status">No annotation session has been requested.</p><p class="ns-room-help mt">Stay in Canvas until it confirms submission. An exported PDF is not substituted for native Canvas annotation state.</p></div>';
+    if(allTypes.includes('none')||allTypes.includes('on_paper'))return '<div class="ns-room-submission">'+lockNote+'<h3>No online submission configured</h3><p class="small">Canvas identifies this assignment as '+(allTypes.includes('on_paper')?'an in-person or paper submission.':'not requiring an online submission.')+' NORTHSTAR will not invent a submission type or mark this work submitted on your behalf.</p><button class="btn btn-ghost mt" type="button" onclick="launchCanvasAssignmentExperience(\'assignment\')">Review official assignment in Canvas</button></div>';
+    return '<div class="ns-room-submission">'+lockNote+'<p class="small muted mt">This assignment requires a provider-specific or unsupported Canvas workflow. NORTHSTAR will not simulate completion.</p><button class="btn btn-ghost mt" type="button" onclick="launchCanvasAssignmentExperience(\'assignment\')">Open official assignment in Canvas</button></div>';
+  }
   const accept=(a.allowedExtensions||[]).map(x=>'.'+safe(x)).join(',');
-  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmission creates another attempt where allowed; earlier attempts are preserved. Canvas enforces deadlines and attempt limits.</p><label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType">${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Text entry (uses your workspace draft)'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose a file ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" accept="${accept}" style="width:100%"><p class="tiny muted mt">Maximum 25 MB. The file is uploaded to Canvas before the submission is created.</p><button type="button" class="btn btn-ghost btn-sm mt" id="nsUseAnnotatedPdf">Use annotated PDF from Document Studio</button><p class="tiny muted mt" id="nsAnnotatedPdfStatus">Open a PDF and annotate it to attach an exported copy.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()">Review and submit…</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
+  return `<div class="card mt"><h3>Submit to Canvas</h3><p class="small muted mt">Your submission is sent to Canvas. Resubmissions follow the instructor’s rules and preserve prior attempts. Canvas remains the source of truth for due dates, availability and grading.</p>${lockNote}<label class="set-lbl" for="submissionType">Submission type</label><select id="submissionType"${disabled}>${types.map(t=>`<option value="${t}">${t==='online_url'?'Website URL':t==='online_upload'?'File upload':'Formatted text entry'}</option>`).join('')}</select><div id="submissionUrlWrap"><label class="set-lbl" for="submissionUrl">Website URL</label><input id="submissionUrl" type="url" style="width:100%" placeholder="https://…"${disabled}></div><div id="submissionFileWrap" hidden><label class="set-lbl" for="submissionFile">Choose files ${accept?'('+accept+')':''}</label><input id="submissionFile" type="file" multiple accept="${accept}" style="width:100%"${disabled}><p class="tiny muted mt">Up to 10 files · 25 MB per file · 100 MB combined. Files upload to Canvas before the submission is created. An interrupted upload can reuse files already staged in this open tab.</p><div id="nsSelectedFiles" class="ns-selected-files" aria-live="polite">No files selected.</div><button type="button" class="btn btn-ghost btn-sm mt" id="nsUseAnnotatedPdf">Use annotated PDF from Document Studio</button><p class="tiny muted mt" id="nsAnnotatedPdfStatus">Open a PDF and annotate it to attach an exported copy.</p></div><button id="submitWork" class="btn btn-primary mt" onclick="submitAssignment()"${disabled}>${blocked?'Submission unavailable in Canvas':'Review and submit…'}</button><p id="submissionStatus" class="small muted mt" role="status">Nothing sent yet. Confirmation is required.</p></div>`;
 }
 window.submitAssignment=async function(){
   if(submissionBusy||!activeAssignment) return;
   const a=activeAssignment,c=courseById(a.course),status=$('#submissionStatus'),button=$('#submitWork');
   try{
     const creds=getCredentials();
-    if(!creds?.proxy) throw Error('Connect using your private bridge first. Direct-mode submissions are disabled.');
-    const type=$('#submissionType').value;
+    if(!creds?.proxy) throw Error('Connect using your private Canvas bridge first. Direct-mode submissions are disabled.');
+    if(a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true)throw Error('Canvas has not confirmed that this assignment is currently available for individual submission. Your draft is safe; refresh the assignment after checking Canvas.');
+    const type=$('#submissionType')?.value;
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
-    const file=type==='online_upload'?(phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:$('#submissionFile')?.files?.[0]):null;
-    if(type==='online_upload'&&!file)throw Error('Choose a file before submitting.');
+    const annotated=phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:null;
+    const prepared=phase441PreparedDocx.get(String(a.id));
+    const selectedFiles=type==='online_upload'?[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[]),...(annotated?[annotated]:[])]:[];
+    if(type==='online_upload'&&!selectedFiles.length)throw Error('Choose at least one file before submitting.');
+    if(type==='online_upload'&&selectedFiles.length>10)throw Error('Choose no more than 10 files for this Canvas submission.');
     const editor=$('#assignmentDraft'),draftHtml=editor?.innerHTML||'',draftText=(editor?.innerText||editor?.textContent||'').trim();
     const value=type==='online_url'?$('#submissionUrl').value:draftText;
     let data=type==='online_upload'?null:type==='online_text_entry'?window.NorthstarSubmissions.richTextPayload(draftHtml):window.NorthstarSubmissions.payload(type,value);
-    const preview=type==='online_upload'?(file.name+' · '+Math.round(file.size/1024)+' KB'):type==='online_url'?data.submission.url:value;
+    const fileSummary=selectedFiles.map(file=>file.name+' · '+Math.ceil(file.size/1024)+' KB').join('\n');
+    const preview=type==='online_upload'?fileSummary:type==='online_url'?data.submission.url:value;
     if(!confirm(`Submit to Canvas?\nCourse: ${c.name}\nAssignment: ${a.title}\nType: ${type}\n\n${preview.slice(0,1500)}${preview.length>1500?'\n… (preview truncated; your entire draft will be sent)':''}\n\nThis may create a new attempt and will not erase earlier submissions. Send now?`)) return;
     submissionBusy=true;button.disabled=true;
     if(type==='online_upload'){
-      status.textContent='Uploading file to Canvas… do not close this workspace.';
-      const uploaded=await window.NorthstarWorkspace.uploadAssignmentFile({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,file});
-      data=window.NorthstarSubmissions.payload('online_upload',String(uploaded.id));
-      status.textContent='File uploaded. Sending assignment submission to Canvas…';
+      status.textContent='Preparing '+selectedFiles.length+' file(s) for Canvas… do not close this workspace.';
+      const uploaded=await phase441UploadSelectedFiles(selectedFiles,a,c,creds,status);
+      data=window.NorthstarSubmissions.payload('online_upload',uploaded.map(item=>item.id));
+      status.textContent='All '+uploaded.length+' file(s) uploaded. Sending the assignment submission to Canvas…';
     }else status.textContent='Sending once… do not close this workspace.';
     const result=await window.NorthstarSubmissions.send({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,data});
     const normalized=CANVAS_SYNC.submission(result);
     Object.assign(a,{
-      status:normalized.status, subState:normalized.workflowState,
+      status:normalized.status,subState:normalized.workflowState,
       progress:normalized.submitted?100:a.progress,
-      score:normalized.score, grade:normalized.grade,
-      excused:normalized.excused, missing:normalized.missing, late:normalized.late,
+      score:normalized.score,grade:normalized.grade,
+      excused:normalized.excused,missing:normalized.missing,late:normalized.late,
       latePolicyStatus:normalized.latePolicyStatus,
-      submittedAt:normalized.submittedAt, gradedAt:normalized.gradedAt,
+      submittedAt:normalized.submittedAt,gradedAt:normalized.gradedAt,
       attempt:normalized.attempt,
       gradeMatchesCurrentSubmission:normalized.gradeMatchesCurrentSubmission
     });
     const snapshotSaved=await persistCurrentSnapshot();
-    status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. Your local draft was kept.'+(snapshotSaved?' Offline coursework snapshot updated.':' Offline snapshot could not be updated; sync Canvas before relying on cached status.');
+    status.textContent='Canvas confirmed your submission'+(result.attempt?' · attempt '+result.attempt:'')+'. '+(type==='online_upload'?selectedFiles.length+' file(s) attached. ':'')+'Your local draft was kept.'+(snapshotSaved?' Offline coursework snapshot updated.':' Offline snapshot could not be updated; sync Canvas before relying on cached status.');
+    phase441PendingUploads.delete(String(a.id));phase441PreparedDocx.delete(String(a.id));
     if(phase441AnnotatedPdf?.assignmentId===a.id)phase441AnnotatedPdf=null;
     refreshAll();
-  }catch(e){status.textContent=e.message;}
-  finally{submissionBusy=false;if(button) button.disabled=false;}
+  }catch(error){
+    status.textContent=error.message+(Array.isArray(error.uploadedFiles)&&error.uploadedFiles.length?' '+error.uploadedFiles.length+' file(s) were already staged in Canvas; they are not submitted yet and are retained for this open tab.':'');
+  }
+  finally{submissionBusy=false;if(button&&(a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true))button.disabled=true;else if(button)button.disabled=false;}
 };
 renderNotes = function(){const select=$('#nCourse'), previous=select.value;select.innerHTML='<option value="">All courses</option>'+COURSES.map(c=>`<option value="${c.id}">${c.code}</option>`).join('');select.value=previous; select.onchange=renderNotes;$('#nTag').oninput=renderNotes;const q=$('#nTag').value.toLowerCase();const list=NOTES.filter(n=>(!select.value||n.course===select.value)&&(!q||(n.tags||[]).join(' ').toLowerCase().includes(q)));$('#notesGrid').innerHTML=list.map(n=>{const c=courseById(n.course);return `<button class="card note-card" style="text-align:left" onclick="openNote('${safe(n.id)}')"><span class="eyebrow">${c?c.code:'GENERAL NOTE'}</span><h4 style="margin-top:12px">${esc(n.title)}</h4><p>${esc(n.body.slice(0,140))}</p></button>`;}).join('')||'<p class="muted small">No notes yet. Start a fresh page.</p>';$('#noteLink').innerHTML='<option value="">Link to assignment…</option>'+ASSIGNMENTS.map(a=>`<option value="${a.id}">${esc(a.title)}</option>`).join('');};
 openNote = function(id){currentNote=id;const n=NOTES.find(x=>x.id===id);if(!n)return;$('#noteEditor').style.display='block';$('#noteTitleInput').value=n.title;$('#noteMeta').textContent=courseById(n.course)?.code||'Personal note';$('#noteBody').value=n.body;$('#noteLink').value=n.link||'';updateNoteWords();$('#noteEditor').scrollIntoView({behavior:'smooth'});};
