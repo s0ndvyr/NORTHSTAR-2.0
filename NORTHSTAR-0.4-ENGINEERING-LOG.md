@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.6.4`
-Package version: `0.4.9`
+Release identifier: `NORTHSTAR / 4.4.6.5`
+Package version: `0.4.10`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -496,3 +496,11 @@ The .4.6.2 feature and interaction changes were present in the preview artifact,
 - [ ] Final release metadata records the exact test and deployment run IDs.
 
 No Canvas Worker source or private Cloudflare deployment is included.
+
+
+## Phase 4.4.6.5 — Release regression assertion correction
+
+- The first .4 Phase 4 run reached the unit suite and failed at `tests/release.test.mjs`: the test expected the current .4 release to contain a Pages run ID belonging to the earlier .3 release.
+- Corrected the release test to require an unreleased candidate to remain pending deployment and to record .4's failed validation accurately.
+- The test-pinned Pages gate remains in place; no deployment or promotion is claimed until fresh Phase 4 checks pass for both branch heads.
+- Automated re-run and Pages deployment are pending.

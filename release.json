@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.4",
-  "packageVersion": "0.4.9",
+  "northstarVersion": "4.4.6.5",
+  "packageVersion": "0.4.10",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -16,6 +16,21 @@
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.6.5",
+      "date": "2026-11-22",
+      "title": "Release verification test correction",
+      "description": "Corrects the release regression test so an unreleased candidate is required to remain explicitly pending deployment rather than falsely requiring a Pages run ID copied from a prior release. Retains the test-pinned deployment gate and records the .4 candidate's failed validation accurately.",
+      "category": "Bug fixes",
+      "areas": [
+        "Release manifest validation",
+        "Phase 4 regression tests",
+        "Deployment integrity"
+      ],
+      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.6.4",
       "date": "2026-11-22",
       "title": "Test-pinned deployment gate",
@@ -27,7 +42,7 @@
         "Test-pinned checkout",
         "Release integrity"
       ],
-      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "status": "Phase 4 test failed on 2026-11-22 because the release regression test incorrectly required the current release to contain a previous release's Pages run ID. Not promoted; superseded by 4.4.6.5.",
       "historical": false,
       "commits": []
     },
