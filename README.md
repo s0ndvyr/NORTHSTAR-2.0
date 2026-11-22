@@ -107,13 +107,14 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 ### PDF Document Studio
 
-The in-dashboard PDF editor supports a dedicated **Hand / Pencil** input switch:
+The in-dashboard PDF editor has a persistent **Hand / Pencil input switch**. This switch selects the device used for all annotation tools; selecting another tool never changes the input mode.
 
-- **Hand mode:** one finger or mouse drags pan the document; two fingers pan and pinch-zoom. A short momentum glide makes page movement feel natural on iPad.
-- **Pencil mode:** Apple Pencil or a single finger can draw with the selected tool. Two-finger gestures remain available for pan and pinch-zoom. When an Apple Pencil is actively drawing, stray touch contacts are ignored to reduce palm marks.
-- Annotation tools: pressure-aware freehand pen, translucent highlighter, draggable text boxes, straight lines, arrows, rectangles and ellipses, brush eraser, and Move for repositioning existing marks or text boxes.
-- Text boxes support multiline text. Drag on the page to size a box; a tap creates a sensible default box. Move lets you reposition it.
-- Per-page undo/redo, ink color and size, page navigation, zoom, local per-assignment/document persistence, and flattened PDF export.
+- **Hand / Finger mode:** use one finger on iPad (or a mouse on desktop) with every tool: Move, Pen, Highlight, Text box, Line, Arrow, Box, Oval and Eraser.
+- **Apple Pencil mode:** use Apple Pencil with those same tools. Finger input is not treated as Pencil ink, helping avoid accidental marks.
+- **Two-finger navigation:** pan and pinch-zoom the document in either mode. The selected input mode is preserved when switching tools and opening another PDF.
+- Text boxes support multiline text. Type the note in the text field, then drag on the page to size and place the box. Use Move to reposition it.
+- Pen strokes retain Pencil pressure where available. Highlighting is translucent; shapes, arrows, erasing, Move, per-page undo/redo, ink color and size, page navigation, zoom and flattened PDF export are supported.
+- Annotations persist locally per assignment/document until exported.
 
 Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. Canvas's public Submissions API does expose the student_annotation submission type and the annotatable_attachment_id field. However, the documented request does not describe how a third-party editor uploads its actual DocViewer ink/text annotation payload. NORTHSTAR therefore does not submit the attachment ID alone or claim a flattened PDF export has updated Canvas' native DocViewer annotation state. The official Canvas DocViewer workflow remains required for those special assignments unless a supported annotation-payload API is established.
 
