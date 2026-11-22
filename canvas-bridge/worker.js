@@ -66,6 +66,12 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
+// Canvas file delivery redirects through Instructure-owned storage domains.
+const TRUSTED_CANVAS_FILE_HOST_SUFFIXES=['.instructure.com','.canvas-user-content.com','.inscloudgate.net'];
+function isTrustedCanvasFileHost(hostname){
+  const host=String(hostname||'').toLowerCase();
+  return host===new URL(CANVAS_ORIGIN).hostname||TRUSTED_CANVAS_FILE_HOST_SUFFIXES.some(suffix=>host.endsWith(suffix));
+}
 async function downloadCanvasFile(fileId,authorization,userAgent){
   const apiUrl=CANVAS_ORIGIN+'/api/v1/files/'+fileId;
   const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
@@ -77,8 +83,9 @@ async function downloadCanvasFile(fileId,authorization,userAgent){
   if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file URL did not pass the secure download check',502);
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
-    // Forward the Canvas token only when the request is still on the exact configured Canvas origin.
-    if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
+    // Canvas requires authenticated downloads on its own storage hosts after redirects.
+    // Restrict forwarding to verified Instructure domains, never arbitrary external hosts.
+    if(isTrustedCanvasFileHost(current.hostname))headers.Authorization=authorization;
     const response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});
     if(response.status>=300&&response.status<400){
       const location=response.headers.get('Location');if(!location)return reply('Canvas file redirect did not include a destination',502);
