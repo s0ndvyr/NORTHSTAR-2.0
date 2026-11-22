@@ -244,3 +244,8 @@ The legacy pdf_markup_v1 local annotation key remains readable. On the next open
 ### NORTHSTAR 4.4.6.3 — Manifest-driven release identity
 
 The dashboard no longer carries a separate hardcoded release constant. Its dashboard refresh cannot overwrite the clickable version/changelog control; Settings reads the active NORTHSTAR release directly from the same release manifest. This prevents the UI from reverting to an older release label after the manifest loads.
+
+
+### NORTHSTAR 4.4.6.4 — Test-pinned deployment protection
+
+GitHub Pages publication now checks the current heads of both `main` and the preview branch against completed successful Phase 4 push runs. The Pages workflow only proceeds when both exact heads have passed, and it checks out those commit SHAs rather than following moving branch names. A delayed older successful test event therefore cannot publish a newer untested branch tip. If either branch has no passing run for its current head, publication is held until that branch's own test completes successfully.

@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -23,25 +24,85 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.verify.outputs.publish }}
+      main_sha: ${{ steps.verify.outputs.main_sha }}
+      preview_sha: ${{ steps.verify.outputs.preview_sha }}
+    steps:
+      - name: Verify both source branches have passing Phase 4 runs at their current heads
+        id: verify
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const repo = process.env.GITHUB_REPOSITORY;
+          const token = process.env.GITHUB_TOKEN;
+          const branches = [
+            ['main', 'main_sha'],
+            ['northstar-0.4.4.2-quiz-continuity', 'preview_sha']
+          ];
+          async function api(path) {
+            const response = await fetch('https://api.github.com/repos/' + repo + path, {
+              headers: {
+                Authorization: 'Bearer ' + token,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+              }
+            });
+            if (!response.ok) throw new Error('GitHub API ' + response.status + ' for ' + path);
+            return response.json();
+          }
+          (async () => {
+            let publish = true;
+            const outputs = [];
+            for (const [branch, outputName] of branches) {
+              const branchInfo = await api('/branches/' + encodeURIComponent(branch));
+              const sha = branchInfo.commit.sha;
+              const query = '?branch=' + encodeURIComponent(branch) + '&event=push&status=completed&per_page=100';
+              const history = await api('/actions/workflows/northstar-phase4.yml/runs' + query);
+              const passed = history.workflow_runs.some(run =>
+                run.head_sha === sha && run.event === 'push' && run.conclusion === 'success'
+              );
+              outputs.push(outputName + '=' + sha);
+              if (!passed) {
+                publish = false;
+                console.log('HOLD: ' + branch + ' at ' + sha + ' has no successful Phase 4 push run. No Pages artifact will be published.');
+              } else {
+                console.log('PASS: ' + branch + ' at ' + sha + ' has a successful Phase 4 push run.');
+              }
+            }
+            outputs.push('publish=' + String(publish));
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, outputs.join('\n') + '\n');
+          })().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
+
   build:
-    # workflow_run can also be fired by PR checks; publish only after a
-    # successful push test on the production or development branch.
+    needs: freshness
     if: >-
-      ${{ github.event_name != 'workflow_run' ||
-          (github.event.workflow_run.conclusion == 'success' &&
-           github.event.workflow_run.event == 'push') }}
+      ${{ needs.freshness.outputs.publish == 'true' &&
+          (github.event_name != 'workflow_run' ||
+           (github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push')) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out production source
+      - name: Check out verified production source
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ needs.freshness.outputs.main_sha }}
           path: source-production
 
-      - name: Check out latest Phase 4 development source
+      - name: Check out verified preview source
         uses: actions/checkout@v4
         with:
-          ref: northstar-0.4.4.2-quiz-continuity
+          ref: ${{ needs.freshness.outputs.preview_sha }}
           path: source-preview
 
       - name: Configure GitHub Pages
@@ -118,12 +179,12 @@ jobs:
           path: _site
 
   deploy:
-    if: needs.build.result == 'success'
+    needs: [freshness, build]
+    if: needs.freshness.outputs.publish == 'true' && needs.build.result == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy production and preview
         id: deployment

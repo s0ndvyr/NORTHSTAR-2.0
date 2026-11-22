@@ -3,10 +3,13 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.3',packageVersion:'0.4.8',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.6',packageVersion:'0.4.11',
  bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
+  {version:'4.4.6.6',date:'2026-11-22',title:'Test-pinned deployment gate',
+   description:'GitHub Pages verifies both source branches have passing Phase 4 push runs at their current heads and checks out those exact tested SHAs. A delayed successful event cannot publish a newer untested branch tip.',
+   category:'Deployment',areas:['GitHub Actions','Source freshness','Test-pinned checkout','Release integrity'],status:'See the release-specific Phase 4 and Pages runs.'},
   {version:'4.4.6.3',date:'2026-11-22',title:'Manifest-driven version identity',
    description:'Removes the legacy hardcoded version override from dashboard rendering. The version pill remains owned by the release manifest and Settings reads the current manifest version.',
    category:'Bug fixes',areas:['Release manifest','Dashboard rendering','Version pill','Settings'],status:'See the release-specific GitHub Actions test and Pages deployment.'},
