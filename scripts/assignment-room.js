@@ -435,7 +435,7 @@ function wireToolbar(){
   catch(error){setSaveState('Could not export PDF: '+error.message);}
   finally{exportButton.disabled=false;exportButton.textContent='Export PDF';}
  });
- setInputMode('hand');
+ setInputMode(pdfState.inputMode);
 }
 
 async function exportAnnotatedPdf(){
@@ -478,7 +478,7 @@ async function exportAnnotatedPdf(){
 }
 function downloadBlob(file){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name||'annotated.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function openPdf(host,file,assignment,credentials){
- pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='pen';pdfState.inputMode='hand';pdfState.activePointers.clear();pdfState.activeGesture=null;pdfState.preview=null;pdfState.annotations={};pdfState.history=[];pdfState.redo=[];pdfState.viewports={};
+ pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='pen';pdfState.activePointers.clear();pdfState.activeGesture=null;pdfState.preview=null;pdfState.annotations={};pdfState.history=[];pdfState.redo=[];pdfState.viewports={};
  try{pdfState.annotations=JSON.parse(localStorage.getItem(pdfKey())||'{}');}catch{}
  renderToolbar(host);const name=$('#nsPdfFileName');if(name)name.textContent=file.name;
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:credentials,courseId:assignment.canvasCourseId,fileId:file.id});
