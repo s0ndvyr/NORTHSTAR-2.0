@@ -100,9 +100,9 @@ globalThis.fetch=async(url,opts)=>{
   fileCalls.push({url,opts});
   if(url==='https://school.instructure.com/api/v1/files/123')return new Response(JSON.stringify({url:'https://school.instructure.com/files/123/download'}),{status:200,headers:{'Content-Type':'application/json'}});
   if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(url==='https://school.instructure.com/files/124/download')return new Response(null,{status:302,headers:{Location:'https://storage.example.net/private/file.pdf'}});
-  if(url==='https://school.instructure.com/files/123/download')return new Response(null,{status:302,headers:{Location:'https://storage.example.net/private/file.pdf'}});
-  if(url==='https://storage.example.net/private/file.pdf'){assert.equal(opts.headers.Authorization,undefined,'Canvas bearer token must not follow cross-origin signed file redirect');return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});}
+  if(url==='https://school.instructure.com/files/124/download')return new Response(null,{status:302,headers:{Location:'https://cdn.inscloudgate.net/private/file.pdf'}});
+  if(url==='https://school.instructure.com/files/123/download')return new Response(null,{status:302,headers:{Location:'https://cdn.inscloudgate.net/private/file.pdf'}});
+  if(url==='https://cdn.inscloudgate.net/private/file.pdf'){assert.equal(opts.headers.Authorization,'Bearer test-secret','Canvas bearer token must follow redirects to trusted Instructure file storage');return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});}
   throw Error('unexpected URL '+url);
 };
 const fileResponse=await worker.fetch(request('/api/v1/files/123/download'));
@@ -117,8 +117,8 @@ assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/
 
 // A rejected binary download returns actionable, URL-free diagnostics to NORTHSTAR.
 globalThis.fetch=async(url,opts)=>{
-  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://storage.example.net/private/signed-file?signature=must-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(url==='https://storage.example.net/private/signed-file?signature=must-not-leak')return new Response('private upstream error body',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'upstream-ray-406'}});
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://cdn.inscloudgate.net/private/signed-file?signature=must-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(url==='https://cdn.inscloudgate.net/private/signed-file?signature=must-not-leak'){assert.equal(opts.headers.Authorization,'Bearer test-secret','authenticated Canvas file storage receives the Canvas bearer token');return new Response('private upstream error body',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'upstream-ray-406'}});}
   throw Error('unexpected diagnostic URL '+url);
 };
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
@@ -129,7 +129,7 @@ assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northsta
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);
 assert.equal(failedDetails.requestId,'outer-ray-406');
-assert.equal(failedDetails.diagnostics.upstreamHost,'storage.example.net');
+assert.equal(failedDetails.diagnostics.upstreamHost,'cdn.inscloudgate.net');
 assert.equal(failedDetails.diagnostics.upstreamRayId,'upstream-ray-406');
 assert.equal(failedDetails.diagnostics.courseScoped,true);
 assert.equal(failedDetails.diagnostics.redirectCount,0);
