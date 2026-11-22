@@ -28,5 +28,7 @@ jobs:
           for file in scripts/*.js canvas-bridge/*.js; do
             node --check "$file"
           done
+      - name: Validate Cloudflare Worker bundle without deploying
+        run: npx wrangler deploy --config wrangler.jsonc --dry-run
       - name: Run unit and browser boot tests
         run: npm test
