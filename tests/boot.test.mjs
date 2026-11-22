@@ -66,7 +66,7 @@ const pdfStroke={tool:'pen',points:[{x:.1,y:.5},{x:.9,y:.5}]};
 assert.equal(window.NorthstarAssignmentRoom.pointHitsStroke({x:.5,y:.54},pdfStroke,100,100,5),true,'eraser and selection can hit a stroke between sampled points');
 assert.equal(window.NorthstarAssignmentRoom.pointHitsStroke({x:.5,y:.7},pdfStroke,100,100,5),false,'stroke hit-testing rejects distant points');
 assert.equal(window.NorthstarAssignmentRoom.wrapTextLines('alpha beta gamma',10,value=>value.length*5).join('|'),'alpha|beta|gamma','text boxes wrap content into readable lines');
-assert.equal(window.NorthstarAssignmentRoom.wrapTextLines('first line\\nsecond line',100,value=>value.length*5).join('|'),'first line|second line','text boxes preserve manual line breaks');
+assert.equal(window.NorthstarAssignmentRoom.wrapTextLines('first line\nsecond line',100,value=>value.length*5).join('|'),'first line|second line','text boxes preserve manual line breaks');
 const tapTextBox=window.NorthstarAssignmentRoom.textBoxFromDrag({x:.4,y:.4},{x:.4,y:.4},24);
 assert.ok(tapTextBox.width>=.28&&tapTextBox.height>=.09,'a text tap creates a usable default text box');
 const dragTextBox=window.NorthstarAssignmentRoom.textBoxFromDrag({x:.2,y:.25},{x:.7,y:.55},80);
