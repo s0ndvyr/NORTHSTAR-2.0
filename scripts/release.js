@@ -3,11 +3,11 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.8',packageVersion:'0.4.13',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.9',packageVersion:'0.4.14',
  bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
-  {version:'4.4.6.8',date:'2026-11-22',title:'Test-pinned deployment gate',
+  {version:'4.4.6.9',date:'2026-11-22',title:'Test-pinned deployment gate',
    description:'GitHub Pages verifies both source branches have passing Phase 4 push runs at their current heads and checks out those exact tested SHAs. A delayed successful event cannot publish a newer untested branch tip.',
    category:'Deployment',areas:['GitHub Actions','Source freshness','Test-pinned checkout','Release integrity'],status:'See the release-specific Phase 4 and Pages runs.'},
   {version:'4.4.6.3',date:'2026-11-22',title:'Manifest-driven version identity',

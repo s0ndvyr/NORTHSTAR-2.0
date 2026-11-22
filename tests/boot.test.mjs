@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 
 const root = new URL('../', import.meta.url).pathname;
+const releaseManifest = JSON.parse(readFileSync(root + 'release.json', 'utf8'));
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
 const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-room.js', 'document-editor.js', 'release.js', 'premium.js']
@@ -114,7 +115,7 @@ assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas even
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
 const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
 assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text allowlist strips scripts, handlers and unsafe links');
-assert.ok(window.document.getElementById('versionPill').textContent.includes('4.4.6.6'), 'runtime release identifier matches the current NORTHSTAR manifest');
+assert.ok(window.document.getElementById('versionPill').textContent.includes(releaseManifest.northstarVersion), 'runtime release identifier matches the current NORTHSTAR manifest');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(

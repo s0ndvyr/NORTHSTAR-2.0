@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.8",
-  "packageVersion": "0.4.13",
+  "northstarVersion": "4.4.6.9",
+  "packageVersion": "0.4.14",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -16,6 +16,21 @@
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.6.9",
+      "date": "2026-11-22",
+      "title": "Manifest-driven browser boot version assertion",
+      "description": "Removes the last hardcoded NORTHSTAR version from the browser boot regression test. The test now reads release.json and compares the rendered version pill against the manifest, so future micro-version increments cannot cause stale test expectations.",
+      "category": "Test reliability",
+      "areas": [
+        "Browser boot tests",
+        "Release manifest",
+        "Version consistency"
+      ],
+      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.6.8",
       "date": "2026-11-22",
       "title": "Release deployment-history assertion correction",
@@ -26,7 +41,7 @@
         "Changelog provenance",
         "Deployment history"
       ],
-      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "status": "Phase 4 test failed on 2026-11-22 because the browser boot test contained a hardcoded 4.4.6.6 version. Superseded by 4.4.6.9, which reads the expected version from the release manifest.",
       "historical": false,
       "commits": []
     },

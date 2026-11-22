@@ -534,3 +534,10 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The .7 release-history assertion accidentally looked for the .6 Pages deployment ID on the new pending .7 candidate after a broad version update.
 - Corrected the regression test to assert .8 remains pending and separately validate .6's deployed status and main commit provenance.
 - Release-specific Phase 4 tests and Pages deployment remain pending.
+
+
+## Phase 4.4.6.9 — Manifest-driven boot test
+
+- The .8 Phase 4 run passed the release-manifest unit test but the browser boot test still hardcoded the .6 version pill.
+- Replaced the literal with a value read from `release.json`, so future micro-version increments do not require manually editing the boot assertion.
+- Fresh release-specific Phase 4 tests and Pages deployment are pending.
