@@ -113,6 +113,23 @@ assert.equal(pdfFetchCalls[1].opts.headers.Authorization,undefined,'Canvas beare
 assert.equal(pdfFetchCalls[1].opts.credentials,'omit','signed storage request does not send browser cookies');
 assert.equal(pdfFetchCalls[1].opts.redirect,'follow','browser follows Canvas storage redirects');
 
+// If browser CORS or the short-lived URL fails, the existing private bridge remains a fallback.
+const fallbackCalls=[];
+const fallbackPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:43,fetchImpl:async(url,opts)=>{
+  fallbackCalls.push({url,opts});
+  const parsed=new URL(url),path=parsed.searchParams.get('path');
+  if(path==='/api/v1/courses/11/files/43')return {ok:true,status:200,json:async()=>({id:43,display_name:'fallback.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/fallback.pdf'})};
+  if(parsed.hostname==='cdn.inscloudgate.net')throw new TypeError('CORS blocked browser direct storage access');
+  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  throw Error('Unexpected PDF fallback endpoint '+url);
+}});
+assert.equal(fallbackPdf.name,'fallback.pdf');
+assert.equal(fallbackPdf.workerVersion,'0.4.4.5 (3)');
+assert.equal(fallbackPdf.size,6);
+assert.equal(fallbackCalls.length,3,'browser CORS failure falls back to the authenticated private bridge');
+assert.equal(fallbackCalls[1].opts.headers.Authorization,undefined,'browser direct attempt never receives the Canvas token');
+assert.equal(fallbackCalls[2].opts.headers.Authorization,'Bearer secret-token','bridge fallback uses the Canvas token only with the private bridge');
+
 const failedPdfError=await W.transport(credentials,async()=>({
   ok:false,status:406,
   headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},
