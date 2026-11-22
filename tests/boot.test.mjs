@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const root = new URL('../', import.meta.url).pathname;
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-room.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-room.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -51,6 +51,7 @@ assert.ok(window.CanvasDebug, 'CanvasDebug module loaded');
 assert.ok(window.NorthstarCanvasSync, 'NorthstarCanvasSync module loaded');
 assert.ok(window.NorthstarStudentVue, 'NorthstarStudentVue grade import module loaded');
 assert.ok(window.NorthstarWorkspace, 'Canvas assignment and quiz workspace module loaded');
+assert.equal(typeof window.NorthstarDocumentExport?.createWordDocument, 'function', 'native Word response exporter is loaded before the assignment workspace');
 assert.ok(window.NorthstarAssignmentRoom, 'full-page assignment room and PDF studio module loaded');
 assert.equal(window.NorthstarAssignmentRoom.isPenPointer('pen'), true, 'Apple Pencil pointer is recognized');
 assert.equal(window.NorthstarAssignmentRoom.isPenPointer('touch'), false, 'finger touch is not accepted as Pencil ink');
