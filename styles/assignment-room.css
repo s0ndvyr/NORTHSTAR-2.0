@@ -202,3 +202,17 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
 @media(max-width:760px){
  .ns-pdf-text-entry textarea{width:100%;min-width:0;min-height:54px}
 }
+
+
+/* Input selection is a device choice, not a pan-only tool mode. */
+.ns-pdf-modebar [data-ns-mode]{white-space:nowrap}
+.ns-pdf-modebar .ns-pdf-mode-help{max-width:100%;line-height:1.4}
+.ns-pdf-stage-scroll{touch-action:none;cursor:crosshair;overscroll-behavior:contain}
+.ns-pdf-ink{touch-action:none;cursor:crosshair}
+.ns-pdf-stage-scroll[data-input-mode=hand],
+.ns-pdf-stage-scroll[data-input-mode=pencil]{cursor:crosshair}
+@media(max-width:760px){
+ .ns-pdf-modebar{display:flex;align-items:center;flex-wrap:wrap}
+ .ns-pdf-modebar [data-ns-mode]{flex:1 1 auto;min-width:0}
+ .ns-pdf-modebar .ns-pdf-mode-help{flex:1 0 100%;margin:2px 0 0}
+}
