@@ -156,6 +156,7 @@ assert.equal(parsedFileReport.stage,'content');
 assert.equal(parsedFileReport.canvasUpstreamHttpStatus,406);
 assert.equal(parsedFileReport.request.upstreamHost,'storage.example.net');
 assert.equal(parsedFileReport.request.redirectCount,1);
+assert.equal(parsedFileReport.request.failureType,'http');
 assert.equal(parsedFileReport.connection.canvasHost,'school.instructure.com');
 const secretReport=dbg.buildFileDiagnosticReport({diagnostics:{upstreamHost:'storage.example.net'},fileName:'Bearer supersecrettoken1234567890abcdef',bridgeHost:'https://bridge.example/?token=abc123456789'});
 assert(!secretReport.includes('supersecrettoken'));

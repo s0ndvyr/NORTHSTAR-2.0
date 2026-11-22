@@ -34,15 +34,21 @@ function transport(credentials,fetchImpl=root.fetch){
     if(!response.ok){
       let detail={};try{detail=await response.json();}catch{}
       const stage=detail.stage||response.headers.get('X-Northstar-Stage')||'unknown';
-      const upstreamStatus=detail.upstreamStatus||response.headers.get('X-Northstar-Upstream-Status')||response.status;
+      const upstreamHeader=response.headers.get('X-Northstar-Upstream-Status');
+      const upstreamStatus=detail.upstreamStatus!==undefined?detail.upstreamStatus:(upstreamHeader!==null?Number(upstreamHeader):null);
       const code=detail.code||'CANVAS_FILE_DOWNLOAD_FAILED';
       const requestId=detail.requestId||response.headers.get('X-Northstar-Request-Id')||'';
-      const message=stage==='metadata'
-        ? 'Canvas rejected the file metadata request (HTTP '+upstreamStatus+').'
-        : stage==='content'
-          ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
-          : 'Canvas file download failed (HTTP '+response.status+').';
-      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
+      const failureType=detail.diagnostics?.failureType||response.headers.get('X-Northstar-Failure')||'http';
+      const message=failureType==='network'
+        ? (stage==='metadata'?'NORTHSTAR could not reach Canvas for attachment metadata (bridge HTTP '+response.status+').':'NORTHSTAR could not reach the file host during download (bridge HTTP '+response.status+').')
+        : failureType==='redirect'
+          ? 'NORTHSTAR stopped an unsafe or invalid file redirect (bridge HTTP '+response.status+').'
+          : stage==='metadata'
+            ? 'Canvas rejected the file metadata request (HTTP '+upstreamStatus+').'
+            : stage==='content'
+              ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
+              : 'Canvas file download failed (HTTP '+response.status+').';
+      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus: upstreamStatus===null?null:Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.failureType=failureType;error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
     }
     const contentType=response.headers.get('Content-Type')||'application/octet-stream';
     const disposition=response.headers.get('Content-Disposition')||'';

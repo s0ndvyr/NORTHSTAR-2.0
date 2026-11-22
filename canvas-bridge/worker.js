@@ -98,49 +98,64 @@ function validateWrite(path,data){
 }
 function fileDiagnosticContext(stage,response,requestId,context){
   const details=context||{};
-  const diagnostics={
+  const headers=response?.headers;
+  return {
     stage,
-    upstreamStatus:response.status,
+    upstreamStatus:response?.status??null,
     upstreamHost:details.upstreamHost||'',
-    upstreamContentType:response.headers.get('Content-Type')||'',
-    upstreamServer:response.headers.get('Server')||'',
-    upstreamRayId:response.headers.get('cf-ray')||'',
+    upstreamContentType:headers?.get('Content-Type')||'',
+    upstreamServer:headers?.get('Server')||'',
+    upstreamRayId:headers?.get('cf-ray')||'',
     redirectCount:Number(details.redirectCount)||0,
     redirectHosts:Array.isArray(details.redirectHosts)?details.redirectHosts.slice(0,6):[],
-    courseScoped:!!details.courseScoped
+    courseScoped:!!details.courseScoped,
+    failureType:details.failureType||'http'
   };
-  return diagnostics;
+}
+function fileDiagnosticFailure(stage,code,status,message,requestId,context,response){
+  const diagnostics=fileDiagnosticContext(stage,response||null,requestId,{...(context||{}),failureType:context?.failureType||'http'});
+  // Only safe metadata is logged: never bearer tokens, signed URLs, query strings, response bodies or file contents.
+  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',...diagnostics,requestId:requestId||null,code}));
+  const headers={...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Northstar-Stage':stage,'X-Northstar-Failure':diagnostics.failureType,...(diagnostics.upstreamStatus!==null?{'X-Northstar-Upstream-Status':String(diagnostics.upstreamStatus)}:{}),...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
+  return new Response(JSON.stringify({error:message,code,stage,upstreamStatus:diagnostics.upstreamStatus,requestId:requestId||null,diagnostics}),{status,headers});
 }
 function fileUpstreamFailure(stage,response,requestId,context){
   const code=stage==='metadata'?'CANVAS_FILE_METADATA_FAILED':'CANVAS_FILE_CONTENT_FAILED';
   const status=response.status>=400&&response.status<=599?response.status:502;
-  const diagnostics=fileDiagnosticContext(stage,response,requestId,context);
-  // Only safe diagnostic metadata is logged. Never log bearer tokens, signed URLs, query strings or file contents.
-  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',...diagnostics,requestId:requestId||null}));
-  return new Response(JSON.stringify({error:'Canvas rejected the file request',code,stage,upstreamStatus:response.status,requestId:requestId||null,diagnostics}),{
-    status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Northstar-Stage':stage,'X-Northstar-Upstream-Status':String(response.status),...(requestId?{'X-Northstar-Request-Id':requestId}:{})}
-  });
+  return fileDiagnosticFailure(stage,code,status,'Canvas rejected the file request',requestId,context,response);
+}
+function fileTransportFailure(stage,requestId,context){
+  const code=stage==='metadata'?'CANVAS_FILE_METADATA_NETWORK_FAILED':'CANVAS_FILE_CONTENT_NETWORK_FAILED';
+  const message=stage==='metadata'?'Could not reach Canvas while retrieving attachment metadata':'Could not reach the file host while downloading the attachment';
+  return fileDiagnosticFailure(stage,code,502,message,requestId,{...(context||{}),failureType:'network'});
+}
+function fileRedirectFailure(code,message,requestId,context){
+  return fileDiagnosticFailure('redirect',code,502,message,requestId,{...(context||{}),failureType:'redirect'});
 }
 async function downloadCanvasFile(fileId,courseId,authorization,userAgent,requestId){
   const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
-  const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
+  let metaResponse;
+  try{metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});}
+  catch{return fileTransportFailure('metadata',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
   if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});
-  let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
+  let metadata;try{metadata=await metaResponse.json();}catch{return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_INVALID',502,'Canvas file metadata was unreadable',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);}
   const raw=metadata.url||metadata.download_url;
-  if(typeof raw!=='string'||!raw)return reply('Canvas did not provide a file download URL',404);
-  let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return reply('Canvas returned an invalid file URL',502);}
-  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file URL did not pass the secure download check',502);
+  if(typeof raw!=='string'||!raw)return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_NO_DOWNLOAD_URL',502,'Canvas did not provide a file download URL',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);
+  let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return fileRedirectFailure('CANVAS_FILE_URL_INVALID','Canvas returned an invalid file destination',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
+  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_URL_UNSAFE','Canvas file destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,courseScoped:!!courseId});
   const redirectHosts=[];
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
     // Forward the Canvas token only when the request is still on the exact configured Canvas origin.
     if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
-    const response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});
+    let response;
+    try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}
+    catch{return fileTransportFailure('content',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
     if(response.status>=300&&response.status<400){
       if(redirectHosts.length<6)redirectHosts.push(current.hostname);
-      const location=response.headers.get('Location');if(!location)return reply('Canvas file redirect did not include a destination',502);
-      try{current=new URL(location,current);}catch{return reply('Canvas file redirect destination was invalid',502);}
-      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file redirect failed the secure download check',502);
+      const location=response.headers.get('Location');if(!location)return fileRedirectFailure('CANVAS_FILE_REDIRECT_LOCATION_MISSING','The file host returned a redirect without a destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
+      try{current=new URL(location,current);}catch{return fileRedirectFailure('CANVAS_FILE_REDIRECT_DESTINATION_INVALID','The file host returned an invalid redirect destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
+      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_REDIRECT_UNSAFE','The file redirect destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
       continue;
     }
     if(!response.ok)return fileUpstreamFailure('content',response,requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
@@ -148,7 +163,7 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
     for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
     return new Response(response.body,{status:response.status,headers:responseHeaders});
   }
-  return reply('Canvas file redirected too many times',502);
+  return fileRedirectFailure('CANVAS_FILE_REDIRECT_LIMIT','The file host redirected too many times',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
 }
 export default {
   async fetch(request) {

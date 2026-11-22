@@ -135,4 +135,42 @@ assert(!JSON.stringify(failedDetails).includes('signature='));
 assert(!JSON.stringify(failedDetails).includes('private upstream error body'));
 assert(!JSON.stringify(failedDetails).includes('test-secret'),'diagnostics never include the Canvas bearer token');
 
-console.log('PASS: validated assignment and classic quiz POSTs, dedicated quiz flag PUTs, and read-only New Quizzes; arbitrary writes and impersonation rejected');
+// Network failures are stage-specific and never include exception messages or signed URLs.
+globalThis.fetch=async()=>{throw Error('network failed for https://storage.example.net/private?signature=do-not-leak');};
+const metadataNetwork=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-metadata-network'}}));
+assert.equal(metadataNetwork.status,502);
+const metadataNetworkDetails=await metadataNetwork.json();
+assert.equal(metadataNetworkDetails.code,'CANVAS_FILE_METADATA_NETWORK_FAILED');
+assert.equal(metadataNetworkDetails.stage,'metadata');
+assert.equal(metadataNetworkDetails.diagnostics.failureType,'network');
+assert.equal(metadataNetworkDetails.upstreamStatus,null);
+assert(!JSON.stringify(metadataNetworkDetails).includes('signature='));
+assert(!JSON.stringify(metadataNetworkDetails).includes('test-secret'));
+
+globalThis.fetch=async(url,opts)=>{
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://storage.example.net/private/signed-file?signature=do-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
+  throw Error('network failed for '+url);
+};
+const contentNetwork=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-content-network'}}));
+const contentNetworkDetails=await contentNetwork.json();
+assert.equal(contentNetwork.status,502);
+assert.equal(contentNetworkDetails.code,'CANVAS_FILE_CONTENT_NETWORK_FAILED');
+assert.equal(contentNetworkDetails.stage,'content');
+assert.equal(contentNetworkDetails.diagnostics.upstreamHost,'storage.example.net');
+assert.equal(contentNetworkDetails.diagnostics.failureType,'network');
+assert(!JSON.stringify(contentNetworkDetails).includes('signature='));
+
+// Redirect errors are categorized without exposing the redirect target URL.
+globalThis.fetch=async(url,opts)=>{
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(url==='https://school.instructure.com/files/124/download')return new Response(null,{status:302});
+  throw Error('unexpected URL '+url);
+};
+const redirectFailure=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
+const redirectDetails=await redirectFailure.json();
+assert.equal(redirectFailure.status,502);
+assert.equal(redirectDetails.code,'CANVAS_FILE_REDIRECT_LOCATION_MISSING');
+assert.equal(redirectDetails.stage,'redirect');
+assert.equal(redirectDetails.diagnostics.failureType,'redirect');
+
+console.log('PASS: bridge file diagnostics cover HTTP failures, network failures and unsafe redirects without exposing secrets');

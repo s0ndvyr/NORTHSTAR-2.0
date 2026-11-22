@@ -119,6 +119,17 @@ assert.equal(failedPdfError.requestId,'ray-outer-406');
 assert.equal(failedPdfError.diagnostics.upstreamHost,'storage.example.net');
 assert.equal(failedPdfError.bridgeStatus,406);
 
+const networkPdfError=await W.transport(credentials,async()=>({
+  ok:false,status:502,
+  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Failure'?'network':null},
+  json:async()=>({error:'Could not reach the file host while downloading the attachment',code:'CANVAS_FILE_CONTENT_NETWORK_FAILED',stage:'content',upstreamStatus:null,requestId:'ray-network',diagnostics:{stage:'content',failureType:'network',upstreamStatus:null,upstreamHost:'storage.example.net'}})
+})).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
+assert.equal(networkPdfError.code,'CANVAS_FILE_CONTENT_NETWORK_FAILED');
+assert.equal(networkPdfError.stage,'content');
+assert.equal(networkPdfError.upstreamStatus,null);
+assert.equal(networkPdfError.failureType,'network');
+assert.equal(networkPdfError.diagnostics.upstreamHost,'storage.example.net');
+
 const recoveryCalls=[];
 const recoveryFetch=async(url,opts)=>{recoveryCalls.push({url,opts});const path=new URL(url).searchParams.get('path');if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,started_at:'2026-11-18T10:00:00Z',finished_at:null,workflow_state:'untaken'}]})};if(path.includes('/quiz_submissions/77/questions'))return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:1,quiz_question:{id:9,question_type:'multiple_choice_question',answers:[{id:1,text:'A'}]}}]})};if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:90})};throw Error('Unexpected recovery path '+path);};
 const current=await W.getCurrentQuizSubmission({credentials,courseId:11,quizId:22,fetchImpl:recoveryFetch});

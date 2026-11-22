@@ -410,6 +410,7 @@
         upstreamHost: clean(d.upstreamHost || "", 180),
         upstreamServer: clean(d.upstreamServer || "", 120),
         upstreamContentType: clean(d.upstreamContentType || "", 120),
+        failureType: clean(d.failureType || "http", 40),
         redirectCount: numberOrNull(d.redirectCount),
         redirectHosts: Array.isArray(d.redirectHosts) ? d.redirectHosts.slice(0, 6).map(function (host) { return clean(host, 180); }) : [],
         courseScopedMetadata: !!d.courseScoped
