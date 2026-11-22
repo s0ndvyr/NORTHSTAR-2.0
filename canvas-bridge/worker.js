@@ -96,10 +96,19 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
-async function downloadCanvasFile(fileId,courseId,authorization,userAgent){
+function fileUpstreamFailure(stage,response,requestId){
+  const code=stage==='metadata'?'CANVAS_FILE_METADATA_FAILED':'CANVAS_FILE_CONTENT_FAILED';
+  const status=response.status>=400&&response.status<=599?response.status:502;
+  // Log only the stage, status and opaque Cloudflare request ID. Never log tokens, URLs or file contents.
+  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',stage,upstreamStatus:response.status,requestId:requestId||null}));
+  return new Response(JSON.stringify({error:'Canvas rejected the file request',code,stage,upstreamStatus:response.status,requestId:requestId||null}),{
+    status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Northstar-Stage':stage,'X-Northstar-Upstream-Status':String(response.status),...(requestId?{'X-Northstar-Request-Id':requestId}:{})}
+  });
+}
+async function downloadCanvasFile(fileId,courseId,authorization,userAgent,requestId){
   const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
   const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
-  if(!metaResponse.ok)return new Response(metaResponse.body,{status:metaResponse.status,headers:{...cors,'Content-Type':metaResponse.headers.get('Content-Type')||'application/json'}});
+  if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId);
   let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
   const raw=metadata.url||metadata.download_url;
   if(typeof raw!=='string'||!raw)return reply('Canvas did not provide a file download URL',404);
@@ -116,7 +125,8 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent){
       if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file redirect failed the secure download check',502);
       continue;
     }
-    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'};
+    if(!response.ok)return fileUpstreamFailure('content',response,requestId);
+    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Northstar-Stage':'complete',...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
     for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
     return new Response(response.body,{status:response.status,headers:responseHeaders});
   }
@@ -136,9 +146,9 @@ export default {
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     if(request.method==='GET'){
       const courseFileMatch=url.pathname.match(/^\/api\/v1\/courses\/(\d+)\/files\/(\d+)\/download$/);
-      if(courseFileMatch){try{return await downloadCanvasFile(courseFileMatch[2],courseFileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
+      if(courseFileMatch){try{return await downloadCanvasFile(courseFileMatch[2],courseFileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0',request.headers.get('cf-ray')||'');}catch{return reply('Could not download the Canvas file',502);}}
       const fileMatch=url.pathname.match(/^\/api\/v1\/files\/(\d+)\/download$/);
-      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],null,auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
+      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],null,auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0',request.headers.get('cf-ray')||'');}catch{return reply('Could not download the Canvas file',502);}}
     }
     let body;
     if(request.method==='POST'||request.method==='PUT'){
