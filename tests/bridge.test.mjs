@@ -66,8 +66,8 @@ let fileCalls=[];
 globalThis.fetch=async(url,opts)=>{
   fileCalls.push({url,opts});
   if(url==='https://school.instructure.com/api/v1/files/123')return new Response(JSON.stringify({url:'https://school.instructure.com/files/123/download'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(url==='https://school.instructure.com/files/123/download')return new Response(null,{status:302,headers:{Location:'https://storage.example.net/private/file.pdf'}});
-  if(url==='https://storage.example.net/private/file.pdf'){assert.equal(opts.headers.Authorization,undefined,'Canvas bearer token must not follow cross-origin signed file redirect');return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});}
+  if(url==='https://school.instructure.com/files/123/download')return new Response(null,{status:302,headers:{Location:'https://cdn.inscloudgate.net/private/file.pdf'}});
+  if(url==='https://cdn.inscloudgate.net/private/file.pdf'){assert.equal(opts.headers.Authorization,'Bearer test-secret','Canvas bearer token must follow redirects to trusted Instructure file storage');return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});}
   throw Error('unexpected URL '+url);
 };
 const fileResponse=await worker.fetch(request('/api/v1/files/123/download'));
