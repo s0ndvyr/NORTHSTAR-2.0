@@ -452,6 +452,10 @@ function phase4QuestionMarkup(row,index){
       return '<label class="quiz-blank"><span>'+asText(left.answer_match_left)+'</span><select class="select" data-quiz-match-for="'+qid+'" data-quiz-answer-id="'+Number(left.id)+'"><option value="">Choose a match…</option>'+rights.map((right,j)=>'<option value="'+Number(right.id)+'" '+(String(previous?.match_id??'')===String(right.id)?'selected':'')+'>'+optionLabel(right,'Match '+(j+1))+'</option>').join('')+'</select></label>';
     }).join('')||'<p class="small muted">Canvas did not expose the matching answer identifiers needed to safely save this question. Continue this same attempt in Canvas.</p>';
   }
+  else if(type==='file_upload_question'){
+    const savedId=Array.isArray(saved)?saved[0]:saved;
+    control='<div class="quiz-file-answer"><label class="quiz-blank"><span>Choose a file to attach to this quiz question</span><input type="file" data-quiz-file-answer="'+qid+'"></label><p class="small muted" id="quiz-file-status-'+qid+'" role="status">'+(savedId?'Canvas attachment '+safe(savedId)+' is already attached. Choose a new file only to replace it.':'The selected file is uploaded to Canvas and attached to this question before the quiz answer is saved.')+'</p></div>';
+  }
   else control='<p class="small muted">This question format ('+safe(type||'unknown')+') is not yet supported in the NORTHSTAR quiz editor. Continue this same attempt in Canvas.</p>';
   return '<article class="card quiz-question" data-question-id="'+qid+'" data-question-index="'+index+'"><div class="ns-quiz-question-head"><span class="eyebrow">QUESTION '+(index+1)+'</span><button type="button" class="ns-quiz-flag" data-quiz-flag="'+qid+'" aria-pressed="false">Flag for review</button></div><div class="quiz-prompt">'+prompt+'</div><div class="quiz-answer-list">'+control+'</div></article>';
 }
@@ -468,6 +472,7 @@ function phase4IsQuestionAnswered(row,answer){
   const q=row?.quiz_question||row?.question||row||{},type=String(q.question_type||q.type||'').toLowerCase(),answers=Array.isArray(q.answers)?q.answers:[];
   if(type==='text_only_question')return true;
   if(type==='matching_question')return Array.isArray(answer)&&answer.length===answers.filter(item=>item.answer_match_left).length;
+  if(type==='file_upload_question')return phase4HasQuizAnswer(answer);
   if(type==='fill_in_multiple_blanks_question'||type==='multiple_dropdowns_question'){
     const blanks=[...new Set(answers.map(item=>String(item.blank_id??'')).filter(Boolean))];
     return !!answer&&typeof answer==='object'&&blanks.length>0&&blanks.every(key=>Object.prototype.hasOwnProperty.call(answer,key)&&phase4HasQuizAnswer(answer[key]));
@@ -479,7 +484,12 @@ function phase4CollectQuizAnswers(questions){
     const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];
     if(type==='text_only_question'||!phase4QuestionSupported(row))return null;
     let answer=null;
-    if(type==='multiple_answers_question'){const selected=nodes.filter(n=>n.checked).map(n=>Number(n.value));answer=selected.length?selected:null;}
+    if(type==='file_upload_question'){
+      const input=document.querySelector('[data-quiz-file-answer="'+id+'"]');
+      const saved=row.answer, savedId=Array.isArray(saved)?saved[0]:saved;
+      answer=input?.dataset.quizFileId||savedId||null;
+    }
+    else if(type==='multiple_answers_question'){const selected=nodes.filter(n=>n.checked).map(n=>Number(n.value));answer=selected.length?selected:null;}
     else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);answer=chosen?Number(chosen.value):null;}
     else if(type==='matching_question'){
       const pairs=[...document.querySelectorAll('[data-quiz-match-for="'+id+'"]')].filter(node=>node.value).map(node=>({answer_id:Number(node.dataset.quizAnswerId),match_id:Number(node.value)}));
@@ -652,6 +662,31 @@ function phase4RenderQuizAttempt(){
   document.querySelectorAll('[data-quiz-jump]').forEach(button=>button.onclick=()=>{const target=document.querySelector('.quiz-question[data-question-index="'+(Number(button.dataset.quizJump)-1)+'"]');if(target)target.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
   document.querySelectorAll('[data-quiz-flag]').forEach(button=>{const id=Number(button.dataset.quizFlag),flagged=s.flaggedQuestionIds.includes(id);button.setAttribute('aria-pressed',String(flagged));button.classList.toggle('is-flagged',flagged);if(flagged)button.textContent='Flagged';button.onclick=()=>{const at=s.flaggedQuestionIds.indexOf(id);if(at>=0)s.flaggedQuestionIds.splice(at,1);else s.flaggedQuestionIds.push(id);button.setAttribute('aria-pressed',String(at<0));button.classList.toggle('is-flagged',at<0);button.textContent=at<0?'Flagged':'Flag for review';phase4PersistQuizSession(s.assignment,s.submission,s.accessCode,s.flaggedQuestionIds);phase4ScheduleQuizAutoSave();};});
   const quizStack=document.querySelector('.quiz-question-stack');
+  if(quizStack){
+    quizStack.querySelectorAll('[data-quiz-file-answer]').forEach(input=>{
+      input.addEventListener('change',async event=>{
+        event.stopPropagation();
+        const file=input.files?.[0];if(!file)return;
+        const qid=Number(input.dataset.quizFileAnswer),status=$('#quiz-file-status-'+qid);
+        if(file.size>25000000){if(status)status.textContent='Choose a file under 25 MB. Canvas has not received this file.';input.value='';return;}
+        input.disabled=true;
+        if(status)status.textContent='Uploading '+file.name+' to the active Canvas quiz attempt…';
+        try{
+          const course=courseById(s.assignment.course),quizId=s.assignment.quizId||s.assignment.canvasId;
+          const uploaded=await window.NorthstarWorkspace.uploadQuizSubmissionFile({credentials:getCredentials(),courseId:course.canvasId,quizId,file});
+          input.dataset.quizFileId=String(uploaded.id);
+          const row=s.questions.find(item=>Number((item.quiz_question||item.question||item).id||item.id)===qid);
+          if(row)row.answer=String(uploaded.id);
+          if(status)status.textContent='Uploaded to Canvas: '+uploaded.name+'. Saving this question answer…';
+          phase4UpdateQuizProgress();
+          await phase4AutoSaveQuizAnswers();
+          if(status)status.textContent='Canvas attachment '+uploaded.id+' uploaded and linked to this quiz question.';
+        }catch(error){
+          if(status)status.textContent='Quiz file upload was not confirmed: '+error.message+' Check this attempt in Canvas before retrying.';
+        }finally{input.disabled=false;}
+      });
+    });
+  }
   phase4LastQuizSavedAnswersSignature=phase4QuizAnswersSignature(phase4CollectQuizAnswers(s.questions));phase4LastQuizSavedSignature=phase4CurrentQuizSignature(s);
   if(quizStack){const update=()=>{phase4UpdateQuizProgress();phase4ScheduleQuizAutoSave();};quizStack.addEventListener('input',update);quizStack.addEventListener('change',update);}
   phase4UpdateQuizProgress();
