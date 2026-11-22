@@ -211,7 +211,7 @@ function addPoint(event,canvas){
  return {x:Math.max(0,Math.min(1,(event.clientX-rect.left)/width)),y:Math.max(0,Math.min(1,(event.clientY-rect.top)/height)),pressure};
 }
 function canAnnotatePointer(pointerType,mode,penAlreadyActive){
- return mode==='pencil'&&!penAlreadyActive&&['pen','touch','mouse'].includes(pointerType);
+ return mode==='pencil'&&(['pen','touch','mouse'].includes(pointerType))&&(pointerType==='pen'||!penAlreadyActive);
 }
 function distanceToSegment(point,start,end,widthPx,heightPx){
  const px=point.x*widthPx,py=point.y*heightPx,ax=start.x*widthPx,ay=start.y*heightPx,bx=end.x*widthPx,by=end.y*heightPx,dx=bx-ax,dy=by-ay;
@@ -273,7 +273,7 @@ function attachCanvasEvents(){
  }
  function startGesture(){
   if(active?.pointerType==='pen')return false;
-  if(active&&active.tool!=='hand-pan')cancelActive();
+  if(active&&active.tool!=='hand-pan')cancelActive();else if(active?.tool==='hand-pan')active=null;
   const pair=[...pointers.entries()].filter(([,p])=>p.type==='touch').slice(0,2);
   if(pair.length<2)return false;
   const stageRect=stage.getBoundingClientRect(),pageRect=ink.parentElement.getBoundingClientRect();
@@ -302,7 +302,7 @@ function attachCanvasEvents(){
   if(tool==='text'){
    const input=$('#nsPdfText'),text=String(input?.value||'').trim();
    if(!text){setSaveState('Type your text first, then drag to place its box.');return;}
-   active={tool:'text',pointerId:event.pointerId,pointerType:event.pointerType,page:pdfState.page,start:point,end:point,text,color:pdfState.color,width:pdfState.width,before};
+   pushHistory();active={tool:'text',pointerId:event.pointerId,pointerType:event.pointerType,page:pdfState.page,start:point,end:point,text,color:pdfState.color,width:pdfState.width,before};
    pdfState.preview={page:pdfState.page,start:point,end:point,color:pdfState.color};drawOverlay();return;
   }
   if(tool==='eraser'||tool==='select'){
@@ -347,7 +347,7 @@ function attachCanvasEvents(){
    }
    return;
   }
-  if(!canAnnotatePointer(event.pointerType,'pencil',[...pointers.values()].some(p=>p.type==='pen'&&pointers.size>1)))return;
+  if(!canAnnotatePointer(event.pointerType,'pencil',event.pointerType!=='pen'&&[...pointers.values()].some(p=>p.type==='pen')))return;
   if(event.pointerType==='pen'){
    if(active?.pointerType==='touch')cancelActive();
    pointers.forEach((p,id)=>{if(p.type==='touch')pointers.delete(id);});
@@ -385,9 +385,9 @@ function attachCanvasEvents(){
   if(active.tool==='hand-pan'){active=null;return;}
   if(cancelled){cancelActive();return;}
   if(active.tool==='text'){
-   const input=$('#nsPdfText'),end=active.end||active.start,left=Math.min(active.start.x,end.x),top=Math.min(active.start.y,end.y),width=Math.max(.12,Math.abs(end.x-active.start.x)),height=Math.max(.055,Math.abs(end.y-active.start.y));
-   const defaultWidth=.38,defaultHeight=Math.max(.09,Math.min(.24,(String(active.text).length/42)*.035+.07));
-   getPageState(active.page).texts.push({x:left,y:top,width:Math.max(width,defaultWidth&&width<.02?defaultWidth:width),height:Math.max(height,height<.02?defaultHeight:height),text:active.text,color:active.color,fontSize:Math.max(12,Math.round(ink.clientWidth/70))});
+   const input=$('#nsPdfText'),end=active.end||active.start,left=Math.min(active.start.x,end.x),top=Math.min(active.start.y,end.y),dragWidth=Math.abs(end.x-active.start.x),dragHeight=Math.abs(end.y-active.start.y);
+   const defaultWidth=Math.max(.28,Math.min(.62,String(active.text).length*.012)),defaultHeight=Math.max(.09,Math.min(.24,(String(active.text).length/42)*.035+.07)),width=dragWidth<.025?defaultWidth:Math.max(.12,dragWidth),height=dragHeight<.025?defaultHeight:Math.max(.055,dragHeight);
+   getPageState(active.page).texts.push({x:Math.min(left,1-width),y:Math.min(top,1-height),width,height,text:active.text,color:active.color,fontSize:Math.max(12,Math.round(ink.clientWidth/70))});
    if(input)input.value='';pdfState.preview=null;persistAnnotations();drawOverlay();setSaveState('Text box placed. Use Move to reposition it.');
   }else{pdfState.preview=null;persistAnnotations();drawOverlay();setSaveState('Saved on this device. Export the annotated PDF to submit a copy.');}
   active=null;
