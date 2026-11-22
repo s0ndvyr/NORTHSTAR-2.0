@@ -185,7 +185,7 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
 async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
   const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
   const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
-  const download=await api.getBinary('/api/v1/files/'+f+'/download');
+  const download=await api.getBinary('/api/v1/courses/'+c+'/files/'+f+'/download');
   return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
 }
 const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
