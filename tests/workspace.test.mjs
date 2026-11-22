@@ -62,14 +62,14 @@ const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
   uploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example'){const path=new URL(url).searchParams.get('path');assert.equal(path,'/api/v1/courses/11/assignments/33/submissions/self/files','upload initialization uses Canvas self submission endpoint');return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};}
+  if(new URL(url).hostname==='bridge.example'){const path=new URL(url).searchParams.get('path');if(opts.method==='GET'&&path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:7})};assert.equal(path,'/api/v1/courses/11/assignments/33/submissions/7/files','upload initialization uses the Canvas numeric student submission endpoint supported by the deployed bridge');return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};}
   assert.equal(opts.method,'POST');
   assert.equal(opts.headers?.Authorization,undefined,'signed upload must never receive Canvas bearer token');
   const fields=[...opts.body.keys()];assert.deepEqual(fields,['key','policy','file'],'file must be appended last');
   return {ok:true,status:201,json:async()=>({id:55,display_name:'homework.txt'})};
 }});
 assert.equal(uploaded.id,55);
-assert.equal(uploadCalls.length,2,'upload initialization and signed file upload are required; Canvas self endpoint identifies the student');
+assert.equal(uploadCalls.length,3,'current user lookup, upload initialization and signed file upload are required by the deployed bridge protocol');
 
 
 const pdfFetchCalls=[];
