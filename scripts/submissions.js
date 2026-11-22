@@ -11,8 +11,11 @@ function payload(type,value){
     return {submission:{submission_type:type,url:url.href}};
   }
   if(type==='online_upload'){
-    const fileId=Number(value);if(!Number.isSafeInteger(fileId)||fileId<1)throw Error('Upload the file to Canvas before submitting.');
-    return {submission:{submission_type:type,file_ids:[fileId]}};
+    const candidates=Array.isArray(value)?value:[value];
+    const fileIds=[...new Set(candidates.map(item=>Number(item)).filter(item=>Number.isSafeInteger(item)&&item>0))];
+    if(!fileIds.length||fileIds.length!==candidates.length)throw Error('Upload every selected file to Canvas before submitting.');
+    if(fileIds.length>10)throw Error('A submission can contain at most 10 files in NORTHSTAR.');
+    return {submission:{submission_type:type,file_ids:fileIds}};
   }
   throw Error('This submission type must be completed in Canvas.');
 }
@@ -31,17 +34,18 @@ async function send({credentials,courseId,assignmentId,data,fetchImpl=global.fet
 function sanitizeRichTextHtml(value){
   const html=String(value??'');
   if(typeof DOMParser==='undefined')return '<p>'+html.replace(/<[^>]*>/g,'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'</p>';
-  const parser=new DOMParser(),doc=parser.parseFromString(html,'text/html'),allowed=new Set(['P','BR','STRONG','B','EM','I','U','S','UL','OL','LI','BLOCKQUOTE','H2','H3','H4','DIV','SPAN','A']);
+  const parser=new DOMParser(),doc=parser.parseFromString(html,'text/html'),allowed=new Set(['P','BR','STRONG','B','EM','I','U','S','UL','OL','LI','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','DIV','SPAN','A','HR','PRE','CODE','TABLE','THEAD','TBODY','TR','TD','TH','SUB','SUP']);
   function copy(node){
     if(node.nodeType===3)return doc.createTextNode(node.nodeValue||'');
     if(node.nodeType!==1)return doc.createDocumentFragment();
     const tag=node.tagName;
-    if(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','IMG','VIDEO','AUDIO','SVG'].includes(tag))return doc.createDocumentFragment();
+    if(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','IMG','VIDEO','AUDIO','SVG','MATH'].includes(tag))return doc.createDocumentFragment();
     if(!allowed.has(tag)){const frag=doc.createDocumentFragment();[...node.childNodes].forEach(child=>frag.append(copy(child)));return frag;}
     const out=doc.createElement(tag.toLowerCase());
     if(tag==='A'){
-      try{const url=new URL(node.getAttribute('href')||'',global.location?.href||'https://northstar.invalid');if(['https:','http:'].includes(url.protocol)){out.href=url.href;out.target='_blank';out.rel='noopener noreferrer';}}catch{}
+      try{const url=new URL(node.getAttribute('href')||'',global.location?.href||'https://northstar.invalid');if(['https:','http:'].includes(url.protocol)&&!url.username&&!url.password){out.href=url.href;out.target='_blank';out.rel='noopener noreferrer';}}catch{}
     }
+    if(tag==='TD'||tag==='TH'){['colspan','rowspan'].forEach(key=>{const value=node.getAttribute(key);if(value&&/^\\d{1,2}$/.test(value))out.setAttribute(key,value);});}
     [...node.childNodes].forEach(child=>out.append(copy(child)));
     return out;
   }
