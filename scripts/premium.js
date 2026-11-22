@@ -424,39 +424,89 @@ function phase4PeriodMatches(a,selection){
   return phase3PeriodIdFor(a)===selection;
 }
 function phase4QuestionMarkup(row,index){
-  const q=row.quiz_question||row.question||row,qid=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),prompt=asText(q.question_text||q.text||'Question'),answers=Array.isArray(q.answers)?q.answers:(Array.isArray(row.answers)?row.answers:[]),saved=row.answer;let control='';
-  if(['multiple_choice_question','true_false_question'].includes(type)&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this question in Canvas.</p>';
-  else if(['multiple_choice_question','true_false_question'].includes(type))control=answers.map((v,i)=>'<label class="quiz-choice"><input type="radio" name="quiz-q-'+qid+'" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(String(saved)===String(v.id)?'checked':'')+'><span>'+asText(v.text||v.html||('Option '+(i+1)))+'</span></label>').join('');
-  else if(type==='multiple_answers_question'&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this question in Canvas.</p>';
-  else if(type==='multiple_answers_question'){const selected=Array.isArray(saved)?saved.map(String):[];control=answers.map((v,i)=>'<label class="quiz-choice"><input type="checkbox" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(selected.includes(String(v.id))?'checked':'')+'><span>'+asText(v.text||v.html||('Option '+(i+1)))+'</span></label>').join('');}
+  const q=row.quiz_question||row.question||row,qid=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),answers=Array.isArray(q.answers)?q.answers:(Array.isArray(row.answers)?row.answers:[]),saved=row.answer;let control='';
+  const prompt=phase4SafeNewQuizHtml(q.question_text||q.text||'Question',getCredentials()?.base||'');
+  const optionLabel=(item,fallback)=>asText(item.text||item.answer_text||item.html||item.answer_text_html||item.answer_match_right||fallback);
+  if(['multiple_choice_question','true_false_question'].includes(type)&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this same attempt in Canvas.</p>';
+  else if(['multiple_choice_question','true_false_question'].includes(type))control=answers.map((v,i)=>'<label class="quiz-choice"><input type="radio" name="quiz-q-'+qid+'" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(String(saved)===String(v.id)?'checked':'')+'><span>'+optionLabel(v,'Option '+(i+1))+'</span></label>').join('');
+  else if(type==='multiple_answers_question'&&!answers.length)control='<p class="small muted">Canvas did not expose the answer choices to this account. Continue this same attempt in Canvas.</p>';
+  else if(type==='multiple_answers_question'){const selected=Array.isArray(saved)?saved.map(String):[];control=answers.map((v,i)=>'<label class="quiz-choice"><input type="checkbox" data-quiz-answer="'+qid+'" value="'+Number(v.id)+'" '+(selected.includes(String(v.id))?'checked':'')+'><span>'+optionLabel(v,'Option '+(i+1))+'</span></label>').join('');}
   else if(type==='text_only_question')control='<p class="small muted">Read-only quiz information.</p>';
   else if(['essay_question','short_answer_question'].includes(type))control='<textarea class="editor quiz-text-answer" data-quiz-answer="'+qid+'" rows="'+(type==='essay_question'?7:3)+'" placeholder="Enter your response…">'+(typeof saved==='string'?safe(saved):'')+'</textarea>';
   else if(['numerical_question','calculated_question'].includes(type))control='<input class="select" type="number" step="any" data-quiz-answer="'+qid+'" value="'+(saved==null?'':safe(saved))+'" placeholder="Enter a number">';
-  else control='<p class="small muted">This question format ('+safe(type||'unknown')+') is not yet supported in the NORTHSTAR quiz editor. Complete this question in Canvas.</p>';
-  return '<article class="card quiz-question" data-question-id="'+qid+'" data-question-index="'+index+'"><div class="ns-quiz-question-head"><span class="eyebrow">QUESTION '+(index+1)+'</span><button type="button" class="ns-quiz-flag" data-quiz-flag="'+qid+'" aria-pressed="false">Flag for review</button></div><h3 class="quiz-prompt">'+prompt+'</h3><div class="quiz-answer-list">'+control+'</div></article>';
+  else if(type==='fill_in_multiple_blanks_question'||type==='multiple_dropdowns_question'){
+    const blankIds=[...new Set(answers.map(item=>String(item.blank_id??'')).filter(Boolean))];
+    control=blankIds.map(blankId=>{
+      const savedValue=saved&&typeof saved==='object'?saved[blankId]:null;
+      if(type==='multiple_dropdowns_question'){
+        const options=answers.filter(item=>String(item.blank_id)===blankId);
+        return '<label class="quiz-blank"><span>Blank '+safe(blankId)+'</span><select class="select" data-quiz-blank-for="'+qid+'" data-quiz-blank-id="'+safe(blankId)+'"><option value="">Choose an answer…</option>'+options.map((item,i)=>'<option value="'+Number(item.id)+'" '+(String(savedValue??'')===String(item.id)?'selected':'')+'>'+optionLabel(item,'Option '+(i+1))+'</option>').join('')+'</select></label>';
+      }
+      return '<label class="quiz-blank"><span>Blank '+safe(blankId)+'</span><input class="select" type="text" maxlength="500" data-quiz-blank-for="'+qid+'" data-quiz-blank-id="'+safe(blankId)+'" value="'+safe(savedValue??'')+'" placeholder="Enter this blank"></label>';
+    }).join('')||'<p class="small muted">Canvas did not expose the blank identifiers needed to safely save this question. Continue this same attempt in Canvas.</p>';
+  }
+  else if(type==='matching_question'){
+    const lefts=answers.filter(item=>item.answer_match_left),rights=answers.filter(item=>item.answer_match_right),prior=Array.isArray(saved)?saved:[];
+    control=lefts.map((left,i)=>{
+      const previous=prior.find(item=>String(item.answer_id)===String(left.id));
+      return '<label class="quiz-blank"><span>'+asText(left.answer_match_left)+'</span><select class="select" data-quiz-match-for="'+qid+'" data-quiz-answer-id="'+Number(left.id)+'"><option value="">Choose a match…</option>'+rights.map((right,j)=>'<option value="'+Number(right.id)+'" '+(String(previous?.match_id??'')===String(right.id)?'selected':'')+'>'+optionLabel(right,'Match '+(j+1))+'</option>').join('')+'</select></label>';
+    }).join('')||'<p class="small muted">Canvas did not expose the matching answer identifiers needed to safely save this question. Continue this same attempt in Canvas.</p>';
+  }
+  else control='<p class="small muted">This question format ('+safe(type||'unknown')+') is not yet supported in the NORTHSTAR quiz editor. Continue this same attempt in Canvas.</p>';
+  return '<article class="card quiz-question" data-question-id="'+qid+'" data-question-index="'+index+'"><div class="ns-quiz-question-head"><span class="eyebrow">QUESTION '+(index+1)+'</span><button type="button" class="ns-quiz-flag" data-quiz-flag="'+qid+'" aria-pressed="false">Flag for review</button></div><div class="quiz-prompt">'+prompt+'</div><div class="quiz-answer-list">'+control+'</div></article>';
 }
 function phase4QuestionSupported(row){return !!window.NorthstarWorkspace?.questionSupported?.(row);}
+function phase4HasQuizAnswer(answer){
+  if(answer===null||answer===undefined)return false;
+  if(typeof answer==='string')return answer.trim().length>0;
+  if(typeof answer==='number')return Number.isFinite(answer);
+  if(Array.isArray(answer))return answer.length>0;
+  if(typeof answer==='object')return Object.values(answer).some(value=>phase4HasQuizAnswer(value));
+  return false;
+}
+function phase4IsQuestionAnswered(row,answer){
+  const q=row?.quiz_question||row?.question||row||{},type=String(q.question_type||q.type||'').toLowerCase(),answers=Array.isArray(q.answers)?q.answers:[];
+  if(type==='text_only_question')return true;
+  if(type==='matching_question')return Array.isArray(answer)&&answer.length===answers.filter(item=>item.answer_match_left).length;
+  if(type==='fill_in_multiple_blanks_question'||type==='multiple_dropdowns_question'){
+    const blanks=[...new Set(answers.map(item=>String(item.blank_id??'')).filter(Boolean))];
+    return !!answer&&typeof answer==='object'&&blanks.length>0&&blanks.every(key=>Object.prototype.hasOwnProperty.call(answer,key)&&phase4HasQuizAnswer(answer[key]));
+  }
+  return phase4HasQuizAnswer(answer);
+}
 function phase4CollectQuizAnswers(questions){
   return questions.map(row=>{
     const q=row.quiz_question||row.question||row,id=Number(q.id||row.id),type=String(q.question_type||q.type||'').toLowerCase(),nodes=[...document.querySelectorAll('[data-quiz-answer="'+id+'"]')];
-    if(type==='text_only_question'||!nodes.length||!phase4QuestionSupported(row))return null;
+    if(type==='text_only_question'||!phase4QuestionSupported(row))return null;
     let answer=null;
     if(type==='multiple_answers_question'){const selected=nodes.filter(n=>n.checked).map(n=>Number(n.value));answer=selected.length?selected:null;}
     else if(['multiple_choice_question','true_false_question'].includes(type)){const chosen=nodes.find(n=>n.checked);answer=chosen?Number(chosen.value):null;}
-    else {const value=String(nodes[0].value??'');answer=value.trim()?value:null;}
+    else if(type==='matching_question'){
+      const pairs=[...document.querySelectorAll('[data-quiz-match-for="'+id+'"]')].filter(node=>node.value).map(node=>({answer_id:Number(node.dataset.quizAnswerId),match_id:Number(node.value)}));
+      answer=pairs.length?pairs:null;
+    }
+    else if(type==='fill_in_multiple_blanks_question'||type==='multiple_dropdowns_question'){
+      answer={};
+      document.querySelectorAll('[data-quiz-blank-for="'+id+'"]').forEach(node=>{
+        const key=String(node.dataset.quizBlankId||'');if(!key||!node.value.trim())return;
+        answer[key]=type==='multiple_dropdowns_question'?Number(node.value):String(node.value);
+      });
+      if(!Object.keys(answer).length)answer=null;
+    }
+    else {const value=String(nodes[0]?.value??'');answer=value.trim()?value:null;}
     return {id,answer};
   }).filter(Boolean);
 }
 function phase4UpdateQuizProgress(){
   const s=activeQuizSession;if(!s)return;
   const eligible=s.questions.filter(row=>phase4QuestionSupported(row)&&String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase()!=='text_only_question');
-  const answers=new Set(phase4CollectQuizAnswers(s.questions).filter(item=>item.answer!==null&&item.answer!==''&&(!Array.isArray(item.answer)||item.answer.length>0)).map(item=>Number(item.id)));
+  const answers=new Set(phase4CollectQuizAnswers(s.questions).filter(item=>phase4IsQuestionAnswered(s.questions.find(row=>Number((row.quiz_question||row.question||row).id||row.id)===Number(item.id)),item.answer)).map(item=>Number(item.id)));
   const count=$('#phase4QuizProgressText');if(count)count.textContent=answers.size+' of '+eligible.length+' supported questions answered';
   const bar=$('#phase4QuizProgressBar');if(bar)bar.style.width=(eligible.length?Math.round(answers.size/eligible.length*100):100)+'%';
   document.querySelectorAll('[data-quiz-jump]').forEach(button=>{const id=Number(button.dataset.questionId);const answered=answers.has(id);button.classList.toggle('is-answered',answered);button.setAttribute('aria-label','Question '+button.dataset.quizJump+' '+(answered?'answered':'not answered'));});
 }
 let activeQuizSession=null;let phase4QuizTimer=null;let phase4QuizResyncTimer=null;
-function phase4QuizSessionKey(a){const c=courseById(a.course),quizId=a.quizId||a.canvasId;return 'northstar_active_quiz_v1_'+String(c?.canvasId||'')+'_'+String(quizId||'');}
+function phase4QuizSessionKey(a){const c=courseById(a.course),quizId=a.quizId||a.canvasId,scope=String(location.pathname||'').includes('/preview/')?'preview_':'';return 'northstar_'+scope+'active_quiz_v1_'+String(c?.canvasId||'')+'_'+String(quizId||'');}
 function phase4ReadQuizSession(a){try{return JSON.parse(sessionStorage.getItem(phase4QuizSessionKey(a))||'null');}catch{return null;}}
 function phase4PersistQuizSession(a,submission,accessCode,flaggedQuestionIds=[]){if(!submission?.id||!submission?.attempt||!submission?.validation_token)return false;try{sessionStorage.setItem(phase4QuizSessionKey(a),JSON.stringify({id:Number(submission.id),attempt:Number(submission.attempt),validation_token:String(submission.validation_token),accessCode:String(accessCode||''),started_at:submission.started_at||null,flaggedQuestionIds:Array.isArray(flaggedQuestionIds)?flaggedQuestionIds.map(Number).filter(Number.isSafeInteger):[]}));return true;}catch{return false;}}
 function phase4ClearQuizSession(a){try{sessionStorage.removeItem(phase4QuizSessionKey(a));}catch{}}
@@ -621,7 +671,7 @@ async function phase4CompleteQuizAttempt(){
   const s=activeQuizSession;if(!s)return;
   if(s.questions.some(row=>!phase4QuestionSupported(row))){toast('This quiz contains question formats NORTHSTAR cannot safely edit. Continue the same attempt in Canvas before submitting.');return;}
   const answers=phase4CollectQuizAnswers(s.questions),flags=phase4CollectQuizFlags(s);
-  const unanswered=s.questions.filter(row=>phase4QuestionSupported(row)&&!['text_only_question'].includes(String((row.quiz_question||row.question||row).question_type||(row.quiz_question||row.question||row).type||'').toLowerCase())&&!answers.some(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id)&&x.answer!==null&&x.answer!==''&&(!Array.isArray(x.answer)||x.answer.length>0))).length;
+  const unanswered=s.questions.filter(row=>!phase4IsQuestionAnswered(row,answers.find(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id))?.answer)).length;
   if(phase4QuizSaveInFlight){toast('Wait for the current answer save to finish before submitting.');return;}
   const confirmation='Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'+(unanswered?'\n\n'+unanswered+' supported question(s) are unanswered. Submit anyway?':'');
   if(!confirm(confirmation))return;
