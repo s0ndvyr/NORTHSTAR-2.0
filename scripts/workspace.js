@@ -31,7 +31,19 @@ function transport(credentials,fetchImpl=root.fetch){
     bridge.searchParams.set('path',api.pathname+api.search);
     let response;try{response=await fetchImpl(bridge.href,{method:'GET',headers:{Authorization:'Bearer '+credentials.token,Accept:'application/pdf,application/octet-stream,*/*'},cache:'no-store',redirect:'error'});}
     catch{throw Error('The PDF could not be downloaded through the private Canvas bridge.');}
-    if(!response.ok)throw Error('Canvas file download failed (HTTP '+response.status+').');
+    if(!response.ok){
+      let detail={};try{detail=await response.json();}catch{}
+      const stage=detail.stage||response.headers.get('X-Northstar-Stage')||'unknown';
+      const upstreamStatus=detail.upstreamStatus||response.headers.get('X-Northstar-Upstream-Status')||response.status;
+      const code=detail.code||'CANVAS_FILE_DOWNLOAD_FAILED';
+      const requestId=detail.requestId||response.headers.get('X-Northstar-Request-Id')||'';
+      const message=stage==='metadata'
+        ? 'Canvas rejected the file metadata request (HTTP '+upstreamStatus+').'
+        : stage==='content'
+          ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
+          : 'Canvas file download failed (HTTP '+response.status+').';
+      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;throw error;
+    }
     const contentType=response.headers.get('Content-Type')||'application/octet-stream';
     const disposition=response.headers.get('Content-Disposition')||'';
     const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^;"]+)/i);
