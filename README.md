@@ -224,3 +224,16 @@ The repository includes native/ios/NorthstarSecureContentPresenter.swift, which 
 10. Complete theme, Safari, offline draft, reduced-motion, VoiceOver/keyboard, large-file and back-navigation regression before Phase 4 is declared accepted.
 
 Automated tests use controlled Canvas-shaped fixtures and a DOM harness. They cannot prove NNPS policy, Canvas permissions, provider SSO, iPad Pencil behavior, or that a real teacher receives a submitted attempt. Those are live acceptance checks, not claims of CI coverage.
+
+
+## NORTHSTAR 4.4.6 — Document Studio rebuild
+
+The 4.4.6 Document Studio adds a separate editable text-object layer above the PDF.js page. Text annotations are stored as structured objects with stable IDs, dimensions, font family/size, paragraph alignment, line spacing, colors, and sanitized rich-text markup. Users can create text directly on a page, select an object, enter editing mode, move it with its drag grip, resize it with corner handles, and use contextual typography controls.
+
+The editor preserves the source PDF. Export creates an annotated copy; it does not rewrite the PDF's original text layer or upload NORTHSTAR's local annotation model as a native Canvas DocViewer annotation session. PDF export maps the supported font families to PDF standard-font variants (Helvetica, Times Roman, and Courier) and uses safe character fallback for unsupported glyphs.
+
+The new release.json manifest is the release-history source for the app version pill and closable changelog dialog. package.json uses standard three-part npm semver and carries the exact NORTHSTAR micro-version in its northstarRelease metadata field. Every future independently reviewable app, bridge, infrastructure, or deployment-configuration change must increment the NORTHSTAR micro-version and add a manifest changelog entry. GitHub Pages deployment is gated on a successful Phase 4 test workflow.
+
+The legacy pdf_markup_v1 local annotation key remains readable. On the next open, legacy text annotations are normalized with stable IDs and saved under pdf_markup_v2; the old copy is not deleted by migration.
+
+**Acceptance status:** automated regression, actual iPad Safari / Apple Pencil hardware behavior, authenticated live Canvas attachment acceptance, and production promotion must be recorded separately. Do not treat a successful build as proof of physical hardware acceptance.

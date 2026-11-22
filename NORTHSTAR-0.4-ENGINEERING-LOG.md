@@ -1,6 +1,6 @@
 # NORTHSTAR 0.4 — Engineering Log
 
-Last updated: 2026-11-18
+Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
 Release identifier: `NORTHSTAR / .4.4.5` (development branch; not yet production)
@@ -390,3 +390,55 @@ The .4.4.5 implementation commit df91fc51dd5031a12495cb37b9aa36d43bad2d4c passed
 - [ ] Test New Quizzes, Student Annotation, media recording, external LTI and provider-specific files on the real account. Record which ones can stay in the app and which ones need their provider's supported fallback.
 - [ ] Test iPad Safari themes, keyboard/VoiceOver, reduced motion, offline draft retention, large files, browser back and return navigation.
 - [ ] Integrate and compile the Swift presenter in a real iOS host app, then test the native WKWebView path on iPadOS. This repository alone is still a PWA.
+
+
+## Phase 4.4.6.1 — Document Studio editable text-object foundation
+
+**Release:** NORTHSTAR / 4.4.6.1  
+**Package semver:** 0.4.6  
+**Date:** 2026-11-22  
+**Scope:** PDF Document Studio text editing, Apple Pencil feedback, release manifest, and in-app change history.
+
+### Implementation
+
+- Added scripts/document-editor.js, a dedicated DOM-based text-object layer above the PDF.js page. It owns structured text annotation normalization, stable identifiers, editing state, object selection, move and resize operations, contextual formatting controls, safe rich-text markup, and live pointer feedback.
+- Text creation no longer requires typing into a separate toolbar textarea. Select Text, tap for a default box or drag to size one, and type directly into the placed object.
+- Selecting an existing text object exposes Edit, Done, Duplicate and Delete controls. The object can be moved with its drag grip and resized with corner handles.
+- Added font-family, size, preset, alignment, line-height, text/background color, and bold/italic/underline/strikethrough controls. Inline formatting is stored in sanitized rich-text markup.
+- Added an Apple Pencil hover cursor when the browser reports actual pen hover events, a mouse hover fallback for desktop testing, and a text placement preview. No unsupported hardware hover is fabricated.
+- Export now reads rich-text runs and maps supported font families and styles to PDF standard-font variants. Unsupported glyphs are replaced safely rather than causing an invalid PDF export. The original PDF content remains unchanged.
+- Migrates legacy pdf_markup_v1 annotations into the pdf_markup_v2 storage key. The legacy key is retained.
+- Added release.json as the authoritative app release/changelog manifest and scripts/release.js for the closable, accessible in-app changelog dialog.
+- package.json now uses standard npm semver 0.4.6 and the dedicated northstarRelease metadata field 4.4.6.1.
+- GitHub Pages now validates release metadata rather than matching hardcoded version strings. Publishing is gated on successful Phase 4 tests for both main and the development branch.
+- The Canvas Worker source was not modified in this release. No Cloudflare deployment is implied.
+
+### Verification requirements
+
+- npm test covers the existing Canvas, assignment, bridge, browser boot, and academic workflows plus new document-editor model and release-manifest tests.
+- JavaScript syntax checks run across all scripts/*.js and canvas-bridge/*.js.
+- Wrangler dry-run validates the existing Worker bundle without deploying it.
+- Browser-driven jsdom tests do not prove physical Apple Pencil hover, iPad Safari pointer capture, or live Canvas attachment behavior. Those remain device/account acceptance checks.
+- Preview and production deployment state must be read from the actual GitHub Actions Pages deployment after the corresponding test run; a source commit alone is not a deployment.
+
+### Changelog / release governance
+
+- Every independent implementation, UI, bridge, infrastructure, or deployment-configuration change increments the final NORTHSTAR version component and receives its own release.json entry.
+- package.json.version remains valid three-component SemVer; package.json.northstarRelease must exactly equal release.json.northstarVersion.
+- Historical entries are marked as reconstructed when the repository supports a summary but not a fully verified release artifact.
+- The bridge version and deployment status are reported as unchanged when no Worker/configuration update occurred.
+
+### Phase 4.4.6.1 acceptance status at commit time
+
+- [x] New editable text-object module and annotation schema normalization.
+- [x] Direct text-object creation, selection, edit, move, resize, duplicate and delete controls.
+- [x] Contextual typography controls and rich-text HTML sanitization.
+- [x] Pencil/mouse hover cursor logic and text placement preview.
+- [x] Rich-text export path using supported PDF font variants.
+- [x] Legacy annotation key migration path.
+- [x] Release manifest and in-app changelog dialog.
+- [x] Release metadata and Pages workflow validation changes.
+- [ ] Full automated suite must pass on the release commit.
+- [ ] Latest preview deployment must be verified from GitHub Actions.
+- [ ] Physical iPad Safari and Apple Pencil acceptance.
+- [ ] Authenticated Canvas PDF attachment and permitted file-submission acceptance.

@@ -3,6 +3,7 @@ name: NORTHSTAR Phase 4 tests
 on:
   push:
     branches:
+      - main
       - northstar-0.4.4-phase-4-assignment-workspace
       - northstar-0.4.4.1-native-assignment-experience
       - northstar-0.4.4.2-quiz-continuity
