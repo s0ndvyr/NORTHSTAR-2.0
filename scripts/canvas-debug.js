@@ -377,12 +377,64 @@
     return { verdict: "Connection failed", hint: err.message ? redact(err.message) : "" };
   }
 
+  function safeHost(value) {
+    try { return new URL(String(value)).hostname.slice(0, 180); }
+    catch (err) { return ""; }
+  }
+
+  // Build a shareable, allowlisted report for Canvas attachment failures.
+  // Deliberately excludes tokens, cookies, signed URLs, response bodies and document contents.
+  function buildFileDiagnosticReport(input) {
+    input = input || {};
+    var d = input.diagnostics || {};
+    function clean(value, limit) {
+      return redact(value == null ? "" : value).replace(/[\\r\\n\\t]+/g, " ").slice(0, limit || 240);
+    }
+    function numberOrNull(value) {
+      var n = Number(value);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    }
+    var report = {
+      reportType: "NORTHSTAR Canvas attachment diagnostic",
+      generatedAt: clean(input.generatedAt || new Date().toISOString(), 48),
+      appVersion: "0.4.4.5 (3)",
+      environment: clean(input.environment || "preview", 32),
+      stage: clean(d.stage || input.stage || "unknown", 40),
+      errorCode: clean(input.code || "CANVAS_FILE_DOWNLOAD_FAILED", 80),
+      bridgeHttpStatus: numberOrNull(input.bridgeStatus),
+      canvasUpstreamHttpStatus: numberOrNull(d.upstreamStatus || input.upstreamStatus),
+      request: {
+        cloudflareRayId: clean(input.requestId || "", 80),
+        upstreamRayId: clean(d.upstreamRayId || "", 80),
+        upstreamHost: clean(d.upstreamHost || "", 180),
+        upstreamServer: clean(d.upstreamServer || "", 120),
+        upstreamContentType: clean(d.upstreamContentType || "", 120),
+        redirectCount: numberOrNull(d.redirectCount),
+        redirectHosts: Array.isArray(d.redirectHosts) ? d.redirectHosts.slice(0, 6).map(function (host) { return clean(host, 180); }) : [],
+        courseScopedMetadata: !!d.courseScoped
+      },
+      assignment: {
+        assignmentId: clean(input.assignmentId || "", 40),
+        courseId: clean(input.courseId || "", 40),
+        fileId: clean(input.fileId || "", 40),
+        fileName: clean(input.fileName || "", 180)
+      },
+      connection: {
+        canvasHost: safeHost(input.canvasHost),
+        bridgeHost: safeHost(input.bridgeHost)
+      },
+      privacy: "No access token, cookie, signed URL, file content or assignment response text is included."
+    };
+    return JSON.stringify(report, null, 2);
+  }
+
   var debug = {
     REDACTED: REDACTED,
     redact: redact,
     redactStack: redactStack,
     parseRetryAfter: parseRetryAfter,
     buildEvent: buildEvent,
+    buildFileDiagnosticReport: buildFileDiagnosticReport,
     verdictForFailure: verdictForFailure
   };
 

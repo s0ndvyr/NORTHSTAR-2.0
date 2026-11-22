@@ -108,6 +108,17 @@ assert.deepEqual([...pdf.bytes],[37,80,68,70]);
 assert.equal(pdfFetchCalls.length,2,'PDF metadata and secure binary download are both requested');
 assert(pdfFetchCalls.every(x=>x.opts.headers.Authorization==='Bearer secret-token'),'Canvas authorization is kept on the private bridge requests');
 
+const failedPdfError=await W.transport(credentials,async()=>({
+  ok:false,status:406,
+  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':null},
+  json:async()=>({error:'Canvas rejected the file request',code:'CANVAS_FILE_CONTENT_FAILED',stage:'content',upstreamStatus:406,requestId:'ray-outer-406',diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamRayId:'ray-upstream-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true}})
+})).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
+assert.equal(failedPdfError.stage,'content');
+assert.equal(failedPdfError.upstreamStatus,406);
+assert.equal(failedPdfError.requestId,'ray-outer-406');
+assert.equal(failedPdfError.diagnostics.upstreamHost,'storage.example.net');
+assert.equal(failedPdfError.bridgeStatus,406);
+
 const recoveryCalls=[];
 const recoveryFetch=async(url,opts)=>{recoveryCalls.push({url,opts});const path=new URL(url).searchParams.get('path');if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,started_at:'2026-11-18T10:00:00Z',finished_at:null,workflow_state:'untaken'}]})};if(path.includes('/quiz_submissions/77/questions'))return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:1,quiz_question:{id:9,question_type:'multiple_choice_question',answers:[{id:1,text:'A'}]}}]})};if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:90})};throw Error('Unexpected recovery path '+path);};
 const current=await W.getCurrentQuizSubmission({credentials,courseId:11,quizId:22,fetchImpl:recoveryFetch});

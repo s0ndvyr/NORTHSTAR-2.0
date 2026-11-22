@@ -115,4 +115,24 @@ const scopedFileResponse=await worker.fetch(request('/api/v1/courses/1/files/124
 assert.equal(scopedFileResponse.status,200,'course-scoped file download uses the course-scoped Canvas metadata endpoint');
 assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/1/files/124'),'scoped attachment metadata request retains course context');
 
+// A rejected binary download returns actionable, URL-free diagnostics to NORTHSTAR.
+globalThis.fetch=async(url,opts)=>{
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://storage.example.net/private/signed-file?signature=must-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(url==='https://storage.example.net/private/signed-file?signature=must-not-leak')return new Response('private upstream error body',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'upstream-ray-406'}});
+  throw Error('unexpected diagnostic URL '+url);
+};
+const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
+assert.equal(failedFile.status,406);
+const failedDetails=await failedFile.json();
+assert.equal(failedDetails.stage,'content');
+assert.equal(failedDetails.upstreamStatus,406);
+assert.equal(failedDetails.requestId,'outer-ray-406');
+assert.equal(failedDetails.diagnostics.upstreamHost,'storage.example.net');
+assert.equal(failedDetails.diagnostics.upstreamRayId,'upstream-ray-406');
+assert.equal(failedDetails.diagnostics.courseScoped,true);
+assert.equal(failedDetails.diagnostics.redirectCount,0);
+assert(!JSON.stringify(failedDetails).includes('signature='));
+assert(!JSON.stringify(failedDetails).includes('private upstream error body'));
+assert(!JSON.stringify(failedDetails).includes('test-secret'),'diagnostics never include the Canvas bearer token');
+
 console.log('PASS: validated assignment and classic quiz POSTs, dedicated quiz flag PUTs, and read-only New Quizzes; arbitrary writes and impersonation rejected');

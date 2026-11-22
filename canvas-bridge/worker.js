@@ -1,7 +1,7 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges', 'Vary':'Origin', 'Cache-Control':'no-store'};
+const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id', 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const isQuizFlagPath=path=>/^\/api\/v1\/quiz_submissions\/\d+\/questions\/\d+\/(?:flag|unflag)$/.test(path);
@@ -96,36 +96,54 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
-function fileUpstreamFailure(stage,response,requestId){
+function fileDiagnosticContext(stage,response,requestId,context){
+  const details=context||{};
+  const diagnostics={
+    stage,
+    upstreamStatus:response.status,
+    upstreamHost:details.upstreamHost||'',
+    upstreamContentType:response.headers.get('Content-Type')||'',
+    upstreamServer:response.headers.get('Server')||'',
+    upstreamRayId:response.headers.get('cf-ray')||'',
+    redirectCount:Number(details.redirectCount)||0,
+    redirectHosts:Array.isArray(details.redirectHosts)?details.redirectHosts.slice(0,6):[],
+    courseScoped:!!details.courseScoped
+  };
+  return diagnostics;
+}
+function fileUpstreamFailure(stage,response,requestId,context){
   const code=stage==='metadata'?'CANVAS_FILE_METADATA_FAILED':'CANVAS_FILE_CONTENT_FAILED';
   const status=response.status>=400&&response.status<=599?response.status:502;
-  // Log only the stage, status and opaque Cloudflare request ID. Never log tokens, URLs or file contents.
-  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',stage,upstreamStatus:response.status,requestId:requestId||null}));
-  return new Response(JSON.stringify({error:'Canvas rejected the file request',code,stage,upstreamStatus:response.status,requestId:requestId||null}),{
+  const diagnostics=fileDiagnosticContext(stage,response,requestId,context);
+  // Only safe diagnostic metadata is logged. Never log bearer tokens, signed URLs, query strings or file contents.
+  console.warn(JSON.stringify({event:'northstar_canvas_file_failure',...diagnostics,requestId:requestId||null}));
+  return new Response(JSON.stringify({error:'Canvas rejected the file request',code,stage,upstreamStatus:response.status,requestId:requestId||null,diagnostics}),{
     status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store','X-Northstar-Stage':stage,'X-Northstar-Upstream-Status':String(response.status),...(requestId?{'X-Northstar-Request-Id':requestId}:{})}
   });
 }
 async function downloadCanvasFile(fileId,courseId,authorization,userAgent,requestId){
   const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
   const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
-  if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId);
+  if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});
   let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
   const raw=metadata.url||metadata.download_url;
   if(typeof raw!=='string'||!raw)return reply('Canvas did not provide a file download URL',404);
   let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return reply('Canvas returned an invalid file URL',502);}
   if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file URL did not pass the secure download check',502);
+  const redirectHosts=[];
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
     // Forward the Canvas token only when the request is still on the exact configured Canvas origin.
     if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
     const response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});
     if(response.status>=300&&response.status<400){
+      if(redirectHosts.length<6)redirectHosts.push(current.hostname);
       const location=response.headers.get('Location');if(!location)return reply('Canvas file redirect did not include a destination',502);
       try{current=new URL(location,current);}catch{return reply('Canvas file redirect destination was invalid',502);}
       if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return reply('Canvas file redirect failed the secure download check',502);
       continue;
     }
-    if(!response.ok)return fileUpstreamFailure('content',response,requestId);
+    if(!response.ok)return fileUpstreamFailure('content',response,requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
     const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Northstar-Stage':'complete',...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
     for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
     return new Response(response.body,{status:response.status,headers:responseHeaders});

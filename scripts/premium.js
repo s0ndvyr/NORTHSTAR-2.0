@@ -1018,8 +1018,40 @@ async function phase441OpenPdf(file,a,c){
   const stage=$('#nsDocumentStage');if(!stage)return;
   $('#nsAssignmentFiles')?.querySelectorAll('[data-ns-file]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.nsFile===String(file.id)?'true':'false'));
   stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ DOCUMENT STUDIO</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Loading the Canvas document into your workspace…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
-  try{await window.NorthstarAssignmentRoom.openPdf(stage,file,{id:a.id,title:a.title,canvasCourseId:c.canvasId},getCredentials());}
-  catch(error){stage.innerHTML='<div class="ns-room-loading-error"><h3>Could not open this document here</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">Check that your private Canvas bridge has been updated and that this attachment is a supported PDF. Your assignment page and draft are still available.</p></div>';}
+  const credentials=getCredentials();
+  try{await window.NorthstarAssignmentRoom.openPdf(stage,file,{id:a.id,title:a.title,canvasCourseId:c.canvasId},credentials);}
+  catch(error){
+    const report=window.CanvasDebug?.buildFileDiagnosticReport?window.CanvasDebug.buildFileDiagnosticReport({
+      environment:String(location.pathname||'').includes('/preview/')?'preview':'production',
+      stage:error.stage||'client',
+      code:error.code||'PDF_PREVIEW_FAILED',
+      bridgeStatus:error.bridgeStatus||error.status||null,
+      upstreamStatus:error.upstreamStatus||null,
+      requestId:error.requestId||'',
+      diagnostics:error.diagnostics||{},
+      assignmentId:a.canvasId||a.id,
+      courseId:c.canvasId,
+      fileId:file.id,
+      fileName:file.name,
+      canvasHost:credentials.base,
+      bridgeHost:credentials.proxy
+    }):'NORTHSTAR Canvas attachment diagnostic\\n'+String(error.message||'PDF preview failed');
+    stage.innerHTML='<div class="ns-room-loading-error"><h3>Could not open this document here</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">The diagnostic report contains the failed stage, HTTP statuses and safe request references. It excludes Canvas credentials, signed download links and document contents.</p><div class="flex mt" style="gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary btn-sm" type="button" id="nsCopyFileDiagnostic">Copy diagnostic report</button><span class="ns-room-help" id="nsCopyFileDiagnosticStatus" role="status" aria-live="polite"></span></div><p class="ns-room-help">Your assignment instructions and saved draft remain available.</p></div>';
+    const copyButton=$('#nsCopyFileDiagnostic'),copyStatus=$('#nsCopyFileDiagnosticStatus');
+    if(copyButton)copyButton.onclick=async()=>{
+      if(copyStatus)copyStatus.textContent='Preparing report…';
+      try{
+        if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(report);
+        else{
+          const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
+          const copied=document.execCommand('copy');area.remove();if(!copied)throw Error('Clipboard permission unavailable');
+        }
+        if(copyStatus)copyStatus.textContent='Copied. Paste it into your NORTHSTAR support conversation.';
+      }catch{
+        if(copyStatus)copyStatus.textContent='Copy was blocked by Safari. Please try again or use the browser share/copy controls.';
+      }
+    };
+  }
 }
 async function openWorkspace(id,options){
   phase441ReleaseResourceUrl();

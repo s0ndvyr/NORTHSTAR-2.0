@@ -42,7 +42,7 @@ function transport(credentials,fetchImpl=root.fetch){
         : stage==='content'
           ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
           : 'Canvas file download failed (HTTP '+response.status+').';
-      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;throw error;
+      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
     }
     const contentType=response.headers.get('Content-Type')||'application/octet-stream';
     const disposition=response.headers.get('Content-Disposition')||'';
