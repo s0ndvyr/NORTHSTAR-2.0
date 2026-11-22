@@ -84,6 +84,25 @@ async function uploadAssignmentFile({credentials,courseId,assignmentId,file,fetc
   if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the file upload (HTTP '+response.status+').');
   return uploaded;
 }
+async function uploadQuizSubmissionFile({credentials,courseId,quizId,file,fetchImpl=root.fetch}) {
+  if(!file||typeof file.size!=='number'||!file.size||file.size>25000000||typeof file.name!=='string'||!file.name)throw Error('Choose a non-empty quiz attachment under 25 MB.');
+  const api=transport(credentials,fetchImpl),c=id(courseId),q=id(quizId);
+  const init=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/self/files',{name:file.name});
+  const attachment=Array.isArray(init.attachments)?init.attachments[0]:init;
+  if(!attachment?.upload_url||!attachment.upload_params||typeof attachment.upload_params!=='object')throw Error('Canvas did not return a valid quiz attachment upload request.');
+  let target;try{target=new URL(attachment.upload_url);}catch{throw Error('Canvas returned an invalid quiz upload destination.');}
+  if(target.protocol!=='https:'||target.username||target.password)throw Error('Canvas quiz upload destination must be secure HTTPS.');
+  const FormDataCtor=root.FormData||globalThis.FormData;
+  if(!FormDataCtor)throw Error('This browser does not support secure quiz file uploads.');
+  const form=new FormDataCtor();
+  for(const [key,value] of Object.entries(attachment.upload_params))form.append(key,String(value));
+  form.append('file',file,file.name);
+  let response;try{response=await fetchImpl(target.href,{method:'POST',body:form,redirect:'follow'});}
+  catch{throw Error('The quiz file upload could not be confirmed. Check Canvas before selecting and uploading it again.');}
+  let uploaded;try{uploaded=await response.json();}catch{throw Error('Canvas quiz file upload response was unreadable. Check Canvas before retrying.');}
+  if(!response.ok||!uploaded?.id)throw Error('Canvas did not confirm the quiz file upload (HTTP '+response.status+').');
+  return {id:Number(uploaded.id),name:String(uploaded.display_name||uploaded.filename||file.name),size:file.size,type:file.type||'application/octet-stream'};
+}
 async function uploadAssignmentFiles({credentials,courseId,assignmentId,files,onProgress,fetchImpl=root.fetch}){
   const rows=Array.from(files||[]);
   if(!rows.length)throw Error('Choose at least one file.');
@@ -109,7 +128,7 @@ async function uploadAssignmentFiles({credentials,courseId,assignmentId,files,on
 function questionType(row){const q=row?.quiz_question||row?.question||row||{};return String(q.question_type||q.type||'').toLowerCase();}
 function questionSupported(row){
   const q=row?.quiz_question||row?.question||row||{},type=questionType(row),answers=Array.isArray(q.answers)?q.answers:[];
-  if(type==='text_only_question')return true;
+  if(type==='text_only_question'||type==='file_upload_question')return true;
   if(['multiple_choice_question','true_false_question','multiple_answers_question'].includes(type))return answers.some(a=>Number.isSafeInteger(Number(a?.id))&&Number(a.id)>0);
   if(['essay_question','short_answer_question','numerical_question','calculated_question'].includes(type))return true;
   if(type==='matching_question')return answers.length>=2&&answers.some(a=>a?.answer_match_left)&&answers.some(a=>a?.answer_match_right)&&answers.every(a=>Number.isSafeInteger(Number(a?.id))&&Number(a.id)>0);
@@ -169,7 +188,7 @@ async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
   const download=await api.getBinary('/api/v1/files/'+f+'/download');
   return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
 }
-const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
+const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
