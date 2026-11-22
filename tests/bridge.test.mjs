@@ -55,6 +55,16 @@ assert.equal((await worker.fetch(post({submission:{submission_type:'online_uploa
 assert.equal((await worker.fetch(post({submission:{submission_type:'online_upload',file_ids:[]}}))).status,400);
 assert.equal((await worker.fetch(post({name:'too-big.pdf',size:26000000},uploadInitPath))).status,400);
 
+const quizUploadPath='/api/v1/courses/1/quizzes/2/submissions/self/files';
+const upstreamBeforeQuizUpload=upstream.length;
+assert.equal((await worker.fetch(post({name:'quiz-answer.pdf'},quizUploadPath))).status,200,'official Classic Quiz file upload initialization is allowlisted');
+assert.equal(upstream.at(-1).opts.method,'POST');
+assert.equal(upstream.at(-1).url,'https://school.instructure.com'+quizUploadPath);
+assert.deepEqual(JSON.parse(upstream.at(-1).opts.body),{name:'quiz-answer.pdf'});
+assert.equal(upstream.length,upstreamBeforeQuizUpload+1);
+assert.equal((await worker.fetch(post({name:' '},quizUploadPath))).status,400,'empty quiz attachment names are rejected');
+assert.equal((await worker.fetch(post({name:'quiz.pdf',url:'https://evil.example'},quizUploadPath))).status,400,'unrecognized quiz upload fields are rejected');
+
 for(const p of ['/api/v1/courses/1/quizzes/2/submissions/8/time','/api/v1/courses/1/quizzes','/api/v1/courses/1/quizzes/2','/api/v1/courses/1/quizzes/2/submission','/api/v1/courses/1/quizzes/2/questions','/api/v1/quiz_submissions/8/questions'])assert.equal((await worker.fetch(request(p))).status,200);
 assert.equal((await worker.fetch(post({access_code:'1234'},'/api/v1/courses/1/quizzes/2/submissions'))).status,200);
 assert.equal((await worker.fetch(post({attempt:1,validation_token:'v',quiz_questions:[{id:'9',answer:3}]},'/api/v1/quiz_submissions/8/questions'))).status,200);
