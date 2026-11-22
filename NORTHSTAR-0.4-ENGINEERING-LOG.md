@@ -572,3 +572,26 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - This path submits a flattened annotated PDF as an ordinary `online_upload` attachment when Canvas allows file uploads.
 - It does not claim to write NORTHSTAR's custom ink/text layer into Canvas DocViewer's native `student_annotation` payload.
 - Cloudflare Worker deployment is separate from GitHub Pages. The bridge deployment workflow must report success before live Canvas testing.
+
+
+## Phase 4.4.7.2 — Canvas upload finalization and diagnostic test alignment
+
+**Objective:** Make the edited-PDF-to-Canvas path complete Canvas's documented upload protocol before assignment submission.
+
+**Implementation:**
+- Assignment and Classic Quiz file uploads travel from the browser to the authenticated private Worker as multipart data.
+- The Worker initializes the correct Canvas submission upload endpoint using the documented `self/files` route.
+- The Worker transfers the signed `upload_params` and file to Canvas's opaque HTTPS storage URL without forwarding the Canvas bearer token.
+- The Worker inspects the storage response's 3xx or 201 `Location`, validates that finalization returns to the configured Canvas origin and expected `/api/v1/files/:id/create_success` route, then performs the required authenticated GET.
+- The Worker returns a file ID only after Canvas's finalization response contains a valid ID.
+- Browser upload helpers no longer parse signed-storage responses or follow storage redirects themselves.
+- Added mocked Worker coverage for 302 and 201 finalization, token isolation, unsafe/missing Location rejection, and app-side multi-file upload → file-ID payload → assignment submission.
+- The first .7.1 test run exposed stale Worker-version assertions. .7.2 updates those fixtures and makes attachment diagnostics read the app version from the release manifest.
+
+**Release:** `4.4.7.2 / 0.4.16`  
+**Status:** Awaiting CI and deployment. Live Canvas tenant acceptance remains mandatory; CI mocks do not prove the school's Canvas storage configuration.
+
+**Known boundaries:**
+- This path submits a flattened annotated PDF as an ordinary `online_upload` attachment when Canvas allows file uploads.
+- It does not claim to write NORTHSTAR's custom ink/text layer into Canvas DocViewer's native `student_annotation` payload.
+- Cloudflare Worker deployment is separate from GitHub Pages. The bridge deployment workflow must report success before live Canvas testing.

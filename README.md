@@ -254,3 +254,8 @@ GitHub Pages publication now checks the current heads of both `main` and the pre
 ### Canvas assignment file upload finalization — Phase 4.4.7.1
 
 NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker performs Canvas upload initialization, sends the signed multipart upload without a Canvas bearer token, then completes Canvas's authenticated `create_success` GET before returning the final file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow; it is not native DocViewer annotation synchronization.
+
+
+### Canvas assignment file upload finalization — Phase 4.4.7.2
+
+NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker initializes the Canvas upload, sends the signed multipart request without a Canvas bearer token, then completes the authenticated Canvas `create_success` GET before returning a file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow, not native DocViewer annotation synchronization. Attachment diagnostic reports now read the app version from the release manifest.
