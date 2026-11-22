@@ -98,6 +98,14 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
+// Canvas file delivery redirects through Instructure-owned storage domains.
+ // Keep the bearer token on those verified domains because Canvas now requires
+ // authenticated file downloads; never forward it to arbitrary third-party hosts.
+const TRUSTED_CANVAS_FILE_HOST_SUFFIXES=['.instructure.com','.canvas-user-content.com','.inscloudgate.net'];
+function isTrustedCanvasFileHost(hostname){
+  const host=String(hostname||'').toLowerCase();
+  return host===new URL(CANVAS_ORIGIN).hostname||TRUSTED_CANVAS_FILE_HOST_SUFFIXES.some(suffix=>host.endsWith(suffix));
+}
 function fileDiagnosticContext(stage,response,requestId,context){
   const details=context||{};
   const headers=response?.headers;
@@ -148,8 +156,9 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
   const redirectHosts=[];
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
-    // Forward the Canvas token only when the request is still on the exact configured Canvas origin.
-    if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
+    // Canvas's authenticated file flow requires the bearer token on its own
+    // storage hosts after redirects. Restrict forwarding to verified Instructure domains.
+    if(isTrustedCanvasFileHost(current.hostname))headers.Authorization=authorization;
     let response;
     try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}
     catch{return fileTransportFailure('content',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
