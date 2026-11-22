@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.7",
-  "packageVersion": "0.4.12",
+  "northstarVersion": "4.4.6.8",
+  "packageVersion": "0.4.13",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -16,6 +16,21 @@
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.6.8",
+      "date": "2026-11-22",
+      "title": "Release deployment-history assertion correction",
+      "description": "Corrects release-history regression assertions to distinguish the current pending .8 candidate from the previously deployed .6 release. The test now validates .8 pending status and .6 deployment evidence/commit provenance independently.",
+      "category": "Bug fixes",
+      "areas": [
+        "Release manifest tests",
+        "Changelog provenance",
+        "Deployment history"
+      ],
+      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.6.7",
       "date": "2026-11-22",
       "title": "Pages freshness gate event handling",
@@ -26,7 +41,7 @@
         "Freshness gate",
         "Workflow event handling"
       ],
-      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "status": "Phase 4 test failed on 2026-11-22: the .7 regression test mistakenly asserted that the pending .7 candidate had the previous .6 release's deployment run ID. Superseded by 4.4.6.8.",
       "historical": false,
       "commits": []
     },

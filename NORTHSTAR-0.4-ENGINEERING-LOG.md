@@ -527,3 +527,10 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - After both current branch heads passed Phase 4 tests, the freshness job correctly approved publication, but a redundant `workflow_run.event == 'push'` condition skipped the build when a different successful workflow completion triggered the Pages workflow.
 - Removed the redundant event-type condition. The freshness job remains authoritative: it requires successful Phase 4 push runs for the exact current `main` and preview SHAs. Build and deploy still require that gate and a successful artifact build.
 - Fresh release-specific Phase 4 tests and Pages deployment are pending.
+
+
+## Phase 4.4.6.8 — Release-history test correction
+
+- The .7 release-history assertion accidentally looked for the .6 Pages deployment ID on the new pending .7 candidate after a broad version update.
+- Corrected the regression test to assert .8 remains pending and separately validate .6's deployed status and main commit provenance.
+- Release-specific Phase 4 tests and Pages deployment remain pending.

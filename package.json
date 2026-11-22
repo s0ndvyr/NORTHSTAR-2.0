@@ -1,6 +1,6 @@
 {
   "name": "northstar-academic-command-center",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "private": true,
   "description": "NORTHSTAR personal academic command center",
   "scripts": {
@@ -12,5 +12,5 @@
     "jsdom": "^26.1.0",
     "wrangler": "4.165.0"
   },
-  "northstarRelease": "4.4.6.7"
+  "northstarRelease": "4.4.6.8"
 }
