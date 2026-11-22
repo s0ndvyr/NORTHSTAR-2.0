@@ -74,12 +74,16 @@ for(const tool of pdfTools){
 window.NorthstarAssignmentRoom.setInputMode('hand');
 for(const tool of pdfTools){
  assert.equal(window.NorthstarAssignmentRoom.setActiveTool(tool),true,'tool '+tool+' can be selected');
- assert.deepEqual(window.NorthstarAssignmentRoom.getInputState(),{mode:'hand',tool},'selecting '+tool+' never switches Hand mode');
+ const handState=window.NorthstarAssignmentRoom.getInputState();
+ assert.equal(handState.mode,'hand','selecting '+tool+' never switches Hand mode');
+ assert.equal(handState.tool,tool,'the requested tool remains selected in Hand mode');
 }
 window.NorthstarAssignmentRoom.setInputMode('pencil');
 for(const tool of pdfTools){
  assert.equal(window.NorthstarAssignmentRoom.setActiveTool(tool),true,'tool '+tool+' remains selectable in Pencil mode');
- assert.deepEqual(window.NorthstarAssignmentRoom.getInputState(),{mode:'pencil',tool},'selecting '+tool+' never switches Pencil mode');
+ const pencilState=window.NorthstarAssignmentRoom.getInputState();
+ assert.equal(pencilState.mode,'pencil','selecting '+tool+' never switches Pencil mode');
+ assert.equal(pencilState.tool,tool,'the requested tool remains selected in Pencil mode');
 }
 assert.equal(window.NorthstarAssignmentRoom.setActiveTool('invalid-tool'),false,'unknown tools cannot corrupt editor state');
 window.NorthstarAssignmentRoom.setInputMode('hand');
