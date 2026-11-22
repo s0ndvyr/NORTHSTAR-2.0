@@ -2,6 +2,13 @@
 (function(global){
 'use strict';
 function payload(type,value){
+  if(type==='online_upload'){
+    const candidates=Array.isArray(value)?value:[value];
+    const fileIds=[...new Set(candidates.map(item=>Number(item)).filter(item=>Number.isSafeInteger(item)&&item>0))];
+    if(!fileIds.length||fileIds.length!==candidates.length)throw Error('Upload every selected file to Canvas before submitting.');
+    if(fileIds.length>10)throw Error('A submission can contain at most 10 files in NORTHSTAR.');
+    return {submission:{submission_type:type,file_ids:fileIds}};
+  }
   value=String(value||'').trim();
   if(!value) throw Error('Enter your work before submitting.');
   if(type==='online_text_entry') return {submission:{submission_type:type,body:'<p>'+value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])).replace(/\n/g,'<br>')+'</p>'}};
@@ -9,13 +16,6 @@ function payload(type,value){
     let url;try{url=new URL(value);}catch{throw Error('Enter a valid HTTP or HTTPS URL.');}
     if(!['http:','https:'].includes(url.protocol)) throw Error('Enter a valid HTTP or HTTPS URL.');
     return {submission:{submission_type:type,url:url.href}};
-  }
-  if(type==='online_upload'){
-    const candidates=Array.isArray(value)?value:[value];
-    const fileIds=[...new Set(candidates.map(item=>Number(item)).filter(item=>Number.isSafeInteger(item)&&item>0))];
-    if(!fileIds.length||fileIds.length!==candidates.length)throw Error('Upload every selected file to Canvas before submitting.');
-    if(fileIds.length>10)throw Error('A submission can contain at most 10 files in NORTHSTAR.');
-    return {submission:{submission_type:type,file_ids:fileIds}};
   }
   throw Error('This submission type must be completed in Canvas.');
 }
