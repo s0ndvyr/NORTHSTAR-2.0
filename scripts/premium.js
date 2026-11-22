@@ -1030,6 +1030,7 @@ async function phase441OpenPdf(file,a,c){
       workerVersion:error.workerVersion||'',
       requestId:error.requestId||'',
       diagnostics:error.diagnostics||{},
+      browserDelivery:error.browserDelivery||null,
       assignmentId:a.canvasId||a.id,
       courseId:c.canvasId,
       fileId:file.id,
