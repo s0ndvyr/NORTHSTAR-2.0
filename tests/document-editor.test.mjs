@@ -8,7 +8,8 @@ const dom=new JSDOM(`<!doctype html><body>
     <button data-doc-cmd="bold"></button><button data-doc-cmd="italic"></button><button data-doc-cmd="underline"></button><button data-doc-cmd="strike"></button>
     <input data-doc-color type="color"><input data-doc-background type="color">
     <select data-doc-align><option value="left">Left</option><option value="center">Center</option></select>
-    <input data-doc-line-height type="number" value="1.35">
+    <input data-doc-line-height type="number" value="1.35"><input data-doc-paragraph-spacing type="number" value="0">
+    <button data-doc-list="ul">Bullets</button><button data-doc-list="ol">Numbering</button>
     <button data-doc-edit>Edit</button><button data-doc-done>Done</button>
     <button data-doc-duplicate>Duplicate</button><button data-doc-delete>Delete</button>
   </div></div><div id="page" class="ns-pdf-page"></div>
@@ -17,6 +18,10 @@ globalThis.window=dom.window;
 window.crypto.randomUUID=()=> 'document-test-'+(++sequence);
 const host=window.document.getElementById('host'),page=window.document.getElementById('page');
 page.getBoundingClientRect=()=>({left:0,top:0,right:1000,bottom:1400,width:1000,height:1400});
+const pageListeners=new Map();
+const nativePageAdd=page.addEventListener.bind(page),nativePageRemove=page.removeEventListener.bind(page);
+page.addEventListener=(type,handler,options)=>{if(type==='pointermove'||type==='pointerleave')pageListeners.set(type,handler);return nativePageAdd(type,handler,options);};
+page.removeEventListener=(type,handler,options)=>{if(pageListeners.get(type)===handler)pageListeners.delete(type);return nativePageRemove(type,handler,options);};
 await import('../scripts/document-editor.js');
 const api=window.NorthstarDocumentEditor;
 assert.ok(api,'Document Editor module registers itself');
@@ -67,6 +72,9 @@ const editor=api.mount({
  beforeChange:()=>histories++,onChange:()=>saves++,getBrushSize:()=>9
 });
 assert.ok(editor.layer,'editor mounts a live annotation layer');
+assert.equal(pageListeners.size,2,'editor installs only its two page-level hover listeners');
+assert.equal(typeof editor.pageMoveHandler,'function','page hover handler is tracked for teardown');
+assert.equal(typeof editor.pageLeaveHandler,'function','page leave handler is tracked for teardown');
 editor.setTool('select');
 const created=editor.createTextBox({x:.1,y:.2,width:.4,height:.12},{fontFamily:'serif',fontSize:18});
 assert.ok(created.id);
@@ -84,11 +92,33 @@ editor.beginEdit(created.id);
 contentNode=editor.nodes.get(created.id).querySelector('.ns-doc-text-content');
 const range=window.document.createRange();range.selectNodeContents(contentNode);
 window.getSelection().removeAllRanges();window.getSelection().addRange(range);
+const sizeControl=host.querySelector('[data-doc-size]');
+const sizePointerDown=new window.Event('pointerdown',{bubbles:true,cancelable:true});
+sizeControl.dispatchEvent(sizePointerDown);
+assert.equal(sizePointerDown.defaultPrevented,false,'formatting inputs keep their native pointer interaction');
+assert.ok(editor.range,'pointering a formatting control snapshots the active text selection');
+const familyMouseDown=new window.MouseEvent('mousedown',{bubbles:true,cancelable:true});
+host.querySelector('[data-doc-family]').dispatchEvent(familyMouseDown);
+assert.equal(familyMouseDown.defaultPrevented,false,'font-family dropdown mousedown is not cancelled');
+const boldMouseDown=new window.MouseEvent('mousedown',{bubbles:true,cancelable:true});
+host.querySelector('[data-doc-cmd="bold"]').dispatchEvent(boldMouseDown);
+assert.equal(boldMouseDown.defaultPrevented,true,'emphasis buttons preserve the document selection');
+sizeControl.focus();
+assert.equal(editor.editing,created.id,'focusing a contextual formatting control does not end direct text editing');
 editor.applyStyle('fontSize',24);
 assert.ok(created.html.includes('24px'),'selected text receives font-size styling');
 editor.toggleFormat('bold');
 assert.ok(created.bold||created.html.includes('font-weight'),'bold formatting is retained');
 editor.endEdit();
+editor.beginEdit(created.id);
+sizeControl.focus();
+assert.equal(editor.editing,created.id,'moving focus into the formatting toolbar keeps the text editor active');
+sizeControl.dispatchEvent(new window.FocusEvent('focusout',{bubbles:true,relatedTarget:page}));
+assert.equal(editor.editing,null,'leaving the formatting toolbar commits the text-edit session');
+editor.applyStyle('paragraphSpacing',8);
+assert.equal(created.paragraphSpacing,8,'paragraph spacing is saved on the selected text object');
+editor.applyList('ul');
+assert.ok(created.html.includes('<ul>')&&created.html.includes('<li>'),'list formatting creates semantic list markup');
 
 const object=editor.nodes.get(created.id);
 object.setPointerCapture=()=>{};
@@ -110,7 +140,13 @@ editor.duplicate();
 assert.equal(texts.length,2,'selected text can be duplicated');
 editor.remove();
 assert.equal(texts.length,1,'selected text can be deleted');
+object.classList.add('is-hover-target');
+editor.hideHover();
+assert.equal(object.classList.contains('is-hover-target'),false,'leaving the hover region clears object hover styling');
 editor.unmount();
 assert.equal(page.querySelector('.ns-pdf-text-layer'),null,'editor unmount removes its overlay safely');
+assert.equal(pageListeners.size,0,'editor unmount removes page-level hover listeners');
+assert.equal(editor.pageMoveHandler,null,'page move handler references are released after unmount');
+assert.equal(editor.pageLeaveHandler,null,'page leave handler references are released after unmount');
 
 console.log('PASS: Document Studio migration, rich text, direct editing, persistence callbacks, move, resize, duplicate and delete');

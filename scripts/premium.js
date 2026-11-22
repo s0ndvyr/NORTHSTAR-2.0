@@ -1649,7 +1649,12 @@ if(existing) syncCanvas();
 /* ================= NORTHSTAR 0.4.3 · PHASE 3 ACADEMIC INTELLIGENCE =================
    StudentVUE grade imports remain clearly labeled as imports until an authorized
    district integration is supplied. The dashboard scope is always the active period. */
-const NORTHSTAR_RELEASE = 'NORTHSTAR / .4.4.5';
+function northstarReleaseLabel(){
+  const manifestVersion=window.NorthstarRelease?.manifest?.northstarVersion;
+  const visibleVersion=(document.getElementById('versionPill')?.textContent||'').match(/\d+\.\d+\.\d+\.\d+/)?.[0];
+  const version=manifestVersion||visibleVersion||'unknown';
+  return 'NORTHSTAR / '+version;
+}
 const PHASE3_IGNORES_KEY = 'northstar_ignored_courses_v1';
 let phase3IgnoredCourses = new Set(store.get(PHASE3_IGNORES_KEY, []));
 let phase3StudentVue = null;
@@ -1945,7 +1950,7 @@ renderDashboard=function(){
   phase3OriginalRenderDashboard();
   dynamicOverview();
   renderMomentum();
-  const version=$('#versionPill');if(version)version.textContent=NORTHSTAR_RELEASE;
+  // scripts/release.js owns the clickable version pill; never overwrite its manifest-driven markup here.
 };
 const phase3OriginalRenderWhatIf=renderWhatIf;
 renderWhatIf=function(){
@@ -2019,7 +2024,7 @@ dynamicOverview=function(){
   if(scoped.length&&typeof renderGauge==='function')renderGauge(completed,scoped.length-completed);
 };
 const periodCard=$('#view-dashboard .section-title');
-$('#view-settings .head-actions .pill')?.replaceChildren(document.createTextNode(NORTHSTAR_RELEASE));
+$('#view-settings .head-actions .pill')?.replaceChildren(document.createTextNode(northstarReleaseLabel()));
 const periodSelect=$('#fPeriod');
 if(periodSelect)periodSelect.value=phase3PeriodSelection||'current';
 

@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / .4.4.5` (development branch; not yet production)
-Package version: `0.4.4.5`
+Release identifier: `NORTHSTAR / 4.4.6.3`
+Package version: `0.4.8`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -442,3 +442,28 @@ The .4.4.5 implementation commit df91fc51dd5031a12495cb37b9aa36d43bad2d4c passed
 - [ ] Latest preview deployment must be verified from GitHub Actions.
 - [ ] Physical iPad Safari and Apple Pencil acceptance.
 - [ ] Authenticated Canvas PDF attachment and permitted file-submission acceptance.
+
+
+## Phase 4.4.6.3 — Manifest-driven release identity
+
+**Release:** NORTHSTAR / 4.4.6.3  
+**Package semver:** 0.4.8  
+**Date:** 2026-11-22
+
+### Changes
+
+- Removed the legacy `NORTHSTAR / .4.4.5` constant from `scripts/premium.js`.
+- Dashboard refresh no longer rewrites the version pill, which is owned by `scripts/release.js` and its authoritative `release.json` manifest.
+- The Settings version display reads the active release from `window.NorthstarRelease.manifest`.
+- Added release regression assertions that reject the old hardcoded version writer and require the dynamic manifest read.
+- Updated the boot test to assert the visible 4.4.6.3 label after application initialization.
+
+### Why .4.6.3 exists
+
+The .4.6.2 feature and interaction changes were present in the preview artifact, but the exact .2 Phase 4 run failed its browser boot assertion because the dashboard's legacy version constant rewrote the version pill after the release module initialized. The .4.6.3 release corrects the competing writer and reruns the entire suite before promotion. The .4.6.2 changes remain included in this codebase.
+
+### Verification boundaries
+
+- The .4.6.3 release commit must pass its own full Phase 4 tests and its preview deployment before merge.
+- No Canvas Worker source or Cloudflare private bridge deployment is part of this release.
+- Physical iPad Safari / Apple Pencil and authenticated live Canvas checks remain manual acceptance items.

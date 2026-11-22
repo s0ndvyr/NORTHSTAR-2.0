@@ -489,13 +489,13 @@ function richTextRuns(note){
    if(key==='color'&&/^#[0-9a-f]{6}$/i.test(value))style.color=value;
    if(key==='background-color'&&/^#[0-9a-f]{6}$/i.test(value))style.backgroundColor=value;
   });
+  if(tag==='BR'){push('\n',style);return;}
+  const block=['P','DIV','LI'].includes(tag),before=block&&runs.length&& !runs[runs.length-1].text.endsWith('\n');
+  if(before)push('\n',style);
   if(tag==='LI'){
    const parent=node.parentElement,items=parent?Array.from(parent.children).filter(item=>item.tagName==='LI'):[],index=items.indexOf(node)+1;
    push(parent?.tagName==='OL'?(index+'. '):'• ',style);
   }
-  if(tag==='BR'){push('\n',style);return;}
-  const block=['P','DIV','LI'].includes(tag),before=block&&runs.length&& !runs[runs.length-1].text.endsWith('\n');
-  if(before)push('\n',style);
   Array.from(node.childNodes).forEach(child=>walk(child,style));
   if(block&&runs.length&&!runs[runs.length-1].text.endsWith('\n'))push('\n',style);
  }
@@ -547,38 +547,43 @@ async function exportAnnotatedPdf(){
     if(!fontCache.has(key))fontCache.set(key,await pdf.embedFont(standard[key]||standard.Helvetica));
     return fontCache.get(key);
    };
-   const runs=richTextRuns(note),lines=[{tokens:[],width:0,maxSize:12}];
+   const runs=richTextRuns(note),lines=[{tokens:[],width:0,maxSize:12,paragraphEnd:false}];
    const scaleX=width/viewport.width,scaleY=height/viewport.height,maxWidth=Math.max(8,bw-10*scaleX);
    for(const run of runs){
     const style=run.style||{},font=await getFont(style),size=Math.max(6,Math.min(96,Number(style.fontSize)||Number(note.fontSize)||14))*scaleY;
     const tokens=String(run.text||'').replace(/\r\n/g,'\n').split(/(\n|\s+)/);
     for(const token of tokens){
      if(!token)continue;
-     if(token==='\n'){lines.push({tokens:[],width:0,maxSize:12});continue;}
+     if(token==='\n'){lines[lines.length-1].paragraphEnd=true;lines.push({tokens:[],width:0,maxSize:12,paragraphEnd:false});continue;}
      const tokenWidth=font.widthOfTextAtSize(token,size);
      let line=lines[lines.length-1];
      if(line.tokens.length&&line.width+tokenWidth>maxWidth&&!/^\s+$/.test(token)){
-      lines.push({tokens:[],width:0,maxSize:12});line=lines[lines.length-1];
+      lines.push({tokens:[],width:0,maxSize:12,paragraphEnd:false});line=lines[lines.length-1];
      }
      if(/^\s+$/.test(token)&&!line.tokens.length)continue;
      line.tokens.push({text:token,style,font,size,width:tokenWidth});line.width+=tokenWidth;line.maxSize=Math.max(line.maxSize,size);
     }
    }
+   if(lines.length)lines[lines.length-1].paragraphEnd=true;
    const maxLines=Math.max(1,Math.floor(Math.max(1,bh-8)/(Math.max(6,Number(note.fontSize)||14)*scaleY*(Number(note.lineHeight)||1.35))));
    lines.slice(0,maxLines).forEach((line,lineIndex)=>{
-    const alignment=note.align||'left',offset=alignment==='center'?Math.max(0,(bw-10*scaleX-line.width)/2):alignment==='right'?Math.max(0,bw-10*scaleX-line.width):0;
+    const alignment=note.align||'left',availableWidth=Math.max(8,bw-10*scaleX),spaceCount=line.tokens.filter(token=>/^\\s+$/.test(token.text)).length;
+    const justifyGap=alignment==='justify'&&!line.paragraphEnd&&spaceCount?Math.max(0,availableWidth-line.width)/spaceCount:0;
+    const offset=alignment==='center'?Math.max(0,(availableWidth-line.width)/2):alignment==='right'?Math.max(0,availableWidth-line.width):0;
     let cursorPx=note.x*viewport.width+5+offset/Math.max(.0001,scaleX);
-    const baselinePx=note.y*viewport.height+6+(lineIndex+1)*Math.max(6,(line.maxSize/Math.max(.0001,scaleY)))*(Number(note.lineHeight)||1.35);
+    const completedParagraphs=lines.slice(0,lineIndex).filter(item=>item.paragraphEnd).length;
+    const baselinePx=note.y*viewport.height+6+(lineIndex+1)*Math.max(6,(line.maxSize/Math.max(.0001,scaleY)))*(Number(note.lineHeight)||1.35)+completedParagraphs*(Number(note.paragraphSpacing)||0);
     line.tokens.forEach(token=>{
      const [tx,ty]=toPdf(cursorPx,baselinePx),color=hexColor(token.style.color||note.color||'#172033');
      if(token.style.backgroundColor){const bg=hexColor(token.style.backgroundColor);page.drawRectangle({x:tx,y:ty-2,width:token.width,height:token.size,color:bg,opacity:.8});}
-     const safe=token.text.replace(/[^\x20-\xFF]/g,'?');
+     const safe=token.text.replace(/[^\x20-\xFF]/g,char=>({'•':'•','–':'–','—':'—','’':'’','‘':'‘','“':'“','”':'”','…':'…'}[char]||'?'));
      page.drawText(safe,{x:tx,y:ty,size:token.size,font:token.font,color});
      if(token.style.underline||token.style.strike){
       const lineY=ty+(token.style.underline?-1:token.size*.32);
       page.drawLine({start:{x:tx,y:lineY},end:{x:tx+token.width,y:lineY},thickness:Math.max(.35,token.size*.035),color});
      }
      cursorPx+=token.width/Math.max(.0001,scaleX);
+     if(alignment==='justify'&&!line.paragraphEnd&&/^\\s+$/.test(token.text))cursorPx+=justifyGap/Math.max(.0001,scaleX);
     });
    });
   }

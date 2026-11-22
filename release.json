@@ -1,20 +1,60 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.1",
-  "packageVersion": "0.4.6",
+  "northstarVersion": "4.4.6.3",
+  "packageVersion": "0.4.8",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
     "version": "1.1",
-    "status": "unchanged in 4.4.6.1; no Worker source or Cloudflare deployment was performed"
+    "status": "unchanged in 4.4.6.1, 4.4.6.2 and 4.4.6.3; no Worker source or private Cloudflare deployment"
   },
   "deployment": {
-    "preview": "pending automated Pages deployment",
-    "production": "pending promotion to main"
+    "preview": "Published by CI-gated GitHub Pages after the release commit's own successful Phase 4 test run; use the release-specific Actions run for verification.",
+    "production": "Published from main after its own successful Phase 4 test run; use the release-specific Pages deployment run for verification."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.6.3",
+      "date": "2026-11-22",
+      "title": "Manifest-driven version identity",
+      "description": "Removes the legacy hardcoded .4.4.5 version constant from the dashboard renderer. The clickable version pill remains owned by the release module, settings read the current NORTHSTAR version from the release manifest, and the browser boot test verifies the visible version after dashboard initialization.",
+      "category": "Bug fixes",
+      "areas": [
+        "Release manifest",
+        "Dashboard rendering",
+        "Version pill",
+        "Settings",
+        "Browser boot regression"
+      ],
+      "status": "Awaiting .3 release-specific test and deployment verification.",
+      "historical": false,
+      "commits": []
+    },
+    {
+      "version": "4.4.6.2",
+      "date": "2026-11-22",
+      "title": "Document Studio — interaction lifecycle and faithful text export",
+      "description": "Closes editor page-level hover listeners on unmount, preserves touch selection while using contextual text formatting, clears hover targets correctly, and improves PDF export for bulleted/numbered lists, paragraph spacing, justified text, and supported punctuation glyphs. Adds regression coverage for teardown and list conversion.",
+      "category": "PDF rendering/export",
+      "areas": [
+        "Editor lifecycle cleanup",
+        "iPad text-selection reliability",
+        "Rich-text list export",
+        "Justified alignment",
+        "Paragraph spacing",
+        "Regression coverage"
+      ],
+      "status": "Preview artifact was published by Pages workflow run 45067529386, but the .2-specific Phase 4 suite failed the boot version-label assertion. The .2 editor/export changes are included in 4.4.6.3 and must pass its own release gate before main promotion.",
+      "historical": false,
+      "commits": [
+        {
+          "sha": "c34ef8fc987eda21fb96d470d967bbf0394ea585",
+          "label": "preview — test failure corrected in .3"
+        }
+      ]
+    },
     {
       "version": "4.4.6.1",
       "date": "2026-11-22",
@@ -30,9 +70,14 @@
         "PDF export",
         "Legacy annotation migration"
       ],
-      "status": "Implementation release. Automated verification and deployment are recorded separately; original PDF text remains unchanged.",
+      "status": "Deployed to production and preview. GitHub Pages workflow run 45066524340 completed successfully for main commit a861a645cd0ce41dab60c06439b007ce470c09c3.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "a861a645cd0ce41dab60c06439b007ce470c09c3",
+          "label": "main release"
+        }
+      ]
     },
     {
       "version": "4.4.5.3",

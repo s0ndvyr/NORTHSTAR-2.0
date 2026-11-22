@@ -102,13 +102,19 @@ assert.ok(tapTextBox.width>=.28&&tapTextBox.height>=.09,'a text tap creates a us
 const dragTextBox=window.NorthstarAssignmentRoom.textBoxFromDrag({x:.2,y:.25},{x:.7,y:.55},80);
 assert.ok(dragTextBox.width>.45&&dragTextBox.height>.25,'dragging sizes a text box to the selected region');
 assert.ok(dragTextBox.x>=0&&dragTextBox.y>=0&&dragTextBox.x+dragTextBox.width<=1&&dragTextBox.y+dragTextBox.height<=1,'text boxes remain within the page bounds');
+const richTextRuns = window.NorthstarAssignmentRoom.richTextRuns({
+ text:'Overview',
+ html:'<p>Overview</p><ul><li>Alpha</li><li>Beta</li></ul><ol><li>First</li><li>Second</li></ol>'
+});
+const richTextPlain = richTextRuns.map(run=>run.text).join('');
+assert.ok(richTextPlain.includes('Overview\n• Alpha\n• Beta\n1. First\n2. Second'), 'rich-text list items preserve paragraph breaks, bullet markers, and ordered numbering');
 const sanitizedBrief=window.NorthstarAssignmentRoom.sanitizeHtml('<p onclick="alert(1)">Instructions<script>alert(1)</script><a href="javascript:alert(2)">safe-looking link</a></p>','https://school.instructure.com');
 assert.equal(sanitizedBrief.textContent,'Instructionssafe-looking link','Canvas instructions are retained while scripts are removed');
 assert.equal(sanitizedBrief.firstChild.getAttribute('onclick'),null,'Canvas event handlers are removed from instruction markup');
 assert.equal(sanitizedBrief.querySelector('a').hasAttribute('href'),false,'unsafe javascript links are stripped');
 const cleanDraft=window.NorthstarSubmissions.sanitizeRichTextHtml('<p onclick="alert(1)">Safe<script>alert(1)</script><a href="javascript:alert(2)">link</a></p>');
 assert.equal(cleanDraft,'<p>Safe<a>link</a></p>','rich text allowlist strips scripts, handlers and unsafe links');
-assert.equal(window.document.getElementById('versionPill').textContent, 'NORTHSTAR / .4.4.5', 'runtime release identifier matches Phase 4.4.4');
+assert.ok(window.document.getElementById('versionPill').textContent.includes('4.4.6.3'), 'runtime release identifier matches the current NORTHSTAR manifest');
 
 // grade math via the exposed pure module
 const g = window.Grades.computeCourseGrade(
