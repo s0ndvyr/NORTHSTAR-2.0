@@ -31,7 +31,7 @@ jobs:
             node --check "$file"
           done
       - name: Validate Worker bundle without deploying
-        run: npx wrangler deploy --config wrangler.jsonc --dry-run
+        run: npx wrangler deploy --config wrangler.jsonc --keep-vars --dry-run
       - name: Run NORTHSTAR regression tests
         run: npm test
 
