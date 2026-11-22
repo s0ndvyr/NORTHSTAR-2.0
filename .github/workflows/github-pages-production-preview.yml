@@ -1,18 +1,11 @@
 name: NORTHSTAR GitHub Pages — Production + Preview
 
 on:
-  # Production and preview are published together from the default branch.
+  # Publish production from main and refresh the preview on every development-branch update.
+  # The preview source is always checked out from the development branch below.
   push:
     branches:
       - main
-
-  # A successful Phase 4 push test automatically refreshes /preview/.
-  workflow_run:
-    workflows:
-      - NORTHSTAR Phase 4 tests
-    types:
-      - completed
-    branches:
       - northstar-0.4.4.2-quiz-continuity
 
   workflow_dispatch:
@@ -28,12 +21,6 @@ concurrency:
 
 jobs:
   build:
-    # workflow_run can also be fired by PR checks; publish only after a
-    # successful push test from the development branch.
-    if: >-
-      ${{ github.event_name != 'workflow_run' ||
-          (github.event.workflow_run.conclusion == 'success' &&
-           github.event.workflow_run.event == 'push') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out production source
@@ -47,6 +34,17 @@ jobs:
         with:
           ref: northstar-0.4.4.2-quiz-continuity
           path: source-preview
+
+      - name: Set up Node.js for preview verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test the development preview before publishing
+        working-directory: source-preview
+        run: |
+          npm install
+          npm test
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
