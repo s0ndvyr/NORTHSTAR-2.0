@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.6.3`
-Package version: `0.4.8`
+Release identifier: `NORTHSTAR / 4.4.6.4`
+Package version: `0.4.9`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -470,3 +470,29 @@ The .4.6.2 feature and interaction changes were present in the preview artifact,
 - [x] Production + preview Pages deployment passed in workflow run 45068083612 on main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2.
 - No Canvas Worker source or Cloudflare private bridge deployment is part of this release.
 - Physical iPad Safari / Apple Pencil and authenticated live Canvas checks remain manual acceptance items.
+
+
+## Phase 4.4.6.4 — Test-pinned GitHub Pages deployment
+
+**Release:** NORTHSTAR / 4.4.6.4  
+**Package semver:** 0.4.9  
+**Date:** 2026-11-22
+
+### Change
+
+- Added a Pages freshness gate which reads the current heads of both `main` and `northstar-0.4.4.2-quiz-continuity`.
+- For each branch, the gate queries the Phase 4 workflow's completed push runs and requires a successful run whose `head_sha` exactly equals the branch's current SHA.
+- The Pages build checks out the exact SHA returned by the gate, not the moving branch name.
+- The deploy job requires both the successful freshness gate and the successful Pages build.
+- A delayed older successful test event can no longer cause Pages to publish newer, untested branch contents. If either branch's current head has no successful Phase 4 run, publishing is held until its own test completes successfully.
+- Added release regression assertions for the workflow-history query, matching SHA/conclusion, freshness dependencies, and pinned checkout.
+
+### Verification
+
+- [ ] Phase 4 test suite passes on the .4 release commit.
+- [ ] Phase 4 tests pass on the synchronized preview branch.
+- [ ] Pages freshness gate reports both source SHAs as successfully tested.
+- [ ] Production and preview Pages deployment completes successfully.
+- [ ] Final release metadata records the exact test and deployment run IDs.
+
+No Canvas Worker source or private Cloudflare deployment is included.

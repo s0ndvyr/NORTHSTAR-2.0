@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.3",
-  "packageVersion": "0.4.8",
+  "northstarVersion": "4.4.6.4",
+  "packageVersion": "0.4.9",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -10,11 +10,27 @@
     "status": "unchanged in 4.4.6.1, 4.4.6.2 and 4.4.6.3; no Worker source or private Cloudflare deployment"
   },
   "deployment": {
-    "preview": "Deployed successfully by GitHub Pages workflow run 45068083612 on 2026-11-22; artifact verified NORTHSTAR 4.4.6.3 / package 0.4.8.",
-    "production": "Deployed successfully by GitHub Pages workflow run 45068083612 on 2026-11-22 from main commit 34e5bc02d0233d32df974dbfecdc919e8e7f04d2."
+    "preview": "4.4.6.3 is the last verified deployment. 4.4.6.4 awaits its own successful test-pinned Pages run.",
+    "production": "4.4.6.3 is the last verified deployment. 4.4.6.4 awaits its own successful test-pinned Pages run."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.6.4",
+      "date": "2026-11-22",
+      "title": "Test-pinned deployment gate",
+      "description": "GitHub Pages now verifies that both current source branch heads have successful Phase 4 push runs and checks out those exact tested SHAs. Delayed successful workflow events cannot publish newer untested branch contents; if either channel lacks a passing run, publishing is held until that branch's own test succeeds.",
+      "category": "Deployment",
+      "areas": [
+        "GitHub Actions",
+        "Source freshness verification",
+        "Test-pinned checkout",
+        "Release integrity"
+      ],
+      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.6.3",
       "date": "2026-11-22",
