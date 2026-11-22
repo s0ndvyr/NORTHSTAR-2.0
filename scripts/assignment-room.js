@@ -300,6 +300,7 @@ function attachCanvasEvents(){
   const stageRect=stage.getBoundingClientRect(),pageRect=ink.parentElement.getBoundingClientRect();
   const a=pair[0][1],b=pair[1][1],centroid={x:(a.x+b.x)/2,y:(a.y+b.y)/2},distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
   pdfState.activeGesture={ids:pair.map(([id])=>id),distance,startScale:pdfState.scale,centroid,lastCentroid:centroid,origin:{x:centroid.x-pageRect.left,y:centroid.y-pageRect.top},scrollLeft:stage.scrollLeft,scrollTop:stage.scrollTop,stageRect};
+  pair.forEach(([pointerId])=>{try{stage.setPointerCapture(pointerId);}catch{}});
   active=null;setSaveState('Gesture navigation');return true;
  }
  function updateGesture(){
