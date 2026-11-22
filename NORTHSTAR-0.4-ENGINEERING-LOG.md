@@ -541,3 +541,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The .8 Phase 4 run passed the release-manifest unit test but the browser boot test still hardcoded the .6 version pill.
 - Replaced the literal with a value read from `release.json`, so future micro-version increments do not require manually editing the boot assertion.
 - Fresh release-specific Phase 4 tests and Pages deployment are pending.
+
+
+## Phase 4.4.6.9 — Deployment closeout
+
+- Phase 4 push run `45081323554` passed on main and `45081332111` passed on preview; both tested the exact shared source SHA `fe5b69948d98969768fb5dc155f6f41ab1d861a8`.
+- The Pages freshness gate passed for both exact branch heads. Production and preview were built from the tested SHA and deployed successfully in Pages run `45081377927`.
+- Production Pages URL: `https://s0ndvyr.github.io/NORTHSTAR-2.0/`; preview URL: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`.
+- The .9 release removes the hardcoded browser boot version and the Pages build no longer has a redundant workflow-event filter.
+- Automated tests and GitHub Pages deployment are complete. Physical iPad/Apple Pencil acceptance and live Canvas account acceptance remain external checks.

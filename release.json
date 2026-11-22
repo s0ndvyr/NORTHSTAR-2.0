@@ -10,8 +10,8 @@
     "status": "unchanged in 4.4.6.1, 4.4.6.2 and 4.4.6.3; no Worker source or private Cloudflare deployment"
   },
   "deployment": {
-    "preview": "NORTHSTAR 4.4.6.6 deployed successfully by GitHub Pages workflow run 45080756988 from tested preview commit e8797f6148bd74cb9c6bf289e694b53bf549271c.",
-    "production": "NORTHSTAR 4.4.6.6 deployed successfully by GitHub Pages workflow run 45080756988 from main commit e849c91e68d006ff1187efa1d748a82b9f386fe7."
+    "preview": "NORTHSTAR 4.4.6.9 deployed successfully by GitHub Pages workflow run 45081377927 from tested main/preview source commit fe5b69948d98969768fb5dc155f6f41ab1d861a8.",
+    "production": "NORTHSTAR 4.4.6.9 deployed successfully by GitHub Pages workflow run 45081377927 from tested main/preview source commit fe5b69948d98969768fb5dc155f6f41ab1d861a8."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -26,9 +26,14 @@
         "Release manifest",
         "Version consistency"
       ],
-      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "status": "Deployed successfully to production and preview by GitHub Pages workflow run 45081377927. Phase 4 passed on main commit fe5b69948d98969768fb5dc155f6f41ab1d861a8 (run 45081323554) and preview commit fe5b69948d98969768fb5dc155f6f41ab1d861a8 (run 45081332111).",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "fe5b69948d98969768fb5dc155f6f41ab1d861a8",
+          "label": "verified main and preview release"
+        }
+      ]
     },
     {
       "version": "4.4.6.8",

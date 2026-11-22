@@ -15,7 +15,8 @@ assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata an
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
-assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('Awaiting release-specific Phase 4 checks'),'the current candidate remains pending until its own tests and deployment pass');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('45081377927'),'the current release records its verified production and preview Pages deployment');
+assert.ok(manifest.releases.find(entry=>entry.version==='4.4.6.9').commits.some(commit=>commit.sha==='fe5b69948d98969768fb5dc155f6f41ab1d861a8'),'the deployed release records its tested source commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.6').status||'').includes('45080756988'),'the previous release records its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.6.6').commits.some(commit=>commit.sha==='e849c91e68d006ff1187efa1d748a82b9f386fe7'),'the deployed release records its official main commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.5').status||'').includes('Phase 4 test failed'),'the failed .5 candidate is accurately recorded');
