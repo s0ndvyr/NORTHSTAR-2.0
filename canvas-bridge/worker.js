@@ -43,6 +43,7 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/files\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/files\/\d+\/download$/.test(path) ||
+    /^\/api\/v1\/courses\/\d+\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/(?:assignments|assignment_groups|quizzes)(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/quizzes\/\d+(?:\/(?:questions|submission|submissions\/\d+\/time))?(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/quiz_submissions\/\d+\/questions(?:\?(?:[^#]*))?$/.test(path) ||
@@ -95,8 +96,8 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
-async function downloadCanvasFile(fileId,authorization,userAgent){
-  const apiUrl=CANVAS_ORIGIN+'/api/v1/files/'+fileId;
+async function downloadCanvasFile(fileId,courseId,authorization,userAgent){
+  const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
   const metaResponse=await fetch(apiUrl,{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});
   if(!metaResponse.ok)return new Response(metaResponse.body,{status:metaResponse.status,headers:{...cors,'Content-Type':metaResponse.headers.get('Content-Type')||'application/json'}});
   let metadata;try{metadata=await metaResponse.json();}catch{return reply('Canvas file metadata was unreadable',502);}
@@ -134,8 +135,10 @@ export default {
     if(request.method!=='GET'&&url.search)return reply('Query parameters are not allowed on writes',403);
     if(request.method==='GET'&&!allowedRead(url.pathname+url.search))return reply('Read path not allowed',403);
     if(request.method==='GET'){
+      const courseFileMatch=url.pathname.match(/^\/api\/v1\/courses\/(\d+)\/files\/(\d+)\/download$/);
+      if(courseFileMatch){try{return await downloadCanvasFile(courseFileMatch[2],courseFileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
       const fileMatch=url.pathname.match(/^\/api\/v1\/files\/(\d+)\/download$/);
-      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
+      if(fileMatch){try{return await downloadCanvasFile(fileMatch[1],null,auth,request.headers.get('User-Agent')||'NORTHSTAR/1.0');}catch{return reply('Could not download the Canvas file',502);}}
     }
     let body;
     if(request.method==='POST'||request.method==='PUT'){
