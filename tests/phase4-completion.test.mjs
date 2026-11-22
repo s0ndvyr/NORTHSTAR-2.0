@@ -32,7 +32,10 @@ const fetchMock=async (url, options={}) => {
   if (target.origin==='https://bridge.example') {
     const path=target.searchParams.get('path');
     calls.push({kind:'bridge',path,method:options.method||'GET',body:options.body});
-    if (path==='/api/v1/courses/1/assignments/9/submissions/self/files') {
+    if (path==='/api/v1/users/self') {
+      return new Response(JSON.stringify({id:7}),{status:200,headers:{'Content-Type':'application/json'}});
+    }
+    if (path==='/api/v1/courses/1/assignments/9/submissions/7/files') {
       return new Response(JSON.stringify({upload_url:'https://upload.example/receive',upload_params:{token:'signed-upload'}}),{status:200,headers:{'Content-Type':'application/json'}});
     }
     throw new Error('Unexpected bridge request: '+path);
@@ -53,7 +56,8 @@ const uploaded=await workspace.uploadAssignmentFiles({
 });
 assert.equal(uploaded.length,2);
 assert.deepEqual(uploaded.map(file=>file.id),[501,502]);
-assert.equal(calls.filter(x=>x.kind==='bridge'&&x.path.endsWith('/files')).length,2);
+assert.equal(calls.filter(x=>x.kind==='bridge'&&x.path==='/api/v1/users/self').length,2,'student lookup uses the bridge for each file initialization');
+assert.equal(calls.filter(x=>x.kind==='bridge'&&x.path==='/api/v1/courses/1/assignments/9/submissions/7/files').length,2,'file initializations use the numeric Canvas student endpoint');
 assert.equal(calls.filter(x=>x.kind==='signed-upload').length,2);
 assert.equal(progress.filter(x=>x.phase==='uploaded').length,2,'upload progress is reported for every completed file');
 assert.deepEqual(submissions.payload('online_upload',uploaded.map(file=>file.id)).submission.file_ids,[501,502], 'uploaded file IDs are accepted for final submission');
