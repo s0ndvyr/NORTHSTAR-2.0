@@ -816,7 +816,7 @@ async function phase441RenderOfficeResource(kind,result,file,stage){
     const module=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
     const JSZip=module.default||module;
     const zip=await JSZip.loadAsync(bytes);
-    const slideNames=Object.keys(zip.files).filter(name=>/^ppt\\/slides\\/slide\\d+\\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/slide(\\d+)/i)?.[1]||0)-Number(b.match(/slide(\\d+)/i)?.[1]||0));
+    const slideNames=Object.keys(zip.files).filter(name=>/^ppt\/slides\/slide\d+\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/slide(\d+)/i)?.[1]||0)-Number(b.match(/slide(\\d+)/i)?.[1]||0));
     if(!slideNames.length)throw Error('No readable slides were found in this presentation.');
     const shell=document.createElement('section');shell.className='ns-office-document ns-office-presentation';
     const toolbar=document.createElement('div');toolbar.className='ns-office-toolbar';
