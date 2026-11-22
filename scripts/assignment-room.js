@@ -346,7 +346,7 @@ function attachCanvasEvents(){
   if(pdfState.inputMode==='hand'){
    if(event.pointerType==='pen')return;
    if(event.pointerType==='touch'||event.pointerType==='mouse'){
-    event.preventDefault();active={tool:'hand-pan',pointerId:event.pointerId,pointerType:event.pointerType,last:{x:event.clientX,y:event.clientY}};
+    event.preventDefault();active={tool:'hand-pan',pointerId:event.pointerId,pointerType:event.pointerType,last:{x:event.clientX,y:event.clientY},lastTime:performance.now(),velocityX:0,velocityY:0};
     try{stage.setPointerCapture(event.pointerId);}catch{}
    }
    return;
@@ -363,12 +363,23 @@ function attachCanvasEvents(){
   beginAnnotation(event,point);
   if(active){try{stage.setPointerCapture(event.pointerId);}catch{}}
  }
+ function startPanInertia(vx,vy){
+  if(Math.hypot(vx,vy)<.05)return;
+  let previous=performance.now();
+  const frame=now=>{
+   const delta=Math.min(32,now-previous);previous=now;
+   stage.scrollLeft-=vx*delta;stage.scrollTop-=vy*delta;
+   const decay=Math.pow(.91,delta/16);vx*=decay;vy*=decay;
+   if(Math.hypot(vx,vy)>.035)root.requestAnimationFrame(frame);
+  };
+  if(typeof root.requestAnimationFrame==='function')root.requestAnimationFrame(frame);
+ }
  function onPointerMove(event){
   if(pointers.has(event.pointerId))updatePointer(event);
   if(pdfState.activeGesture){updateGesture();event.preventDefault();return;}
   if(!active||active.pointerId!==event.pointerId)return;
   if(active.tool==='hand-pan'){
-   const dx=event.clientX-active.last.x,dy=event.clientY-active.last.y;stage.scrollLeft-=dx;stage.scrollTop-=dy;active.last={x:event.clientX,y:event.clientY};return;
+   const now=performance.now(),dt=Math.max(1,now-(active.lastTime||now)),dx=event.clientX-active.last.x,dy=event.clientY-active.last.y;stage.scrollLeft-=dx;stage.scrollTop-=dy;active.velocityX=dx/dt;active.velocityY=dy/dt;active.last={x:event.clientX,y:event.clientY};active.lastTime=now;return;
   }
   const events=event.getCoalescedEvents?event.getCoalescedEvents():[event],last=events[events.length-1],point=addPoint(last,ink);
   if(active.tool==='text'){
@@ -386,7 +397,7 @@ function attachCanvasEvents(){
  }
  function finishActive(event,cancelled){
   if(!active||active.pointerId!==event.pointerId)return;
-  if(active.tool==='hand-pan'){active=null;return;}
+  if(active.tool==='hand-pan'){const vx=active.velocityX||0,vy=active.velocityY||0;active=null;if(!cancelled)startPanInertia(vx,vy);return;}
   if(cancelled){cancelActive();return;}
   if(active.tool==='text'){
    const input=$('#nsPdfText'),end=active.end||active.start,box=textBoxFromDrag(active.start,end,String(active.text).length);
