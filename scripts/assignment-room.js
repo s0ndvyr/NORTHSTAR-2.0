@@ -125,7 +125,7 @@ function renderToolbar(host){
   '<div class="ns-pdf-stylebar">',
    '<label>Ink <input type="color" id="nsPdfColor" value="#c4e87b"></label>',
    '<label>Size <input type="range" id="nsPdfWidth" min="1" max="12" step=".5" value="2.8"></label>',
-   '<label class="ns-pdf-text-entry">Text <input type="text" id="nsPdfText" maxlength="500" placeholder="Type, then drag a box on the page" autocomplete="off"></label>',
+   '<label class="ns-pdf-text-entry">Text box <textarea id="nsPdfText" rows="2" maxlength="500" placeholder="Type your note, then drag a box on the page"></textarea></label>',
    '<span id="nsPdfInputHint" aria-live="polite">Hand mode · drag to move the page; pinch to zoom.</span>',
   '</div>',
   '<div class="ns-pdf-stage-scroll"><div class="ns-pdf-page"><canvas id="nsPdfCanvas" aria-label="PDF page"></canvas><canvas id="nsPdfInk" class="ns-pdf-ink" aria-label="PDF annotation layer"></canvas></div></div>',
@@ -134,13 +134,16 @@ function renderToolbar(host){
 }
 
 function wrapTextLines(text,maxWidth,measure){
- const lines=[],words=String(text||'').split(/\s+/).filter(Boolean),measureText=typeof measure==='function'?measure:(value=>String(value).length*7);
- let line='';
- words.forEach(word=>{
-  const candidate=line?line+' '+word:word;
-  if(line&&measureText(candidate)>maxWidth){lines.push(line);line=word;}else line=candidate;
+ const lines=[],paragraphs=String(text||'').replace(/\r\n/g,'\n').split('\n'),measureText=typeof measure==='function'?measure:(value=>String(value).length*7);
+ paragraphs.forEach(paragraph=>{
+  const words=paragraph.split(/\s+/).filter(Boolean);let line='';
+  if(!words.length){lines.push('');return;}
+  words.forEach(word=>{
+   const candidate=line?line+' '+word:word;
+   if(line&&measureText(candidate)>maxWidth){lines.push(line);line=word;}else line=candidate;
+  });
+  if(line)lines.push(line);
  });
- if(line)lines.push(line);
  return lines;
 }
 function drawOverlay(){
@@ -482,9 +485,8 @@ async function exportAnnotatedPdf(){
   });
   (s.texts||[]).forEach(note=>{
    const color=String(note.color||'#c4e87b'),h=color.replace('#','').padEnd(6,'0'),r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255,viewport=pdfState.viewports[index+1]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]},boxWidth=(Number(note.width)||.55)*viewport.width,boxHeight=(Number(note.height)||.12)*viewport.height,position=viewport.convertToPdfPoint(note.x*viewport.width,(note.y*viewport.height)+boxHeight);
-   const textSize=Math.max(9,Math.min(22,Number(note.fontSize)||12)),lines=String(note.text||'').split(/\s+/),wrapped=[];let line='';
-   const maxChars=Math.max(8,Math.floor(boxWidth/(textSize*.55)));
-   lines.forEach(word=>{const candidate=line?line+' '+word:word;if(line&&candidate.length>maxChars){wrapped.push(line);line=word;}else line=candidate;});if(line)wrapped.push(line);
+   const textSize=Math.max(9,Math.min(22,Number(note.fontSize)||12)),wrapped=[],maxChars=Math.max(8,Math.floor(boxWidth/(textSize*.55)));
+   String(note.text||'').replace(/\r\n/g,'\n').split('\n').forEach(paragraph=>{let line='';paragraph.split(/\s+/).filter(Boolean).forEach(word=>{const candidate=line?line+' '+word:word;if(line&&candidate.length>maxChars){wrapped.push(line);line=word;}else line=candidate;});wrapped.push(line);});
    page.drawRectangle({x:note.x*width,y:Math.max(0,height-(note.y*height+boxHeight)),width:boxWidth/viewport.width*width,height:boxHeight/viewport.height*height,color:rgb(1,1,1),opacity:.88,borderColor:rgb(r,g,b),borderWidth:.6});
    page.drawText(wrapped.join('\n'),{x:position[0]+6,y:position[1]+4,size:textSize,color:rgb(r,g,b),maxWidth:boxWidth-12,lineHeight:textSize*1.25});
   });
