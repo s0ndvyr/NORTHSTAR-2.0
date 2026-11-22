@@ -78,7 +78,7 @@ function collectFiles(details,base){
  return files;
 }
 const pdfState={assignment:null,file:null,bytes:null,doc:null,page:1,scale:1.15,tool:'select',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{}};
-function pdfKey(){return 'northstar_pdf_markup_v1_'+String(pdfState.assignment?.id||'assignment')+'_'+String(pdfState.file?.id||'file');}
+function pdfKey(){const preview=String(location.pathname||'').includes('/preview/');return 'northstar_'+(preview?'preview_':'')+'pdf_markup_v1_'+String(pdfState.assignment?.id||'assignment')+'_'+String(pdfState.file?.id||'file');}
 function getPageState(page){const key=String(page);if(!pdfState.annotations[key])pdfState.annotations[key]={strokes:[],texts:[]};return pdfState.annotations[key];}
 function persistAnnotations(){try{localStorage.setItem(pdfKey(),JSON.stringify(pdfState.annotations));}catch{notify('The annotation could not be saved on this device. Export a copy to keep it.');}}
 function notify(message){if(typeof root.toast==='function')root.toast(message);else{const n=$('#toast');if(n){n.textContent=message;n.classList.add('show');}}}
