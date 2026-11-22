@@ -243,6 +243,10 @@ function findAnnotationAt(point,state,widthPx,heightPx,radiusPx){
  for(let i=(state.strokes||[]).length-1;i>=0;i--)if(pointHitsStroke(point,state.strokes[i],widthPx,heightPx,radiusPx))return {kind:'stroke',index:i};
  return null;
 }
+function textBoxFromDrag(start,end,textLength){
+ const left=Math.min(start.x,end.x),top=Math.min(start.y,end.y),dragWidth=Math.abs(end.x-start.x),dragHeight=Math.abs(end.y-start.y),defaultWidth=Math.max(.28,Math.min(.62,Math.max(1,Number(textLength)||1)*.012)),defaultHeight=Math.max(.09,Math.min(.24,((Number(textLength)||1)/42)*.035+.07)),width=dragWidth<.025?defaultWidth:Math.max(.12,dragWidth),height=dragHeight<.025?defaultHeight:Math.max(.055,dragHeight);
+ return {x:Math.max(0,Math.min(left,1-width)),y:Math.max(0,Math.min(top,1-height)),width,height};
+}
 function setInputMode(mode){
  pdfState.inputMode=mode==='pencil'?'pencil':'hand';
  const host=pdfState.host,ink=$('#nsPdfInk'),stage=host?.querySelector('.ns-pdf-stage-scroll');
@@ -385,9 +389,8 @@ function attachCanvasEvents(){
   if(active.tool==='hand-pan'){active=null;return;}
   if(cancelled){cancelActive();return;}
   if(active.tool==='text'){
-   const input=$('#nsPdfText'),end=active.end||active.start,left=Math.min(active.start.x,end.x),top=Math.min(active.start.y,end.y),dragWidth=Math.abs(end.x-active.start.x),dragHeight=Math.abs(end.y-active.start.y);
-   const defaultWidth=Math.max(.28,Math.min(.62,String(active.text).length*.012)),defaultHeight=Math.max(.09,Math.min(.24,(String(active.text).length/42)*.035+.07)),width=dragWidth<.025?defaultWidth:Math.max(.12,dragWidth),height=dragHeight<.025?defaultHeight:Math.max(.055,dragHeight);
-   getPageState(active.page).texts.push({x:Math.min(left,1-width),y:Math.min(top,1-height),width,height,text:active.text,color:active.color,fontSize:Math.max(12,Math.round(ink.clientWidth/70))});
+   const input=$('#nsPdfText'),end=active.end||active.start,box=textBoxFromDrag(active.start,end,String(active.text).length);
+   getPageState(active.page).texts.push({...box,text:active.text,color:active.color,fontSize:Math.max(12,Math.round(ink.clientWidth/70))});
    if(input)input.value='';pdfState.preview=null;persistAnnotations();drawOverlay();setSaveState('Text box placed. Use Move to reposition it.');
   }else{pdfState.preview=null;persistAnnotations();drawOverlay();setSaveState('Saved on this device. Export the annotated PDF to submit a copy.');}
   active=null;
@@ -485,10 +488,10 @@ async function openPdf(host,file,assignment,credentials){
  renderToolbar(host);const name=$('#nsPdfFileName');if(name)name.textContent=file.name;
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials:credentials,courseId:assignment.canvasCourseId,fileId:file.id});
  pdfState.bytes=api.bytes;if(!/pdf/i.test(api.contentType||'')&&!/\.pdf$/i.test(file.name)&&String.fromCharCode(...pdfState.bytes.slice(0,5))!=='%PDF-')throw Error('This attachment is not a PDF. Document Studio currently supports PDF files.');const lib=await loadPdfEngine();pdfState.doc=await lib.getDocument({data:pdfState.bytes.slice()}).promise;
- attachCanvasEvents();wireToolbar();await renderPage();setSaveState('Ready. Pencil input is enabled; touch is reserved for page navigation.');
+ attachCanvasEvents();wireToolbar();await renderPage();setSaveState('Ready. Choose Hand to navigate or Pencil to annotate with Apple Pencil or finger.');
 }
 function getAnnotatedFile(){return exportAnnotatedPdf();}
-const api={enter,exit,close,routeId,loadingMarkup,sanitizeHtml,collectFiles,openPdf,getAnnotatedFile,isPenPointer,canAnnotatePointer,distanceToSegment,pointHitsStroke,wrapTextLines,notify};
+const api={enter,exit,close,routeId,loadingMarkup,sanitizeHtml,collectFiles,openPdf,getAnnotatedFile,isPenPointer,canAnnotatePointer,distanceToSegment,pointHitsStroke,wrapTextLines,textBoxFromDrag,notify};
 root.NorthstarAssignmentRoom=api;
 root.closeAssignmentRoom=close;
 const appCloseOverlay=root.closeOverlay;root.closeOverlay=function(id){if(id==='wsOverlay')return close();if(typeof appCloseOverlay==='function')return appCloseOverlay.call(root,id);};
