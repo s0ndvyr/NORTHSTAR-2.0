@@ -727,62 +727,138 @@ function phase441ResourceKind(file){
 }
 function phase441ReleaseResourceUrl(){if(phase441ResourceObjectUrl){URL.revokeObjectURL(phase441ResourceObjectUrl);phase441ResourceObjectUrl=null;}}
 window.addEventListener('northstar:assignment-room-exit',phase441ReleaseResourceUrl);
+function phase441DownloadPreparedFile(file,statusNode){
+  try{
+    const url=URL.createObjectURL(file),link=document.createElement('a');link.href=url;link.download=file.name||'NORTHSTAR-response';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    if(statusNode)statusNode.textContent='Downloaded '+(file.name||'your edited file')+'. This file has not been submitted to Canvas.';
+  }catch(error){if(statusNode)statusNode.textContent='File download failed: '+error.message;}
+}
+function phase441OfferPreparedFile(file,statusNode){
+  const a=activeAssignment;
+  if(!a||!(a.submissionTypes||[]).includes('online_upload')){phase441DownloadPreparedFile(file,statusNode);return;}
+  const ext=String(file.name||'').split('.').pop().toLowerCase(),allowed=(a.allowedExtensions||[]).map(x=>String(x).replace(/^\\./,'').toLowerCase());
+  if(allowed.length&&!allowed.includes(ext)){phase441DownloadPreparedFile(file,statusNode);if(statusNode)statusNode.textContent+=' Canvas does not allow the .'+ext+' extension for this assignment.';return;}
+  phase441PreparedFile.set(String(a.id),file);
+  const typeSelect=$('#submissionType');if(typeSelect&&[...typeSelect.options].some(option=>option.value==='online_upload')){typeSelect.value='online_upload';typeSelect.onchange();}
+  const node=$('#nsSelectedFiles');if(node)node.textContent=[file.name,...Array.from($('#submissionFile')?.files||[]).map(item=>item.name)].join(' · ');
+  if(statusNode)statusNode.textContent='Ready to attach: '+file.name+' · '+Math.ceil(file.size/1024)+' KB. Review it in Submit, then confirm the Canvas submission.';
+  phase441ShowTab('submit');
+}
 async function phase441RenderOfficeResource(kind,result,file,stage){
   const bytes=result.bytes.buffer.slice(result.bytes.byteOffset,result.bytes.byteOffset+result.bytes.byteLength);
   if(kind==='Word'){
     const module=await import('https://cdn.jsdelivr.net/npm/mammoth@1.9.0/+esm');
     const mammoth=module.default||module;
     const converted=await mammoth.convertToHtml({arrayBuffer:bytes});
-    const safeHtml=window.NorthstarAssignmentRoom.sanitizeHtml(converted.value||'<p>No readable text was found in this document.</p>',getCredentials()?.base||'https://nnps.instructure.com');
-    const page=document.createElement('article');page.className='ns-office-document ns-office-word';page.append(safeHtml);
-    if(converted.messages?.length){const note=document.createElement('p');note.className='ns-office-note';note.textContent='Some Word layout elements may not be represented exactly in this preview. Download the original if you need its full formatting.';page.prepend(note);}
-    stage.replaceChildren(page);return;
+    const safeHtml=window.NorthstarSubmissions.sanitizeRichTextHtml(converted.value||'<p>No readable text was found in this document.</p>');
+    const shell=document.createElement('section');shell.className='ns-office-document ns-office-word-shell';
+    const toolbar=document.createElement('div');toolbar.className='ns-office-toolbar';
+    const importButton=document.createElement('button');importButton.type='button';importButton.className='btn btn-primary btn-sm';importButton.textContent='Use this Word document as my draft';
+    const status=document.createElement('p');status.className='ns-office-note';status.setAttribute('role','status');status.textContent='Import the document into Your Work, edit it in NORTHSTAR, then export a Word response if needed.';
+    const page=document.createElement('article');page.className='ns-office-document ns-office-word';page.innerHTML=safeHtml;
+    importButton.onclick=()=>{
+      const editor=$('#assignmentDraft');if(!editor){status.textContent='Open the assignment Work panel before importing this document.';return;}
+      const current=(editor.innerText||editor.textContent||'').trim();
+      if(current&&!confirm('Replace the current assignment draft with the contents of '+file.name+'? Your current draft is saved locally, but this will replace the editor contents.'))return;
+      editor.innerHTML=window.NorthstarSubmissions.sanitizeRichTextHtml(safeHtml);
+      editor.dispatchEvent(new Event('input',{bubbles:true}));
+      phase441ShowTab('work');
+      status.textContent='Word document imported into Your Work. Review and edit it before submitting.';
+    };
+    if(converted.messages?.length){const note=document.createElement('p');note.className='ns-office-note';note.textContent='Some Word layout elements may not be represented exactly. The original attachment is unchanged.';page.prepend(note);}
+    toolbar.append(importButton);shell.append(toolbar,status,page);stage.replaceChildren(shell);return;
   }
   if(kind==='Spreadsheet'){
     const module=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
     const XLSX=module.default?.read?module.default:module;
-    const workbook=XLSX.read(bytes,{type:'array',cellDates:true});
+    const workbook=XLSX.read(bytes,{type:'array',cellDates:true,cellStyles:true});
     if(!workbook.SheetNames?.length)throw Error('The workbook does not contain readable worksheets.');
     const shell=document.createElement('section');shell.className='ns-office-document ns-office-spreadsheet';
     const toolbar=document.createElement('div');toolbar.className='ns-office-toolbar';
     const label=document.createElement('label');label.textContent='Worksheet';
     const select=document.createElement('select');select.className='select';
     workbook.SheetNames.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);});
+    const exportButton=document.createElement('button');exportButton.type='button';exportButton.className='btn btn-primary btn-sm';exportButton.textContent='Prepare edited workbook (.xlsx)';
     const tableWrap=document.createElement('div');tableWrap.className='ns-office-table-wrap';
-    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Read-only worksheet preview. Formulas and cell values are shown as exported; editing and recalculation remain in the original spreadsheet application.';
+    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Editable worksheet preview. Only the first 250 rows and 30 columns are shown. Editing a formula cell replaces its formula with the new value. Recalculation, macros, charts and advanced formatting are not reproduced in this editor.';
     const render=()=>{
       tableWrap.textContent='';const sheet=workbook.Sheets[select.value];if(!sheet)return;
       const rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,blankrows:false,defval:''}).slice(0,250);
       const table=document.createElement('table');table.className='ns-office-table';
-      rows.forEach((row,rowIndex)=>{const tr=document.createElement('tr');row.slice(0,30).forEach(value=>{const cell=document.createElement(rowIndex===0?'th':'td');cell.textContent=String(value??'');tr.append(cell);});table.append(tr);});
+      rows.forEach((row,rowIndex)=>{const tr=document.createElement('tr');row.slice(0,30).forEach((value,colIndex)=>{const cell=document.createElement(rowIndex===0?'th':'td');cell.textContent=String(value??'');cell.contentEditable='true';cell.spellcheck=false;cell.dataset.row=String(rowIndex);cell.dataset.col=String(colIndex);cell.dataset.original=String(value??'');cell.setAttribute('aria-label','Row '+(rowIndex+1)+', column '+(colIndex+1));tr.append(cell);});table.append(tr);});
       tableWrap.append(table);
-      if(rows.length>=250){const cap=document.createElement('p');cap.className='ns-office-note';cap.textContent='Preview limited to the first 250 rows and 30 columns of this worksheet.';tableWrap.append(cap);}
+      if(rows.length>=250){const cap=document.createElement('p');cap.className='ns-office-note';cap.textContent='Preview limited to the first 250 rows and 30 columns. Other cells remain in the original workbook.';tableWrap.append(cap);}
     };
-    select.addEventListener('change',render);toolbar.append(label,select);shell.append(toolbar,tableWrap,note);stage.replaceChildren(shell);render();return;
+    exportButton.onclick=async()=>{
+      exportButton.disabled=true;note.textContent='Applying cell edits and preparing an .xlsx copy…';
+      try{
+        const sheet=workbook.Sheets[select.value];
+        tableWrap.querySelectorAll('[data-row][data-col]').forEach(cell=>{
+          const value=cell.textContent??'',original=cell.dataset.original??'';if(value===original)return;
+          const address=XLSX.utils.encode_cell({r:Number(cell.dataset.row),c:Number(cell.dataset.col)}),current=sheet[address]||{t:'s'};
+          delete current.f;delete current.F;delete current.D;
+          if(current.t==='n'&&value.trim()!==''&&Number.isFinite(Number(value))){current.v=Number(value);current.t='n';}
+          else if(current.t==='b'&&/^(true|false)$/i.test(value.trim())){current.v=/^true$/i.test(value.trim());current.t='b';}
+          else{current.v=value;current.t='s';}
+          sheet[address]=current;cell.dataset.original=value;
+        });
+        const output=XLSX.write(workbook,{bookType:'xlsx',type:'array',cellStyles:true});
+        const blob=new Blob([output],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        const name=(file.name||'NORTHSTAR-workbook.xlsx').replace(/\\.xlsx$/i,'')+'-edited.xlsx';
+        const exported=typeof File==='function'?new File([blob],name,{type:blob.type}):blob;if(!exported.name)Object.defineProperty(exported,'name',{value:name});
+        phase441OfferPreparedFile(exported,note);
+      }catch(error){note.textContent='Could not prepare the edited workbook: '+error.message;}
+      finally{exportButton.disabled=false;}
+    };
+    select.addEventListener('change',render);toolbar.append(label,select,exportButton);shell.append(toolbar,tableWrap,note);stage.replaceChildren(shell);render();return;
   }
   if(kind==='Presentation'){
     const module=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
     const JSZip=module.default||module;
     const zip=await JSZip.loadAsync(bytes);
-    const slideNames=Object.keys(zip.files).filter(name=>/^ppt\/slides\/slide\d+\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/slide(\d+)/i)?.[1]||0)-Number(b.match(/slide(\d+)/i)?.[1]||0));
+    const slideNames=Object.keys(zip.files).filter(name=>/^ppt\\/slides\\/slide\\d+\\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/slide(\\d+)/i)?.[1]||0)-Number(b.match(/slide(\\d+)/i)?.[1]||0));
     if(!slideNames.length)throw Error('No readable slides were found in this presentation.');
     const shell=document.createElement('section');shell.className='ns-office-document ns-office-presentation';
-    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Text-first slide preview. Animations, embedded media, SmartArt and exact slide layout are not reproduced. Open the original presentation for full fidelity.';shell.append(note);
+    const toolbar=document.createElement('div');toolbar.className='ns-office-toolbar';
+    const exportButton=document.createElement('button');exportButton.type='button';exportButton.className='btn btn-primary btn-sm';exportButton.textContent='Prepare edited PowerPoint (.pptx)';
+    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Slide text is editable. Theme, layout, images, audio, animations, SmartArt and embedded media are retained but not edited by NORTHSTAR.';
+    const slideRecords=[];
     for(let index=0;index<slideNames.length;index++){
       const xml=await zip.file(slideNames[index]).async('string'),doc=new DOMParser().parseFromString(xml,'application/xml');
       if(doc.querySelector('parsererror'))continue;
-      const slide=document.createElement('article');slide.className='ns-office-slide';
+      const slide=document.createElement('article');slide.className='ns-office-slide';slide.dataset.slideName=slideNames[index];
       const heading=document.createElement('div');heading.className='ns-office-slide-number';heading.textContent='SLIDE '+(index+1);slide.append(heading);
       const paragraphs=[...doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','p')];
-      paragraphs.forEach(paragraph=>{const text=[...paragraph.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','t')].map(node=>node.textContent||'').join('');if(text.trim()){const p=document.createElement('p');p.textContent=text;slide.append(p);}});
+      paragraphs.forEach((paragraph,pIndex)=>{const text=[...paragraph.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','t')].map(node=>node.textContent||'').join('');if(text.trim()){const p=document.createElement('p');p.textContent=text;p.contentEditable='true';p.spellcheck=false;p.dataset.pptxParagraph=String(pIndex);slide.append(p);}});
       if(slide.children.length===1){const empty=document.createElement('p');empty.className='ns-office-note';empty.textContent='No extractable text on this slide. It may contain images or other embedded objects.';slide.append(empty);}
-      shell.append(slide);
+      shell.append(slide);slideRecords.push({name:slideNames[index],xml});
     }
-    stage.replaceChildren(shell);return;
+    exportButton.onclick=async()=>{
+      exportButton.disabled=true;note.textContent='Applying text edits and preparing a .pptx copy…';
+      try{
+        for(const record of slideRecords){
+          const slide=[...shell.querySelectorAll('[data-slide-name]')].find(node=>node.dataset.slideName===record.name);if(!slide)continue;
+          const doc=new DOMParser().parseFromString(record.xml,'application/xml');
+          const paragraphs=[...doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','p')];
+          slide.querySelectorAll('[data-pptx-paragraph]').forEach(edit=>{
+            const target=paragraphs[Number(edit.dataset.pptxParagraph)];if(!target)return;
+            const textNodes=[...target.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','t')];
+            if(!textNodes.length)return;
+            textNodes[0].textContent=edit.textContent||'';textNodes.slice(1).forEach(node=>node.textContent='');
+          });
+          zip.file(record.name,new XMLSerializer().serializeToString(doc));
+        }
+        const output=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE'});
+        const name=(file.name||'NORTHSTAR-presentation.pptx').replace(/\\.pptx$/i,'')+'-edited.pptx';
+        const exported=typeof File==='function'?new File([output],name,{type:output.type}):output;if(!exported.name)Object.defineProperty(exported,'name',{value:name});
+        phase441OfferPreparedFile(exported,note);
+      }catch(error){note.textContent='Could not prepare the edited presentation: '+error.message;}
+      finally{exportButton.disabled=false;}
+    };
+    toolbar.append(exportButton);shell.prepend(toolbar);shell.append(note);stage.replaceChildren(shell);return;
   }
   throw Error('No native office renderer is available for this file format.');
 }
-
 window.addEventListener('northstar:assignment-room-exit',()=>{if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);});
 async function phase441OpenResource(file,a,c){
   if(!file)return;
