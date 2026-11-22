@@ -1132,8 +1132,10 @@ async function phase441ReconcileSubmission(a){
 function submissionPanel(a){
   if(mode!=='live') return '';
   const allTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[],types=allTypes.filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
-  const blocked=a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true;
-  const reason=a.groupAssignment?'This is a group assignment. NORTHSTAR has not verified the group submission identity; use the official Canvas group submission flow.':a.canSubmit===false||a.lockedForUser===true||a.published===false?(a.lockExplanation||'Canvas reports that this assignment is locked, unpublished or unavailable for submission.'):'Canvas did not confirm that this assignment is currently open for submission.';
+  const hasNoOnlineSubmission=allTypes.includes('none')||allTypes.includes('on_paper')||allTypes.length===0;
+  const availabilityBlocked=a.lockedForUser===true||a.published===false||a.groupAssignment===true||(!hasNoOnlineSubmission&&a.canSubmit!==true);
+  const blocked=availabilityBlocked;
+  const reason=a.groupAssignment?'This is a group assignment. NORTHSTAR has not verified the group submission identity; use the official Canvas group submission flow.':a.lockedForUser===true||a.published===false||(!hasNoOnlineSubmission&&a.canSubmit===false)?(a.lockExplanation||'Canvas reports that this assignment is locked, unpublished or unavailable for submission.'):'Canvas did not confirm that this assignment is currently open for submission.';
   const lockNote=blocked?'<div class="ns-submission-availability" role="status"><strong>Submission is not available in NORTHSTAR.</strong><p>'+esc(reason)+' Your draft and documents remain available, but NORTHSTAR will not send an unverified submission.</p>'+(a.unlockAt?'<p>Unlocks: '+esc(new Date(a.unlockAt).toLocaleString())+'</p>':'')+'</div>':'';
   const disabled=blocked?' disabled':'';
   if(!types.length){
