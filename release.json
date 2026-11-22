@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.6",
-  "packageVersion": "0.4.11",
+  "northstarVersion": "4.4.6.7",
+  "packageVersion": "0.4.12",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
@@ -15,6 +15,21 @@
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.6.7",
+      "date": "2026-11-22",
+      "title": "Pages freshness gate event handling",
+      "description": "Removes a redundant workflow_run event-type condition from the Pages build job. The authoritative freshness gate already requires successful Phase 4 push runs for both exact current branch heads; deployment now proceeds whenever that gate passes, regardless of which completed test event triggered the Pages workflow.",
+      "category": "Deployment reliability",
+      "areas": [
+        "GitHub Actions",
+        "Freshness gate",
+        "Workflow event handling"
+      ],
+      "status": "Awaiting release-specific Phase 4 checks and Pages deployment.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.6.6",
       "date": "2026-11-22",

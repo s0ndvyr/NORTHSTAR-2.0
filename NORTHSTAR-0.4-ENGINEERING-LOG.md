@@ -520,3 +520,10 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Test-pinned Pages freshness gate passed for both exact branch heads. It checked out those SHAs, verified both releases as `4.4.6.6 / 0.4.11`, built production and preview artifacts, and deployed successfully in run `45080756988`.
 - The earlier run `45080736473` correctly held publication while main lacked a passing Phase 4 run, demonstrating that the freshness gate blocks stale/unverified branch heads.
 - Automated Phase 4 CI and GitHub Pages deployment are complete. Physical iPad/Apple Pencil acceptance and live Canvas account acceptance remain external device/account checks.
+
+
+## Phase 4.4.6.7 — Pages workflow event handling
+
+- After both current branch heads passed Phase 4 tests, the freshness job correctly approved publication, but a redundant `workflow_run.event == 'push'` condition skipped the build when a different successful workflow completion triggered the Pages workflow.
+- Removed the redundant event-type condition. The freshness job remains authoritative: it requires successful Phase 4 push runs for the exact current `main` and preview SHAs. Build and deploy still require that gate and a successful artifact build.
+- Fresh release-specific Phase 4 tests and Pages deployment are pending.

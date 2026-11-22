@@ -86,11 +86,7 @@ jobs:
 
   build:
     needs: freshness
-    if: >-
-      ${{ needs.freshness.outputs.publish == 'true' &&
-          (github.event_name != 'workflow_run' ||
-           (github.event.workflow_run.conclusion == 'success' &&
-            github.event.workflow_run.event == 'push')) }}
+    if: needs.freshness.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out verified production source
