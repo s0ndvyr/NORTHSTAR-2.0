@@ -1,0 +1,34 @@
+name: NORTHSTAR Canvas Bridge — Deploy
+
+on:
+  push:
+    branches:
+      - northstar-0.4.4.2-quiz-continuity
+    paths:
+      - canvas-bridge/**
+      - wrangler.jsonc
+      - .github/workflows/deploy-canvas-bridge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Until the two repository secrets are configured, keep this workflow safely skipped.
+    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out NORTHSTAR
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wrangler
+        run: npm install
+      - name: Deploy the NORTHSTAR Canvas bridge
+        run: npx wrangler deploy --config wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

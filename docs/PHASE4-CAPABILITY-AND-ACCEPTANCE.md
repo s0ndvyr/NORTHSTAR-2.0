@@ -93,7 +93,18 @@ The Phase 4 GitHub Actions suite includes:
 
 Passing mocked CI is not the same as live acceptance in a real Canvas course.
 
-## 6. Required live acceptance before Phase 4 sign-off
+## 6. Automated Canvas bridge deployment
+
+The development branch includes a GitHub Actions workflow for deploying the Worker without copying source through the Cloudflare dashboard. It targets the existing Worker name `northstar-bridge` from `wrangler.jsonc`.
+
+One-time repository setup:
+1. In Cloudflare, create an API token restricted to the account containing the Worker, with **Workers Scripts: Edit** and **Account Settings: Read** permissions.
+2. In GitHub repository Settings → Secrets and variables → Actions, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+3. Run **NORTHSTAR Canvas Bridge — Deploy** from the Actions tab once. Later changes to `canvas-bridge/` or `wrangler.jsonc` on this development branch deploy automatically.
+
+If either secret is absent, the deploy job is intentionally skipped. Never store a Cloudflare Global API Key or Canvas access token in the repository.
+
+## 7. Required live acceptance before Phase 4 sign-off
 
 Run these tests in the 0.4.4.5 preview using a test assignment or instructor-approved sandbox course:
 

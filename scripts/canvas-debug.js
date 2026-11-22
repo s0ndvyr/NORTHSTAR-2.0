@@ -388,10 +388,9 @@
     input = input || {};
     var d = input.diagnostics || {};
     function clean(value, limit) {
-      return redact(value == null ? "" : value).replace(/[\r\n\t]+/g, " ").slice(0, limit || 240);
+      return redact(value == null ? "" : value).replace(/[\\r\\n\\t]+/g, " ").slice(0, limit || 240);
     }
     function numberOrNull(value) {
-      if (value === null || value === undefined || value === "") return null;
       var n = Number(value);
       return Number.isFinite(n) && n >= 0 ? n : null;
     }
