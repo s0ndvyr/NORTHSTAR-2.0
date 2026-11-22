@@ -94,9 +94,9 @@ function renderToolbar(host){
  host.innerHTML=[
   '<div class="ns-pdf-modebar" role="group" aria-label="PDF input mode">',
    '<span class="ns-pdf-mode-label">INPUT</span>',
-   '<button type="button" data-ns-mode="hand" aria-pressed="true" class="is-active"><span aria-hidden="true">✋</span> Hand</button>',
-   '<button type="button" data-ns-mode="pencil" aria-pressed="false"><span aria-hidden="true">✎</span> Pencil</button>',
-   '<span class="ns-pdf-mode-help">Hand moves the page · Pencil annotates</span>',
+   '<button type="button" data-ns-mode="hand" aria-pressed="true" class="is-active"><span aria-hidden="true">✋</span> Hand / Finger</button>',
+   '<button type="button" data-ns-mode="pencil" aria-pressed="false"><span aria-hidden="true">✎</span> Apple Pencil</button>',
+   '<span class="ns-pdf-mode-help">Choose your input. Every tool works in either mode.</span>',
   '</div>',
   '<div class="ns-pdf-toolbar">',
    '<div class="ns-pdf-tools" role="toolbar" aria-label="PDF annotation tools">',
@@ -213,8 +213,12 @@ function addPoint(event,canvas){
  const pressure=event.pointerType==='pen'?Math.max(.12,Math.min(1,Number(event.pressure)||.5)):.5;
  return {x:Math.max(0,Math.min(1,(event.clientX-rect.left)/width)),y:Math.max(0,Math.min(1,(event.clientY-rect.top)/height)),pressure};
 }
-function canAnnotatePointer(pointerType,mode,penAlreadyActive){
- return mode==='pencil'&&(['pen','touch','mouse'].includes(pointerType))&&(pointerType==='pen'||!penAlreadyActive);
+const annotationTools=new Set(['select','pen','highlight','text','line','arrow','rectangle','ellipse','eraser']);
+function canAnnotatePointer(pointerType,mode){
+ return mode==='hand'?['touch','mouse'].includes(pointerType):mode==='pencil'?pointerType==='pen':false;
+}
+function canUseAnnotationTool(tool,pointerType,mode){
+ return annotationTools.has(tool)&&canAnnotatePointer(pointerType,mode);
 }
 function distanceToSegment(point,start,end,widthPx,heightPx){
  const px=point.x*widthPx,py=point.y*heightPx,ax=start.x*widthPx,ay=start.y*heightPx,bx=end.x*widthPx,by=end.y*heightPx,dx=bx-ax,dy=by-ay;
@@ -259,8 +263,18 @@ function setInputMode(mode){
   const active=button.dataset.nsMode===pdfState.inputMode;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));
  });
  const hint=$('#nsPdfInputHint');
- if(hint)hint.textContent=pdfState.inputMode==='hand'?'Hand mode · one finger pans; two fingers move and pinch-zoom.':'Pencil mode · Pencil or one finger draws; two fingers pan and pinch-zoom.';
+ if(hint)hint.textContent=pdfState.inputMode==='hand'?'Hand input · use your finger for every tool. Two fingers pan and pinch-zoom.':'Pencil input · use Apple Pencil for every tool. Two fingers pan and pinch-zoom.';
 }
+function setActiveTool(tool){
+ if(!annotationTools.has(tool))return false;
+ pdfState.tool=tool;
+ const host=pdfState.host;
+ if(host)host.querySelectorAll('[data-ns-tool]').forEach(button=>button.classList.toggle('is-active',button.dataset.nsTool===tool));
+ const hint=$('#nsPdfInputHint');
+ if(hint){const label=tool==='text'?'Type your note, then drag a box on the page.':tool==='select'?'Drag an existing annotation to move it.':tool==='eraser'?'Drag over marks to erase them.':'Drag on the page to use '+tool+'.';hint.textContent=label+' '+(pdfState.inputMode==='hand'?'Hand / finger input':'Apple Pencil input')+' remains selected.';}
+ return true;
+}
+function getInputState(){return {mode:pdfState.inputMode,tool:pdfState.tool};}
 function attachCanvasEvents(){
  const ink=$('#nsPdfInk'),stage=pdfState.host?.querySelector('.ns-pdf-stage-scroll');if(!ink||!stage)return;
  const pointers=pdfState.activePointers;pointers.clear();pdfState.activeGesture=null;
@@ -339,26 +353,15 @@ function attachCanvasEvents(){
  }
  function onPointerDown(event){
   if(!pdfState.doc)return;
-  if(event.pointerType==='touch')updatePointer(event);
-  else if(pdfState.inputMode==='hand'&&event.pointerType!=='pen')updatePointer(event);
-  else if(pdfState.inputMode==='pencil')updatePointer(event);
+  // Track touch contacts independently of the selected drawing input so two
+  // fingers can always navigate, including while Apple Pencil mode is active.
+  if(event.pointerType==='touch'||event.pointerType==='pen')updatePointer(event);
   if(pdfState.activeGesture){event.preventDefault();updateGesture();return;}
   if(event.pointerType==='touch'&&[...pointers.values()].filter(p=>p.type==='touch').length>=2){
    if(startGesture()){event.preventDefault();try{stage.setPointerCapture(event.pointerId);}catch{}return;}
   }
-  if(pdfState.inputMode==='hand'){
-   if(event.pointerType==='pen')return;
-   if(event.pointerType==='touch'||event.pointerType==='mouse'){
-    event.preventDefault();active={tool:'hand-pan',pointerId:event.pointerId,pointerType:event.pointerType,last:{x:event.clientX,y:event.clientY},lastTime:performance.now(),velocityX:0,velocityY:0};
-    try{stage.setPointerCapture(event.pointerId);}catch{}
-   }
-   return;
-  }
-  if(!canAnnotatePointer(event.pointerType,'pencil',event.pointerType!=='pen'&&[...pointers.values()].some(p=>p.type==='pen')))return;
-  if(event.pointerType==='pen'){
-   if(active?.pointerType==='touch')cancelActive();
-   pointers.forEach((p,id)=>{if(p.type==='touch')pointers.delete(id);});
-  }
+  // The selected mode determines the drawing device. Tool changes never alter it.
+  if(!canUseAnnotationTool(pdfState.tool,event.pointerType,pdfState.inputMode))return;
   if(active)return;
   if(!inCanvas(event))return;
   event.preventDefault();
@@ -366,24 +369,10 @@ function attachCanvasEvents(){
   beginAnnotation(event,point);
   if(active){try{stage.setPointerCapture(event.pointerId);}catch{}}
  }
- function startPanInertia(vx,vy){
-  if(Math.hypot(vx,vy)<.05)return;
-  let previous=performance.now();
-  const frame=now=>{
-   const delta=Math.min(32,now-previous);previous=now;
-   stage.scrollLeft-=vx*delta;stage.scrollTop-=vy*delta;
-   const decay=Math.pow(.91,delta/16);vx*=decay;vy*=decay;
-   if(Math.hypot(vx,vy)>.035)root.requestAnimationFrame(frame);
-  };
-  if(typeof root.requestAnimationFrame==='function')root.requestAnimationFrame(frame);
- }
  function onPointerMove(event){
   if(pointers.has(event.pointerId))updatePointer(event);
   if(pdfState.activeGesture){updateGesture();event.preventDefault();return;}
   if(!active||active.pointerId!==event.pointerId)return;
-  if(active.tool==='hand-pan'){
-   const now=performance.now(),dt=Math.max(1,now-(active.lastTime||now)),dx=event.clientX-active.last.x,dy=event.clientY-active.last.y;stage.scrollLeft-=dx;stage.scrollTop-=dy;active.velocityX=dx/dt;active.velocityY=dy/dt;active.last={x:event.clientX,y:event.clientY};active.lastTime=now;return;
-  }
   const events=event.getCoalescedEvents?event.getCoalescedEvents():[event],last=events[events.length-1],point=addPoint(last,ink);
   if(active.tool==='text'){
    active.end=point;pdfState.preview={page:active.page,start:active.start,end:point,color:active.color};drawOverlay();return;
@@ -400,7 +389,6 @@ function attachCanvasEvents(){
  }
  function finishActive(event,cancelled){
   if(!active||active.pointerId!==event.pointerId)return;
-  if(active.tool==='hand-pan'){const vx=active.velocityX||0,vy=active.velocityY||0;active=null;if(!cancelled)startPanInertia(vx,vy);return;}
   if(cancelled){cancelActive();return;}
   if(active.tool==='text'){
    const input=$('#nsPdfText'),end=active.end||active.start,box=textBoxFromDrag(active.start,end,String(active.text).length);
@@ -420,13 +408,7 @@ function attachCanvasEvents(){
 function wireToolbar(){
  const host=pdfState.host;if(!host)return;
  host.querySelectorAll('[data-ns-mode]').forEach(button=>button.addEventListener('click',()=>setInputMode(button.dataset.nsMode)));
- host.querySelectorAll('[data-ns-tool]').forEach(button=>button.addEventListener('click',()=>{
-  pdfState.tool=button.dataset.nsTool;
-  host.querySelectorAll('[data-ns-tool]').forEach(b=>b.classList.toggle('is-active',b===button));
-  setInputMode('pencil');
-  const hint=$('#nsPdfInputHint');
-  if(hint)hint.textContent=pdfState.tool==='text'?'Type above, then drag out the text box.':pdfState.tool==='select'?'Drag an annotation to move it.':'Pencil or one finger draws; two fingers navigate.';
- }));
+ host.querySelectorAll('[data-ns-tool]').forEach(button=>button.addEventListener('click',()=>setActiveTool(button.dataset.nsTool)));
  host.querySelectorAll('[data-ns-page]').forEach(button=>button.addEventListener('click',()=>{
   pdfState.page=Math.max(1,Math.min(pdfState.doc.numPages,pdfState.page+(button.dataset.nsPage==='next'?1:-1)));renderPage();
  }));
@@ -504,7 +486,7 @@ async function openPdf(host,file,assignment,credentials){
  attachCanvasEvents();wireToolbar();await renderPage();setSaveState('Ready. Choose Hand to navigate or Pencil to annotate with Apple Pencil or finger.');
 }
 function getAnnotatedFile(){return exportAnnotatedPdf();}
-const api={enter,exit,close,routeId,loadingMarkup,sanitizeHtml,collectFiles,openPdf,getAnnotatedFile,isPenPointer,canAnnotatePointer,distanceToSegment,pointHitsStroke,wrapTextLines,textBoxFromDrag,notify};
+const api={enter,exit,close,routeId,loadingMarkup,sanitizeHtml,collectFiles,openPdf,getAnnotatedFile,isPenPointer,canAnnotatePointer,canUseAnnotationTool,setInputMode,setActiveTool,getInputState,distanceToSegment,pointHitsStroke,wrapTextLines,textBoxFromDrag,notify};
 root.NorthstarAssignmentRoom=api;
 root.closeAssignmentRoom=close;
 const appCloseOverlay=root.closeOverlay;root.closeOverlay=function(id){if(id==='wsOverlay')return close();if(typeof appCloseOverlay==='function')return appCloseOverlay.call(root,id);};
