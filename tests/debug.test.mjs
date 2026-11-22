@@ -149,7 +149,8 @@ const fileReport=dbg.buildFileDiagnosticReport({
   environment:'preview',stage:'content',code:'CANVAS_FILE_CONTENT_FAILED',bridgeStatus:406,upstreamStatus:406,workerVersion:'0.4.4.5 (3)',
   requestId:'outer-ray-406',assignmentId:123,courseId:11,fileId:42,fileName:'worksheet.pdf',
   canvasHost:'https://school.instructure.com',bridgeHost:'https://bridge.example',
-  diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamServer:'cloudflare',upstreamContentType:'text/html',upstreamRayId:'upstream-ray-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true}
+  diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamServer:'cloudflare',upstreamContentType:'text/html',upstreamRayId:'upstream-ray-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true},
+  browserDelivery:{attempted:true,result:'http_error',status:406,host:'cdn.inscloudgate.net',contentType:'text/html'}
 });
 const parsedFileReport=JSON.parse(fileReport);
 assert.equal(parsedFileReport.stage,'content');
@@ -158,6 +159,11 @@ assert.equal(parsedFileReport.canvasUpstreamHttpStatus,406);
 assert.equal(parsedFileReport.request.upstreamHost,'storage.example.net');
 assert.equal(parsedFileReport.request.redirectCount,1);
 assert.equal(parsedFileReport.request.failureType,'http');
+assert.equal(parsedFileReport.request.browserDelivery.attempted,true);
+assert.equal(parsedFileReport.request.browserDelivery.result,'http_error');
+assert.equal(parsedFileReport.request.browserDelivery.httpStatus,406);
+assert.equal(parsedFileReport.request.browserDelivery.host,'cdn.inscloudgate.net');
+assert(!fileReport.includes('signature='));
 assert.equal(parsedFileReport.connection.canvasHost,'school.instructure.com');
 const secretReport=dbg.buildFileDiagnosticReport({diagnostics:{upstreamHost:'storage.example.net'},fileName:'Bearer supersecrettoken1234567890abcdef',bridgeHost:'https://bridge.example/?token=abc123456789'});
 assert(!secretReport.includes('supersecrettoken'));
