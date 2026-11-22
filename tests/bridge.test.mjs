@@ -99,6 +99,7 @@ let fileCalls=[];
 globalThis.fetch=async(url,opts)=>{
   fileCalls.push({url,opts});
   if(url==='https://school.instructure.com/api/v1/files/123')return new Response(JSON.stringify({url:'https://school.instructure.com/files/123/download'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
   if(url==='https://school.instructure.com/files/123/download')return new Response(null,{status:302,headers:{Location:'https://storage.example.net/private/file.pdf'}});
   if(url==='https://storage.example.net/private/file.pdf'){assert.equal(opts.headers.Authorization,undefined,'Canvas bearer token must not follow cross-origin signed file redirect');return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});}
   throw Error('unexpected URL '+url);
@@ -109,5 +110,8 @@ assert.equal(fileResponse.headers.get('Content-Type'),'application/pdf');
 assert.equal(fileResponse.headers.get('Content-Disposition'),'attachment; filename="worksheet.pdf"');
 assert.deepEqual([...new Uint8Array(await fileResponse.arrayBuffer())],[37,80,68,70]);
 assert.equal(fileCalls.length,3,'file metadata, Canvas download redirect and signed binary request are proxied');
+const scopedFileResponse=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
+assert.equal(scopedFileResponse.status,200,'course-scoped file download uses the course-scoped Canvas metadata endpoint');
+assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/1/files/124'),'scoped attachment metadata request retains course context');
 
 console.log('PASS: validated assignment and classic quiz POSTs, dedicated quiz flag PUTs, and read-only New Quizzes; arbitrary writes and impersonation rejected');
