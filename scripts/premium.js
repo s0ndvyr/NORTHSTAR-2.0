@@ -804,7 +804,7 @@ async function phase441RenderOfficeResource(kind,result,file,stage){
     toolbar.append(importButton);shell.append(toolbar,status,page);stage.replaceChildren(shell);return;
   }
   if(kind==='Spreadsheet'){
-    const module=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+    const module=await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
     const XLSX=module.default?.read?module.default:module;
     const workbook=XLSX.read(bytes,{type:'array',cellDates:true,cellStyles:true});
     if(!workbook.SheetNames?.length)throw Error('The workbook does not contain readable worksheets.');
