@@ -200,9 +200,37 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
+async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fetch}){
   const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
   const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
+  // Prefer Canvas's short-lived, file-specific download URL from metadata and fetch it
+  // from the student's browser network. This avoids the Cloudflare-to-Cloudflare
+  // Worker egress path that has been returning branded HTTP 406 HTML from storage.
+  // The URL is treated as a temporary capability: never log, persist, or forward
+  // the Canvas bearer token to it.
+  const raw=metadata.url||metadata.download_url;
+  const trustedHost=host=>{const h=String(host||'').toLowerCase();const base=new URL(credentials.base).hostname.toLowerCase();return h===base||h.endsWith('.instructure.com')||h.endsWith('.canvas-user-content.com')||h.endsWith('.inscloudgate.net');};
+  if(typeof raw==='string'&&raw){
+    try{
+      const target=new URL(raw,credentials.base);
+      if(target.protocol==='https:'&&!target.username&&!target.password&&trustedHost(target.hostname)&&!target.searchParams.has('access_token')){
+        const response=await fetchImpl(target.href,{method:'GET',headers:{Accept:'application/pdf,application/octet-stream,*/*'},mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
+        const finalUrl=response.url?new URL(response.url):target;
+        if(response.ok&&finalUrl.protocol==='https:'&&trustedHost(finalUrl.hostname)){
+          const contentType=response.headers.get('Content-Type')||metadata['content-type']||metadata.content_type||'application/octet-stream';
+          const bytes=new Uint8Array(await response.arrayBuffer());
+          if(bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-'){
+            const disposition=response.headers.get('Content-Disposition')||'';
+            const match=disposition.match(/filename\\*?=(?:UTF-8''|")?([^;"]+)/i);
+            return {id:f,name:(match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'')||metadata.display_name||metadata.filename||('Canvas file '+f),contentType,bytes,size:bytes.byteLength,workerVersion:'browser-direct'};
+          }
+        }
+      }
+    }catch(error){
+      // Cross-origin storage may deny browser CORS or the signed URL may have expired.
+      // Fall through to the private bridge path; preserve the authoritative bridge diagnostics.
+    }
+  }
   const download=await api.getBinary('/api/v1/courses/'+c+'/files/'+f+'/download');
   return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength,workerVersion:download.workerVersion||''};
 }
