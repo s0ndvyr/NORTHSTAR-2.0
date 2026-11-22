@@ -13,13 +13,14 @@ const supported = type => ({id:1, question_type:type, answers:
         ? [{id:11,blank_id:'color'},{id:12,blank_id:'shape'}]
         : []
 });
-for (const type of ['multiple_choice_question','true_false_question','multiple_answers_question','essay_question','short_answer_question','numerical_question','calculated_question','matching_question','fill_in_multiple_blanks_question','multiple_dropdowns_question','text_only_question']) {
+for (const type of ['multiple_choice_question','true_false_question','multiple_answers_question','essay_question','short_answer_question','numerical_question','calculated_question','matching_question','fill_in_multiple_blanks_question','multiple_dropdowns_question','text_only_question','file_upload_question']) {
   const row = supported(type);
   if (['essay_question','short_answer_question','numerical_question','calculated_question','text_only_question'].includes(type)) row.question_type=type;
   assert.equal(workspace.questionSupported(row), true, type+' should be supported');
 }
 assert.equal(workspace.questionSupported({id:2,question_type:'matching_question',answers:[{id:1,answer_match_left:'L'}]}), false, 'malformed matching question is not claimed as supported');
 assert.equal(workspace.questionSupported({id:3,question_type:'unsupported_vendor_question',answers:[]}), false, 'unknown question formats remain on Canvas fallback');
+assert.equal(workspace.questionSupported({id:4,question_type:'file_upload_question'}), true, 'Canvas Classic Quiz file-upload questions are supported by a dedicated upload endpoint');
 
 assert.deepEqual(submissions.payload('online_upload',[101,102]).submission.file_ids,[101,102], 'multiple Canvas file IDs can be submitted together');
 assert.deepEqual(submissions.payload('online_upload',101).submission.file_ids,[101], 'single file compatibility is preserved');
