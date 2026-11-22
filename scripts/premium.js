@@ -720,10 +720,69 @@ function phase441ResourceKind(file){
   if(type.startsWith('video/')||/\.(mp4|m4v|webm|mov)$/i.test(name))return 'Video';
   if(type.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|aac)$/i.test(name))return 'Audio';
   if(type.startsWith('text/')||/\.(txt|csv|md|json|xml|log)$/i.test(name))return 'Text';
+  if(name.endsWith('.docx')||type.includes('wordprocessingml'))return 'Word';
+  if(name.endsWith('.xlsx')||type.includes('spreadsheetml'))return 'Spreadsheet';
+  if(name.endsWith('.pptx')||type.includes('presentationml'))return 'Presentation';
   return 'File';
 }
 function phase441ReleaseResourceUrl(){if(phase441ResourceObjectUrl){URL.revokeObjectURL(phase441ResourceObjectUrl);phase441ResourceObjectUrl=null;}}
 window.addEventListener('northstar:assignment-room-exit',phase441ReleaseResourceUrl);
+async function phase441RenderOfficeResource(kind,result,file,stage){
+  const bytes=result.bytes.buffer.slice(result.bytes.byteOffset,result.bytes.byteOffset+result.bytes.byteLength);
+  if(kind==='Word'){
+    const module=await import('https://cdn.jsdelivr.net/npm/mammoth@1.9.0/+esm');
+    const mammoth=module.default||module;
+    const converted=await mammoth.convertToHtml({arrayBuffer:bytes});
+    const safeHtml=window.NorthstarAssignmentRoom.sanitizeHtml(converted.value||'<p>No readable text was found in this document.</p>',getCredentials()?.base||'https://nnps.instructure.com');
+    const page=document.createElement('article');page.className='ns-office-document ns-office-word';page.append(safeHtml);
+    if(converted.messages?.length){const note=document.createElement('p');note.className='ns-office-note';note.textContent='Some Word layout elements may not be represented exactly in this preview. Download the original if you need its full formatting.';page.prepend(note);}
+    stage.replaceChildren(page);return;
+  }
+  if(kind==='Spreadsheet'){
+    const module=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+    const XLSX=module.default?.read?module.default:module;
+    const workbook=XLSX.read(bytes,{type:'array',cellDates:true});
+    if(!workbook.SheetNames?.length)throw Error('The workbook does not contain readable worksheets.');
+    const shell=document.createElement('section');shell.className='ns-office-document ns-office-spreadsheet';
+    const toolbar=document.createElement('div');toolbar.className='ns-office-toolbar';
+    const label=document.createElement('label');label.textContent='Worksheet';
+    const select=document.createElement('select');select.className='select';
+    workbook.SheetNames.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);});
+    const tableWrap=document.createElement('div');tableWrap.className='ns-office-table-wrap';
+    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Read-only worksheet preview. Formulas and cell values are shown as exported; editing and recalculation remain in the original spreadsheet application.';
+    const render=()=>{
+      tableWrap.textContent='';const sheet=workbook.Sheets[select.value];if(!sheet)return;
+      const rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,blankrows:false,defval:''}).slice(0,250);
+      const table=document.createElement('table');table.className='ns-office-table';
+      rows.forEach((row,rowIndex)=>{const tr=document.createElement('tr');row.slice(0,30).forEach(value=>{const cell=document.createElement(rowIndex===0?'th':'td');cell.textContent=String(value??'');tr.append(cell);});table.append(tr);});
+      tableWrap.append(table);
+      if(rows.length>=250){const cap=document.createElement('p');cap.className='ns-office-note';cap.textContent='Preview limited to the first 250 rows and 30 columns of this worksheet.';tableWrap.append(cap);}
+    };
+    select.addEventListener('change',render);toolbar.append(label,select);shell.append(toolbar,tableWrap,note);stage.replaceChildren(shell);render();return;
+  }
+  if(kind==='Presentation'){
+    const module=await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const JSZip=module.default||module;
+    const zip=await JSZip.loadAsync(bytes);
+    const slideNames=Object.keys(zip.files).filter(name=>/^ppt\/slides\/slide\d+\.xml$/i.test(name)).sort((a,b)=>Number(a.match(/slide(\d+)/i)?.[1]||0)-Number(b.match(/slide(\d+)/i)?.[1]||0));
+    if(!slideNames.length)throw Error('No readable slides were found in this presentation.');
+    const shell=document.createElement('section');shell.className='ns-office-document ns-office-presentation';
+    const note=document.createElement('p');note.className='ns-office-note';note.textContent='Text-first slide preview. Animations, embedded media, SmartArt and exact slide layout are not reproduced. Open the original presentation for full fidelity.';shell.append(note);
+    for(let index=0;index<slideNames.length;index++){
+      const xml=await zip.file(slideNames[index]).async('string'),doc=new DOMParser().parseFromString(xml,'application/xml');
+      if(doc.querySelector('parsererror'))continue;
+      const slide=document.createElement('article');slide.className='ns-office-slide';
+      const heading=document.createElement('div');heading.className='ns-office-slide-number';heading.textContent='SLIDE '+(index+1);slide.append(heading);
+      const paragraphs=[...doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','p')];
+      paragraphs.forEach(paragraph=>{const text=[...paragraph.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main','t')].map(node=>node.textContent||'').join('');if(text.trim()){const p=document.createElement('p');p.textContent=text;slide.append(p);}});
+      if(slide.children.length===1){const empty=document.createElement('p');empty.className='ns-office-note';empty.textContent='No extractable text on this slide. It may contain images or other embedded objects.';slide.append(empty);}
+      shell.append(slide);
+    }
+    stage.replaceChildren(shell);return;
+  }
+  throw Error('No native office renderer is available for this file format.');
+}
+
 window.addEventListener('northstar:assignment-room-exit',()=>{if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);});
 async function phase441OpenResource(file,a,c){
   if(!file)return;
@@ -734,10 +793,11 @@ async function phase441OpenResource(file,a,c){
   stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ RESOURCE CENTER</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Retrieving this resource through your private Canvas bridge…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
   try{
     const result=await window.NorthstarWorkspace.downloadCanvasFile({credentials:getCredentials(),courseId:c.canvasId,fileId:file.id});
-    const ext=String(file.name||'').split('.').pop().toLowerCase(),known={txt:'text/plain',csv:'text/csv',md:'text/markdown',json:'application/json',xml:'application/xml',log:'text/plain',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',aac:'audio/aac'};
+    const ext=String(file.name||'').split('.').pop().toLowerCase(),known={txt:'text/plain',csv:'text/csv',md:'text/markdown',json:'application/json',xml:'application/xml',log:'text/plain',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',aac:'audio/aac',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation'};
     const mime=(result.contentType&&result.contentType!=='application/octet-stream'?result.contentType:(known[ext]||'application/octet-stream')).split(';')[0].toLowerCase();
     if(mime==='application/pdf'||String.fromCharCode(...result.bytes.slice(0,5))==='%PDF-')return phase441OpenPdf(file,a,c);
-    if(mime.startsWith('text/')||mime==='application/json'||mime==='application/xml'){
+    const officeKind=phase441ResourceKind(file);if(['Word','Spreadsheet','Presentation'].includes(officeKind)){await phase441RenderOfficeResource(officeKind,result,file,stage);return;}
+    if(mime.startsWith('text/')||mime==='application/json'||mime==='application/xml'||mime==='application/rtf'){
       const pre=document.createElement('pre');pre.className='ns-resource-text';pre.textContent=new TextDecoder('utf-8',{fatal:false}).decode(result.bytes);stage.replaceChildren(pre);return;
     }
     const blob=new Blob([result.bytes],{type:mime});phase441ResourceObjectUrl=URL.createObjectURL(blob);
