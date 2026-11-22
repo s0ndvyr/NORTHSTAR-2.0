@@ -78,7 +78,7 @@ jobs:
           copy_dashboard source-preview _site/preview
 
           grep -Fq 'NORTHSTAR / .4.4.1' _site/index.html
-          grep -Fq 'NORTHSTAR / .4.4.5' _site/preview/index.html
+          grep -Fq 'NORTHSTAR / .4.4.5 (3)' _site/preview/index.html
           test -f _site/preview/styles/main.css
           test -f _site/preview/styles/assignment-room.css
           test -f _site/preview/scripts/assignment-room.js
@@ -87,7 +87,7 @@ jobs:
           test -f _site/preview/.nojekyll
 
           echo "Verified production version: 0.4.4.1"
-          echo "Verified preview version: 0.4.4.5"
+          echo "Verified preview version: 0.4.4.5 (3)"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
