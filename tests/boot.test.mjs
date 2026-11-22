@@ -55,11 +55,33 @@ assert.ok(window.NorthstarAssignmentRoom, 'full-page assignment room and PDF stu
 assert.equal(window.NorthstarAssignmentRoom.isPenPointer('pen'), true, 'Apple Pencil pointer is recognized');
 assert.equal(window.NorthstarAssignmentRoom.isPenPointer('touch'), false, 'finger touch is not accepted as Pencil ink');
 assert.equal(window.NorthstarAssignmentRoom.isPenPointer('mouse'), false, 'mouse is not accepted as Pencil ink');
-assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('pen','pencil',false), true, 'Apple Pencil draws in Pencil mode');
-assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('touch','pencil',false), true, 'single-finger drawing is supported in Pencil mode');
-assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('touch','pencil',true), false, 'touch palm contacts are ignored while Apple Pencil is active');
-assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('touch','hand',false), false, 'Hand mode reserves touch for navigation');
-assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('mouse','pencil',false), true, 'desktop pointer remains usable for annotation');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('pen','pencil'), true, 'Apple Pencil is the selected Pencil-mode input');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('touch','hand'), true, 'finger input is enabled in Hand mode');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('mouse','hand'), true, 'mouse input is enabled in Hand mode for desktop testing');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('pen','hand'), false, 'Apple Pencil does not bypass Hand mode');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('touch','pencil'), false, 'finger input does not bypass Pencil mode');
+assert.equal(window.NorthstarAssignmentRoom.canAnnotatePointer('mouse','pencil'), false, 'mouse input does not bypass Pencil mode');
+const pdfTools=['select','pen','highlight','text','line','arrow','rectangle','ellipse','eraser'];
+for(const tool of pdfTools){
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'touch','hand'),true,tool+' works with finger in Hand mode');
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'mouse','hand'),true,tool+' works with mouse in Hand mode');
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'pen','pencil'),true,tool+' works with Apple Pencil in Pencil mode');
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'pen','hand'),false,tool+' respects Hand input selection');
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'touch','pencil'),false,tool+' respects Pencil input selection');
+ assert.equal(window.NorthstarAssignmentRoom.canUseAnnotationTool(tool,'mouse','pencil'),false,tool+' rejects mouse in Pencil mode');
+}
+window.NorthstarAssignmentRoom.setInputMode('hand');
+for(const tool of pdfTools){
+ assert.equal(window.NorthstarAssignmentRoom.setActiveTool(tool),true,'tool '+tool+' can be selected');
+ assert.deepEqual(window.NorthstarAssignmentRoom.getInputState(),{mode:'hand',tool},'selecting '+tool+' never switches Hand mode');
+}
+window.NorthstarAssignmentRoom.setInputMode('pencil');
+for(const tool of pdfTools){
+ assert.equal(window.NorthstarAssignmentRoom.setActiveTool(tool),true,'tool '+tool+' remains selectable in Pencil mode');
+ assert.deepEqual(window.NorthstarAssignmentRoom.getInputState(),{mode:'pencil',tool},'selecting '+tool+' never switches Pencil mode');
+}
+assert.equal(window.NorthstarAssignmentRoom.setActiveTool('invalid-tool'),false,'unknown tools cannot corrupt editor state');
+window.NorthstarAssignmentRoom.setInputMode('hand');
 const pdfDistance=window.NorthstarAssignmentRoom.distanceToSegment({x:.5,y:.54},{x:.1,y:.5},{x:.9,y:.5},100,100);
 assert.equal(Math.round(pdfDistance),4,'stroke hit-testing measures distance in page pixels');
 const pdfStroke={tool:'pen',points:[{x:.1,y:.5},{x:.9,y:.5}]};
