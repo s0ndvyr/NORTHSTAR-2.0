@@ -98,7 +98,7 @@ const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImp
   pdfFetchCalls.push({url,opts});
   const path=new URL(url).searchParams.get('path');
   if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf'})};
-  if(path==='/api/v1/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer};
+  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer};
   throw Error('Unexpected PDF endpoint '+path);
 }});
 assert.equal(pdf.name,'worksheet.pdf');
