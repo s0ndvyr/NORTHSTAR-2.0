@@ -93,11 +93,36 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl}){
+async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fetch}){
   const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
   const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
+  // Prefer the short-lived Canvas file URL from metadata and fetch it from the
+  // student's browser network, not from the Worker-to-storage egress path.
+  // Never forward Canvas authorization or browser cookies to the signed URL.
+  const raw=metadata.url||metadata.download_url;
+  const trustedHost=host=>{const h=String(host||'').toLowerCase();const base=new URL(credentials.base).hostname.toLowerCase();return h===base||h.endsWith('.instructure.com')||h.endsWith('.canvas-user-content.com')||h.endsWith('.inscloudgate.net');};
+  if(typeof raw==='string'&&raw){
+    try{
+      const target=new URL(raw,credentials.base);
+      if(target.protocol==='https:'&&!target.username&&!target.password&&trustedHost(target.hostname)&&!target.searchParams.has('access_token')){
+        const response=await fetchImpl(target.href,{method:'GET',headers:{Accept:'application/pdf,application/octet-stream,*/*'},mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
+        const finalUrl=response.url?new URL(response.url):target;
+        if(response.ok&&finalUrl.protocol==='https:'&&trustedHost(finalUrl.hostname)){
+          const contentType=response.headers.get('Content-Type')||metadata['content-type']||metadata.content_type||'application/octet-stream';
+          const bytes=new Uint8Array(await response.arrayBuffer());
+          if(bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-'){
+            const disposition=response.headers.get('Content-Disposition')||'';
+            const match=disposition.match(/filename\\*?=(?:UTF-8''|")?([^;"]+)/i);
+            return {id:f,name:(match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'')||metadata.display_name||metadata.filename||('Canvas file '+f),contentType,bytes,size:bytes.byteLength,workerVersion:'browser-direct'};
+          }
+        }
+      }
+    }catch(error){
+      // Cross-origin CORS or an expired signed URL falls back to the private bridge.
+    }
+  }
   const download=await api.getBinary('/api/v1/files/'+f+'/download');
-  return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength};
+  return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength,workerVersion:download.workerVersion||''};
 }
 const api={transport,uploadAssignmentFile,downloadCanvasFile,startQuiz,getQuizTime,saveQuizAnswers,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
