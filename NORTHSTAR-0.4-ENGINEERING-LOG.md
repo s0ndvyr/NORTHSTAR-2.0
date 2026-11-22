@@ -595,3 +595,13 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - This path submits a flattened annotated PDF as an ordinary `online_upload` attachment when Canvas allows file uploads.
 - It does not claim to write NORTHSTAR's custom ink/text layer into Canvas DocViewer's native `student_annotation` payload.
 - Cloudflare Worker deployment is separate from GitHub Pages. The bridge deployment workflow must report success before live Canvas testing.
+
+
+### 4.4.7.2 deployment closeout
+
+- Phase 4 CI passed on the exact preview head `0344bbb5e5b031bbe56f97c6c9a7c85dfa5f933d` in run `45085954397`.
+- GitHub Pages freshness verification passed for both exact branch heads. The preview build was verified as NORTHSTAR `4.4.7.2 / 0.4.16`; Pages deployment run `45085996901` completed successfully.
+- The Cloudflare Worker validation and regression suite passed, and the Worker deployment workflow `45085853219` deployed `northstar-bridge` successfully from commit `3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14`.
+- Preview frontend: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`.
+- Production frontend remains on `4.4.6.9`; this Canvas work has not been promoted to main.
+- Automated tests and deployment are complete. A real PDF upload and submission in the connected Canvas tenant are still required before claiming end-to-end success.

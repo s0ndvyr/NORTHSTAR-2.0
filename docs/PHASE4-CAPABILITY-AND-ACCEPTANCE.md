@@ -2,7 +2,7 @@
 
 **Development version:** 0.4.16 / NORTHSTAR 4.4.7.2  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** Canvas file upload finalization implementation candidate; Phase 4 CI and live Canvas acceptance remain open.  
+**Status:** Preview deployed at 4.4.7.2; automated Phase 4 checks passed; live Canvas acceptance remains open.  
 **Production:** `main` remains on the previous verified release until this candidate passes its own tests and is promoted.
 
 This document distinguishes four different states:

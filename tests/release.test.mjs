@@ -17,7 +17,7 @@ assert.equal(manifest.northstarVersion,'4.4.7.2','release manifest identifies th
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
-assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.2').status||'').includes('Awaiting Phase 4 CI'),'the current Canvas upload candidate remains pending until its own checks pass');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.2').status||'').includes('45085996901'),'the current Canvas upload candidate remains pending until its own checks pass');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('45081377927'),'the current release records its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.6.9').commits.some(commit=>commit.sha==='fe5b69948d98969768fb5dc155f6f41ab1d861a8'),'the deployed release records its tested source commit');
@@ -55,3 +55,5 @@ assert.ok(workspaceJs.includes("bridge.searchParams.set('action','upload-file')"
 assert.ok(workspaceJs.includes("redirect:'error'"),'the browser never follows a bridge redirect automatically');
 
 assert.ok(debugJs.includes('global.NorthstarRelease?.manifest?.northstarVersion'),'Canvas attachment diagnostics use the active release manifest');
+
+assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.2').commits.some(commit=>commit.sha==='3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14'),'the current release records the deployed Canvas bridge Worker commit');
