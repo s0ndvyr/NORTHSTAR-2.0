@@ -202,3 +202,31 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
 #nsLaunchNewQuiz,.ns-room-submission .btn-primary{min-height:42px}
 #viewerOverlay .workspace{max-width:min(1200px,98vw);height:92vh}
 #viewerFrame{background:#fff}
+
+ 
+/* Phase 4 completion: native office-resource readers, submission availability and expanded quiz inputs. */
+.ns-office-document{max-width:100%;min-height:180px;margin:14px auto;padding:clamp(14px,2vw,24px);color:var(--text);background:color-mix(in srgb,var(--bg) 94%,var(--text) 6%);border:1px solid var(--border);border-radius:13px;line-height:1.7;overflow-wrap:anywhere}
+.ns-office-word{max-width:900px;font-size:14px}
+.ns-office-word h1,.ns-office-word h2,.ns-office-word h3{margin:1.1em 0 .45em;color:var(--text)}
+.ns-office-word p{margin:.6em 0}
+.ns-office-word table,.ns-office-table{width:100%;border-collapse:collapse;font-size:12px}
+.ns-office-word th,.ns-office-word td,.ns-office-table th,.ns-office-table td{padding:7px 9px;border:1px solid var(--border2);vertical-align:top;text-align:left}
+.ns-office-word th,.ns-office-table th{font-weight:750;background:color-mix(in srgb,var(--text) 7%,transparent)}
+.ns-office-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px}
+.ns-office-toolbar label{font-size:11px;color:var(--muted);font-weight:750}
+.ns-office-toolbar select{min-width:160px;max-width:100%}
+.ns-office-table-wrap{width:100%;max-height:65vh;overflow:auto;border:1px solid var(--border);border-radius:9px}
+.ns-office-table{min-width:100%;background:color-mix(in srgb,var(--bg) 92%,var(--text) 8%)}
+.ns-office-note{margin:0 0 12px;color:var(--muted);font-size:11px;line-height:1.55}
+.ns-office-slide{margin:12px 0;padding:18px;border:1px solid var(--border);border-radius:11px;background:color-mix(in srgb,var(--bg) 90%,var(--text) 10%)}
+.ns-office-slide-number{margin-bottom:9px;color:var(--muted);font-size:9px;letter-spacing:.12em;font-weight:850}
+.ns-office-slide p{margin:6px 0;color:var(--text);font-size:13px;white-space:pre-wrap}
+.ns-submission-availability{margin:12px 0;padding:12px 14px;border:1px solid color-mix(in srgb,#e6ad52 38%,var(--border));border-radius:10px;background:color-mix(in srgb,#e6ad52 8%,transparent);color:var(--text)}
+.ns-submission-availability strong{font-size:12px}
+.ns-submission-availability p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
+.ns-selected-files{margin:9px 0;padding:9px 11px;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:10px;line-height:1.6;overflow-wrap:anywhere}
+.quiz-blank{display:grid;grid-template-columns:minmax(85px,.6fr) minmax(0,1.4fr);align-items:center;gap:10px;margin:8px 0;color:var(--text);font-size:12px}
+.quiz-blank .select{width:100%;min-width:0}
+.quiz-prompt{color:var(--text);font-size:14px;line-height:1.7}
+.quiz-prompt p{margin:0 0 8px}
+@media(max-width:650px){.ns-office-document{padding:11px}.ns-office-table{font-size:10px}.ns-office-table th,.ns-office-table td{padding:5px 6px}.quiz-blank{grid-template-columns:1fr;gap:4px}.ns-office-slide{padding:13px}}
