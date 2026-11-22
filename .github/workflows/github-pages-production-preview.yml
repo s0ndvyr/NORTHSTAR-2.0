@@ -1,18 +1,14 @@
 name: NORTHSTAR GitHub Pages — Production + Preview
 
 on:
-  # Production and preview are published together from the default branch.
-  push:
-    branches:
-      - main
-
-  # A successful Phase 4 push test automatically refreshes /preview/.
+  # Publish production and preview only after the Phase 4 suite passes.
   workflow_run:
     workflows:
       - NORTHSTAR Phase 4 tests
     types:
       - completed
     branches:
+      - main
       - northstar-0.4.4.2-quiz-continuity
 
   workflow_dispatch:
