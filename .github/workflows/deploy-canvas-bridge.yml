@@ -1,3 +1,4 @@
+# Manual rerun trigger: this workflow file is included in its own push path filter.
 name: NORTHSTAR Canvas Bridge — Deploy
 
 on:
@@ -21,8 +22,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Install dependencies
         run: npm install
       - name: Check Worker and application JavaScript syntax
@@ -57,14 +56,12 @@ jobs:
       - name: Set up Node.js
         if: steps.credentials.outputs.configured == 'true'
         uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Install Wrangler
         if: steps.credentials.outputs.configured == 'true'
         run: npm install
       - name: Deploy the NORTHSTAR Canvas bridge
         if: steps.credentials.outputs.configured == 'true'
-        run: npx wrangler deploy --config wrangler.jsonc
+        run: npx wrangler deploy --config wrangler.jsonc --keep-vars
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
