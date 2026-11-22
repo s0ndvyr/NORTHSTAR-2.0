@@ -511,3 +511,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The .5 Phase 4 unit suite passed, including the release-manifest assertions, but the browser boot test still expected the older .3 version pill. Updated it to assert the active .6 release identity.
 - Corrected the Pages workflow deploy job: removed a duplicate `needs` key so it depends on both freshness verification and artifact build. The earlier duplicate key made the workflow invalid before any job could run.
 - Fresh Phase 4 and Pages workflow validation are pending; deployment remains gated on passing tests for both current branch heads.
+
+
+## Phase 4.4.6.6 — Deployment closeout
+
+- Preview Phase 4 push run `45080603228` passed for `e8797f6148bd74cb9c6bf289e694b53bf549271c`.
+- Main Phase 4 push run `45080715004` passed for `e849c91e68d006ff1187efa1d748a82b9f386fe7`.
+- Test-pinned Pages freshness gate passed for both exact branch heads. It checked out those SHAs, verified both releases as `4.4.6.6 / 0.4.11`, built production and preview artifacts, and deployed successfully in run `45080756988`.
+- The earlier run `45080736473` correctly held publication while main lacked a passing Phase 4 run, demonstrating that the freshness gate blocks stale/unverified branch heads.
+- Automated Phase 4 CI and GitHub Pages deployment are complete. Physical iPad/Apple Pencil acceptance and live Canvas account acceptance remain external device/account checks.
