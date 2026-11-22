@@ -107,18 +107,17 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 ### PDF Document Studio
 
-The first PDF toolset includes:
+The in-dashboard PDF editor supports a dedicated **Hand / Pencil** input switch:
 
-- PDF page rendering, page navigation and zoom.
-- Apple Pencil-only freehand ink, highlighting, straight lines, arrows, rectangles and ellipses. The browser's Pointer Events pointerType is checked so touch and mouse are not accepted as Pencil ink.
-- Typed text notes placed at a chosen point on the page.
-- Pencil eraser, undo and redo.
-- Per-assignment / per-document local annotation persistence.
-- Export a flattened annotated PDF. If the Canvas assignment accepts an online_upload, the exported PDF can be selected as the file to submit through Canvas' supported signed-upload flow.
+- **Hand mode:** one finger or mouse drags pan the document; two fingers pan and pinch-zoom. A short momentum glide makes page movement feel natural on iPad.
+- **Pencil mode:** Apple Pencil or a single finger can draw with the selected tool. Two-finger gestures remain available for pan and pinch-zoom. When an Apple Pencil is actively drawing, stray touch contacts are ignored to reduce palm marks.
+- Annotation tools: pressure-aware freehand pen, translucent highlighter, draggable text boxes, straight lines, arrows, rectangles and ellipses, brush eraser, and Move for repositioning existing marks or text boxes.
+- Text boxes support multiline text. Drag on the page to size a box; a tap creates a sensible default box. Move lets you reposition it.
+- Per-page undo/redo, ink color and size, page navigation, zoom, local per-assignment/document persistence, and flattened PDF export.
 
 Annotations are stored locally until exported. They are not a Canvas DocViewer annotation session and are not uploaded automatically. Canvas's public Submissions API does expose the student_annotation submission type and the annotatable_attachment_id field. However, the documented request does not describe how a third-party editor uploads its actual DocViewer ink/text annotation payload. NORTHSTAR therefore does not submit the attachment ID alone or claim a flattened PDF export has updated Canvas' native DocViewer annotation state. The official Canvas DocViewer workflow remains required for those special assignments unless a supported annotation-payload API is established.
 
-The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations. When the browser-direct delivery attempt fails, the diagnostic report records only a safe result category, HTTP status, hostname and content type; it never includes the signed URL.
+The PDF renderer and PDF export library are loaded from version-pinned jsDelivr ES modules at runtime. An internet connection is required to load these libraries. PDF.js renders the source document; pdf-lib applies the exported annotations.
 
 ### Supported paths and provider boundaries
 
