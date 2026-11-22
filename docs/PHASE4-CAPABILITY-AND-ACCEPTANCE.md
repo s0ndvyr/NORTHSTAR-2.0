@@ -98,7 +98,7 @@ Passing mocked CI is not the same as live acceptance in a real Canvas course.
 The development branch includes a GitHub Actions workflow for deploying the Worker without copying source through the Cloudflare dashboard. It targets the existing Worker name `northstar-bridge` from `wrangler.jsonc`.
 
 One-time repository setup:
-1. In Cloudflare, create an API token restricted to the account containing the Worker, with **Workers Scripts: Edit** and **Account Settings: Read** permissions.
+1. In Cloudflare, create an account-owned API token for CI/CD. Grant **Workers Editor** scoped only to the existing `northstar-bridge` Worker. Cloudflare documents this as the minimum permission for deploying an existing Worker with Wrangler; do not grant account-wide Admin or unrelated product permissions.
 2. In GitHub repository Settings → Secrets and variables → Actions, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 3. Run **NORTHSTAR Canvas Bridge — Deploy** from the Actions tab once. Later changes to `canvas-bridge/` or `wrangler.jsonc` on this development branch deploy automatically.
 
