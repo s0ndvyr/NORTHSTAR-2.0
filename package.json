@@ -5,7 +5,7 @@
   "description": "NORTHSTAR personal academic command center",
   "scripts": {
     "test": "npm run test:unit && npm run test:boot",
-    "test:unit": "node tests/ai.test.mjs && node tests/bridge.test.mjs && node tests/canvas-sync.test.mjs && node tests/grades.test.mjs && node tests/submissions.test.mjs && node tests/debug.test.mjs && node tests/studentvue.test.mjs && node tests/workspace.test.mjs && node tests/document-editor.test.mjs && node tests/assignment-room-fallback.test.mjs && node tests/release.test.mjs && node tests/phase4-completion.test.mjs",
+    "test:unit": "node tests/ai.test.mjs && node tests/bridge.test.mjs && node tests/canvas-sync.test.mjs && node tests/grades.test.mjs && node tests/submissions.test.mjs && node tests/debug.test.mjs && node tests/studentvue.test.mjs && node tests/workspace.test.mjs && node tests/document-editor.test.mjs && node tests/document-storage.test.mjs && node tests/assignment-room-fallback.test.mjs && node tests/release.test.mjs && node tests/phase4-completion.test.mjs",
     "test:boot": "node tests/boot.test.mjs"
   },
   "devDependencies": {
