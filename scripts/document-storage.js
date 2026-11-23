@@ -89,7 +89,7 @@ function saveDraft(record){
 const api={
  databaseName:DB_NAME,
  getLastError:()=>lastError?{...lastError}:null,
- clearLastError,
+ clearLastError:clearError,
  open:openDatabase,
  getDocument:key=>readRecord(DOCUMENTS,key),
  saveDocument,
