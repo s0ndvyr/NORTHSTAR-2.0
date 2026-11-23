@@ -179,7 +179,7 @@ globalThis.fetch=async(url,opts)=>{
 };
 const hostile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
 assert.equal(hostile.status,502);
-assert.equal((await hostile.json()).code,'CANVAS_FILE_REDIRECT_UNSAFE');
+assert.equal((await hostile.json()).code,'CANVAS_FILE_URL_UNSAFE');
 assert.equal(hostileCalls.length,1,'untrusted metadata URLs are rejected before contacting their host');
 
 // Network failures are stage-specific and never include exception messages or signed URLs.
