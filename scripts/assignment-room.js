@@ -606,7 +606,14 @@ async function exportAnnotatedPdf(){
   (s.strokes||[]).forEach(stroke=>{
    const points=stroke.points||[];if(!points.length)return;
    const viewport=pdfState.viewports[index+1]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]};
-   const convert=p=>{const point=viewport.convertToPdfPoint(p.x*viewport.width,p.y*viewport.height);return {x:point[0],y:point[1]};};
+   const convert=p=>{
+    const px=Number(p?.x)*Number(viewport.width),py=Number(p?.y)*Number(viewport.height);
+    const point=viewport.convertToPdfPoint(px,py);
+    if(!Array.isArray(point)||!Number.isFinite(Number(point[0]))||!Number.isFinite(Number(point[1]))){
+     throw Error('PDF export could not map an annotation on page '+(index+1)+' to the original PDF page geometry. Check the page dimensions and try again; the original document and saved draft are unchanged. Details: '+JSON.stringify({page:index+1,input:{x:p?.x,y:p?.y},viewport:{width:viewport.width,height:viewport.height,transform:viewport.transform},pixel:{x:px,y:py}}));
+    }
+    return {x:Number(point[0]),y:Number(point[1])};
+   };
    const first=convert(points[0]),last=convert(points[points.length-1]),color=stroke.color||'#c4e87b',match=color.match(/^#([0-9a-f]{6})$/i),hex=match?match[1]:'c4e87b',r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255,ink=rgb(r,g,b),thickness=Math.max(.8,stroke.width||pdfState.width);
    if(stroke.tool==='rectangle'){
     page.drawRectangle({x:Math.min(first.x,last.x),y:Math.min(first.y,last.y),width:Math.abs(last.x-first.x),height:Math.abs(last.y-first.y),borderColor:ink,borderWidth:thickness,opacity:1});
