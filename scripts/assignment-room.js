@@ -661,12 +661,13 @@ async function initializePdfEditor(host,bytes){
  const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
  if(data.byteLength<5||String.fromCharCode(...data.slice(0,5))!=='%PDF-')throw Error('The selected file is not a readable PDF. Choose the original PDF from Files.');
  pdfState.bytes=data;pdfState.doc=null;pdfState.renderToken++;
- setSaveState('Saving the original PDF to this iPad…');
- const sourceSaved=await persistPdfSource(data);
  renderToolbar(host);
  const name=$('#nsPdfFileName');if(name)name.textContent=pdfState.file?.name||'Assignment PDF';
  const lib=await loadPdfEngine();
  pdfState.doc=await lib.getDocument({data:pdfState.bytes.slice()}).promise;
+ // Only persist bytes after PDF.js has successfully parsed the source file.
+ setSaveState('Saving the original PDF to this iPad…');
+ const sourceSaved=await persistPdfSource(data);
  attachCanvasEvents();wireToolbar();await renderPage();
  if(pdfState.textEditor)pdfState.textEditor.unmount();
  if(root.NorthstarDocumentEditor){
