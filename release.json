@@ -19,7 +19,7 @@
       "version": "4.4.8.1",
       "date": "2026-11-23",
       "title": "PDF Document Studio persistence and recovery",
-      "description": "Completes the Document Studio foundation without replacing its working annotation tools. Stores original PDF bytes and changing annotation drafts in separate IndexedDB object stores, keyed by stable Canvas course, assignment and file identity. Restores the matching saved PDF and draft before requesting another Canvas download, keeps localStorage as a compatibility fallback, flushes active rich-text edits when Safari backgrounds or closes the page, and resolves the page-specific PDF.js viewport for every annotated page during flattened export so page rotation and source dimensions remain aligned. The existing Canvas local import and CORS recovery paths remain available.",
+      "description": "Completes the Document Studio foundation without replacing its working annotation tools. Stores original PDF bytes and changing annotation drafts in separate IndexedDB object stores, keyed by stable Canvas course, assignment and file identity. Restores the matching saved PDF and draft before requesting another Canvas download, keeps localStorage as a compatibility fallback, flushes active rich-text edits when Safari backgrounds or closes the page, and resolves the page-specific PDF.js viewport for every annotated page during flattened export so page rotation and source dimensions remain aligned. The existing Canvas local import and CORS recovery paths remain available. The Canvas Worker remains unchanged and continues to proxy Canvas API JSON only, never PDF storage bytes.",
       "category": "Document Studio and PDF persistence",
       "areas": [
         "IndexedDB source-PDF storage",
