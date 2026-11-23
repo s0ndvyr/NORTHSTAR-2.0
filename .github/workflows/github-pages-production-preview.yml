@@ -11,6 +11,7 @@ on:
       - main
       - northstar-0.4.4.2-quiz-continuity
       - northstar-4.4.8.1.1-document-studio-verification
+      - northstar-4.4.8.2-canvas-submission
 
   workflow_dispatch:
 
@@ -45,7 +46,7 @@ jobs:
           const token = process.env.GITHUB_TOKEN;
           const branches = [
             ['main', 'main_sha'],
-            ['northstar-4.4.8.1.1-document-studio-verification', 'preview_sha']
+            ['northstar-4.4.8.2-canvas-submission', 'preview_sha']
           ];
           async function api(path) {
             const response = await fetch('https://api.github.com/repos/' + repo + path, {
