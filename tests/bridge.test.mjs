@@ -130,6 +130,26 @@ assert.equal(scopedFileResponse.status,200,'course-scoped file download prefers 
 assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/1/files/124'),'scoped attachment metadata request retains course context');
 assert.equal((await worker.fetch(request('/api/v1/files/123/public_url'))).status,200,'public-preview URL endpoint is narrowly allowlisted for Canvas reads');
 
+// Instructure-hosted public_url values are signed capabilities too: never add
+// the Canvas bearer token or the student's browser User-Agent to that URL.
+let signedInstructureCalls=[];
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);signedInstructureCalls.push({url:target.href,opts});
+  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url')return new Response(JSON.stringify({public_url:'https://'+storageHost+'/inline/124?signature=opaque'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.hostname===storageHost){
+    assert.equal(opts.headers.Authorization,undefined,'a signed Instructure public-preview URL receives no Canvas bearer token');
+    assert.equal(opts.headers['User-Agent'],undefined,'a signed Instructure public-preview URL receives no browser User-Agent');
+    return new Response(new Uint8Array([37,80,68,70,45,49]),{status:200,headers:{'Content-Type':'application/pdf'}});
+  }
+  throw Error('unexpected signed Instructure URL '+target.href);
+};
+const signedInstructureFile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
+assert.equal(signedInstructureFile.status,200,'signed public-preview URLs on Instructure storage hosts are fetched directly');
+assert.deepEqual([...new Uint8Array(await signedInstructureFile.arrayBuffer())],[37,80,68,70,45,49]);
+assert.equal(signedInstructureCalls.length,3);
+
+
 // Reproduce the NNPS redirect chain when Canvas public-preview URL generation
 // is unavailable, and retain safe diagnostics if the storage edge rejects it.
 let failedChain=[];
@@ -159,7 +179,7 @@ globalThis.fetch=async(url,opts)=>{
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
 assert.equal(failedFile.status,406);
 const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.19 (4.4.7.8)');
+assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.20 (4.4.7.9)');
 assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);
@@ -167,6 +187,10 @@ assert.equal(failedDetails.requestId,'outer-ray-406');
 assert.equal(failedDetails.diagnostics.upstreamHost,storageHost);
 assert.equal(failedDetails.diagnostics.upstreamRayId,'upstream-ray-406');
 assert.equal(failedDetails.diagnostics.courseScoped,true);
+assert.equal(failedDetails.diagnostics.publicUrlAttempt.endpointResult,'http_error','the diagnostic records when Canvas public_url itself refuses the request');
+assert.equal(failedDetails.diagnostics.publicUrlAttempt.endpointStatus,403);
+assert.equal(failedDetails.diagnostics.publicUrlAttempt.fetchResult,'not_attempted');
+
 assert.equal(failedDetails.diagnostics.redirectCount,2);
 assert.deepEqual(failedDetails.diagnostics.redirectHosts,[canvasFileHost,userContentHost]);
 assert(!JSON.stringify(failedDetails).includes('signature='));
@@ -176,6 +200,43 @@ assert.equal(failedChain.length,5,'metadata, public URL fallback, and three down
 assert.equal(failedChain[2].opts.headers.Authorization,'Bearer test-secret');
 assert.equal(failedChain[3].opts.headers.Authorization,'Bearer test-secret');
 assert.equal(failedChain[4].opts.headers.Authorization,'Bearer test-secret');
+
+// Reproduce a public_url response on the live Instructure storage edge. The
+// signed URL request must carry no credentials; a failed result must survive
+// the legacy fallback in the final safe diagnostic.
+let signedStorageFailureCalls=[];
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);signedStorageFailureCalls.push({url:target.href,opts});
+  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url')return new Response(JSON.stringify({public_url:'https://'+storageHost+'/inline/124?signature=private-signature'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/inline/124'){
+    assert.equal(opts.headers.Authorization,undefined);
+    assert.equal(opts.headers['User-Agent'],undefined);
+    return new Response('signed-preview edge refused',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'public-url-ray-406'}});
+  }
+  if(target.hostname===canvasFileHost)return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/cluster/61162022/file.pdf'}});
+  if(target.hostname===userContentHost)return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/fallback/61162022'}});
+  if(target.hostname===storageHost&&target.pathname==='/fallback/61162022'){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','the legacy fallback retains its separately tested authentication policy');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)');
+    return new Response('fallback edge refused',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'fallback-ray-406'}});
+  }
+  throw Error('unexpected signed-preview failure URL '+target.href);
+};
+const signedStorageFailure=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'signed-storage-outer-ray'}}));
+assert.equal(signedStorageFailure.status,406);
+const signedStorageFailureBody=await signedStorageFailure.json();
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.endpointResult,'url_returned');
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.urlHost,storageHost);
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchResult,'http_error');
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchStatus,406);
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchHost,storageHost);
+assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchRayId,'public-url-ray-406');
+assert(!JSON.stringify(signedStorageFailureBody).includes('private-signature'));
+assert(!JSON.stringify(signedStorageFailureBody).includes('private upstream error body'));
+assert(!JSON.stringify(signedStorageFailureBody).includes('test-secret'));
+assert.equal(signedStorageFailureCalls.length,6,'public_url endpoint, signed capability fetch and validated legacy fallback are all accounted for');
+
 
 // A hostile initial URL or redirect is rejected before any request is made to it.
 let hostileCalls=[];
