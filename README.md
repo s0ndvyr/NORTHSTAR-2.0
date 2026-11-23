@@ -267,3 +267,9 @@ The **Use annotated PDF from Document Studio** action stages the exported flatte
 
 
 Phase 4.4.7.4 corrects the release-history regression assertion so the current preview candidate is kept pending until its own CI and deployment pass, while the earlier 4.4.7.2 preview deployment remains recorded as verified.
+
+
+### Canvas PDF preview recovery — NORTHSTAR 4.4.7.6
+
+The private Canvas bridge authenticates the original file-download URL against the configured school Canvas origin. When Canvas redirects to a signed Instructure storage URL, the bridge strips the Canvas bearer token, sends only an origin-level Referer for the immediately preceding redirect origin, and does not replay the student's browser User-Agent to storage. Redirect targets must remain HTTPS and on the explicit Instructure file-host allowlist. The token is never sent to signed storage. If a PDF still fails, copy the NORTHSTAR Canvas attachment diagnostic; it records the failed stage and safe HTTP/Cloudflare request references without including credentials, signed URLs or file bytes.
+
