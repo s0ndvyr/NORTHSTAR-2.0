@@ -41,6 +41,19 @@ async function getCanvasSessionUrl({credentials,returnTo,fetchImpl=root.fetch}){
   if(session.protocol!=='https:'||session.origin!==base.origin||session.username||session.password)throw Error('Canvas session URL did not match the connected school origin.');
   return {sessionUrl:session.href,expiresAt:result.expires_at||null};
 }
+async function getAssignmentSubmission({credentials,courseId,assignmentId,fetchImpl=root.fetch}){
+  const c=id(courseId),a=id(assignmentId),api=transport(credentials,fetchImpl);
+  const assignment=await api.get('/api/v1/courses/'+c+'/assignments/'+a+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
+  if(!assignment||!Object.prototype.hasOwnProperty.call(assignment,'submission'))throw Error('Canvas did not return the current student submission record. The result remains unverified.');
+  let userId=null,submissionDetails=null,historyError=null;
+  try{
+    const user=await api.get('/api/v1/users/self');userId=Number(user?.id);
+    if(Number.isSafeInteger(userId)&&userId>0){
+      submissionDetails=await api.get('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/'+userId+'?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment');
+    }
+  }catch(error){historyError=String(error?.message||error);}
+  return {assignment,submission:assignment.submission||null,submissionDetails,userId,historyError,canSubmit:assignment.can_submit===true,lockedForUser:assignment.locked_for_user===true,published:assignment.published!==false,lockExplanation:assignment.lock_explanation||assignment.lock_info?.asset_string||'',unlockAt:assignment.unlock_at||null,groupAssignment:Number.isInteger(assignment.group_category_id)&&assignment.group_category_id>0};
+}
 async function getExternalToolLaunch({credentials,courseId,assignmentId,fetchImpl=root.fetch}){
   const c=id(courseId),a=id(assignmentId);
   const path='/api/v1/courses/'+c+'/external_tools/sessionless_launch?launch_type=assessment&assignment_id='+a;
@@ -119,7 +132,17 @@ async function startQuiz({credentials,courseId,quizId,accessCode='',fetchImpl}){
   let timing=null;try{timing=await api.get('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(sub.id)+'/time');}catch(error){}
   return {submission:sub,questions,timing};
 }
-async function getCurrentQuizSubmission({credentials,courseId,quizId,fetchImpl}){const result=await transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submission');const rows=result?.quiz_submissions||result?.quiz_submission||[];return Array.isArray(rows)?(rows[0]||null):(rows&&typeof rows==='object'?rows:null);}
+async function getCurrentQuizSubmission({credentials,courseId,quizId,fetchImpl}){
+ const result=await transport(credentials,fetchImpl).get('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submission');
+ const raw=result?.quiz_submissions||result?.quiz_submission||[];
+ if(raw&&typeof raw==='object'&&!Array.isArray(raw))return raw;
+ if(!Array.isArray(raw)||!raw.length)return null;
+ return raw.slice().sort((a,b)=>{
+  const activeA=!!(a&&!a.finished_at&&!['complete','pending_review'].includes(String(a.workflow_state||'').toLowerCase())),activeB=!!(b&&!b.finished_at&&!['complete','pending_review'].includes(String(b.workflow_state||'').toLowerCase()));
+  if(activeA!==activeB)return activeA?-1:1;
+  return Number(b?.attempt||0)-Number(a?.attempt||0);
+ })[0]||null;
+}
 async function resumeQuiz({credentials,courseId,quizId,submission,validationToken,accessCode='',fetchImpl}){
  if(!submission?.id||!submission?.attempt||!validationToken)throw Error('The saved Canvas quiz session is incomplete. Do not start another attempt.');
  const api=transport(credentials,fetchImpl),submissionId=id(submission.id);
@@ -147,9 +170,19 @@ async function updateQuizQuestionFlag({credentials,submission,questionId,flagged
 }
 async function completeQuiz({credentials,courseId,quizId,submission,accessCode='',fetchImpl}){
   if(!submission?.id||!submission?.attempt||!submission?.validation_token)throw Error('The Canvas quiz session is incomplete. Reopen the quiz.');
-  return transport(credentials,fetchImpl).post('/api/v1/courses/'+id(courseId)+'/quizzes/'+id(quizId)+'/submissions/'+id(submission.id)+'/complete',{
-    attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
+  const c=id(courseId),q=id(quizId),attempt=Number(submission.attempt),api=transport(credentials,fetchImpl);
+  const response=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(submission.id)+'/complete',{
+    attempt,validation_token:String(submission.validation_token),access_code:accessCode||null
   });
+  let verified;
+  try{verified=await getCurrentQuizSubmission({credentials,courseId:c,quizId:q,fetchImpl});}
+  catch(error){const uncertain=Error('Canvas accepted the completion request or its response was lost, but NORTHSTAR could not independently read the current attempt. Check Canvas status before retrying; no completion request was repeated.');uncertain.completionOutcomeUnknown=true;uncertain.cause=error;throw uncertain;}
+  const state=String(verified?.workflow_state||'').toLowerCase();
+  const finished=!!verified?.finished_at&&['complete','pending_review'].includes(state);
+  if(!finished||Number(verified?.attempt)!==attempt||Number(verified?.id)!==Number(submission.id)){
+    const uncertain=Error('Canvas has not independently confirmed that this quiz attempt is complete. Its current state is '+(state||'unknown')+'. Do not submit again; refresh the attempt status first.');uncertain.completionOutcomeUnknown=true;uncertain.currentSubmission=verified||null;uncertain.completionResponse=response;throw uncertain;
+  }
+  return {response,submission:verified,confirmed:true};
 }
 function trustedCanvasPreviewUrl(value,base){
   try{
@@ -228,7 +261,7 @@ async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fe
   };
 }
 
-const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
+const api={transport,getCanvasSessionUrl,getExternalToolLaunch,getAssignmentSubmission,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
