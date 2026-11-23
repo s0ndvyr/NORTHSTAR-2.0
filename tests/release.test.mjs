@@ -32,6 +32,9 @@ assert.ok(roomJs.includes('ns-pdf-native-preview')&&roomJs.includes('Save to Fil
 assert.ok(roomJs.includes('getCanvasSessionUrl')&&roomJs.includes("returnTo"),'the fallback can use a temporary authenticated Canvas file-view session');
 assert.ok(storageJs.includes("const DOCUMENTS='documents'")&&storageJs.includes("const DRAFTS='drafts'"),'PDF source files and changing annotation drafts use separate IndexedDB stores');
 assert.ok(roomJs.includes('restoreStoredPdf')&&roomJs.includes('persistPdfSource')&&roomJs.includes('queuePdfDraftSave'),'Document Studio restores source PDFs and autosaves drafts');
+const pdfParseIndex=roomJs.indexOf('pdfState.doc=await lib.getDocument');
+const persistSourceIndex=roomJs.indexOf('const sourceSaved=await persistPdfSource(data)');
+assert.ok(pdfParseIndex>=0&&persistSourceIndex>pdfParseIndex,'PDF source bytes are not cached until PDF.js successfully parses the document');
 assert.ok(roomJs.includes("addEventListener('pagehide',flushPdfDraft)")&&roomJs.includes("visibilitychange"),'Safari page suspension flushes the current rich-text draft');
 assert.ok(roomJs.includes('renderedPage.getViewport({scale:pdfState.scale})'),'flattened export resolves a PDF.js viewport for every annotated page');
 assert.ok(bootJs.includes("'document-storage.js'")&&html.includes('scripts/document-storage.js'),'IndexedDB persistence loads before the assignment workspace');
