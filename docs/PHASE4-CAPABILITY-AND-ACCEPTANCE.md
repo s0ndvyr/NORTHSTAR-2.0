@@ -1,9 +1,9 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.18 / NORTHSTAR 4.4.7.4  
+**Development version:** 0.4.19 / NORTHSTAR 4.4.7.5  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** Preview deployed at 4.4.7.4; automated Phase 4 checks passed; live Canvas acceptance remains open.  
-**Production:** `main` remains on the previous verified release until this candidate passes its own tests and is promoted.
+**Status:** Authenticated PDF download correction is in the preview candidate; exact-head Phase 4 and Pages validation pending; live Canvas acceptance remains open.  
+**Production:** `main` contains NORTHSTAR 4.4.6.10; its exact-head Pages publication is gated on the current preview branch also passing Phase 4.
 
 This document distinguishes four different states:
 
@@ -162,3 +162,12 @@ Phase 4.4.7.4 also corrects a stale release-history test that confused the previ
 
 
 Release 4.4.7.4 is now deployed to the preview Pages path. The production frontend remains on 4.4.6.9. The Canvas Worker has been deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.
+
+
+## NORTHSTAR 4.4.7.5 — Authenticated Canvas PDF downloads
+
+Canvas's authenticated file-download flow requires the student's bearer token on the HTTPS file URL. NORTHSTAR therefore sends Authorization only to the configured Canvas host or explicitly allowlisted Instructure file-host suffixes. It rejects non-HTTPS, credential-bearing, non-default-port, access_token-query and untrusted targets. Browser cookies remain omitted. The browser validates the final response URL before accepting PDF bytes; if cross-origin Authorization preflight or retrieval is blocked, the private Worker fallback remains available.
+
+This download rule is separate from the signed upload destination: Canvas bearer credentials are never sent to signed upload storage. The current private Worker (0.4.16 / 4.4.7.2) already has bounded redirects and the trusted Instructure file-host allowlist, and remains separately deployed.
+
+Automated tests verify trusted direct authentication, bridge fallback and untrusted-host rejection. They do not prove that the live NNPS Canvas tenant permits this browser Authorization preflight or that a specific attachment downloads successfully. Live acceptance remains: open a real non-sensitive PDF attachment, verify the content is rendered in Document Studio, export the annotated copy, submit it using the instructor-approved online_upload test assignment, and verify the exact attempt and attachment in Canvas. Then perform the Pencil, touch, zoom, pan, undo/redo and export checks on the physical iPad.
