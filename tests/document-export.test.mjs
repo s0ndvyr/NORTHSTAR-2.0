@@ -212,6 +212,48 @@ assert.equal(documents.size,2,'two assignments retain separate original PDFs');
 assert.equal(drafts.size,2,'two assignments retain separate annotation drafts');
 assert.notEqual([...drafts.values()][0].identity.canvasAssignmentId,[...drafts.values()][1].identity.canvasAssignmentId,'assignment identity prevents cross-assignment draft collisions');
 
+// A valid PDF imported from Safari's Files picker must become a recoverable
+// source record under the original Canvas attachment identity. Reopening it
+// must restore locally without requesting another signed preview from Canvas.
+let importedCanvasRequests=0;
+window.NorthstarWorkspace.downloadCanvasFile=async({courseId,fileId})=>{
+ importedCanvasRequests++;
+ assert.equal(courseId,501);
+ assert.equal(fileId,615);
+ return {
+  id:fileId,name:'files-recovery-packet.pdf',contentType:'application/pdf',
+  size:sourceBytes.byteLength,bytes:null,
+  previewUrl:'https://files-preview.example/temporary.pdf?signature=expired',
+  canvasReturnTo:'/courses/501/files/615',
+  previewDelivery:{attempted:true,result:'browser_fetch_blocked',host:'files-preview.example',contentType:'application/pdf'}
+ };
+};
+const importedFile={id:615,name:'files-recovery-packet.pdf',contentType:'application/pdf',size:sourceBytes.byteLength};
+const importedAssignment={id:'files-import-assignment',canvasAssignmentId:9005,canvasCourseId:501,title:'Files import recovery'};
+await room.openPdf(host,importedFile,importedAssignment,credentials);
+assert.ok(host.querySelector('.ns-pdf-native-fallback'),'a Canvas attachment with inaccessible preview bytes offers the Safari Files import recovery path');
+const importInput=host.querySelector('#nsPdfLocalFile');
+assert.ok(importInput,'the fallback exposes a local PDF picker');
+Object.defineProperty(importInput,'files',{configurable:true,value:[{
+ name:'downloaded-from-safari.pdf',type:'application/pdf',size:sourceBytes.byteLength,
+ arrayBuffer:async()=>sourceBytes.buffer.slice(sourceBytes.byteOffset,sourceBytes.byteOffset+sourceBytes.byteLength)
+}]});
+importInput.dispatchEvent(new window.Event('change'));
+await new Promise(resolve=>setTimeout(resolve,0));
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.ok(host.querySelector('#nsPdfPageIndicator'),'a valid PDF selected from Files enters the editable Document Studio');
+assert.equal(importedCanvasRequests,1,'the initial inaccessible Canvas preview is requested exactly once');
+const importedIdentity=JSON.parse(window.localStorage.getItem('northstar_preview_pdf_identity_v1_9005_615')||'null');
+assert.equal(importedIdentity?.canvasFileId,615,'the imported PDF remains associated with the original Canvas file');
+assert.equal(importedIdentity?.canvasAssignmentId,9005,'the imported PDF remains associated with the original Canvas assignment');
+assert.equal(importedIdentity?.importedFilename,'downloaded-from-safari.pdf','the selected Files filename is retained separately from the Canvas filename');
+const importedRecord=[...documents.values()].find(record=>record.identity.canvasAssignmentId===9005);
+assert.ok(importedRecord,'the valid Files import is written to IndexedDB as the original PDF recovery source');
+assert.deepEqual([...importedRecord.bytes],[...sourceBytes],'the imported source bytes are kept intact');
+await room.openPdf(host,importedFile,importedAssignment,credentials);
+assert.equal(importedCanvasRequests,1,'reopening a Files-imported PDF restores from IndexedDB without another Canvas request');
+assert.ok(host.querySelector('#nsPdfPageIndicator'),'the locally imported PDF reopens in Document Studio after leaving the assignment');
+
 let resolveFirst=null,resolveSecond=null;
 window.NorthstarWorkspace.downloadCanvasFile=({fileId})=>new Promise(resolve=>{if(fileId===613)resolveFirst=resolve;else if(fileId===614)resolveSecond=resolve;else throw Error('unexpected concurrent file ID '+fileId);});
 const assignmentThree={id:'local-assignment-3',canvasAssignmentId:9003,canvasCourseId:501,title:'Slow first open'};
