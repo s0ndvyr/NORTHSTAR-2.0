@@ -6,6 +6,7 @@ on:
     branches:
       - northstar-0.4.4.2-quiz-continuity
       - northstar-4.4.7.7-canvas-download-ua
+      - northstar-4.4.7.8-canvas-public-url
     paths:
       - canvas-bridge/**
       - wrangler.jsonc
