@@ -38,7 +38,7 @@ function allowedRead(path){
   const discussionRepliesPath=requested.pathname.match(/^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries\/\d+\/replies$/);
   if(discussionRepliesPath){
     const params=[...requested.searchParams.entries()];
-    return params.length<=2&&params.every(([key,value])=>(key==='per_page'&&/^\\d+$/.test(value)&&Number(value)>0&&Number(value)<=100)||(key==='page'&&/^\\d+$/.test(value)&&Number(value)>0&&Number(value)<=10000));
+    return params.length<=2&&params.every(([key,value])=>(key==='per_page'&&/^\d+$/.test(value)&&Number(value)>0&&Number(value)<=100)||(key==='page'&&/^\d+$/.test(value)&&Number(value)>0&&Number(value)<=10000));
   }
   const entryListPath=requested.pathname.match(/^\/api\/v1\/courses\/(\d+)\/discussion_topics\/(\d+)\/entry_list$/);
   if(entryListPath){
