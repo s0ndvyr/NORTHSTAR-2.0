@@ -690,3 +690,11 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Private Cloudflare Worker 0.4.18 deployed successfully by run `45103459358`; Worker version ID `2e7ced36-da0b-4091-9bd2-7dedfcf4adc2`.
 - Pages workflow run `45103520416` passed freshness, build, and deployment; the artifact includes the `/preview/` site. Preview is NORTHSTAR 4.4.7.7 / package 0.4.21.
 - Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF retrieval is still unaccepted; next action is to reopen the same `ionic nomenclature problem set 2026.pdf` attachment in preview and provide a fresh diagnostic if it fails.
+
+
+## NORTHSTAR 4.4.7.8 — Canvas public-preview PDF retrieval candidate (2026-11-23)
+
+- Live 4.4.7.7 diagnostic: Worker 0.4.18 reached the first `*.canvas-user-content.com` hop, then received Cloudflare HTTP 403 with one redirect. The school Canvas endpoint now accepted the initial request.
+- Added the documented Canvas `GET /api/v1/files/:id/public_url` path as the preferred retrieval route. It returns a user-authorized inline-preview URL; signed AWS object URLs are fetched without the Canvas bearer token.
+- Retained a fallback through the existing Canvas download URL. The bearer token and requesting browser User-Agent are sent only to the configured Canvas origin and explicit trusted Instructure file-host allowlist; external signed object storage receives neither.
+- Candidate release NORTHSTAR `4.4.7.8` / package `0.4.22`, Worker `0.4.19`. Production remains unchanged; Phase 4 CI, preview deployment, and live NNPS retrieval remain pending.

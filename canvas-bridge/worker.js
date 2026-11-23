@@ -1,8 +1,8 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
-// Build marker: 0.4.18 — Canvas-origin download compatibility recovery.
+// Build marker: 0.4.19 — authenticated public-preview file retrieval.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const WORKER_BUILD = '0.4.18 (4.4.7.7)';
+const WORKER_BUILD = '0.4.19 (4.4.7.8)';
 const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id, X-Northstar-Failure, X-Northstar-Worker-Version', 'X-Northstar-Worker-Version':WORKER_BUILD, 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -44,6 +44,7 @@ function allowedRead(path){
     /^\/api\/v1\/courses\/\d+\/assignments\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/assignments\/\d+\/submissions\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/files\/\d+(?:\?(?:[^#]*))?$/.test(path) ||
+    /^\/api\/v1\/files\/\d+\/public_url$/.test(path) ||
     /^\/api\/v1\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/files\/\d+\/download$/.test(path) ||
     /^\/api\/v1\/courses\/\d+\/(?:assignments|assignment_groups|quizzes)(?:\?(?:[^#]*))?$/.test(path) ||
@@ -144,6 +145,52 @@ function fileTransportFailure(stage,requestId,context){
 function fileRedirectFailure(code,message,requestId,context){
   return fileDiagnosticFailure('redirect',code,502,message,requestId,{...(context||{}),failureType:'redirect'});
 }
+function isSafeCanvasPublicFileUrl(url){
+  const host=String(url?.hostname||'').toLowerCase();
+  const signedStorage=host==='amazonaws.com'||host.endsWith('.amazonaws.com');
+  return url instanceof URL&&url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&
+    !url.searchParams.has('access_token')&&(isTrustedCanvasFileHost(host)||signedStorage);
+}
+function fileResponseFromUpstream(response,metadata,requestId){
+  const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata?.['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Northstar-Stage':'complete',...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
+  for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
+  return new Response(response.body,{status:response.status,headers:responseHeaders});
+}
+async function fetchCanvasPublicFile(raw,metadata,authorization,userAgent,requestId,courseId){
+  let current;try{current=new URL(raw);}catch{return null;}
+  if(!isSafeCanvasPublicFileUrl(current))return null;
+  const initialOrigin=current.origin,redirectHosts=[];
+  let refererOrigin='';
+  for(let hop=0;hop<6;hop++){
+    const headers={Accept:'application/pdf,application/octet-stream,*/*'};
+    // Canvas requires authenticated file downloads. Send the bearer token only
+    // to the configured Canvas origin and explicit Instructure file-host
+    // allowlist. A public_url signed S3 URL is its own capability and receives
+    // neither the Canvas token nor browser identity.
+    if(current.origin===CANVAS_ORIGIN||isTrustedCanvasFileHost(current.hostname)){
+      headers.Authorization=authorization;
+      if(typeof userAgent==='string'&&userAgent)headers['User-Agent']=userAgent;
+    }
+    if(refererOrigin)headers.Referer=refererOrigin+'/';
+    let response;try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}catch{return null;}
+    if(response.status>=300&&response.status<400){
+      if(redirectHosts.length<6)redirectHosts.push(current.hostname);
+      const location=response.headers.get('Location');if(!location)return null;
+      const previous=current;try{current=new URL(location,current);}catch{return null;}
+      if(!isSafeCanvasPublicFileUrl(current))return null;
+      // The first signed URL is a capability from authenticated Canvas. Any
+      // subsequent host must remain in the same origin or the explicit
+      // Instructure/AWS storage allowlist.
+      if(current.origin!==initialOrigin&&!isTrustedCanvasFileHost(current.hostname)&&
+        !(current.hostname==='amazonaws.com'||current.hostname.endsWith('.amazonaws.com')))return null;
+      if(previous.origin!==current.origin)refererOrigin=previous.origin;
+      continue;
+    }
+    if(!response.ok){try{await response.body?.cancel();}catch{}return null;}
+    return fileResponseFromUpstream(response,metadata,requestId);
+  }
+  return null;
+}
 async function downloadCanvasFile(fileId,courseId,authorization,userAgent,requestId){
   const apiUrl=CANVAS_ORIGIN+(courseId?'/api/v1/courses/'+courseId+'/files/'+fileId:'/api/v1/files/'+fileId);
   let metaResponse;
@@ -151,6 +198,19 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
   catch{return fileTransportFailure('metadata',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
   if(!metaResponse.ok)return fileUpstreamFailure('metadata',metaResponse,requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});
   let metadata;try{metadata=await metaResponse.json();}catch{return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_INVALID',502,'Canvas file metadata was unreadable',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);}
+  // Prefer Canvas's authenticated public inline-preview URL. It is generated
+  // server-side after Canvas checks the current user's file permissions and
+  // can point directly at signed object storage, avoiding a fragile chain of
+  // browser-facing file-domain redirects.
+  let publicResponse;
+  try{publicResponse=await fetch(CANVAS_ORIGIN+'/api/v1/files/'+fileId+'/public_url',{headers:{Authorization:authorization,Accept:'application/json','User-Agent':userAgent},redirect:'manual'});}catch{}
+  if(publicResponse?.ok){
+    let publicData;try{publicData=await publicResponse.json();}catch{}
+    if(typeof publicData?.public_url==='string'&&publicData.public_url){
+      const direct=await fetchCanvasPublicFile(publicData.public_url,metadata,authorization,userAgent,requestId,courseId);
+      if(direct)return direct;
+    }
+  }
   const raw=metadata.url||metadata.download_url;
   if(typeof raw!=='string'||!raw)return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_NO_DOWNLOAD_URL',502,'Canvas did not provide a file download URL',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);
   let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return fileRedirectFailure('CANVAS_FILE_URL_INVALID','Canvas returned an invalid file destination',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
@@ -159,17 +219,13 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
   let refererOrigin='';
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*'};
-    // Authenticate the Canvas download endpoint only. Signed cross-origin
-    // storage redirects must not receive the student's Canvas bearer token.
-    if(current.origin===CANVAS_ORIGIN){
+    // Authenticated file downloads are now required by Canvas. Only send the
+    // token to the configured Canvas origin and explicitly allowlisted
+    // Instructure file hosts; never send it to arbitrary signed storage URLs.
+    if(current.origin===CANVAS_ORIGIN||isTrustedCanvasFileHost(current.hostname)){
       headers.Authorization=authorization;
-      // Canvas's Cloudflare edge accepted the browser User-Agent in the prior
-      // release. Restore it only on the configured school origin; never replay
-      // the student's browser identity to cross-origin storage hosts.
       if(typeof userAgent==='string'&&userAgent)headers['User-Agent']=userAgent;
     }
-    // Preserve the browser-like origin-only referrer across cross-origin hops;
-    // never forward a path, query string, signed URL, or Canvas credential.
     if(refererOrigin)headers.Referer=refererOrigin+'/';
     let response;
     try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}
@@ -184,9 +240,7 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
       continue;
     }
     if(!response.ok)return fileUpstreamFailure('content',response,requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
-    const responseHeaders={...cors,'Content-Type':response.headers.get('Content-Type')||metadata['content-type']||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store','X-Northstar-Stage':'complete',...(requestId?{'X-Northstar-Request-Id':requestId}:{})};
-    for(const name of ['Content-Length','Content-Disposition','Content-Range','Accept-Ranges']){const value=response.headers.get(name);if(value)responseHeaders[name]=value;}
-    return new Response(response.body,{status:response.status,headers:responseHeaders});
+    return fileResponseFromUpstream(response,metadata,requestId);
   }
   return fileRedirectFailure('CANVAS_FILE_REDIRECT_LIMIT','The file host redirected too many times',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
 }

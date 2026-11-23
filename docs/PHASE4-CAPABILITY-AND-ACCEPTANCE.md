@@ -1,6 +1,6 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.21 / NORTHSTAR 4.4.7.7  
+**Development version:** 0.4.22 / NORTHSTAR 4.4.7.8 (candidate)  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
 **Status:** NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735. Live Canvas account and physical iPad/Apple Pencil acceptance remain open.  
 **Production:** Production and preview are both on NORTHSTAR 4.4.7.5; the Pages freshness gate verified both tested source heads before publication.
@@ -199,3 +199,10 @@ This is a targeted hypothesis, not a confirmed root cause. Automated tests asser
 
 
 **Deployment status:** Worker 0.4.18 is deployed to the preview bridge by run 45103459358 (Cloudflare version ID `2e7ced36-da0b-4091-9bd2-7dedfcf4adc2`). NORTHSTAR 4.4.7.7 / package 0.4.21 is deployed to the preview Pages path by run 45103520416 from preview commit `d4740f8f280b358bbe9d64770d6b2ae94714b842`. Production remains on 4.4.7.5. The same live NNPS attachment must still be tested; deployment and mocked tests do not prove Canvas retrieval.
+
+
+## NORTHSTAR 4.4.7.8 — Canvas public-preview PDF retrieval candidate
+
+The 4.4.7.7 live diagnostic reached the first `canvas-user-content.com` redirect but received HTTP 403. The worker now prefers Canvas's authenticated `GET /api/v1/files/:id/public_url` endpoint, which generates a user-authorized inline-preview URL. When Canvas returns a signed AWS object URL, the Worker fetches that exact HTTPS URL without adding the Canvas bearer token. If Canvas does not return a usable preview URL, the existing authenticated file-download flow remains as a fallback; the bearer token is limited to the configured Canvas origin and the explicit trusted Instructure file-host allowlist. No token, signed query, response body, or PDF bytes are placed in diagnostics.
+
+The new test fixture covers a signed S3-style preview URL, ensures the Canvas token is absent from that external host, and exercises the authenticated Instructure fallback. Automated coverage remains mocked; live NNPS acceptance requires the same attachment to open in Document Studio.

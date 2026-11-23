@@ -99,28 +99,22 @@ let fileCalls=[];
 const canvasFileHost='school.instructure.com';
 const userContentHost='a16702-61162022.cluster277.canvas-user-content.com';
 const storageHost='inst-fs-iad-prod.inscloudgate.net';
+const signedUrlHost='northstar-test-bucket.s3.amazonaws.com';
 globalThis.fetch=async(url,opts)=>{
   fileCalls.push({url,opts});
   const target=new URL(url);
   if(target.pathname==='/api/v1/files/123'||target.pathname==='/api/v1/courses/1/files/124'){
     const id=target.pathname.endsWith('/123')?'123':'124';
-    return new Response(JSON.stringify({id,url:'https://'+canvasFileHost+'/files/'+id+'/download'}),{status:200,headers:{'Content-Type':'application/json'}});
+    return new Response(JSON.stringify({id,url:'https://'+canvasFileHost+'/files/'+id+'/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(target.hostname===canvasFileHost&&target.pathname.startsWith('/files/')){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated Canvas download URL receives the bearer token');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the configured Canvas origin receives the requesting browser User-Agent');
-    return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/private/attachment.pdf'}});
+  if(target.pathname==='/api/v1/files/123/public_url'||target.pathname==='/api/v1/files/124/public_url'){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','Canvas public-preview URL generation is authenticated');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','Canvas public-preview URL generation retains the browser User-Agent');
+    return new Response(JSON.stringify({public_url:'https://'+signedUrlHost+'/course/worksheet.pdf?X-Amz-Signature=opaque'}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(target.hostname===userContentHost){
-    assert.equal(opts.headers.Authorization,undefined,'the Canvas bearer token is stripped at the first cross-origin storage redirect');
-    assert.equal(opts.headers['User-Agent'],undefined,"the user Safari User-Agent is not replayed on Worker-to-storage requests");
-    assert.equal(opts.headers.Referer,'https://'+canvasFileHost+'/','the next hop receives only the previous origin as referrer');
-    return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/private/attachment.pdf?signature=opaque'}});
-  }
-  if(target.hostname===storageHost){
-    assert.equal(opts.headers.Authorization,undefined,'the signed Instructure storage host never receives the Canvas bearer token');
-    assert.equal(opts.headers['User-Agent'],undefined,"the user Safari User-Agent is not replayed on Worker-to-storage requests");
-    assert.equal(opts.headers.Referer,'https://'+userContentHost+'/','the final storage hop receives only the immediate previous origin');
+  if(target.hostname===signedUrlHost){
+    assert.equal(opts.headers.Authorization,undefined,'the Canvas bearer token is never sent to a signed AWS URL');
+    assert.equal(opts.headers['User-Agent'],undefined,'the browser User-Agent is not replayed to signed external object storage');
     return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});
   }
   throw Error('unexpected URL '+target.href);
@@ -130,22 +124,34 @@ assert.equal(fileResponse.status,200);
 assert.equal(fileResponse.headers.get('Content-Type'),'application/pdf');
 assert.equal(fileResponse.headers.get('Content-Disposition'),'attachment; filename="worksheet.pdf"');
 assert.deepEqual([...new Uint8Array(await fileResponse.arrayBuffer())],[37,80,68,70]);
-assert.equal(fileCalls.length,4,'metadata, authenticated Canvas download and two storage redirects are followed');
+assert.equal(fileCalls.length,3,'metadata, authenticated public-preview URL and signed object bytes are retrieved');
 const scopedFileResponse=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-assert.equal(scopedFileResponse.status,200,'course-scoped file download follows the same authenticated redirect protocol');
+assert.equal(scopedFileResponse.status,200,'course-scoped file download prefers the authenticated public-preview URL');
 assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/1/files/124'),'scoped attachment metadata request retains course context');
+assert.equal((await worker.fetch(request('/api/v1/files/123/public_url'))).status,200,'public-preview URL endpoint is narrowly allowlisted for Canvas reads');
 
-// Reproduce the reported NNPS redirect chain and preserve safe diagnostics if
-// Instructure's final storage edge still rejects the request with HTTP 406.
+// Reproduce the NNPS redirect chain when Canvas public-preview URL generation
+// is unavailable, and retain safe diagnostics if the storage edge rejects it.
 let failedChain=[];
 globalThis.fetch=async(url,opts)=>{
   const target=new URL(url);failedChain.push({url:target.href,opts});
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.hostname===canvasFileHost)return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/cluster/61162022/file.pdf'}});
-  if(target.hostname===userContentHost)return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/download/61162022?signature=must-not-leak'}});
+  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url')return new Response('public URL unavailable',{status:403,headers:{'Content-Type':'text/html'}});
+  if(target.hostname===canvasFileHost){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','the Canvas download endpoint receives the bearer token');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the Canvas download endpoint receives the browser User-Agent');
+    return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/cluster/61162022/file.pdf'}});
+  }
+  if(target.hostname===userContentHost){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated download token is sent to the explicit Instructure file-host allowlist');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the browser User-Agent is preserved for the Instructure file host');
+    assert.equal(opts.headers.Referer,'https://'+canvasFileHost+'/','the storage hop receives only the previous origin as referrer');
+    return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/download/61162022?signature=must-not-leak'}});
+  }
   if(target.hostname===storageHost){
-    assert.equal(opts.headers.Authorization,undefined,'the 406-producing storage edge must not receive the Canvas bearer token');
-    assert.equal(opts.headers.Referer,'https://'+userContentHost+'/');
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated download token remains restricted to explicitly trusted Instructure file hosts');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the browser User-Agent is preserved for the trusted Instructure storage edge');
+    assert.equal(opts.headers.Referer,'https://'+userContentHost+'/','the final storage hop receives only the immediate previous origin');
     return new Response('private upstream error body',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'upstream-ray-406'}});
   }
   throw Error('unexpected diagnostic URL '+target.href);
@@ -153,7 +159,7 @@ globalThis.fetch=async(url,opts)=>{
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
 assert.equal(failedFile.status,406);
 const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.18 (4.4.7.7)');
+assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.19 (4.4.7.8)');
 assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);
@@ -166,9 +172,10 @@ assert.deepEqual(failedDetails.diagnostics.redirectHosts,[canvasFileHost,userCon
 assert(!JSON.stringify(failedDetails).includes('signature='));
 assert(!JSON.stringify(failedDetails).includes('private upstream error body'));
 assert(!JSON.stringify(failedDetails).includes('test-secret'),'diagnostics never include the Canvas bearer token');
-assert.equal(failedChain.length,4);
-assert.equal(failedChain[2].opts.headers.Authorization,undefined);
-assert.equal(failedChain[3].opts.headers.Authorization,undefined);
+assert.equal(failedChain.length,5,'metadata, public URL fallback, and three download hops are accounted for');
+assert.equal(failedChain[2].opts.headers.Authorization,'Bearer test-secret');
+assert.equal(failedChain[3].opts.headers.Authorization,'Bearer test-secret');
+assert.equal(failedChain[4].opts.headers.Authorization,'Bearer test-secret');
 
 // A hostile initial URL or redirect is rejected before any request is made to it.
 let hostileCalls=[];
@@ -181,19 +188,20 @@ globalThis.fetch=async(url,opts)=>{
 const hostile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
 assert.equal(hostile.status,502);
 assert.equal((await hostile.json()).code,'CANVAS_FILE_URL_UNSAFE');
-assert.equal(hostileCalls.length,1,'untrusted metadata URLs are rejected before contacting their host');
+assert.equal(hostileCalls.length,2,'untrusted metadata URLs are rejected before contacting their host; only metadata and the Canvas public_url endpoint are contacted');
 let hostileRedirectCalls=[];
 globalThis.fetch=async(url,opts)=>{
   hostileRedirectCalls.push({url,opts});
   const target=new URL(url);
   if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url')return new Response('preview unavailable',{status:403});
   if(target.hostname==='school.instructure.com')return new Response(null,{status:302,headers:{Location:'https://evil.example/private.pdf'}});
   throw Error('Untrusted redirect target must never be fetched: '+target.href);
 };
 const hostileRedirect=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
 assert.equal(hostileRedirect.status,502);
 assert.equal((await hostileRedirect.json()).code,'CANVAS_FILE_REDIRECT_UNSAFE');
-assert.equal(hostileRedirectCalls.length,2,'untrusted redirect hosts are rejected before contacting their host');
+assert.equal(hostileRedirectCalls.length,3,'untrusted redirect hosts are rejected before contacting their host; public_url failure falls back to the validated download URL');
 
 
 // Network failures are stage-specific and never include exception messages or signed URLs.
