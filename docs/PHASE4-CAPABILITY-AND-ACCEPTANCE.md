@@ -1,9 +1,9 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
 **Development version:** 0.4.24 / NORTHSTAR 4.4.8.0  
-**Development branch:** `northstar-4.4.8.0-native-pdf-delivery`  
-**Status:** NORTHSTAR 4.4.8.0 / package 0.4.24 is a candidate. Phase 4 tests, Worker validation/deployment and Pages preview deployment are pending. Last verified preview remains NORTHSTAR 4.4.7.9 / package 0.4.23. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF viewing, local-import editing, export/submission and physical iPad/Apple Pencil acceptance remain open.  
-**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.9 / package 0.4.23.
+**Development branch:** `northstar-0.4.4.2-quiz-continuity`  
+**Status:** NORTHSTAR 4.4.8.0 / package 0.4.24 is deployed to preview. Phase 4, Worker 0.4.21 deployment and Pages deployment succeeded. Live NNPS PDF retrieval/viewing, local-import editing, export/submission and physical iPad/Apple Pencil acceptance remain open. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.  
+**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Preview: NORTHSTAR 4.4.8.0 / package 0.4.24.
 
 This document distinguishes four different states:
 
@@ -243,4 +243,4 @@ Regression coverage includes successful signed-preview retrieval from an Instruc
 **Security:** Temporary preview URLs are validated for HTTPS, hostname, credentials, unusual ports and access-token query parameters. Canvas credentials and cookies are never sent to signed storage. Canvas session handoff is generated only through the connected Canvas origin and for a constrained course/file return path. Preview URL query strings and PDF bytes are excluded from diagnostics.
 
 **Release:** NORTHSTAR 4.4.8.0 / package 0.4.24; Worker 0.4.21.  
-**Status:** Candidate validation and deployment pending. Live NNPS viewing, local import, edit/export, real Canvas upload/finalization/submission and physical iPad/Apple Pencil acceptance are not yet claimed.
+**Preview deployment:** Phase 4 passed on merged preview commit `4d91d7adcf10f682ae0701849f010695107167c0` in run `45110744431`. Worker 0.4.21 deployed by run `45110744432`, Cloudflare version ID `31115f06-a899-4fa0-874f-8ac3dc5ccb76`. Pages preview deployed by run `45111251593` and verified as 4.4.8.0 / package 0.4.24. Live NNPS PDF retrieval/viewing, local import, edit/export, real Canvas upload/finalization/submission and physical iPad/Apple Pencil acceptance are not yet claimed.
