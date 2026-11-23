@@ -36,7 +36,7 @@ assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('pending'),'the current candidate does not claim a successful deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('public_url'),'the current release documents the Canvas public-preview API strategy');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45104813239'),'the release records the successful preview Pages deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104813239'),'the previous signed-preview release retains its successful preview Pages deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('public_url'),'the candidate documents the authenticated Canvas preview URL flow');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('User-Agent'),'the current release documents the signed capability header boundary');
