@@ -3,8 +3,8 @@
 Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.7.8`
-Package version: `0.4.22`
+Release identifier: `NORTHSTAR / 4.4.7.9`
+Package version: `0.4.23`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -718,3 +718,13 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Added safe `publicUrlAttempt` diagnostics to record endpoint result/status/content type, returned host, fetch status/host/content type/server/Cloudflare ray and redirect hosts only. No signed query, full URL, bearer token, response body or PDF contents are exposed.
 - Added regression tests for successful Instructure-hosted signed preview retrieval, token/User-Agent isolation, endpoint failure fallback, and a signed-preview 406 followed by a legacy fallback 406. Report sanitization and release regression assertions were extended.
 - Release candidate: NORTHSTAR 4.4.7.9 / package 0.4.23; private Worker build 0.4.20. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Phase 4, Worker deployment, Pages preview deployment and live NNPS PDF acceptance remain pending.
+
+
+### NORTHSTAR 4.4.7.9 preview deployment closeout — November 23, 2026
+
+- PR #16 was squash-merged into the preview branch as commit `a4c111b87e5508b1ce78deca24832c71dc4bcf44`.
+- Phase 4 passed on the exact merged preview commit in workflow run `45107151322`.
+- The private Canvas bridge validation and regression suite passed; Worker 0.4.20 deployed successfully by workflow run `45107151368`. Cloudflare Worker version ID: `63004244-cd78-4fb6-b02b-9f36ef05ff45`.
+- GitHub Pages freshness verification, build and deployment succeeded in run `45107205281`. The build log verified preview release NORTHSTAR `4.4.7.9 / 0.4.23` and generated `./preview/index.html` and `./preview/release.json`.
+- Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production remains NORTHSTAR `4.4.7.5 / 0.4.19`.
+- This deployment does not establish live Canvas PDF acceptance. The next required test is the same NNPS attachment in preview, then—only after it opens—the Document Studio edit/export and real Canvas upload/finalization/submission lifecycle.
