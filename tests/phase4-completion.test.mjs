@@ -28,39 +28,29 @@ assert.throws(()=>submissions.payload('online_upload',[101,'bad']),/Upload every
 assert.throws(()=>submissions.payload('online_upload',Array.from({length:11},(_,i)=>i+1)),/at most 10/, 'more than ten attachments is blocked');
 
 const calls=[];
-const fetchMock=async (url, options={}) => {
-  const target=new URL(url);
-  if (target.origin==='https://bridge.example') {
-    const path=target.searchParams.get('path');
-    calls.push({kind:'bridge',path,method:options.method||'GET',body:options.body});
-    if ((options.method||'GET')==='GET') {
-      assert.equal(path,'/api/v1/users/self','multi-file uploader first resolves the student ID via Canvas');
-      return new Response(JSON.stringify({id:7}),{status:200,headers:{'Content-Type':'application/json'}});
-    }
-    assert.equal(options.method,'POST');
-    assert.ok(path.endsWith('/submissions/7/files'),'upload initialization uses the numeric student submission route');
-    return new Response(JSON.stringify({upload_url:'https://upload.example/receive',upload_params:{token:'signed-upload'}}),{status:200,headers:{'Content-Type':'application/json'}});
-  }
-  if (target.origin==='https://upload.example') {
-    calls.push({kind:'signed-upload',method:options.method,hasAuthorization:!!options.headers?.Authorization,body:options.body});
-    assert.equal(options.method,'POST');
-    assert.equal(!!options.headers?.Authorization,false,'Canvas bearer token must not be sent to the signed upload host');
-    return new Response(JSON.stringify({id:500+calls.filter(x=>x.kind==='signed-upload').length,display_name:'Uploaded attachment'}),{status:200,headers:{'Content-Type':'application/json'}});
-  }
-  throw new Error('Unexpected request origin: '+target.origin);
+const credentials={base:'https://school.instructure.com',token:'secret-token',proxy:'https://bridge.example/worker'};
+const fetchMock=async(url,options={})=>{
+  const target=new URL(url);calls.push({url:target.href,opts:options});
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('action'),'upload-file');
+  assert.equal(target.searchParams.get('kind'),'assignment');assert.equal(target.searchParams.get('course_id'),'1');assert.equal(target.searchParams.get('resource_id'),'9');
+  assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer secret-token');
+  assert.equal(options.headers['Content-Type'],undefined);assert.deepEqual([...options.body.keys()],['file']);
+  const file=options.body.get('file'),id=file.name==='one.txt'?501:502;
+  return new Response(JSON.stringify({id,display_name:file.name,size:file.size}),{status:200,headers:{'Content-Type':'application/json'}});
 };
-const files=[new File(['one'],'one.txt',{type:'text/plain'}),new File(['two'],'two.txt',{type:'text/plain'})];
-const progress=[];
-const uploaded=await workspace.uploadAssignmentFiles({
-  credentials:{base:'https://school.instructure.com',token:'secret-token',proxy:'https://bridge.example/worker'},
-  courseId:1,assignmentId:9,files,onProgress:event=>progress.push(event),fetchImpl:fetchMock
-});
-assert.equal(uploaded.length,2);
-assert.deepEqual(uploaded.map(file=>file.id),[501,502]);
-assert.equal(calls.filter(x=>x.kind==='bridge'&&x.path==='/api/v1/users/self').length,2,'student lookup uses the bridge for each file initialization');
-assert.equal(calls.filter(x=>x.kind==='bridge'&&x.path==='/api/v1/courses/1/assignments/9/submissions/7/files').length,2,'file initializations use the numeric Canvas student endpoint');
-assert.equal(calls.filter(x=>x.kind==='signed-upload').length,2);
-assert.equal(progress.filter(x=>x.phase==='uploaded').length,2,'upload progress is reported for every completed file');
-assert.deepEqual(submissions.payload('online_upload',uploaded.map(file=>file.id)).submission.file_ids,[501,502], 'uploaded file IDs are accepted for final submission');
-
+const files=[new File(['one'],'one.txt',{type:'text/plain'}),new File(['two'],'two.txt',{type:'text/plain'})],progress=[];
+const uploaded=await workspace.uploadAssignmentFiles({credentials,courseId:1,assignmentId:9,files,onProgress:event=>progress.push(event),fetchImpl:fetchMock});
+assert.equal(uploaded.length,2);assert.deepEqual(uploaded.map(file=>file.id),[501,502]);assert.equal(calls.length,2);
+assert.equal(progress.filter(x=>x.phase==='uploaded').length,2,'progress is reported after Canvas file finalization');
+const payload=submissions.payload('online_upload',uploaded.map(file=>file.id));
+assert.deepEqual(payload.submission.file_ids,[501,502]);
+let submissionRequest=null;
+const result=await submissions.send({credentials,courseId:1,assignmentId:9,data:payload,fetchImpl:async(url,options)=>{
+  submissionRequest={url,options};const target=new URL(url);
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('path'),'/api/v1/courses/1/assignments/9/submissions');
+  assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer secret-token');
+  assert.deepEqual(JSON.parse(options.body),{submission:{submission_type:'online_upload',file_ids:[501,502]}});
+  return new Response(JSON.stringify({workflow_state:'submitted',attempt:1,submitted_at:'2026-11-22T12:00:00Z'}),{status:200,headers:{'Content-Type':'application/json'}});
+}});
+assert.equal(result.workflow_state,'submitted');assert.ok(submissionRequest);
 console.log('PASS: Phase 4 completion unit tests (expanded Classic Quiz types, multi-file payloads and staged Canvas uploads)');
