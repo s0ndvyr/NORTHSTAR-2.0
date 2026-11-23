@@ -42,7 +42,23 @@ window.NorthstarWorkspace={
 window.NorthstarPdfLib=Object.assign({},pdfLib,{
  PDFDocument:new Proxy(pdfLib.PDFDocument,{
   get(target,key){
-   if(key==='load')return (bytes,options)=>target.load(Buffer.from(bytes),options);
+   if(key==='load')return async (bytes,options)=>{
+   const document=await target.load(Buffer.from(bytes),options);
+   const getPages=document.getPages.bind(document);
+   document.getPages=()=>getPages().map(page=>new Proxy(page,{
+    get(pageTarget,method){
+     if(method==='drawLine')return drawingOptions=>{
+      const start={x:Number(drawingOptions.start?.x),y:Number(drawingOptions.start?.y)};
+      const end={x:Number(drawingOptions.end?.x),y:Number(drawingOptions.end?.y)};
+      if(!Number.isFinite(start.x)||!Number.isFinite(start.y)||!Number.isFinite(end.x)||!Number.isFinite(end.y))throw Error('PDF.js test viewport returned an invalid PDF-space point: '+JSON.stringify({start:drawingOptions.start,end:drawingOptions.end}));
+      return pageTarget.drawLine({...drawingOptions,start,end});
+     };
+     const value=Reflect.get(pageTarget,method,pageTarget);
+     return typeof value==='function'?value.bind(pageTarget):value;
+    }
+   }));
+   return document;
+  };
    const value=Reflect.get(target,key,target);
    return typeof value==='function'?value.bind(target):value;
   }
