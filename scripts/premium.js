@@ -882,7 +882,13 @@ function phase4FindDiscussionEntry(entries,id){
 async function phase4VerifyDiscussionEntry(context,marker,entries){
   const api=context.api;
   let candidates=[];
-  if(Number(marker.entryId)>0){
+  if(Number(marker.replyTo)>0){
+    try{
+      const response=await api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entries/'+Number(marker.replyTo)+'/replies?per_page=100');
+      const rows=Array.isArray(response)?response:(Array.isArray(response?.entries)?response.entries:[]);
+      candidates.push(...rows.map(entry=>({entry,parentId:Number(marker.replyTo)})));
+    }catch{}
+  }else if(Number(marker.entryId)>0){
     try{
       const response=await api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entry_list?ids%5B%5D='+Number(marker.entryId));
       const rows=Array.isArray(response)?response:[];
@@ -915,9 +921,23 @@ function phase4RenderDiscussionThreads(entries,context){
     const id=Number(entry.id)||0,owned=Number(context.userId)>0&&Number(entry.user_id)===Number(context.userId);
     const replies=Array.isArray(entry.recent_replies)?entry.recent_replies:Array.isArray(entry.replies)?entry.replies:[];
     const controls=context.readOnly?'':'<div class="flex mt" style="gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" data-discussion-reply="'+id+'">Reply</button>'+(owned?'<button class="btn btn-ghost btn-sm" data-discussion-edit="'+id+'">Edit your post</button>':'')+'</div>';
-    return '<article class="card mt" data-discussion-entry="'+id+'"><p class="small">'+safe(asText(entry.message||''))+'</p><p class="tiny muted mt">'+safe(entry.user_name||'Canvas participant')+' · '+(entry.created_at?new Date(entry.created_at).toLocaleString():'')+'</p>'+controls+'<div class="ns-discussion-replies">'+replies.map(reply=>renderEntry(reply,id)).join('')+'</div><div id="phase4ReplyBox'+id+'"></div></article>';
+    return '<article class="card mt" data-discussion-entry="'+id+'"><p class="small">'+safe(asText(entry.message||''))+'</p><p class="tiny muted mt">'+safe(entry.user_name||'Canvas participant')+' · '+(entry.created_at?new Date(entry.created_at).toLocaleString():'')+'</p>'+controls+'<div class="ns-discussion-replies">'+replies.map(reply=>renderEntry(reply,id)).join('')+'</div>'+(entry.has_more_replies?'<button class="btn btn-ghost btn-sm mt" data-discussion-more="'+id+'">Load older replies</button>':'')+'<div id="phase4ReplyBox'+id+'"></div></article>';
   };
   host.innerHTML=entries.length?entries.map(entry=>renderEntry(entry)).join(''):'<p class="small muted mt">No visible posts were returned. Canvas may require an initial post before it displays the thread.</p>';
+  host.querySelectorAll('[data-discussion-more]').forEach(button=>button.onclick=async()=>{
+    const id=Number(button.dataset.discussionMore),found=phase4FindDiscussionEntry(entries,id);if(!found)return;
+    button.disabled=true;button.textContent='Loading earlier replies…';
+    try{
+      const entry=found.entry,page=Math.max(1,Number(entry._northstarReplyPage)||1);
+      const response=await context.api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entries/'+id+'/replies?per_page=50&page='+page);
+      const older=Array.isArray(response)?response:(Array.isArray(response?.entries)?response.entries:[]);
+      const current=Array.isArray(entry.recent_replies)?entry.recent_replies:Array.isArray(entry.replies)?entry.replies:[];
+      const unique=new Map([...older,...current].map(reply=>[Number(reply.id),reply]));
+      entry.recent_replies=[...unique.values()].sort((a,b)=>(Date.parse(b.created_at||'')||0)-(Date.parse(a.created_at||'')||0));
+      entry._northstarReplyPage=page+1;entry.has_more_replies=older.length===50;
+      phase4RenderDiscussionThreads(entries,context);
+    }catch(error){button.disabled=false;button.textContent='Load older replies';const status=$('#phase4DiscussionStatus');if(status)status.textContent='Earlier replies could not be loaded: '+error.message;}
+  });
   host.querySelectorAll('[data-discussion-reply]').forEach(button=>button.onclick=()=>{
     const parentId=Number(button.dataset.discussionReply),box=$('#phase4ReplyBox'+parentId),slot='reply_'+parentId,draftKey=phase4DiscussionDraftKey(context,slot);
     box.innerHTML='<textarea class="editor mt" rows="3" id="phase4ReplyDraft'+parentId+'" placeholder="Write a reply…"></textarea><button class="btn btn-primary btn-sm mt" id="phase4ReplySend'+parentId+'">Post reply</button><p class="tiny muted mt" id="phase4ReplyStatus'+parentId+'" role="status">Draft saved on this device; not published.</p>';
