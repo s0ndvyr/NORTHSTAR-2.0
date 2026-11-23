@@ -77,9 +77,11 @@ assert.equal((await worker.fetch(put({attempt:0,validation_token:'v'},'/api/v1/q
 assert.equal((await worker.fetch(put({attempt:1,validation_token:'v'},'/api/v1/courses/1/assignments/2/submissions'))).status,405,'PUT remains restricted to quiz flag paths');
 assert.equal((await worker.fetch(post({attempt:1,validation_token:'v'},'/api/v1/courses/1/quizzes/2/submissions/8/complete'))).status,200);
 
-for(const p of ['/api/v1/courses/1/discussion_topics','/api/v1/courses/1/discussion_topics/4','/api/v1/courses/1/discussion_topics/4/entries?per_page=50','/api/v1/courses/1/discussion_topics/4/entry_list?ids%5B%5D=7'])assert.equal((await worker.fetch(request(p))).status,200);
+for(const p of ['/api/v1/courses/1/discussion_topics','/api/v1/courses/1/discussion_topics/4','/api/v1/courses/1/discussion_topics/4/entries?per_page=50','/api/v1/courses/1/discussion_topics/4/entry_list?ids%5B%5D=7','/api/v1/courses/1/discussion_topics/4/entries/7/replies?per_page=50&page=1'])assert.equal((await worker.fetch(request(p))).status,200);
 assert.equal((await worker.fetch(request('/api/v1/courses/1/discussion_topics/4/entry_list?ids%5B%5D=7&foo=bar'))).status,403,'discussion entry lookup accepts only bounded IDs');
 assert.equal((await worker.fetch(request('/api/v1/courses/1/discussion_topics/4/entry_list?ids%5B%5D=abc'))).status,403,'discussion entry lookup rejects non-numeric IDs');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/discussion_topics/4/entries/7/replies?per_page=1000'))).status,403,'discussion reply pagination is capped at 100 entries');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/discussion_topics/4/entries/7/replies?sort=oldest'))).status,403,'discussion reply reads do not accept unrecognized query parameters');
 assert.equal((await worker.fetch(post({message:'My initial response'},'/api/v1/courses/1/discussion_topics/4/entries'))).status,200);
 assert.equal((await worker.fetch(post({message:'My reply'},'/api/v1/courses/1/discussion_topics/4/entries/7/replies'))).status,200);
 assert.equal((await worker.fetch(post({message:' '},'/api/v1/courses/1/discussion_topics/4/entries'))).status,400);
