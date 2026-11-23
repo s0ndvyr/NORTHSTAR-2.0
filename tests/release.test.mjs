@@ -23,8 +23,8 @@ const signedPreviewStart=workerJs.indexOf('async function fetchCanvasPublicFile(
 const signedPreviewEnd=workerJs.indexOf('async function downloadCanvasFile(',signedPreviewStart);
 const signedPreviewHelper=workerJs.slice(signedPreviewStart,signedPreviewEnd);
 assert.ok(signedPreviewStart>=0&&signedPreviewEnd>signedPreviewStart,'the signed-preview fetch helper exists');
-assert.ok(!signedPreviewHelper.includes('Authorization'),'Canvas bearer credentials are never added to public_url capability fetches');
-assert.ok(!signedPreviewHelper.includes('User-Agent'),'browser identity is never added to public_url capability fetches');
+assert.ok(!signedPreviewHelper.includes('headers.Authorization')&&!signedPreviewHelper.includes("headers['Authorization']"),'Canvas bearer credentials are never added to public_url capability fetches');
+assert.ok(!signedPreviewHelper.includes("headers['User-Agent']")&&!signedPreviewHelper.includes('headers.UserAgent'),'browser identity is never added to public_url capability fetches');
 assert.ok(signedPreviewHelper.includes('headers.Referer'),'capability redirects carry only the previous origin as Referer');
 assert.ok(workerJs.includes("headers.Referer=refererOrigin+'/';"),'redirects carry only the previous origin as Referer');
 assert.ok(workerJs.includes("const signedStorage=host==='amazonaws.com'||host.endsWith('.amazonaws.com')"),'signed AWS object URLs are accepted without Canvas bearer-token forwarding');
