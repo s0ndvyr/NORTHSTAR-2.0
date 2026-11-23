@@ -1,6 +1,6 @@
 # NORTHSTAR 0.4 — Engineering Log
 
-Last updated: 2026-11-22
+Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
 Release identifier: `NORTHSTAR / 4.4.7.5`
@@ -642,5 +642,15 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Kept signed upload security unchanged: the Canvas bearer token is never sent to the signed upload-storage destination. The existing three-step Worker upload finalization and annotated-PDF-only submission flow remain intact.
 - Added regression coverage for direct authenticated delivery, CORS fallback, rejection of untrusted metadata URLs, and package/manifest/offline release identity.
 - No Worker source change is required for this frontend authentication correction; the active Worker remains version 0.4.16 (4.4.7.2), separately deployed by workflow run 45085853219 from commit 3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14.
-- The 4.4.7.5 preview release will be published only after the exact current preview branch head passes Phase 4 tests and the Pages freshness gate verifies both production and preview heads.
+- NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735 after the exact-head freshness gate passed for main f347cc304356be67e7de8f22b80d0d6e11efebe9 (Phase 4 run 45092663265) and preview df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc (Phase 4 run 45092565490).
 - Automated tests cannot certify that the live NNPS Canvas storage host permits the browser Authorization preflight. Real attachment retrieval, an instructor-approved PDF upload/submission, and iPad Safari/Apple Pencil acceptance remain required before closing Phase 4.
+
+
+### 4.4.7.5 deployment closeout — November 23, 2026
+
+- Phase 3 and Phase 4 PR checks passed on the consolidated production promotion before merge.
+- The final main push passed Phase 4 on commit f347cc304356be67e7de8f22b80d0d6e11efebe9 in workflow run 45092663265.
+- The final preview push passed Phase 4 on commit df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc in workflow run 45092565490.
+- GitHub Pages freshness verification, build and production/preview deploy all passed in workflow run 45092722735. The build independently verified NORTHSTAR 4.4.7.5 and npm package 0.4.19 for both output channels.
+- The private Cloudflare Worker remains separately deployed at 0.4.16 (4.4.7.2), with successful validation/deploy workflow run 45085853219. No Worker source change was part of the .7.5 frontend update.
+- Automated coverage validates the signed-upload finalization protocol, annotated-PDF-only submission handoff, bearer-token host restrictions, bridge fallback and browser boot. It does not replace live NNPS Canvas account acceptance or physical iPad Safari / Apple Pencil testing.
