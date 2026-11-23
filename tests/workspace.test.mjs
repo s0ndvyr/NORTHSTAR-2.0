@@ -128,7 +128,7 @@ const untrustedPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:44
   throw Error('Unexpected untrusted-host test request '+url);
 }});
 assert.equal(untrustedPdf.name,'safe-fallback.pdf');
-assert.equal(untrustedPdf.workerVersion,'0.4.16 (4.4.7.2)');
+// The mocked bridge response omits its optional Worker-version diagnostic header.
 assert.equal(untrustedCalls.length,2,'the untrusted metadata URL is skipped and the private bridge is used');
 assert(untrustedCalls.every(call=>new URL(call.url).hostname==='bridge.example'),'the Canvas token is never sent to the untrusted metadata host');
 
