@@ -273,3 +273,13 @@ Phase 4.4.7.4 corrects the release-history regression assertion so the current p
 
 The private Canvas bridge authenticates the original file-download URL against the configured school Canvas origin. When Canvas redirects to a signed Instructure storage URL, the bridge strips the Canvas bearer token, sends only an origin-level Referer for the immediately preceding redirect origin, and does not replay the student's browser User-Agent to storage. Redirect targets must remain HTTPS and on the explicit Instructure file-host allowlist. The token is never sent to signed storage. If a PDF still fails, copy the NORTHSTAR Canvas attachment diagnostic; it records the failed stage and safe HTTP/Cloudflare request references without including credentials, signed URLs or file bytes.
 
+## NORTHSTAR 4.4.8.0 — Browser-native Canvas PDF delivery
+
+**Preview:** https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/  
+**Candidate package:** 0.4.25 · **Canvas Worker:** 0.4.21
+
+The Canvas Worker authenticates Canvas API metadata and `public_url` requests only; it does not fetch Instructure storage bytes. The browser reads signed preview URLs without Canvas credentials. When cross-origin browser access is blocked, the assignment workspace offers Safari-native preview, an official Canvas session handoff, and local PDF import into the existing Document Studio.
+
+Temporary preview URLs are refreshed only after an explicit user action and are never persisted. Canvas attachment identity is stored separately from annotations using the Canvas file, course and assignment identifiers. The local import keeps the original Canvas filename and records the selected local filename separately; the user must confirm the selected local PDF is the intended attachment.
+
+Automated Phase 4 tests and Worker deployment have passed. The preview is not yet accepted against the live NNPS Canvas account or a physical iPad. Live PDF retrieval, Safari preview, Files import, editing, export and actual Canvas submission remain manual acceptance requirements. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19 until those checks pass.
