@@ -81,7 +81,7 @@ console.log('PASS: NORTHSTAR release manifest, package version, changelog histor
 
 assert.ok(workerJs.includes("action!==null"),'the Worker has a separate authenticated multipart upload action');
 assert.ok(workerJs.includes("redirect:'manual'"),'the Worker inspects signed storage redirects explicitly');
-assert.ok(workerJs.includes('async function uploadCanvasFile(')&&workerJs.includes('create_success
+assert.ok(workerJs.includes('async function uploadCanvasFile(')&&workerJs.includes('create_success$'),'the separate upload handler still finalizes files through Canvas');
 assert.ok(workspaceJs.includes("bridge.searchParams.set('action','upload-file')"),'the browser sends file bytes to the private bridge');
 assert.ok(workspaceJs.includes("redirect:'error'"),'the browser never follows a bridge redirect automatically');
 
