@@ -1,20 +1,37 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.6",
-  "packageVersion": "0.4.20",
+  "northstarVersion": "4.4.7.7",
+  "packageVersion": "0.4.21",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas PDF redirect recovery Worker 0.4.17 (4.4.7.6) deployed successfully to the preview bridge by workflow run 45099837678. Cloudflare Worker version ID: 4c1ac8f8-0733-478a-8291-cb85b0c11f97. Live NNPS PDF acceptance remains open."
+    "status": "Canvas-origin User-Agent compatibility recovery Worker 0.4.18 (4.4.7.7) candidate; preview deployment and live NNPS PDF acceptance pending."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.6 / package 0.4.20 deployed successfully by GitHub Pages workflow run 45099890111 from tested preview commit 1e1d9fe9979b204b6f92d500c209ff622687a880. The preview Canvas bridge Worker 0.4.17 deployed successfully by run 45099837678."
+    "preview": "NORTHSTAR 4.4.7.7 / package 0.4.21 candidate; deployment pending Phase 4 verification."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.7.7",
+      "date": "2026-11-23",
+      "title": "Canvas PDF download request compatibility",
+      "description": "Restores the requesting browser User-Agent on the initial authenticated request to the configured school Canvas origin only. Cross-origin Instructure storage requests continue to receive neither the Canvas bearer token nor the browser User-Agent. Adds regression coverage for the Canvas-origin header boundary.",
+      "category": "Canvas integration and security",
+      "areas": [
+        "Canvas PDF retrieval",
+        "Canvas Cloudflare edge compatibility",
+        "Request header isolation",
+        "Worker security",
+        "Regression tests"
+      ],
+      "status": "Candidate only. Phase 4 tests and preview Worker/Pages deployments are pending. Live NNPS PDF retrieval remains unaccepted; production remains unchanged.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.7.6",
       "date": "2026-11-23",
