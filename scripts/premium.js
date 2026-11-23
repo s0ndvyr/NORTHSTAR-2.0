@@ -1099,6 +1099,13 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   document.querySelectorAll('[data-ns-format]').forEach(button=>{button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{input.focus();const action=button.dataset.nsFormat;if(action==='blockquote')document.execCommand('formatBlock',false,'blockquote');else document.execCommand(action,false,null);updateDraft();});});
   updateDraft();
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
+  if(details?.submission)phase441RenderSubmissionReceipt(a,c,details.submission,details.submission.submission_type);
+  if(phase441ReadUnknownSubmission(a)){
+    phase441UnknownSubmissionChecks.add(String(a.id));
+    const warning=$('#nsSubmissionUnknown');if(warning)warning.hidden=false;
+    const submit=$('#submitWork');if(submit)submit.disabled=true;
+    const status=$('#submissionStatus');if(status)status.textContent='A previous submit request has not been reconciled with Canvas. Refresh status before any new submission.';
+  }
   const reconcileSubmissionButton=$('#nsReconcileSubmission');if(reconcileSubmissionButton)reconcileSubmissionButton.onclick=()=>phase441ReconcileSubmission(a);
   const docxButton=$('#nsPrepareDocx');if(docxButton)docxButton.onclick=async()=>{
     const wordStatus=$('#nsPrepareDocxStatus');docxButton.disabled=true;if(wordStatus)wordStatus.textContent='Preparing your Word document…';
@@ -1209,7 +1216,7 @@ async function openWorkspace(id,options){
     try{
       const creds=getCredentials(),api=window.NorthstarWorkspace.transport(creds);
       details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
-      if(Object.prototype.hasOwnProperty.call(details,'submission'))phase441UnknownSubmissionChecks.delete(String(a.id));
+      if(phase441ReadUnknownSubmission(a))phase441UnknownSubmissionChecks.add(String(a.id));
       a.desc=asText(details.description||a.desc||'').slice(0,1600)||a.desc;
       a.submissionTypes=details.submission_types||a.submissionTypes||[];
       a.allowedExtensions=details.allowed_extensions||a.allowedExtensions||[];
