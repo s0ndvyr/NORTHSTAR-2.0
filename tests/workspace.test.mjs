@@ -20,6 +20,7 @@ const fetchImpl=async(url,opts)=>{
   const path=new URL(url).searchParams.get('path')||'';
   if(path.startsWith('/login/session_token'))return {ok:true,status:200,json:async()=>({session_url:'https://school.instructure.com/login?session_token=short-lived'})};
   if(path.startsWith('/api/v1/courses/11/external_tools/sessionless_launch'))return {ok:true,status:200,json:async()=>({id:44,name:'Publisher Assessment',url:'https://publisher.example/lti/launch?state=opaque'})};
+  if(path==='/api/v1/courses/11/quizzes/22/submission')return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,workflow_state:'complete',finished_at:'2026-11-18T10:00:00Z'}]})};
   if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:180,end_at:'2026-11-18T05:00:00Z'})};
   return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Pick one',answers:[{id:1,text:'A'}]}}]})};
 }
