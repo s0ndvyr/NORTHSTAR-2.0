@@ -545,8 +545,27 @@ function phase4RenderNewQuizPreview(a,c,quiz,items,creds){
     const pts=Number(item.points_possible);
     return '<article class="ns-newquiz-item"><div class="ns-newquiz-item-head"><span>ITEM '+(index+1)+' · '+safe(kind)+'</span><b>'+(Number.isFinite(pts)?pts+' pts':'')+'</b></div><h3>'+title+'</h3><div class="ns-newquiz-prompt">'+safePrompt+'</div></article>';
   }).join(''):'<div class="ns-room-empty"><div class="ns-room-empty-inner"><h3>Question preview unavailable</h3><p>The quiz itself was found, but Canvas did not return readable item content for this student session.</p></div></div>';
-  body.innerHTML='<div class="ns-newquiz-brief"><div><span class="eyebrow">NEW QUIZZES · CANVAS CONTENT</span><h2>'+safe(quiz.title||a.title)+'</h2><p>'+(Number.isFinite(points)?points+' points · ':'')+timeLabel+(quiz.workflow_state?' · '+safe(quiz.workflow_state.replace(/_/g,' ')):'')+'</p></div><div class="ns-newquiz-instructions">'+instructions+'</div><p class="ns-room-help">This preview is read-only. NORTHSTAR does not create a New Quizzes attempt or store New Quizzes answers. Use Canvas’s authenticated quiz player for the official timed attempt, answer submission and completion.</p><button class="btn btn-primary mt" type="button" id="nsLaunchNewQuiz">Open official New Quizzes player inside NORTHSTAR</button><p class="ns-room-help mt" id="nsNewQuizLaunchStatus">Canvas handles the timed attempt, answers and final submission through its authenticated student player.</p></div><div class="ns-newquiz-list"><div class="ns-newquiz-list-head"><span class="eyebrow">QUESTION PREVIEW</span><span class="ns-room-help">'+(rows?rows.length+' items':'Items not available')+'</span></div>'+itemHtml+'</div>';
+  body.innerHTML='<div class="ns-newquiz-brief"><div><span class="eyebrow">NEW QUIZZES · CANVAS CONTENT</span><h2>'+safe(quiz.title||a.title)+'</h2><p>'+(Number.isFinite(points)?points+' points · ':'')+timeLabel+(quiz.workflow_state?' · '+safe(quiz.workflow_state.replace(/_/g,' ')):'')+'</p></div><div class="ns-newquiz-instructions">'+instructions+'</div><p class="ns-room-help">This preview is read-only. NORTHSTAR does not create a New Quizzes attempt or store New Quizzes answers. Use Canvas’s authenticated quiz player for the official timed attempt, answer submission and completion.</p><div class="flex mt" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="nsLaunchNewQuiz">Open official New Quizzes player inside NORTHSTAR</button><button class="btn btn-ghost" type="button" id="nsRefreshNewQuizStatus">Refresh Canvas completion</button></div><p class="ns-room-help mt" id="nsNewQuizLaunchStatus">Canvas handles the timed attempt, answers and final submission through its authenticated student player.</p></div><div class="ns-newquiz-list"><div class="ns-newquiz-list-head"><span class="eyebrow">QUESTION PREVIEW</span><span class="ns-room-help">'+(rows?rows.length+' items':'Items not available')+'</span></div>'+itemHtml+'</div>';
   const launchButton=$('#nsLaunchNewQuiz');if(launchButton)launchButton.onclick=()=>launchCanvasAssignmentExperience('new-quiz');
+  const refreshButton=$('#nsRefreshNewQuizStatus');
+  if(refreshButton)refreshButton.onclick=async()=>{
+    const status=$('#nsNewQuizLaunchStatus');refreshButton.disabled=true;
+    if(status)status.textContent='Refreshing the official Canvas assignment submission record…';
+    try{
+      const record=await window.NorthstarWorkspace.getAssignmentSubmission({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId});
+      const sub=record.submission;
+      if(sub){
+        const state=String(sub.workflow_state||'unknown').toLowerCase();
+        const when=sub.submitted_at?new Date(sub.submitted_at).toLocaleString():'timestamp not provided';
+        a.status=CANVAS_SYNC.submission(sub).status;a.subState=state;a.attempt=Number(sub.attempt)||a.attempt;a.submittedAt=sub.submitted_at||null;a.score=sub.score??a.score;a.grade=sub.grade??a.grade;
+        if(status)status.textContent=['submitted','graded','pending_review'].includes(state)
+          ?'Canvas reports this New Quiz assignment as '+state+' · attempt '+(sub.attempt||'—')+' · '+when+'. The timed questions and final submission were completed in the official Canvas player, not inside NORTHSTAR.'
+          :'Canvas currently reports '+state+'. The official player still owns the New Quiz attempt and answer state.';
+      }else if(status)status.textContent='Canvas returned no submission record for this New Quiz assignment yet. The player result has not been confirmed.';
+      await persistCurrentSnapshot();refreshAll();
+    }catch(error){if(status)status.textContent='Canvas completion could not be confirmed: '+error.message+' The provider-owned attempt remains authoritative.';}
+    finally{refreshButton.disabled=false;}
+  };
   $('#nsQuizTitle').textContent=quiz.title||a.title;
   $('#nsQuizSubhead').textContent=(rows?rows.length+' items':'Question preview unavailable')+' · New Quizzes · official attempt remains in Canvas';
 }
