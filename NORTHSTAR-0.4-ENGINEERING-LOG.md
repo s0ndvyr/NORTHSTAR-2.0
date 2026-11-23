@@ -673,3 +673,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Cloudflare Worker validation, syntax checks, Wrangler dry-run and full regression tests passed; Worker 0.4.17 was deployed successfully in run 45099837678. Cloudflare reported Worker version ID 4c1ac8f8-0733-478a-8291-cb85b0c11f97.
 - GitHub Pages freshness verification and build passed; the build verified production NORTHSTAR 4.4.7.5 / package 0.4.19 and preview NORTHSTAR 4.4.7.6 / package 0.4.20. Pages deployment succeeded in run 45099890111.
 - Production was intentionally not promoted. Live NNPS PDF retrieval, Document Studio editing/export, real Canvas upload/finalization/submission and physical iPad acceptance remain open.
+
+
+## NORTHSTAR 4.4.7.7 — Canvas-origin request compatibility candidate (2026-11-23)
+
+- Live diagnostic for attachment `61162022` on Worker `0.4.17` returned HTTP 403 from `nnps.instructure.com` with zero redirects. This is distinct from the earlier 406 at the final storage edge.
+- Source comparison against the previous deployed Worker showed that the previous content request forwarded the requesting browser User-Agent, while 0.4.17 omitted it. This is a plausible explanation for the new origin-level 403, not yet proven.
+- Candidate Worker `0.4.18` restores the browser User-Agent only when the download target origin exactly equals `CANVAS_ORIGIN`; cross-origin storage hosts still receive neither the Canvas bearer token nor the browser User-Agent.
+- Regression tests assert both sides of this boundary. Candidate release NORTHSTAR `4.4.7.7` / package `0.4.21`; preview deployment and live PDF acceptance pending.
+- Production remains unchanged. Do not promote until the same live NNPS attachment opens and the full PDF edit/export/upload/submission lifecycle is separately verified.

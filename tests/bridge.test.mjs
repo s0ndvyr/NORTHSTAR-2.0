@@ -108,6 +108,7 @@ globalThis.fetch=async(url,opts)=>{
   }
   if(target.hostname===canvasFileHost&&target.pathname.startsWith('/files/')){
     assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated Canvas download URL receives the bearer token');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the configured Canvas origin receives the requesting browser User-Agent');
     return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/private/attachment.pdf'}});
   }
   if(target.hostname===userContentHost){
@@ -152,7 +153,7 @@ globalThis.fetch=async(url,opts)=>{
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
 assert.equal(failedFile.status,406);
 const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.17 (4.4.7.6)');
+assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.18 (4.4.7.7)');
 assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);

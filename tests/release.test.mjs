@@ -13,9 +13,10 @@ const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.7.6','release manifest identifies the Canvas PDF redirect recovery release');
-assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.17 (4.4.7.6)'"),'the Worker reports the current recovery build');
-assert.ok(workerJs.includes('if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization'),'the Canvas bearer token is only sent to the school Canvas origin');
+assert.equal(manifest.northstarVersion,'4.4.7.7','release manifest identifies the Canvas-origin request compatibility release');
+assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.18 (4.4.7.7)'"),'the Worker reports the current Canvas-origin compatibility build');
+assert.ok(workerJs.includes("if(current.origin===CANVAS_ORIGIN){"),'the Canvas bearer token is only sent to the school Canvas origin');
+assert.ok(workerJs.includes("headers['User-Agent']=userAgent"),'the browser User-Agent is restored only for the configured Canvas origin');
 assert.ok(workerJs.includes("headers.Referer=refererOrigin+'/';"),'redirects carry only the previous origin as Referer');
 assert.ok(!workerJs.includes('if(isTrustedCanvasFileHost(current.hostname))headers.Authorization=authorization'),'the bearer token is not forwarded to Instructure storage redirects');
 
@@ -23,8 +24,8 @@ assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata an
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45099837678'),'the release records the successful preview Worker deployment');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45099890111'),'the release records the successful preview Pages deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('pending'),'the current candidate is not falsely marked deployed');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('User-Agent'),'the current release documents the constrained User-Agent change');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.5').commits.some(commit=>commit.sha==='f347cc304356be67e7de8f22b80d0d6e11efebe9'),'the previous release records its tested production main source SHA');
@@ -42,10 +43,10 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.7.6'")&&releaseJs.includes("packageVersion:'0.4.20'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.7.7'")&&releaseJs.includes("packageVersion:'0.4.21'"),'the offline release fallback agrees with the authoritative manifest');
 assert.ok(releaseJs.includes("Production and preview are deployed")&&releaseJs.includes("Live Canvas/iPad acceptance remains open"),'the offline release fallback does not report a deployed release as pending');
 assert.ok(releaseJs.includes("phase:'4.4.7'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
-assert.ok(pkg.northstarRelease==='4.4.7.6'&&pkg.version==='0.4.20','package metadata maps to the current preview release');
+assert.ok(pkg.northstarRelease==='4.4.7.7'&&pkg.version==='0.4.21','package metadata maps to the current preview release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');

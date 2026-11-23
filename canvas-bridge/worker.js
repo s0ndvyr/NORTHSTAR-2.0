@@ -1,8 +1,8 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
-// Build marker: 0.4.17 — authenticated Canvas PDF redirect recovery.
+// Build marker: 0.4.18 — Canvas-origin download compatibility recovery.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const WORKER_BUILD = '0.4.17 (4.4.7.6)';
+const WORKER_BUILD = '0.4.18 (4.4.7.7)';
 const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id, X-Northstar-Failure, X-Northstar-Worker-Version', 'X-Northstar-Worker-Version':WORKER_BUILD, 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -161,7 +161,13 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
     const headers={Accept:'application/pdf,application/octet-stream,*/*'};
     // Authenticate the Canvas download endpoint only. Signed cross-origin
     // storage redirects must not receive the student's Canvas bearer token.
-    if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
+    if(current.origin===CANVAS_ORIGIN){
+      headers.Authorization=authorization;
+      // Canvas's Cloudflare edge accepted the browser User-Agent in the prior
+      // release. Restore it only on the configured school origin; never replay
+      // the student's browser identity to cross-origin storage hosts.
+      if(typeof userAgent==='string'&&userAgent)headers['User-Agent']=userAgent;
+    }
     // Preserve the browser-like origin-only referrer across cross-origin hops;
     // never forward a path, query string, signed URL, or Canvas credential.
     if(refererOrigin)headers.Referer=refererOrigin+'/';
