@@ -16,7 +16,10 @@ const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const assignmentCss=readFileSync(new URL('styles/assignment-room.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.8.1','release manifest identifies the Document Studio persistence milestone');
+const exportTest=readFileSync(new URL('tests/document-export.test.mjs',root),'utf8');
+assert.equal(manifest.northstarVersion,'4.4.8.1.1','release manifest identifies the Document Studio verification sub-priority');
+assert.equal(manifest.phase,'4.4.8','the sub-priority retains the parent 4.4.8 phase family');
+assert.equal(manifest.packageVersion,'0.4.27','the frontend package version is independently advanced');
 assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.21 (4.4.8.0)'"),'the Worker reports the browser-native PDF API proxy build');
 assert.ok(workerJs.includes('public_url$/.test(path)'),'the Worker allowlists Canvas public inline-preview URL requests');
 assert.ok(workerJs.includes("if(request.method==='GET'&&!allowedRead(url.pathname+url.search))"),'all proxied Canvas reads still pass through the exact allowlist');
@@ -32,11 +35,18 @@ assert.ok(roomJs.includes('ns-pdf-native-preview')&&roomJs.includes('Save to Fil
 assert.ok(roomJs.includes('getCanvasSessionUrl')&&roomJs.includes("returnTo"),'the fallback can use a temporary authenticated Canvas file-view session');
 assert.ok(storageJs.includes("const DOCUMENTS='documents'")&&storageJs.includes("const DRAFTS='drafts'"),'PDF source files and changing annotation drafts use separate IndexedDB stores');
 assert.ok(roomJs.includes('restoreStoredPdf')&&roomJs.includes('persistPdfSource')&&roomJs.includes('queuePdfDraftSave'),'Document Studio restores source PDFs and autosaves drafts');
-const pdfParseIndex=roomJs.indexOf('pdfState.doc=await lib.getDocument');
+const pdfParseIndex=roomJs.indexOf('const parsedDocument=await lib.getDocument');
 const persistSourceIndex=roomJs.indexOf('const sourceSaved=await persistPdfSource(data)');
 assert.ok(pdfParseIndex>=0&&persistSourceIndex>pdfParseIndex,'PDF source bytes are not cached until PDF.js successfully parses the document');
 assert.ok(roomJs.includes("addEventListener('pagehide',flushPdfDraft)")&&roomJs.includes("visibilitychange"),'Safari page suspension flushes the current rich-text draft');
 assert.ok(roomJs.includes('renderedPage.getViewport({scale:pdfState.scale})'),'flattened export resolves a PDF.js viewport for every annotated page');
+assert.ok(roomJs.includes('const draftSaveQueues=new Map()')&&roomJs.includes('draftSaveQueues.set(key,queued)'),'draft persistence serializes writes independently for each document');
+assert.ok(roomJs.includes('openToken')&&roomJs.includes('context.token!==pdfState.openToken'),'asynchronous editor initialization and recovery are scoped to the latest open operation');
+assert.ok(roomJs.includes('contains a character wider than its text box')&&roomJs.includes('no text was silently clipped'),'PDF export refuses clipped text and handles oversized unbroken words');
+assert.ok(roomJs.includes('points[i-1].pressure')&&roomJs.includes('points[i].pressure'),'flattened freehand output incorporates the saved Pencil pressure values');
+assert.ok(storageJs.includes('QuotaExceededError')===false,'the adapter reports raw browser storage errors for UI classification');
+assert.ok(storageJs.includes('getLastError')&&storageJs.includes('rememberError')&&storageJs.includes('clearError'),'IndexedDB open/read/write/abort failures retain actionable diagnostics');
+assert.ok(exportTest.includes("pdfjs.getDocument({data:outputBytes")&&exportTest.includes('page.setRotation')&&exportTest.includes('originalSourceBytes'),'the export test independently reopens rotated multi-page PDFs and checks source immutability');
 assert.ok(bootJs.includes("'document-storage.js'")&&html.includes('scripts/document-storage.js'),'IndexedDB persistence loads before the assignment workspace');
 assert.ok(!roomJs.includes('localStorage.setItem')||roomJs.includes('previewUrl'),'preview URLs are not intentionally persisted as attachment state');
 
@@ -45,7 +55,10 @@ assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.9').commits.some(commit=>commit.sha==='a4c111b87e5508b1ce78deca24832c71dc4bcf44'),'the release records its tested and deployed preview source commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Preview deployed successfully by GitHub Pages workflow run 45211301327'),'the current candidate records its verified preview deployment while keeping live Canvas acceptance open');
+const parentRelease=manifest.releases.find(entry=>entry.version==='4.4.8.1');
+assert.ok(String(parentRelease.status||'').includes('45212530217')&&String(parentRelease.status||'').includes('45212652910'),'the parent release records its exact source test and preview deployment provenance');
+assert.ok(parentRelease.commits.some(commit=>commit.sha==='917c3a5e3f2862dba263fab4ee7ff0ab620b2566'),'the parent changelog records its verified preview source SHA');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('not deployed yet'),'the candidate does not claim a preview deployment before its exact-head run');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');
@@ -70,10 +83,10 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.8.1'")&&releaseJs.includes("packageVersion:'0.4.26'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes("Preview deployed successfully by GitHub Pages workflow run 45211301327")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.8.1.1'")&&releaseJs.includes("packageVersion:'0.4.27'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(releaseJs.includes('candidate is awaiting exact-head tests and deployment')&&releaseJs.includes('production remains 4.4.7.5'),'the offline fallback keeps the parent preview and production identities separate');
 assert.ok(releaseJs.includes("phase:'4.4.8'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
-assert.ok(pkg.northstarRelease==='4.4.8.1'&&pkg.version==='0.4.26','package metadata maps to the current candidate release');
+assert.ok(pkg.northstarRelease==='4.4.8.1.1'&&pkg.version==='0.4.27','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');
@@ -81,6 +94,7 @@ assert.ok(!premiumJs.includes("NORTHSTAR / .4.4.5")&&!premiumJs.includes('versio
 assert.ok(roomJs.includes('justifyGap')&&roomJs.includes('completedParagraphs'),'PDF export handles justified text and paragraph spacing');
 assert.ok(roomJs.includes("'•':'•'")&&roomJs.includes("'–':'–'"),'PDF export maps common punctuation and list markers');
 assert.ok(pagesWorkflow.includes('/actions/workflows/northstar-phase4.yml/runs'),'Pages freshness gate queries Phase 4 workflow history');
+assert.ok(pagesWorkflow.includes('northstar-4.4.8.1.1-document-studio-verification'),'the candidate Pages workflow is wired to its own preview source branch');
 assert.ok(pagesWorkflow.includes('run.head_sha === sha')&&pagesWorkflow.includes("run.conclusion === 'success'"),'Pages only accepts successful runs for the exact current branch SHA');
 assert.ok(pagesWorkflow.includes('needs: freshness'),'Pages build depends on the freshness gate');
 assert.ok(pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.main_sha }}')&&pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.preview_sha }}'),'Pages checks out the exact tested SHAs');
