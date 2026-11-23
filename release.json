@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested main commit f347cc304356be67e7de8f22b80d0d6e11efebe9.",
-    "preview": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested preview commit df606c6f3b6e2b91c491a0a93bf085ac0ab6f2a96."
+    "preview": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested preview commit df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -29,7 +29,7 @@
         "Document Studio submission handoff",
         "Release metadata"
       ],
-      "status": "Production and preview deployed successfully by GitHub Pages workflow run 45092722735. GitHub Actions Phase 4 passed on main commit f347cc304356be67e7de8f22b80d0d6e11efebe9 (run 45092663265) and preview commit df606c6f3f6b6e2b91c491a0a93bf085ac0ab6f2a96 (run 45092565490). Canvas Worker 0.4.16 (4.4.7.2) remains separately deployed by run 45085853219. Live Canvas account and physical iPad acceptance remain open.",
+      "status": "Production and preview deployed successfully by GitHub Pages workflow run 45092722735. GitHub Actions Phase 4 passed on main commit f347cc304356be67e7de8f22b80d0d6e11efebe9 (run 45092663265) and preview commit df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc (run 45092565490). Canvas Worker 0.4.16 (4.4.7.2) remains separately deployed by run 45085853219. Live Canvas account and physical iPad acceptance remain open.",
       "historical": false,
       "commits": [
         {
