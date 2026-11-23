@@ -61,7 +61,7 @@ assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/rel
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
 assert.ok(releaseJs.includes("northstarVersion:'4.4.8.0'")&&releaseJs.includes("packageVersion:'0.4.25'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes("Candidate branch; Phase 4 CI passed, Worker 0.4.21 deployed, and explicit preview refresh/attachment identity regression tests passed")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
+assert.ok(releaseJs.includes("Preview deployed successfully by Pages workflow run 45204976839. Phase 4 CI passed, Worker 0.4.21 deployed, and explicit preview refresh/attachment identity regression tests passed")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
 assert.ok(releaseJs.includes("phase:'4.4.8'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
 assert.ok(pkg.northstarRelease==='4.4.8.0'&&pkg.version==='0.4.25','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
