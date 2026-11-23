@@ -161,7 +161,7 @@ The Document Studio annotated-PDF handoff now has a browser boot integration tes
 Phase 4.4.7.4 also corrects a stale release-history test that confused the previous deployed preview with the current pending candidate. The Document Studio submission UI test and annotated-PDF-only behavior are carried forward unchanged.
 
 
-Release 4.4.7.4 is now deployed to the preview Pages path. The production frontend remains on 4.4.6.9. The Canvas Worker has been deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.
+Release 4.4.7.4 was deployed to the preview Pages path by run 45086841863. Production source has since advanced to NORTHSTAR 4.4.6.10 on main; its Pages publication is controlled by the same exact-head freshness gate as the preview branch. The Canvas Worker remains deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.
 
 
 ## NORTHSTAR 4.4.7.5 — Authenticated Canvas PDF downloads
