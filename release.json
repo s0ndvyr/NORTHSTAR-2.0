@@ -7,11 +7,11 @@
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas-origin User-Agent compatibility recovery Worker 0.4.18 (4.4.7.7) candidate; preview deployment and live NNPS PDF acceptance pending."
+    "status": "Canvas PDF request compatibility Worker 0.4.18 (4.4.7.7) deployed successfully to the preview bridge by workflow run 45103459358. Cloudflare Worker version ID: 2e7ced36-da0b-4091-9bd2-7dedfcf4adc2. Live NNPS PDF acceptance remains open."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.7 / package 0.4.21 candidate; deployment pending Phase 4 verification."
+    "preview": "NORTHSTAR 4.4.7.7 / package 0.4.21 deployed successfully to the preview Pages path by workflow run 45103520416 from preview commit d4740f8f280b358bbe9d64770d6b2ae94714b842. The preview Canvas bridge Worker 0.4.18 deployed successfully by run 45103459358. Production intentionally remains on 4.4.7.5."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -28,9 +28,14 @@
         "Worker security",
         "Regression tests"
       ],
-      "status": "Candidate only. Phase 4 tests and preview Worker/Pages deployments are pending. Live NNPS PDF retrieval remains unaccepted; production remains unchanged.",
+      "status": "Preview deployment successful. Phase 4 passed on exact preview commit d4740f8f280b358bbe9d64770d6b2ae94714b842 (run 45103459276); Worker 0.4.18 deployed by run 45103459358; Pages preview deployed by run 45103520416. Live NNPS PDF retrieval and subsequent real assignment submission remain pending. Production intentionally remains on 4.4.7.5 until live acceptance.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "d4740f8f280b358bbe9d64770d6b2ae94714b842",
+          "label": "tested and deployed preview source including Canvas Worker"
+        }
+      ]
     },
     {
       "version": "4.4.7.6",
