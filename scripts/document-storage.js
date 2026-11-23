@@ -29,7 +29,7 @@ function openDatabase(){
    db.onversionchange=()=>{try{db.close();}catch{}dbPromise=null;};
    resolve(db);
   };
-  request.onerror=()=>{rememberError('open',request.error||new Error('IndexedDB could not be opened.'));resolve(null);};
+  request.onerror=()=>{rememberError('open',request.error||new Error('IndexedDB could not be opened.'));dbPromise=null;resolve(null);};
   request.onblocked=()=>{rememberError('open',{name:'BlockedError',message:'Another tab is blocking the NORTHSTAR document database upgrade.'});dbPromise=null;resolve(null);};
  });
  return dbPromise;
@@ -43,7 +43,7 @@ function readRecord(storeName,key){
    catch(error){reject(error);return;}
    request.onsuccess=()=>{value=request.result||null;};
    request.onerror=()=>{const error=request.error||new Error('Document storage read failed');rememberError('read',error);reject(error);};
-   tx.oncomplete=()=>resolve(value);
+   tx.oncomplete=()=>{clearError();resolve(value);};
    tx.onerror=()=>{const error=tx.error||new Error('Document storage read transaction failed');rememberError('read',error);reject(error);};
    tx.onabort=()=>{const error=tx.error||new Error('Document storage read was interrupted');rememberError('abort',error);reject(error);};
   });
@@ -57,7 +57,7 @@ function writeRecord(storeName,record){
    let tx;
    try{tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).put(record);}
    catch(error){reject(error);return;}
-   tx.oncomplete=()=>resolve(true);
+   tx.oncomplete=()=>{clearError();resolve(true);};
    tx.onerror=()=>{const error=tx.error||new Error('Document storage write failed');rememberError('write',error);reject(error);};
    tx.onabort=()=>{const error=tx.error||new Error('Document storage write was interrupted');rememberError('abort',error);reject(error);};
   });
@@ -70,7 +70,7 @@ function deleteRecord(storeName,key){
    let tx;
    try{tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).delete(String(key));}
    catch(error){reject(error);return;}
-   tx.oncomplete=()=>resolve(true);
+   tx.oncomplete=()=>{clearError();resolve(true);};
    tx.onerror=()=>{const error=tx.error||new Error('Document storage delete failed');rememberError('delete',error);reject(error);};
    tx.onabort=()=>{const error=tx.error||new Error('Document storage delete was interrupted');rememberError('abort',error);reject(error);};
   });
