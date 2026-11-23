@@ -59,6 +59,53 @@ assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
 await assert.rejects(W.startQuiz({credentials:{base:credentials.base,token:'x'},courseId:11,quizId:22,fetchImpl}),/private Canvas bridge/);
 await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submission,answers:[],fetchImpl}),/no answers/i);
 
+// Assignment completion is read back from the official student submission
+// record; upload and POST response alone are not treated as proof.
+const assignmentReads=[];
+const assignmentReceipt=await W.getAssignmentSubmission({credentials,courseId:11,assignmentId:33,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');assignmentReads.push(path);
+ if(path==='/api/v1/courses/11/assignments/33?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true')return {ok:true,status:200,json:async()=>({id:33,submission:{id:88,attempt:2,workflow_state:'submitted',submission_type:'online_upload',submitted_at:'2026-11-23T16:00:00Z',attachments:[{id:501,filename:'annotated.pdf'}]},can_submit:true,allowed_extensions:['pdf']})};
+ if(path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:700})};
+ if(path==='/api/v1/courses/11/assignments/33/submissions/700?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment')return {ok:true,status:200,json:async()=>({attempt:2,submission_history:[{attempt:1,workflow_state:'submitted'},{attempt:2,workflow_state:'submitted'}],submission_comments:[],rubric_assessment:{}})};
+ throw Error('Unexpected assignment verification path '+path);
+}});
+assert.equal(assignmentReceipt.submission.attempt,2);
+assert.equal(assignmentReceipt.submission.workflow_state,'submitted');
+assert.equal(assignmentReceipt.submissionDetails.submission_history.length,2);
+assert.equal(assignmentReceipt.canSubmit,true);
+assert.deepEqual(assignmentReads,[
+ '/api/v1/courses/11/assignments/33?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true',
+ '/api/v1/users/self',
+ '/api/v1/courses/11/assignments/33/submissions/700?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment'
+]);
+await assert.rejects(W.getAssignmentSubmission({credentials,courseId:11,assignmentId:33,fetchImpl:async()=>({ok:true,status:200,json:async()=>({id:33})})}),/current student submission record/,'an assignment response without its submission property is not treated as verification');
+
+const quizReceipt={id:77,attempt:1,finished_at:'2026-11-23T16:20:00Z',workflow_state:'complete'};
+const completeCalls=[];
+const completedQuiz=await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');completeCalls.push({path,method:opts.method,body:opts.body});
+ if(path==='/api/v1/courses/11/quizzes/22/submissions/77/complete')return {ok:true,status:200,json:async()=>({quiz_submission:{id:77,attempt:1}})};
+ if(path==='/api/v1/courses/11/quizzes/22/submission')return {ok:true,status:200,json:async()=>({quiz_submissions:[quizReceipt]})};
+ throw Error('Unexpected quiz reconciliation path '+path);
+}});
+assert.equal(completedQuiz.confirmed,true);
+assert.equal(completedQuiz.submission.finished_at,quizReceipt.finished_at);
+assert.deepEqual(completeCalls.map(call=>call.path),[
+ '/api/v1/courses/11/quizzes/22/submissions/77/complete',
+ '/api/v1/courses/11/quizzes/22/submission'
+],'quiz completion is independently read after the official completion request');
+
+await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');
+ if(path.endsWith('/complete'))return {ok:true,status:200,json:async()=>({quiz_submission:{id:77,attempt:1}})};
+ return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,workflow_state:'untaken',finished_at:null}]})};
+}}),error=>error.completionOutcomeUnknown===true&&/not independently confirmed/.test(error.message),'an HTTP success without a completed Canvas attempt remains unconfirmed');
+await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');
+ if(path.endsWith('/complete'))return {ok:true,status:200,json:async()=>({})};
+ throw Error('Canvas read timed out');
+}}),error=>error.completionOutcomeUnknown===true&&/before retrying/.test(error.message),'a lost reconciliation read blocks another completion request');
+
 const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
