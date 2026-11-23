@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.3",
-  "packageVersion": "0.4.17",
+  "northstarVersion": "4.4.7.4",
+  "packageVersion": "0.4.18",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
@@ -16,6 +16,21 @@
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.7.4",
+      "date": "2026-11-23",
+      "title": "Canvas UI release-history assertion correction",
+      "description": "Corrects the release regression test so the current .7.4 candidate is expected to remain pending while the previously deployed .7.2 preview retains its successful deployment record. Carries forward the Document Studio annotated-PDF-only submission handoff and browser boot integration test.",
+      "category": "Test reliability",
+      "areas": [
+        "Canvas submission UI",
+        "Release history tests",
+        "Version consistency"
+      ],
+      "status": "Awaiting Phase 4 CI and preview deployment; live Canvas acceptance remains pending.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.7.3",
       "date": "2026-11-23",
       "title": "Document Studio to Canvas submission UI verification",
@@ -27,7 +42,7 @@
         "Assignment submission UI",
         "End-to-end browser test"
       ],
-      "status": "Awaiting Phase 4 CI and preview deployment; live Canvas acceptance remains pending.",
+      "status": "Superseded: its release regression test incorrectly expected the previous .7.2 deployment run on the pending .7.3 candidate. The browser UI work is carried forward in 4.4.7.4.",
       "historical": false,
       "commits": []
     },
