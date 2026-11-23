@@ -664,3 +664,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The bridge regression fixture reproduces the observed two-hop host chain and verifies successful PDF bytes, token isolation, referrer behavior, no browser-UA replay, redirect count/host diagnostics and safe 406 propagation.
 - App release candidate: NORTHSTAR 4.4.7.6 / package 0.4.20. Worker build marker: 0.4.17 (4.4.7.6).
 - This is not live-accepted until Worker validation/deployment succeeds and the user reopens the same real Canvas PDF in preview. A passing mock test does not prove that the NNPS storage edge now accepts the request. The subsequent annotated PDF upload, finalization, assignment submission, and physical iPad acceptance remain separate gates.
+
+
+### 4.4.7.6 preview deployment closeout — November 23, 2026
+
+- PR #13 was squash-merged into the preview branch as commit 1e1d9fe9979b204b6f92d500c209ff622687a880.
+- Exact-head Phase 4 passed on the merged preview commit in workflow run 45099837658.
+- Cloudflare Worker validation, syntax checks, Wrangler dry-run and full regression tests passed; Worker 0.4.17 was deployed successfully in run 45099837678. Cloudflare reported Worker version ID 4c1ac8f8-0733-478a-8291-cb85b0c11f97.
+- GitHub Pages freshness verification and build passed; the build verified production NORTHSTAR 4.4.7.5 / package 0.4.19 and preview NORTHSTAR 4.4.7.6 / package 0.4.20. Pages deployment succeeded in run 45099890111.
+- Production was intentionally not promoted. Live NNPS PDF retrieval, Document Studio editing/export, real Canvas upload/finalization/submission and physical iPad acceptance remain open.
