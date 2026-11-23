@@ -20,6 +20,7 @@ function enter(id,options){
 }
 function exit(options){
   options=options||{};
+  flushPdfDraft();
   if(!options.fromHistory&&routeId())history.replaceState({northstarAssignmentRoom:false},'',cleanUrl());
   document.body.classList.remove('assignment-room-open');
   document.documentElement.classList.remove('assignment-room-open');
