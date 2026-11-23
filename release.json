@@ -1,20 +1,38 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.6",
-  "northstarVersion": "4.4.6.9",
-  "packageVersion": "0.4.14",
+  "northstarVersion": "4.4.6.10",
+  "packageVersion": "0.4.15",
   "channel": "route-derived",
   "releaseDate": "2026-11-22",
   "bridge": {
     "version": "1.1",
-    "status": "unchanged in 4.4.6.1, 4.4.6.2 and 4.4.6.3; no Worker source or private Cloudflare deployment"
+    "status": "No Worker source change in 4.4.6.10; the browser-direct Canvas PDF path now authenticates to allowlisted Instructure file hosts. The existing private Worker fallback remains separately deployed."
   },
   "deployment": {
-    "preview": "NORTHSTAR 4.4.6.9 deployed successfully by GitHub Pages workflow run 45081377927 from tested main/preview source commit fe5b69948d98969768fb5dc155f6f41ab1d861a8.",
-    "production": "NORTHSTAR 4.4.6.9 deployed successfully by GitHub Pages workflow run 45081377927 from tested main/preview source commit fe5b69948d98969768fb5dc155f6f41ab1d861a8."
+    "preview": "Published by the test-pinned GitHub Pages workflow only after the exact current preview branch head passes Phase 4 tests; see GitHub Actions for the latest run.",
+    "production": "Published by the test-pinned GitHub Pages workflow only after the exact current main branch head passes Phase 4 tests; see GitHub Actions for the latest run."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.6.10",
+      "date": "2026-11-22",
+      "title": "Authenticated Canvas PDF retrieval and release-record alignment",
+      "description": "Corrects browser-direct PDF downloads to use Canvas bearer authentication only with HTTPS Canvas/Instructure allowlisted file hosts, keeps browser cookies omitted, preserves the authenticated private-bridge fallback, and blocks untrusted metadata URLs. Clarifies the separate signed-upload security boundary and aligns release metadata and engineering documentation.",
+      "category": "Canvas integration and release reliability",
+      "areas": [
+        "Authenticated PDF retrieval",
+        "Instructure file-host allowlist",
+        "CORS fallback",
+        "Signed-upload token isolation",
+        "Release manifest",
+        "Engineering log"
+      ],
+      "status": "Exact-head Phase 4 validation and Pages publication are tracked by GitHub Actions. Live Canvas account and physical iPad/Apple Pencil acceptance remain external checks.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.6.9",
       "date": "2026-11-22",
