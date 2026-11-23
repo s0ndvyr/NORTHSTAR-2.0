@@ -124,7 +124,7 @@ globalThis.fetch=async(url,opts)=>{
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
 assert.equal(failedFile.status,406);
 const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.4.5 (3)');
+assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.16 (4.4.7.2)');
 assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);
@@ -176,3 +176,79 @@ assert.equal(redirectDetails.stage,'redirect');
 assert.equal(redirectDetails.diagnostics.failureType,'redirect');
 
 console.log('PASS: bridge file diagnostics cover HTTP failures, network failures and unsafe redirects without exposing secrets');
+
+
+// Full Canvas signed upload: storage never receives the bearer token, and the
+// authenticated Canvas create_success GET is required before a file ID is returned.
+const uploadActionRequest=(kind,resourceId,file)=>{
+  const form=new FormData();form.append('file',file,file.name);
+  return new Request('https://bridge.example/?action=upload-file&kind='+kind+'&course_id=1&resource_id='+resourceId,{
+    method:'POST',headers:{Origin:origin,Authorization:'Bearer test-secret','User-Agent':'NORTHSTAR upload test'},body:form
+  });
+};
+const uploadSequence=[];
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);uploadSequence.push({url:target.href,opts});
+  if(target.origin==='https://school.instructure.com'&&target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files'){
+    assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer test-secret');
+    const body=JSON.parse(opts.body);assert.equal(body.name,'annotated.pdf');assert.equal(body.size,12);assert.equal(body.content_type,'application/pdf');
+    return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'opaque-key',policy:'opaque-policy'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  if(target.origin==='https://storage.example'){
+    assert.equal(opts.method,'POST');assert.equal(opts.redirect,'manual');assert.equal(opts.headers?.Authorization,undefined,'Canvas token is never sent to signed storage');
+    assert.deepEqual([...opts.body.keys()],['key','policy','file']);assert.equal(opts.body.get('file').name,'annotated.pdf');
+    return new Response(null,{status:302,headers:{Location:'https://school.instructure.com/api/v1/files/501/create_success?uuid=opaque-finalize-token'}});
+  }
+  if(target.origin==='https://school.instructure.com'&&target.pathname==='/api/v1/files/501/create_success'){
+    assert.equal(opts.method,'GET');assert.equal(opts.headers.Authorization,'Bearer test-secret');assert.equal(opts.redirect,'manual');
+    return new Response(JSON.stringify({id:501,display_name:'annotated.pdf','content-type':'application/pdf',size:12}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  throw Error('Unexpected upload request '+target.href);
+};
+const annotatedFile=new File(['123456789012'],'annotated.pdf',{type:'application/pdf'});
+let finalized=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
+assert.equal(finalized.status,200,'assignment upload completes all three Canvas upload steps');
+let finalizedFile=await finalized.json();assert.equal(finalizedFile.id,501);assert.equal(finalizedFile.display_name,'annotated.pdf');
+assert.deepEqual(uploadSequence.map(call=>new URL(call.url).pathname),['/api/v1/courses/1/assignments/2/submissions/self/files','/signed','/api/v1/files/501/create_success']);
+assert.equal(uploadSequence[1].opts.headers?.Authorization,undefined);assert.equal(uploadSequence[2].opts.headers.Authorization,'Bearer test-secret');
+
+// Canvas installations may return 201 Created with Location instead of a 3xx.
+const quizSequence=[];
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);quizSequence.push({url:target.href,opts});
+  if(target.pathname==='/api/v1/courses/1/quizzes/3/submissions/self/files'){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret');assert.deepEqual(JSON.parse(opts.body),{name:'quiz-answer.pdf'});
+    return new Response(JSON.stringify({upload_url:'https://storage.example/quiz',upload_params:{key:'quiz-key'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  if(target.origin==='https://storage.example'){
+    assert.equal(opts.headers?.Authorization,undefined);assert.deepEqual([...opts.body.keys()],['key','file']);
+    return new Response(null,{status:201,headers:{Location:'https://school.instructure.com/api/v1/files/502/create_success?uuid=opaque'}});
+  }
+  if(target.pathname==='/api/v1/files/502/create_success'){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret');
+    return new Response(JSON.stringify({id:502,display_name:'quiz-answer.pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  throw Error('Unexpected quiz upload request '+target.href);
+};
+const quizUploadFile=new File(['quiz-answer'],'quiz-answer.pdf',{type:'application/pdf'});
+finalized=await worker.fetch(uploadActionRequest('quiz',3,quizUploadFile));
+assert.equal(finalized.status,200);assert.equal((await finalized.json()).id,502);assert.equal(quizSequence.length,3);
+
+// Unsafe and missing finalization locations must never be followed.
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.origin==='https://storage.example')return new Response(null,{status:302,headers:{Location:'https://evil.example/api/v1/files/503/create_success'}});
+  throw Error('Unsafe finalization destination must never be fetched: '+target.href);
+};
+const unsafe=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
+assert.equal(unsafe.status,502);const unsafeBody=await unsafe.text();assert(!unsafeBody.includes('test-secret'));assert(!unsafeBody.includes('evil.example'));
+globalThis.fetch=async(url,opts)=>{
+  const target=new URL(url);
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.origin==='https://storage.example')return new Response(null,{status:302});
+  throw Error('Missing finalization Location must not be fetched');
+};
+const missingLocation=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
+assert.equal(missingLocation.status,502);
+console.log('PASS: Canvas signed assignment and quiz uploads finalize through authenticated Canvas create_success requests');

@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.6.10`
-Package version: `0.4.15`
+Release identifier: `NORTHSTAR / 4.4.7.5`
+Package version: `0.4.19`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -237,7 +237,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 
 ## Canvas file retrieval and bridge
 
-canvas-bridge/worker.js supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves file metadata from the configured Canvas host, validates HTTPS destinations, follows a bounded number of redirects, and forwards the Canvas bearer token only to the configured Canvas host and explicitly allowlisted Instructure file-storage hosts. It does not forward the token to arbitrary third-party hosts or signed upload destinations. The browser-direct path follows the same allowlist and authenticates to the file host without sending browser cookies.
+canvas-bridge/worker.js supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves file metadata from the configured Canvas host, validates HTTPS destinations, follows a bounded number of redirects, and forwards the Canvas bearer token only to the configured Canvas host and explicitly allowlisted Instructure file-storage hosts. It does not forward the token to arbitrary third-party hosts or signed upload destinations. The browser-direct path follows the same allowlist and authenticates without sending browser cookies.
 
 The Worker must be redeployed separately in the user's Cloudflare dashboard before in-app PDF viewing can be live-tested. Verify the existing CANVAS_ORIGIN and ALLOWED_ORIGIN values before deployment. GitHub Pages deployment alone does not update the manually managed personal Canvas bridge.
 
@@ -270,7 +270,7 @@ These features require separate official provider integrations and live acceptan
 - [x] Add full-screen in-app assignment navigation and loading screen.
 - [x] Add sanitized Canvas assignment description and attachment discovery.
 - [x] Add PDF.js rendering, Apple Pencil-only ink/shapes, text notes, eraser, page navigation/zoom, undo/redo, and flattened PDF export.
-- [x] Add authenticated browser/bridge file downloads with the bearer token restricted to HTTPS Canvas and allowlisted Instructure file hosts.
+- [x] Add secure bridge file download without forwarding the bearer token to cross-origin signed storage.
 - [x] Connect exported annotated PDFs to supported Canvas online_upload submission flow.
 - [x] Run syntax, unit and jsdom browser boot checks on the feature branch.
 - [ ] Redeploy the personal Canvas Worker from `canvas-bridge/worker.js` in the Cloudflare dashboard; this is separate from the repository's Cloudflare Workers build check.
@@ -552,12 +552,95 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Automated tests and GitHub Pages deployment are complete. Physical iPad/Apple Pencil acceptance and live Canvas account acceptance remain external checks.
 
 
-## Phase 4.4.6.10 — Authenticated Canvas PDF retrieval and release-record alignment
+## Phase 4.4.7.1 — Canvas file upload finalization (implementation candidate)
 
-- Corrected the browser-direct PDF path to send the Canvas bearer token in the Authorization header only when the metadata URL is HTTPS, has no credentials or non-default port, has no access_token query parameter, and belongs to the configured Canvas host or an explicitly allowlisted Instructure file-host suffix.
-- Kept browser cookies omitted. If the browser's cross-origin Authorization preflight is blocked, NORTHSTAR falls back to the existing private bridge, which uses bounded manual redirects and forwards the token only to the configured Canvas host or allowlisted Instructure file hosts.
-- Added regression coverage proving trusted storage receives the token, the bridge fallback remains available, and an untrusted metadata URL is never fetched by the browser.
-- Clarified that signed uploads remain a separate flow: the bearer token is never sent to the signed upload destination.
-- Corrected the stale engineering-log release header and aligned the release manifest, package metadata and offline release fallback to NORTHSTAR 4.4.6.10 / package 0.4.15.
-- The .9 Pages deployment closeout remains recorded with its verified Phase 4 and Pages workflow IDs. The .10 candidate's exact-head Phase 4 and Pages status is tracked by GitHub Actions so the published manifest does not contain a self-referential or stale deployment claim.
-- Automated tests can validate the request construction and fallback rules but cannot prove that NNPS Canvas, its current file host, the private Cloudflare Worker, or physical iPad Safari accepts a live attachment. Those live checks remain separate acceptance gates.
+**Objective:** Make the edited-PDF-to-Canvas path use the complete documented Canvas file upload protocol before submitting the resulting file ID.
+
+**Implementation:**
+- Assignment and Classic Quiz file uploads now travel from the browser to the authenticated private Worker as multipart data.
+- The Worker initializes the correct Canvas submission upload endpoint using the documented `self/files` route.
+- The Worker posts the signed `upload_params` and file to Canvas's opaque HTTPS storage URL without forwarding the Canvas bearer token.
+- The Worker inspects the storage response's 3xx or 201 `Location`, validates that finalization returns to the configured Canvas origin and expected `/api/v1/files/:id/create_success` route, then performs the required authenticated GET.
+- The Worker returns a file ID only after Canvas's finalization response contains a valid ID.
+- Browser upload helpers no longer parse signed-storage responses or follow storage redirects themselves.
+- Added mocked Worker coverage for 302 and 201 finalization, token isolation, unsafe/missing Location rejection, and app-side multi-file upload → file-ID payload → assignment submission.
+
+**Release:** `4.4.7.1 / 0.4.15`  
+**Status:** Awaiting CI and preview deployment. Live Canvas tenant acceptance remains mandatory; CI mocks do not prove the school's Canvas storage configuration.
+
+**Known boundaries:**
+- This path submits a flattened annotated PDF as an ordinary `online_upload` attachment when Canvas allows file uploads.
+- It does not claim to write NORTHSTAR's custom ink/text layer into Canvas DocViewer's native `student_annotation` payload.
+- Cloudflare Worker deployment is separate from GitHub Pages. The bridge deployment workflow must report success before live Canvas testing.
+
+
+## Phase 4.4.7.2 — Canvas upload finalization and diagnostic test alignment
+
+**Objective:** Make the edited-PDF-to-Canvas path complete Canvas's documented upload protocol before assignment submission.
+
+**Implementation:**
+- Assignment and Classic Quiz file uploads travel from the browser to the authenticated private Worker as multipart data.
+- The Worker initializes the correct Canvas submission upload endpoint using the documented `self/files` route.
+- The Worker transfers the signed `upload_params` and file to Canvas's opaque HTTPS storage URL without forwarding the Canvas bearer token.
+- The Worker inspects the storage response's 3xx or 201 `Location`, validates that finalization returns to the configured Canvas origin and expected `/api/v1/files/:id/create_success` route, then performs the required authenticated GET.
+- The Worker returns a file ID only after Canvas's finalization response contains a valid ID.
+- Browser upload helpers no longer parse signed-storage responses or follow storage redirects themselves.
+- Added mocked Worker coverage for 302 and 201 finalization, token isolation, unsafe/missing Location rejection, and app-side multi-file upload → file-ID payload → assignment submission.
+- The first .7.1 test run exposed stale Worker-version assertions. .7.2 updates those fixtures and makes attachment diagnostics read the app version from the release manifest.
+
+**Release:** `4.4.7.2 / 0.4.16`  
+**Status:** Awaiting CI and deployment. Live Canvas tenant acceptance remains mandatory; CI mocks do not prove the school's Canvas storage configuration.
+
+**Known boundaries:**
+- This path submits a flattened annotated PDF as an ordinary `online_upload` attachment when Canvas allows file uploads.
+- It does not claim to write NORTHSTAR's custom ink/text layer into Canvas DocViewer's native `student_annotation` payload.
+- Cloudflare Worker deployment is separate from GitHub Pages. The bridge deployment workflow must report success before live Canvas testing.
+
+
+### 4.4.7.2 deployment closeout
+
+- Phase 4 CI passed on the exact preview head `0344bbb5e5b031bbe56f97c6c9a7c85dfa5f933d` in run `45085954397`.
+- GitHub Pages freshness verification passed for both exact branch heads. The preview build was verified as NORTHSTAR `4.4.7.2 / 0.4.16`; Pages deployment run `45085996901` completed successfully.
+- The Cloudflare Worker validation and regression suite passed, and the Worker deployment workflow `45085853219` deployed `northstar-bridge` successfully from commit `3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14`.
+- Preview frontend: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`.
+- Production frontend remains on `4.4.6.9`; this Canvas work has not been promoted to main.
+- Automated tests and deployment are complete. A real PDF upload and submission in the connected Canvas tenant are still required before claiming end-to-end success.
+
+
+## Phase 4.4.7.3 — Document Studio submission UI handoff
+
+- Corrected an important selection bug: when an annotated PDF is staged through **Use annotated PDF from Document Studio**, it now replaces other selected/prepared files for that submission. This matches the visible UI promise and prevents accidental extra attachments.
+- Added a browser boot integration test that opens an `online_upload` assignment, uses a Document Studio-exported PDF, uploads that exact file, sends the finalized Canvas file ID in the `online_upload` submission, and checks that Canvas's confirmed submission state is persisted.
+- The first test attempt reached the expected `[777]` file-ID payload but the Node/jsdom assertion compared arrays from different JavaScript realms. The test now normalizes the array before comparison.
+- Release: `4.4.7.3 / 0.4.17`. Phase 4 CI and preview deployment pending.
+- Live Canvas tenant acceptance is still required; browser tests use a mocked Canvas response.
+
+
+## Phase 4.4.7.4 — Release test history correction
+
+- The .7.3 candidate's Phase 4 run exposed a stale release test that expected the previous .7.2 preview deployment ID on the current pending candidate.
+- Updated the test to validate .7.4's pending status and separately retain .7.2's successful preview deployment record.
+- Carries forward the Document Studio annotated-PDF-only selection behavior and browser boot integration test.
+- Release: `4.4.7.4 / 0.4.18`. CI and preview deployment pending.
+
+
+### 4.4.7.4 deployment closeout
+
+- Phase 4 tests passed on exact preview commit `fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc` in run `45086802452`.
+- The Pages freshness gate verified both exact branch heads; production was built from 4.4.6.9 and preview from 4.4.7.4 / package 0.4.18.
+- GitHub Pages deployment run `45086841863` completed successfully.
+- The Canvas bridge Worker deployment from run `45085853219` remains active; it was built and deployed from commit `3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14`.
+- Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production frontend remains on 4.4.6.9.
+- Automated checks and preview deployment are complete. A real upload and assignment submission in the connected Canvas tenant remain the final acceptance gate.
+
+
+## Phase 4.4.7.5 — Authenticated Canvas PDF retrieval and preview release alignment
+
+- Corrected the browser-direct Canvas PDF retrieval path to send the student bearer token in the Authorization header only to HTTPS destinations on the configured Canvas host or explicitly allowlisted Instructure file-host suffixes.
+- Rejected browser-direct targets with URL credentials, a non-default port, an access_token query parameter, an untrusted host, or a non-HTTPS scheme. The final response URL is validated against the same allowlist before PDF bytes are accepted.
+- Browser cookies remain omitted. If CORS blocks the Authorization preflight or browser retrieval fails, NORTHSTAR retains the authenticated private Worker download fallback and its bounded redirect policy.
+- Kept signed upload security unchanged: the Canvas bearer token is never sent to the signed upload-storage destination. The existing three-step Worker upload finalization and annotated-PDF-only submission flow remain intact.
+- Added regression coverage for direct authenticated delivery, CORS fallback, rejection of untrusted metadata URLs, and package/manifest/offline release identity.
+- No Worker source change is required for this frontend authentication correction; the active Worker remains version 0.4.16 (4.4.7.2), separately deployed by workflow run 45085853219 from commit 3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14.
+- The 4.4.7.5 release will be published to production and preview only after the exact current main and preview branch heads both pass Phase 4 tests and the Pages freshness gate verifies both tested SHAs.
+- Automated tests cannot certify that the live NNPS Canvas storage host permits the browser Authorization preflight. Real attachment retrieval, an instructor-approved PDF upload/submission, and iPad Safari/Apple Pencil acceptance remain required before closing Phase 4.

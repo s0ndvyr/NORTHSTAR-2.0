@@ -1195,7 +1195,7 @@ window.submitAssignment=async function(){
     if(!(a.submissionTypes||[]).includes(type)) throw Error('Unsupported submission type.');
     const annotated=phase441AnnotatedPdf?.assignmentId===a.id?phase441AnnotatedPdf.file:null;
     const prepared=phase441PreparedFile.get(String(a.id));
-    const selectedFiles=type==='online_upload'?[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[]),...(annotated?[annotated]:[])]:[];
+    const selectedFiles=type==='online_upload'?(annotated?[annotated]:[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[])]):[];
     if(type==='online_upload'&&!selectedFiles.length)throw Error('Choose at least one file before submitting.');
     if(type==='online_upload'&&selectedFiles.length>10)throw Error('Choose no more than 10 files for this Canvas submission.');
     const editor=$('#assignmentDraft'),draftHtml=editor?.innerHTML||'',draftText=(editor?.innerText||editor?.textContent||'').trim();

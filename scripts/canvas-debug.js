@@ -398,7 +398,7 @@
     var report = {
       reportType: "NORTHSTAR Canvas attachment diagnostic",
       generatedAt: clean(input.generatedAt || new Date().toISOString(), 48),
-      appVersion: "0.4.4.5 (3)",
+      appVersion: String(global.NorthstarRelease?.manifest?.northstarVersion || "4.4.7.2"),
       workerVersion: clean(input.workerVersion || "unknown", 60),
       environment: clean(input.environment || "preview", 32),
       stage: clean(d.stage || input.stage || "unknown", 40),

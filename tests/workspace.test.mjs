@@ -62,44 +62,31 @@ await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submissio
 const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
-  uploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example'){const path=new URL(url).searchParams.get('path');if(opts.method==='GET'&&path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:7})};assert.equal(path,'/api/v1/courses/11/assignments/33/submissions/7/files','upload initialization uses the Canvas numeric student submission endpoint supported by the deployed bridge');return {ok:true,status:200,json:async()=>({upload_url:'https://upload.example/signed',upload_params:{key:'signed-key',policy:'signed-policy'}})};}
-  assert.equal(opts.method,'POST');
-  assert.equal(opts.headers?.Authorization,undefined,'signed upload must never receive Canvas bearer token');
-  const fields=[...opts.body.keys()];assert.deepEqual(fields,['key','policy','file'],'file must be appended last');
-  return {ok:true,status:201,json:async()=>({id:55,display_name:'homework.txt'})};
+  uploadCalls.push({url,opts});const target=new URL(url);
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('action'),'upload-file');
+  assert.equal(target.searchParams.get('kind'),'assignment');assert.equal(target.searchParams.get('course_id'),'11');assert.equal(target.searchParams.get('resource_id'),'33');
+  assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer secret-token');assert.equal(opts.headers['Content-Type'],undefined);
+  assert.equal(opts.redirect,'error');assert.deepEqual([...opts.body.keys()],['file']);assert.equal(opts.body.get('file').name,'homework.txt');
+  return new Response(JSON.stringify({id:55,display_name:'homework.txt',size:5}),{status:200,headers:{'Content-Type':'application/json'}});
 }});
-assert.equal(uploaded.id,55);
-assert.equal(uploadCalls.length,3,'current user lookup, upload initialization and signed file upload are required by the deployed bridge protocol');
-
+assert.equal(uploaded.id,55);assert.equal(uploadCalls.length,1,'the private bridge owns Canvas initialization, signed transfer and finalization');
 const quizUploadCalls=[];
 const quizFile=new File(['quiz response'],'quiz-response.txt',{type:'text/plain'});
 const quizUploaded=await W.uploadQuizSubmissionFile({credentials,courseId:11,quizId:22,file:quizFile,fetchImpl:async(url,opts)=>{
-  quizUploadCalls.push({url,opts});
-  if(new URL(url).hostname==='bridge.example'){
-    assert.equal(opts.method,'POST');
-    assert.equal(new URL(url).searchParams.get('path'),'/api/v1/courses/11/quizzes/22/submissions/self/files','quiz file upload uses Canvas Quiz Submission Files API');
-    assert.deepEqual(JSON.parse(opts.body),{name:'quiz-response.txt'},'only the documented quiz upload filename is sent to Canvas');
-    return {ok:true,status:200,json:async()=>({attachments:[{upload_url:'https://quiz-upload.example/signed',upload_params:{key:'quiz-key'}}]})};
-  }
-  assert.equal(new URL(url).origin,'https://quiz-upload.example');
-  assert.equal(opts.method,'POST');
-  assert.equal(opts.headers?.Authorization,undefined,'Canvas bearer token is never forwarded to signed quiz upload storage');
-  assert.deepEqual([...opts.body.keys()],['key','file']);
-  return {ok:true,status:201,json:async()=>({id:909,display_name:'quiz-response.txt'})};
+  quizUploadCalls.push({url,opts});const target=new URL(url);
+  assert.equal(target.origin,'https://bridge.example');assert.equal(target.searchParams.get('action'),'upload-file');
+  assert.equal(target.searchParams.get('kind'),'quiz');assert.equal(target.searchParams.get('course_id'),'11');assert.equal(target.searchParams.get('resource_id'),'22');
+  assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer secret-token');assert.deepEqual([...opts.body.keys()],['file']);
+  return new Response(JSON.stringify({id:909,display_name:'quiz-response.txt'}),{status:200,headers:{'Content-Type':'application/json'}});
 }});
-assert.equal(quizUploaded.id,909);
-assert.equal(quizUploaded.name,'quiz-response.txt');
-assert.equal(quizUploadCalls.length,2,'quiz upload initialization and signed attachment upload are required');
-
-
+assert.equal(quizUploaded.id,909);assert.equal(quizUploaded.name,'quiz-response.txt');assert.equal(quizUploadCalls.length,1);
 const pdfFetchCalls=[];
 const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImpl:async(url,opts)=>{
   pdfFetchCalls.push({url,opts});
   const parsed=new URL(url),path=parsed.searchParams.get('path');
   if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived'})};
   if(parsed.hostname==='cdn.inscloudgate.net')return {ok:true,status:200,url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived',headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'inline; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
-  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
   throw Error('Unexpected PDF endpoint '+url);
 }});
 assert.equal(pdf.name,'worksheet.pdf');
@@ -121,18 +108,17 @@ const fallbackPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:43,
   const parsed=new URL(url),path=parsed.searchParams.get('path');
   if(path==='/api/v1/courses/11/files/43')return {ok:true,status:200,json:async()=>({id:43,display_name:'fallback.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/fallback.pdf'})};
   if(parsed.hostname==='cdn.inscloudgate.net')throw new TypeError('CORS blocked browser direct storage access');
-  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
   throw Error('Unexpected PDF fallback endpoint '+url);
 }});
 assert.equal(fallbackPdf.name,'fallback.pdf');
-assert.equal(fallbackPdf.workerVersion,'0.4.4.5 (3)');
+assert.equal(fallbackPdf.workerVersion,'0.4.16 (4.4.7.2)');
 assert.equal(fallbackPdf.size,6);
 assert.equal(fallbackCalls.length,3,'browser CORS failure falls back to the authenticated private bridge');
-assert.equal(fallbackCalls[1].opts.headers.Authorization,'Bearer secret-token','the browser direct attempt authenticates to the trusted Instructure download host before falling back');
+assert.equal(fallbackCalls[1].opts.headers.Authorization,'Bearer secret-token','the browser direct attempt authenticates to the trusted Instructure file host before falling back');
 assert.equal(fallbackCalls[2].opts.headers.Authorization,'Bearer secret-token','bridge fallback uses the Canvas token only with the private bridge');
   
-// A URL returned by metadata must not receive the Canvas token unless its host is
-// in the HTTPS Instructure allowlist. An untrusted destination is skipped entirely.
+// Untrusted metadata download URLs are never requested with the Canvas bearer token.
 const untrustedCalls=[];
 const untrustedPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:44,fetchImpl:async(url,opts)=>{
   untrustedCalls.push({url,opts});
@@ -142,14 +128,14 @@ const untrustedPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:44
   throw Error('Unexpected untrusted-host test request '+url);
 }});
 assert.equal(untrustedPdf.name,'safe-fallback.pdf');
-assert.equal(untrustedPdf.workerVersion,'');
+// The mocked bridge response omits its optional Worker-version diagnostic header.
 assert.equal(untrustedCalls.length,2,'the untrusted metadata URL is skipped and the private bridge is used');
 assert(untrustedCalls.every(call=>new URL(call.url).hostname==='bridge.example'),'the Canvas token is never sent to the untrusted metadata host');
 
 
 const failedPdfError=await W.transport(credentials,async()=>({
   ok:false,status:406,
-  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.4.5 (3)':null},
+  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},
   json:async()=>({error:'Canvas rejected the file request',code:'CANVAS_FILE_CONTENT_FAILED',stage:'content',upstreamStatus:406,requestId:'ray-outer-406',diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamRayId:'ray-upstream-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true}})
 })).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
 assert.equal(failedPdfError.stage,'content');
@@ -157,7 +143,7 @@ assert.equal(failedPdfError.upstreamStatus,406);
 assert.equal(failedPdfError.requestId,'ray-outer-406');
 assert.equal(failedPdfError.diagnostics.upstreamHost,'storage.example.net');
 assert.equal(failedPdfError.bridgeStatus,406);
-assert.equal(failedPdfError.workerVersion,'0.4.4.5 (3)');
+assert.equal(failedPdfError.workerVersion,'0.4.16 (4.4.7.2)');
 
 const networkPdfError=await W.transport(credentials,async()=>({
   ok:false,status:502,

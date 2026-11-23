@@ -3,16 +3,18 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.10',packageVersion:'0.4.15',
- bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
+ product:'NORTHSTAR',phase:'4.4.7',northstarVersion:'4.4.7.5',packageVersion:'0.4.19',
+ bridge:{version:'1.2',status:'Worker 0.4.16 (4.4.7.2) remains separately deployed; no Worker source change in .7.5.'},releaseDate:'2026-11-23',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
-  {version:'4.4.6.10',date:'2026-11-22',title:'Authenticated Canvas PDF retrieval',
-   description:'Browser-direct PDF retrieval now sends the Canvas bearer token only to HTTPS Canvas/Instructure allowlisted file hosts. Browser cookies remain omitted; blocked CORS requests fall back to the authenticated private bridge.',
-   category:'Canvas integration',areas:['PDF retrieval','Instructure host allowlist','CORS fallback','Token isolation'],status:'Live Canvas account and physical iPad acceptance remain external checks.'},
-  {version:'4.4.6.9',date:'2026-11-22',title:'Manifest-driven browser boot assertion',
-   description:'Removes the last hardcoded NORTHSTAR version from the browser boot regression test. The test reads release.json and compares the visible version pill against the manifest.',
-   category:'Test reliability',areas:['Browser boot test','Release manifest','Version consistency'],status:'Deployed to production and preview; see recorded release-specific GitHub Actions runs.'},
+  {version:'4.4.7.5',date:'2026-11-23',title:'Authenticated Canvas PDF retrieval',description:'Browser-direct PDF retrieval now sends the Canvas bearer token only to HTTPS Canvas/Instructure allowlisted file hosts. Browser cookies remain omitted; untrusted destinations are rejected and CORS failures fall back to the authenticated private Worker. The signed-upload token isolation and annotated-PDF-only submission workflow remain intact.',category:'Canvas integration and security',areas:['Authenticated PDF retrieval','Instructure host allowlist','CORS fallback','Signed upload token isolation','Document Studio submission'],status:'Awaiting exact-head Phase 4 CI and freshness-gated Pages deployment; live Canvas/iPad acceptance remains open.'},
+  {version:'4.4.7.4',date:'2026-11-23',title:'Canvas UI release-history assertion correction',description:'Corrects the release-history regression assertion while carrying forward the Document Studio annotated-PDF-only submission handoff.',category:'Test reliability',areas:['Canvas submission UI','Release history tests','Version consistency'],status:'Preview deployed successfully by Pages run 45086841863.'},
+  {version:'4.4.7.3',date:'2026-11-23',title:'Document Studio to Canvas submission UI verification',description:'The Use annotated PDF action now submits the exported PDF as the sole attachment and has a browser boot integration test covering the complete in-dashboard UI handoff.',category:'Canvas integration',areas:['Document Studio export handoff','Annotated PDF selection','Assignment submission UI'],status:'Awaiting Phase 4 CI and preview deployment; live Canvas acceptance remains pending.'},
+  {version:'4.4.7.2',date:'2026-11-22',title:'Canvas upload finalization — version-aligned diagnostics',description:'Carries forward the private-bridge Canvas upload finalization and makes attachment diagnostics read the app version from the release manifest.',category:'Canvas integration',areas:['Assignment PDF submission','Signed uploads','Authenticated finalization','Diagnostic version consistency'],status:'Awaiting Phase 4 CI and live Canvas acceptance.'},
+  {version:'4.4.7.1',date:'2026-11-22',title:'Canvas file upload finalization',description:'Assignment and Classic Quiz uploads now complete Canvas’s documented signed upload flow through the private bridge, including the authenticated create_success request. The Canvas token is never sent to signed storage.',category:'Canvas integration',areas:['Assignment PDF submission','Signed uploads','Authenticated finalization','Submission pipeline'],status:'Awaiting Phase 4 CI and live Canvas acceptance.'},
+  {version:'4.4.6.9',date:'2026-11-22',title:'Test-pinned deployment gate',
+   description:'GitHub Pages verifies both source branches have passing Phase 4 push runs at their current heads and checks out those exact tested SHAs. A delayed successful event cannot publish a newer untested branch tip.',
+   category:'Deployment',areas:['GitHub Actions','Source freshness','Test-pinned checkout','Release integrity'],status:'See the release-specific Phase 4 and Pages runs.'},
   {version:'4.4.6.3',date:'2026-11-22',title:'Manifest-driven version identity',
    description:'Removes the legacy hardcoded version override from dashboard rendering. The version pill remains owned by the release manifest and Settings reads the current manifest version.',
    category:'Bug fixes',areas:['Release manifest','Dashboard rendering','Version pill','Settings'],status:'See the release-specific GitHub Actions test and Pages deployment.'},

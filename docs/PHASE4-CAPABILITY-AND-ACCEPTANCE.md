@@ -1,9 +1,9 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.4.5  
+**Development version:** 0.4.19 / NORTHSTAR 4.4.7.5  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** Implementation candidate in GitHub Pages preview; live Canvas acceptance remains open.  
-**Production:** `main` / 0.4.4.1. Phase 4 has not been merged into production.
+**Status:** Authenticated PDF download correction is in the preview candidate; exact-head Phase 4 and Pages validation pending; live Canvas acceptance remains open.  
+**Production:** NORTHSTAR 4.4.7.5 is the promotion target; production and preview publish only after the exact current main and preview heads both pass Phase 4.
 
 This document distinguishes four different states:
 
@@ -125,3 +125,49 @@ Run these tests in the 0.4.4.5 preview using a test assignment or instructor-app
 15. Refresh and reopen on iPad Safari; verify drafts, attachment state, scroll/navigation, reduced-motion and responsive layout.
 
 **Release rule:** Phase 4 can be called implemented when the CI and artifact checks pass. It can be called live-accepted only after the student-side tests above pass in the actual Canvas tenant, and the Quiz file-upload Worker route is deployed or explicitly excluded from the live release scope.
+
+
+## 8. Phase 4.4.7.4 — Edited PDF submission pipeline
+
+The current implementation candidate sends the selected/annotated file to the private bridge as multipart data. The Worker then performs the Canvas three-step upload:
+1. Initialize a submission file using `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions/self/files`.
+2. Transfer the exact signed parameters and file to the Canvas-provided HTTPS storage URL, without the Canvas bearer token.
+3. Follow the storage response's Canvas `Location` by making an authenticated GET to the validated `/api/v1/files/:id/create_success` endpoint. The Worker returns the file object only after a valid Canvas file ID is confirmed.
+
+NORTHSTAR then sends `submission_type: online_upload` with the finalized file ID(s) to `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions`. The response must report a submitted/graded/pending-review state before NORTHSTAR marks the work submitted.
+
+Automated coverage now exercises both 3xx and 201 Location responses, signed-host token isolation, unsafe/missing finalization locations, and the app-side upload → file ID → assignment submission chain. These are mocked tests; they do not replace live acceptance in the connected Canvas tenant.
+
+**Live acceptance still required:** use a low-risk instructor-approved test assignment that allows PDF uploads. Annotate a PDF in Document Studio, choose **Use annotated PDF from Document Studio**, confirm submission, then verify the exact PDF attachment, attempt number, submitted timestamp and submission preview in Canvas. Refresh NORTHSTAR and verify the official Canvas submission state is reconciled. Do not use a real graded assignment for initial testing.
+
+
+## 8. Phase 4.4.7.4 — Edited PDF submission pipeline
+
+The current implementation candidate sends the selected/annotated file to the private bridge as multipart data. The Worker performs the Canvas three-step upload:
+1. Initialize a submission file using `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions/self/files`.
+2. Transfer the exact signed parameters and file to the Canvas-provided HTTPS storage URL, without the Canvas bearer token.
+3. Follow the storage response's Canvas `Location` by making an authenticated GET to the validated `/api/v1/files/:id/create_success` endpoint. The Worker returns the file object only after a valid Canvas file ID is confirmed.
+
+NORTHSTAR then sends `submission_type: online_upload` with the finalized file ID(s) to `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions`. The response must report a submitted/graded/pending-review state before NORTHSTAR marks the work submitted.
+
+Automated coverage exercises both 3xx and 201 Location responses, signed-host token isolation, unsafe/missing finalization locations, and the app-side upload → file ID → assignment submission chain. These are mocked tests; they do not replace live acceptance in the connected Canvas tenant.
+
+**Live acceptance still required:** use a low-risk instructor-approved test assignment that allows PDF uploads. Annotate a PDF in Document Studio, choose **Use annotated PDF from Document Studio**, confirm submission, then verify the exact PDF attachment, attempt number, submitted timestamp and submission preview in Canvas. Refresh NORTHSTAR and verify the official Canvas submission state is reconciled. Do not use a real graded assignment for initial testing.
+
+
+The Document Studio annotated-PDF handoff now has a browser boot integration test. When the exported PDF is selected, it replaces other file-picker selections for that submission, matching the interface label. The test verifies that the exported file reaches the upload helper and its finalized Canvas file ID is passed to the assignment submission API. This remains mocked acceptance, not a real student-account submission.
+
+
+Phase 4.4.7.4 also corrects a stale release-history test that confused the previous deployed preview with the current pending candidate. The Document Studio submission UI test and annotated-PDF-only behavior are carried forward unchanged.
+
+
+Release 4.4.7.4 was deployed to the preview Pages path by run 45086841863. Production source has since advanced to NORTHSTAR 4.4.6.10 on main; its Pages publication is controlled by the same exact-head freshness gate as the preview branch. The Canvas Worker remains deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.
+
+
+## NORTHSTAR 4.4.7.5 — Authenticated Canvas PDF downloads
+
+Canvas's authenticated file-download flow requires the student's bearer token on the HTTPS file URL. NORTHSTAR therefore sends Authorization only to the configured Canvas host or explicitly allowlisted Instructure file-host suffixes. It rejects non-HTTPS, credential-bearing, non-default-port, access_token-query and untrusted targets. Browser cookies remain omitted. The browser validates the final response URL before accepting PDF bytes; if cross-origin Authorization preflight or retrieval is blocked, the private Worker fallback remains available.
+
+This download rule is separate from the signed upload destination: Canvas bearer credentials are never sent to signed upload storage. The current private Worker (0.4.16 / 4.4.7.2) already has bounded redirects and the trusted Instructure file-host allowlist, and remains separately deployed.
+
+Automated tests verify trusted direct authentication, bridge fallback and untrusted-host rejection. They do not prove that the live NNPS Canvas tenant permits this browser Authorization preflight or that a specific attachment downloads successfully. Live acceptance remains: open a real non-sensitive PDF attachment, verify the content is rendered in Document Studio, export the annotated copy, submit it using the instructor-approved online_upload test assignment, and verify the exact attempt and attachment in Canvas. Then perform the Pencil, touch, zoom, pan, undo/redo and export checks on the physical iPad.
