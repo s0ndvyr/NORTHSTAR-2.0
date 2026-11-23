@@ -1,20 +1,38 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.5",
-  "packageVersion": "0.4.19",
+  "northstarVersion": "4.4.7.6",
+  "packageVersion": "0.4.20",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Worker 0.4.16 (4.4.7.2) remains separately deployed by workflow run 45085853219. No Worker source change is required for this browser-direct authenticated-download correction; live Canvas acceptance is still pending."
+    "status": "Canvas PDF redirect-authentication recovery Worker 0.4.17 (4.4.7.6) is a candidate on northstar-4.4.7.6-canvas-pdf-recovery; validation and deployment to the preview Worker are pending."
   },
   "deployment": {
-    "production": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested main commit f347cc304356be67e7de8f22b80d0d6e11efebe9.",
-    "preview": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested preview commit df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc."
+    "production": "No production promotion yet. Preview candidate awaits exact-head Phase 4 CI and Pages freshness verification.",
+    "preview": "Candidate 4.4.7.6 / package 0.4.20; awaiting exact-head Phase 4 CI, Worker validation/deployment and Pages publication."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.7.6",
+      "date": "2026-11-23",
+      "title": "Canvas PDF redirect authentication recovery",
+      "description": "Corrects the private Worker download flow to authenticate the original Canvas file-download URL only, strip the student's bearer token on cross-origin redirects to signed Instructure storage, preserve an origin-only referrer between redirects, stop replaying the student's browser User-Agent to storage, and reject untrusted redirect destinations. Adds regression coverage for the NNPS two-hop canvas-user-content.com → inscloudgate.net chain and the final storage 406 diagnostic.",
+      "category": "Canvas integration and security",
+      "areas": [
+        "Canvas PDF retrieval",
+        "Cross-origin redirect authentication",
+        "Instructure storage delivery",
+        "Cloudflare 406 recovery",
+        "Worker security",
+        "Regression tests"
+      ],
+      "status": "Candidate. Phase 4 CI, Worker dry-run/deployment, live NNPS PDF retrieval and preview Pages publication are pending.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.7.5",
       "date": "2026-11-23",

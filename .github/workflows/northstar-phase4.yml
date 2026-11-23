@@ -7,6 +7,7 @@ on:
       - northstar-0.4.4-phase-4-assignment-workspace
       - northstar-0.4.4.1-native-assignment-experience
       - northstar-0.4.4.2-quiz-continuity
+      - northstar-4.4.7.6-canvas-pdf-recovery
   pull_request:
     branches:
       - main

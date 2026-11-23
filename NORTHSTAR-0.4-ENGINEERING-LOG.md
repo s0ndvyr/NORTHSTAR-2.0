@@ -3,8 +3,8 @@
 Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.7.5`
-Package version: `0.4.19`
+Release identifier: `NORTHSTAR / 4.4.7.6`
+Package version: `0.4.20`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -654,3 +654,13 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - GitHub Pages freshness verification, build and production/preview deploy all passed in workflow run 45092722735. The build independently verified NORTHSTAR 4.4.7.5 and npm package 0.4.19 for both output channels.
 - The private Cloudflare Worker remains separately deployed at 0.4.16 (4.4.7.2), with successful validation/deploy workflow run 45085853219. No Worker source change was part of the .7.5 frontend update.
 - Automated coverage validates the signed-upload finalization protocol, annotated-PDF-only submission handoff, bearer-token host restrictions, bridge fallback and browser boot. It does not replace live NNPS Canvas account acceptance or physical iPad Safari / Apple Pencil testing.
+
+
+## Phase 4.4.7.6 — Canvas PDF redirect authentication recovery
+
+- The user's live diagnostic for course 155417 / assignment 6986828 / file 61162022 showed metadata success followed by two redirects: `nnps.instructure.com` → `a16702-61162022.cluster277.canvas-user-content.com` → `inst-fs-iad-prod.inscloudgate.net`. The final storage edge returned HTTP 406 / Cloudflare HTML. Browser-direct retrieval was blocked by CORS.
+- Code inspection found that Worker 0.4.16 forwarded the Canvas bearer token to all trusted Instructure storage redirect hosts and replayed the iPad/Safari User-Agent to those hosts. The prior worker test positively asserted this token forwarding, so the regression suite encoded the risky behavior rather than the browser-style cross-origin redirect contract.
+- Worker 0.4.17 now sends Authorization only to the configured Canvas origin. It strips Authorization on cross-origin storage redirects, sends an origin-only Referer representing the previous hop, omits the incoming browser User-Agent on storage requests, and rejects non-HTTPS, credential-bearing, non-default-port, access-token-bearing or non-allowlisted initial/redirect destinations.
+- The bridge regression fixture reproduces the observed two-hop host chain and verifies successful PDF bytes, token isolation, referrer behavior, no browser-UA replay, redirect count/host diagnostics and safe 406 propagation.
+- App release candidate: NORTHSTAR 4.4.7.6 / package 0.4.20. Worker build marker: 0.4.17 (4.4.7.6).
+- This is not live-accepted until Worker validation/deployment succeeds and the user reopens the same real Canvas PDF in preview. A passing mock test does not prove that the NNPS storage edge now accepts the request. The subsequent annotated PDF upload, finalization, assignment submission, and physical iPad acceptance remain separate gates.

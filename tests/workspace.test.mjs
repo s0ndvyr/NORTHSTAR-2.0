@@ -86,7 +86,7 @@ const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImp
   const parsed=new URL(url),path=parsed.searchParams.get('path');
   if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived'})};
   if(parsed.hostname==='cdn.inscloudgate.net')return {ok:true,status:200,url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived',headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'inline; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
-  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
   throw Error('Unexpected PDF endpoint '+url);
 }});
 assert.equal(pdf.name,'worksheet.pdf');
@@ -108,11 +108,11 @@ const fallbackPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:43,
   const parsed=new URL(url),path=parsed.searchParams.get('path');
   if(path==='/api/v1/courses/11/files/43')return {ok:true,status:200,json:async()=>({id:43,display_name:'fallback.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/fallback.pdf'})};
   if(parsed.hostname==='cdn.inscloudgate.net')throw new TypeError('CORS blocked browser direct storage access');
-  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
   throw Error('Unexpected PDF fallback endpoint '+url);
 }});
 assert.equal(fallbackPdf.name,'fallback.pdf');
-assert.equal(fallbackPdf.workerVersion,'0.4.16 (4.4.7.2)');
+assert.equal(fallbackPdf.workerVersion,'0.4.17 (4.4.7.6)');
 assert.equal(fallbackPdf.size,6);
 assert.equal(fallbackCalls.length,3,'browser CORS failure falls back to the authenticated private bridge');
 assert.equal(fallbackCalls[1].opts.headers.Authorization,'Bearer secret-token','the browser direct attempt authenticates to the trusted Instructure file host before falling back');
@@ -135,7 +135,7 @@ assert(untrustedCalls.every(call=>new URL(call.url).hostname==='bridge.example')
 
 const failedPdfError=await W.transport(credentials,async()=>({
   ok:false,status:406,
-  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.16 (4.4.7.2)':null},
+  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},
   json:async()=>({error:'Canvas rejected the file request',code:'CANVAS_FILE_CONTENT_FAILED',stage:'content',upstreamStatus:406,requestId:'ray-outer-406',diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamRayId:'ray-upstream-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true}})
 })).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
 assert.equal(failedPdfError.stage,'content');
@@ -143,7 +143,7 @@ assert.equal(failedPdfError.upstreamStatus,406);
 assert.equal(failedPdfError.requestId,'ray-outer-406');
 assert.equal(failedPdfError.diagnostics.upstreamHost,'storage.example.net');
 assert.equal(failedPdfError.bridgeStatus,406);
-assert.equal(failedPdfError.workerVersion,'0.4.16 (4.4.7.2)');
+assert.equal(failedPdfError.workerVersion,'0.4.17 (4.4.7.6)');
 
 const networkPdfError=await W.transport(credentials,async()=>({
   ok:false,status:502,
