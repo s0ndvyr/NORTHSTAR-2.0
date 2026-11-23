@@ -1019,7 +1019,7 @@ async function phase441OpenPdf(file,a,c){
   $('#nsAssignmentFiles')?.querySelectorAll('[data-ns-file]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.nsFile===String(file.id)?'true':'false'));
   stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ DOCUMENT STUDIO</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Loading the Canvas document into your workspace…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
   const credentials=getCredentials();
-  try{await window.NorthstarAssignmentRoom.openPdf(stage,file,{id:a.id,title:a.title,canvasCourseId:c.canvasId},credentials);}
+  try{await window.NorthstarAssignmentRoom.openPdf(stage,file,{id:a.id,canvasAssignmentId:Number(a.canvasId),title:a.title,canvasCourseId:c.canvasId},credentials);}
   catch(error){
     const report=window.CanvasDebug?.buildFileDiagnosticReport?window.CanvasDebug.buildFileDiagnosticReport({
       environment:String(location.pathname||'').includes('/preview/')?'preview':'production',
