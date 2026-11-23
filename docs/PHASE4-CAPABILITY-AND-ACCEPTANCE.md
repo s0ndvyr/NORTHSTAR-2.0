@@ -171,3 +171,21 @@ Canvas's authenticated file-download flow requires the student's bearer token on
 This download rule is separate from the signed upload destination: Canvas bearer credentials are never sent to signed upload storage. The current private Worker (0.4.16 / 4.4.7.2) already has bounded redirects and the trusted Instructure file-host allowlist, and remains separately deployed.
 
 Automated tests verify trusted direct authentication, bridge fallback and untrusted-host rejection. They do not prove that the live NNPS Canvas tenant permits this browser Authorization preflight or that a specific attachment downloads successfully. Live acceptance remains: open a real non-sensitive PDF attachment, verify the content is rendered in Document Studio, export the annotated copy, submit it using the instructor-approved online_upload test assignment, and verify the exact attempt and attachment in Canvas. Then perform the Pencil, touch, zoom, pan, undo/redo and export checks on the physical iPad.
+
+
+## NORTHSTAR 4.4.7.6 — Canvas PDF redirect authentication recovery
+
+The live NNPS diagnostic for file 61162022 reached the Canvas metadata endpoint, followed redirects through `nnps.instructure.com` and `*.canvas-user-content.com`, then received HTTP 406 from `inst-fs-iad-prod.inscloudgate.net`. The browser-direct attempt was blocked by cross-origin authorization/CORS before it could deliver the bytes. This establishes that the PDF viewer is not the failing layer: the failure occurs during file-byte retrieval at the final storage edge.
+
+The previous Worker forwarded the Canvas bearer token to every allowlisted Instructure storage host and replayed the requesting browser's User-Agent on server-to-server storage requests. The 4.4.7.6 candidate changes that protocol:
+
+1. The bearer token is sent to the configured school Canvas origin for the authenticated file-download request only.
+2. On every cross-origin redirect, the Canvas bearer token is removed. Instructure's returned short-lived storage URL is treated as the storage authorization.
+3. Redirects carry only the previous origin as Referer (never a path, query, signed URL or credential).
+4. The Worker does not impersonate the student's iPad/Safari User-Agent on external storage requests.
+5. Initial download URLs and every redirect target must remain HTTPS and on the explicit Canvas/Instructure file-host allowlist. Untrusted hosts are rejected before fetching.
+
+The regression fixture now reproduces the observed two-hop route: Canvas → `a16702-61162022.cluster277.canvas-user-content.com` → `inst-fs-iad-prod.inscloudgate.net`. It asserts that the Canvas token appears only on the first Canvas-origin download request, that storage hops receive no bearer token or spoofed browser User-Agent, that the origin-only Referer advances one hop at a time, and that a successful final PDF response is returned. A separate 406 fixture verifies safe diagnostics when the storage edge continues to reject the request.
+
+**Important acceptance boundary:** this is a protocol correction supported by the live diagnostic and new regression tests; it is not yet proof that the NNPS storage edge accepts the request. The Worker must be deployed to the preview bridge, and the same real assignment attachment must be reopened. If the final storage host still returns 406, the next diagnostic must determine whether the edge requires a specific referrer, signed URL shape, or school-side access policy; do not weaken the host allowlist or forward the Canvas token to arbitrary hosts.
+
