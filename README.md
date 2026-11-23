@@ -125,7 +125,7 @@ The PDF renderer and PDF export library are loaded from version-pinned jsDelivr 
 ### Supported paths and provider boundaries
 
 - Online text entry / online URL: work in the NORTHSTAR assignment page, review, submit or resubmit to Canvas.
-- Online file upload: upload a file up to 25 MB through Canvas' signed upload flow. The Canvas bearer token is never sent to the signed upload destination. This is separate from authenticated file downloads, where Canvas requires the bearer token on the HTTPS download URL and NORTHSTAR restricts it to allowlisted Instructure hosts.
+- Online file upload: upload a file up to 25 MB through Canvas' signed upload flow. The Canvas bearer token is never sent to the signed upload destination. This is distinct from authenticated file downloads, where Canvas requires the bearer token on the HTTPS download URL and NORTHSTAR restricts it to allowlisted Instructure hosts.
 - Classic quizzes: start an official Canvas attempt, answer supported question types in NORTHSTAR, save answers and complete the attempt. Canvas controls time, availability and grading.
 - Graded discussions: read visible threads and publish initial posts or replies in NORTHSTAR.
 - PDF attachments: read, annotate with Apple Pencil tools, export a flattened copy, and submit it where online_upload is permitted.
@@ -249,3 +249,21 @@ The dashboard no longer carries a separate hardcoded release constant. Its dashb
 ### NORTHSTAR 4.4.6.4 — Test-pinned deployment protection
 
 GitHub Pages publication now checks the current heads of both `main` and the preview branch against completed successful Phase 4 push runs. The Pages workflow only proceeds when both exact heads have passed, and it checks out those commit SHAs rather than following moving branch names. A delayed older successful test event therefore cannot publish a newer untested branch tip. If either branch has no passing run for its current head, publication is held until that branch's own test completes successfully.
+
+
+### Canvas assignment file upload finalization — Phase 4.4.7.1
+
+NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker performs Canvas upload initialization, sends the signed multipart upload without a Canvas bearer token, then completes Canvas's authenticated `create_success` GET before returning the final file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow; it is not native DocViewer annotation synchronization.
+
+
+### Canvas assignment file upload finalization — Phase 4.4.7.2
+
+NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker initializes the Canvas upload, sends the signed multipart request without a Canvas bearer token, then completes the authenticated Canvas `create_success` GET before returning a file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow, not native DocViewer annotation synchronization. Attachment diagnostic reports now read the app version from the release manifest.
+
+
+### Document Studio → Canvas submission handoff — Phase 4.4.7.3
+
+The **Use annotated PDF from Document Studio** action stages the exported flattened PDF as the sole upload for that submission, matching the button's promise that it replaces other selected files. The browser boot integration test opens an `online_upload` assignment fixture, invokes the Document Studio export handoff, verifies the exported file reaches the Canvas upload helper, and verifies the finalized Canvas file ID is submitted.
+
+
+Phase 4.4.7.4 corrects the release-history regression assertion so the current preview candidate is kept pending until its own CI and deployment pass, while the earlier 4.4.7.2 preview deployment remains recorded as verified.
