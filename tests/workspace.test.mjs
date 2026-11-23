@@ -96,7 +96,8 @@ assert.equal(pdf.size,6);
 assert.deepEqual([...pdf.bytes],[37,80,68,70,45,49]);
 assert.equal(pdfFetchCalls.length,2,'PDF metadata is fetched through the bridge, then the signed PDF is fetched directly from the student browser');
 assert.equal(pdfFetchCalls[0].opts.headers.Authorization,'Bearer secret-token','Canvas token is used only for metadata through the private bridge');
-assert.equal(pdfFetchCalls[1].opts.headers.Authorization,undefined,'Canvas bearer token is never sent to signed storage');
+assert.equal(pdfFetchCalls[1].opts.headers.Authorization,'Bearer secret-token','Canvas Files API authentication is sent to the allowlisted Instructure download host');
+assert.equal(new URL(pdfFetchCalls[1].url).hostname,'cdn.inscloudgate.net','direct bearer-token delivery is restricted to the trusted Instructure file host');
 assert.equal(pdfFetchCalls[1].opts.credentials,'omit','signed storage request does not send browser cookies');
 assert.equal(pdfFetchCalls[1].opts.redirect,'follow','browser follows Canvas storage redirects');
 
@@ -114,8 +115,23 @@ assert.equal(fallbackPdf.name,'fallback.pdf');
 assert.equal(fallbackPdf.workerVersion,'0.4.16 (4.4.7.2)');
 assert.equal(fallbackPdf.size,6);
 assert.equal(fallbackCalls.length,3,'browser CORS failure falls back to the authenticated private bridge');
-assert.equal(fallbackCalls[1].opts.headers.Authorization,undefined,'browser direct attempt never receives the Canvas token');
+assert.equal(fallbackCalls[1].opts.headers.Authorization,'Bearer secret-token','the browser direct attempt authenticates to the trusted Instructure file host before falling back');
 assert.equal(fallbackCalls[2].opts.headers.Authorization,'Bearer secret-token','bridge fallback uses the Canvas token only with the private bridge');
+  
+// Untrusted metadata download URLs are never requested with the Canvas bearer token.
+const untrustedCalls=[];
+const untrustedPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:44,fetchImpl:async(url,opts)=>{
+  untrustedCalls.push({url,opts});
+  const parsed=new URL(url),path=parsed.searchParams.get('path');
+  if(path==='/api/v1/courses/11/files/44')return {ok:true,status:200,json:async()=>({id:44,display_name:'safe-fallback.pdf','content-type':'application/pdf',url:'https://evil.example/private.pdf?signature=must-not-be-requested'})};
+  if(path==='/api/v1/courses/11/files/44/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="safe-fallback.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  throw Error('Unexpected untrusted-host test request '+url);
+}});
+assert.equal(untrustedPdf.name,'safe-fallback.pdf');
+assert.equal(untrustedPdf.workerVersion,'0.4.16 (4.4.7.2)');
+assert.equal(untrustedCalls.length,2,'the untrusted metadata URL is skipped and the private bridge is used');
+assert(untrustedCalls.every(call=>new URL(call.url).hostname==='bridge.example'),'the Canvas token is never sent to the untrusted metadata host');
+
 
 const failedPdfError=await W.transport(credentials,async()=>({
   ok:false,status:406,
