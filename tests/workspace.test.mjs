@@ -84,77 +84,81 @@ const pdfFetchCalls=[];
 const pdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:42,fetchImpl:async(url,opts)=>{
   pdfFetchCalls.push({url,opts});
   const parsed=new URL(url),path=parsed.searchParams.get('path');
-  if(path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived'})};
-  if(parsed.hostname==='cdn.inscloudgate.net')return {ok:true,status:200,url:'https://cdn.inscloudgate.net/signed/worksheet.pdf?signature=short-lived',headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'inline; filename="worksheet.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
-  if(path==='/api/v1/courses/11/files/42/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="worksheet.pdf"':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/courses/11/files/42')return {ok:true,status:200,json:async()=>({id:42,display_name:'worksheet.pdf','content-type':'application/pdf',size:6,url:'https://school.instructure.com/files/42/download'})};
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/files/42/public_url')return {ok:true,status:200,json:async()=>({public_url:'https://cdn.inscloudgate.net/inline/worksheet.pdf?signature=short-lived'})};
+  if(parsed.hostname==='cdn.inscloudgate.net'){
+    assert.equal(opts.headers.Authorization,undefined,'the signed browser preview is never given the Canvas bearer token');
+    assert.equal(opts.credentials,'omit','signed storage requests never use Canvas browser cookies');
+    assert.equal(opts.mode,'cors');
+    assert.equal(opts.redirect,'follow');
+    return new Response(new Uint8Array([37,80,68,70,45,49]),{status:200,headers:{'Content-Type':'application/pdf','Content-Length':'6'}});
+  }
   throw Error('Unexpected PDF endpoint '+url);
 }});
 assert.equal(pdf.name,'worksheet.pdf');
 assert.equal(pdf.contentType,'application/pdf');
-assert.equal(pdf.workerVersion,'browser-direct');
+assert.equal(pdf.workerVersion,'browser-public-preview');
 assert.equal(pdf.size,6);
 assert.deepEqual([...pdf.bytes],[37,80,68,70,45,49]);
-assert.equal(pdfFetchCalls.length,2,'PDF metadata is fetched through the bridge, then the signed PDF is fetched directly from the student browser');
-assert.equal(pdfFetchCalls[0].opts.headers.Authorization,'Bearer secret-token','Canvas token is used only for metadata through the private bridge');
-assert.equal(pdfFetchCalls[1].opts.headers.Authorization,'Bearer secret-token','Canvas Files API authentication is sent to the allowlisted Instructure download host');
-assert.equal(new URL(pdfFetchCalls[1].url).hostname,'cdn.inscloudgate.net','direct bearer-token delivery is restricted to the trusted Instructure file host');
-assert.equal(pdfFetchCalls[1].opts.credentials,'omit','signed storage request does not send browser cookies');
-assert.equal(pdfFetchCalls[1].opts.redirect,'follow','browser follows Canvas storage redirects');
+assert.equal(pdfFetchCalls.length,3,'metadata and public_url are authenticated through the bridge; PDF bytes are fetched from the browser');
+assert.equal(pdfFetchCalls[0].opts.headers.Authorization,'Bearer secret-token');
+assert.equal(pdfFetchCalls[1].opts.headers.Authorization,'Bearer secret-token');
+assert.equal(pdfFetchCalls[2].opts.headers.Authorization,undefined,'no Canvas credential crosses to the signed storage host');
 
-// If browser CORS or the short-lived URL fails, the existing private bridge remains a fallback.
-const fallbackCalls=[];
-const fallbackPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:43,fetchImpl:async(url,opts)=>{
-  fallbackCalls.push({url,opts});
+// When the storage host refuses browser JavaScript access, return a validated
+// native preview URL instead of retrying the same file through the Worker.
+const nativeCalls=[];
+const nativePdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:43,fetchImpl:async(url,opts)=>{
+  nativeCalls.push({url,opts});
   const parsed=new URL(url),path=parsed.searchParams.get('path');
-  if(path==='/api/v1/courses/11/files/43')return {ok:true,status:200,json:async()=>({id:43,display_name:'fallback.pdf','content-type':'application/pdf',url:'https://cdn.inscloudgate.net/signed/fallback.pdf'})};
-  if(parsed.hostname==='cdn.inscloudgate.net')throw new TypeError('CORS blocked browser direct storage access');
-  if(path==='/api/v1/courses/11/files/43/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="fallback.pdf"':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
-  throw Error('Unexpected PDF fallback endpoint '+url);
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/courses/11/files/43')return {ok:true,status:200,json:async()=>({id:43,display_name:'fallback.pdf','content-type':'application/pdf',url:'https://school.instructure.com/files/43/download'})};
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/files/43/public_url')return {ok:true,status:200,json:async()=>({public_url:'https://cdn.inscloudgate.net/inline/fallback.pdf?signature=short-lived'})};
+  if(parsed.hostname==='cdn.inscloudgate.net'){
+    assert.equal(opts.headers.Authorization,undefined);
+    assert.equal(opts.credentials,'omit');
+    throw new TypeError('CORS blocked browser direct storage access');
+  }
+  throw Error('Unexpected native fallback request '+url);
 }});
-assert.equal(fallbackPdf.name,'fallback.pdf');
-assert.equal(fallbackPdf.workerVersion,'0.4.17 (4.4.7.6)');
-assert.equal(fallbackPdf.size,6);
-assert.equal(fallbackCalls.length,3,'browser CORS failure falls back to the authenticated private bridge');
-assert.equal(fallbackCalls[1].opts.headers.Authorization,'Bearer secret-token','the browser direct attempt authenticates to the trusted Instructure file host before falling back');
-assert.equal(fallbackCalls[2].opts.headers.Authorization,'Bearer secret-token','bridge fallback uses the Canvas token only with the private bridge');
-  
-// Untrusted metadata download URLs are never requested with the Canvas bearer token.
-const untrustedCalls=[];
-const untrustedPdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:44,fetchImpl:async(url,opts)=>{
-  untrustedCalls.push({url,opts});
+assert.equal(nativePdf.bytes,null,'a CORS refusal must never masquerade as readable PDF bytes');
+assert.equal(nativePdf.previewUrl,'https://cdn.inscloudgate.net/inline/fallback.pdf?signature=short-lived');
+assert.equal(nativePdf.canvasReturnTo,'/courses/11/files/43');
+assert.equal(nativePdf.previewDelivery.result,'browser_fetch_blocked');
+assert.equal(nativeCalls.length,3,'no Worker storage download retry occurs after the browser CORS refusal');
+
+// If public_url is unavailable, the only authenticated binary attempt allowed
+// is a non-redirecting request to the exact school Canvas origin.
+const canvasOriginCalls=[];
+const canvasFallback=await W.downloadCanvasFile({credentials,courseId:11,fileId:44,fetchImpl:async(url,opts)=>{
+  canvasOriginCalls.push({url,opts});
   const parsed=new URL(url),path=parsed.searchParams.get('path');
-  if(path==='/api/v1/courses/11/files/44')return {ok:true,status:200,json:async()=>({id:44,display_name:'safe-fallback.pdf','content-type':'application/pdf',url:'https://evil.example/private.pdf?signature=must-not-be-requested'})};
-  if(path==='/api/v1/courses/11/files/44/download')return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'application/pdf':name==='Content-Disposition'?'attachment; filename="safe-fallback.pdf"':null},arrayBuffer:async()=>new Uint8Array([37,80,68,70,45,49]).buffer};
-  throw Error('Unexpected untrusted-host test request '+url);
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/courses/11/files/44')return {ok:true,status:200,json:async()=>({id:44,display_name:'canvas-only.pdf','content-type':'application/pdf',url:'https://school.instructure.com/files/44/download'})};
+  if(parsed.hostname==='bridge.example'&&path==='/api/v1/files/44/public_url')return {ok:false,status:403,json:async()=>({message:'Preview URL unavailable'})};
+  if(parsed.origin==='https://school.instructure.com'){
+    assert.equal(opts.headers.Authorization,'Bearer secret-token','the bearer token is sent only to the exact Canvas origin');
+    assert.equal(opts.redirect,'error','an authenticated Canvas-origin download never follows a storage redirect');
+    throw new TypeError('Canvas origin redirected; browser read unavailable');
+  }
+  throw Error('Unexpected Canvas fallback request '+url);
 }});
-assert.equal(untrustedPdf.name,'safe-fallback.pdf');
-// The mocked bridge response omits its optional Worker-version diagnostic header.
-assert.equal(untrustedCalls.length,2,'the untrusted metadata URL is skipped and the private bridge is used');
-assert(untrustedCalls.every(call=>new URL(call.url).hostname==='bridge.example'),'the Canvas token is never sent to the untrusted metadata host');
+assert.equal(canvasFallback.previewUrl,'');
+assert.equal(canvasFallback.canvasReturnTo,'/courses/11/files/44');
+assert.equal(canvasFallback.publicUrlEndpoint.result,'http_error');
+assert.equal(canvasFallback.previewDelivery.result,'canvas_origin_fetch_blocked');
+assert.equal(canvasOriginCalls.length,3);
 
-
-const failedPdfError=await W.transport(credentials,async()=>({
-  ok:false,status:406,
-  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Upstream-Status'?'406':name==='X-Northstar-Request-Id'?'ray-outer-406':name==='X-Northstar-Worker-Version'?'0.4.17 (4.4.7.6)':null},
-  json:async()=>({error:'Canvas rejected the file request',code:'CANVAS_FILE_CONTENT_FAILED',stage:'content',upstreamStatus:406,requestId:'ray-outer-406',diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamRayId:'ray-upstream-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true}})
-})).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
-assert.equal(failedPdfError.stage,'content');
-assert.equal(failedPdfError.upstreamStatus,406);
-assert.equal(failedPdfError.requestId,'ray-outer-406');
-assert.equal(failedPdfError.diagnostics.upstreamHost,'storage.example.net');
-assert.equal(failedPdfError.bridgeStatus,406);
-assert.equal(failedPdfError.workerVersion,'0.4.17 (4.4.7.6)');
-
-const networkPdfError=await W.transport(credentials,async()=>({
-  ok:false,status:502,
-  headers:{get:name=>name==='X-Northstar-Stage'?'content':name==='X-Northstar-Failure'?'network':null},
-  json:async()=>({error:'Could not reach the file host while downloading the attachment',code:'CANVAS_FILE_CONTENT_NETWORK_FAILED',stage:'content',upstreamStatus:null,requestId:'ray-network',diagnostics:{stage:'content',failureType:'network',upstreamStatus:null,upstreamHost:'storage.example.net'}})
-})).getBinary('/api/v1/courses/11/files/42/download').catch(error=>error);
-assert.equal(networkPdfError.code,'CANVAS_FILE_CONTENT_NETWORK_FAILED');
-assert.equal(networkPdfError.stage,'content');
-assert.equal(networkPdfError.upstreamStatus,null);
-assert.equal(networkPdfError.failureType,'network');
-assert.equal(networkPdfError.diagnostics.upstreamHost,'storage.example.net');
+// A hostile URL returned by Canvas is not fetched or exposed as a native link.
+const hostileCalls=[];
+const hostilePdf=await W.downloadCanvasFile({credentials,courseId:11,fileId:45,fetchImpl:async(url,opts)=>{
+  hostileCalls.push({url,opts});
+  const parsed=new URL(url),path=parsed.searchParams.get('path');
+  if(path==='/api/v1/courses/11/files/45')return {ok:true,status:200,json:async()=>({id:45,display_name:'hostile.pdf','content-type':'application/pdf'})};
+  if(path==='/api/v1/files/45/public_url')return {ok:true,status:200,json:async()=>({public_url:'https://evil.example/private.pdf?signature=must-not-leak'})};
+  throw Error('Untrusted preview host must never be contacted');
+}});
+assert.equal(hostilePdf.previewUrl,'');
+assert.equal(hostilePdf.previewDelivery.result,'not_attempted');
+assert.equal(hostileCalls.length,2,'untrusted public preview URLs are rejected before browser navigation or fetch');
 
 const recoveryCalls=[];
 const recoveryFetch=async(url,opts)=>{recoveryCalls.push({url,opts});const path=new URL(url).searchParams.get('path');if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,started_at:'2026-11-18T10:00:00Z',finished_at:null,workflow_state:'untaken'}]})};if(path.includes('/quiz_submissions/77/questions'))return {ok:true,status:200,json:async()=>({quiz_submission_questions:[{id:9,answer:1,quiz_question:{id:9,question_type:'multiple_choice_question',answers:[{id:1,text:'A'}]}}]})};if(path.endsWith('/time'))return {ok:true,status:200,json:async()=>({time_left:90})};throw Error('Unexpected recovery path '+path);};
