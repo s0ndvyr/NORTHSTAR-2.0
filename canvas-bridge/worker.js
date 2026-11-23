@@ -109,6 +109,7 @@ function isTrustedCanvasFileHost(hostname){
   const host=String(hostname||'').toLowerCase();
   return host===new URL(CANVAS_ORIGIN).hostname||TRUSTED_CANVAS_FILE_HOST_SUFFIXES.some(suffix=>host.endsWith(suffix));
 }
+// Keep this telemetry allowlisted: a signed URL's query string is a credential and must never leave the Worker.
 function safePublicUrlAttempt(value){
   if(!isObject(value))return null;
   const numberOrNull=v=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null);
