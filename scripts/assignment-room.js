@@ -677,7 +677,17 @@ async function openPdf(host,file,assignment,credentials){
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials,courseId:assignment.canvasCourseId,fileId:file.id});
  if(api.bytes){
   pdfState.file={...file,name:api.name||file.name};
-  await initializePdfEditor(host,api.bytes);
+  try{await initializePdfEditor(host,api.bytes);}
+  catch(error){
+   error.browserDelivery=api.previewDelivery||null;
+   error.publicPreviewDelivery={
+    publicUrlEndpointResult:api.publicUrlEndpoint?.result||'not_recorded',
+    publicUrlEndpointStatus:api.publicUrlEndpoint?.status??null,
+    ...(api.previewDelivery||{}),
+    canvasViewerAvailable:true
+   };
+   throw error;
+  }
  }else{
   renderNativePdfFallback(host,file,assignment,credentials,api);
  }
