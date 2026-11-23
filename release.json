@@ -30,7 +30,12 @@
       ],
       "status": "Preview deployment successful. Phase 4 passed on exact merged preview commit a4c111b87e5508b1ce78deca24832c71dc4bcf44 (run 45107151322); Worker 0.4.20 deployed by run 45107151368; Pages preview deployed by run 45107205281. Live NNPS PDF retrieval and subsequent real assignment submission remain pending. Production intentionally remains on 4.4.7.5 until live acceptance.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "a4c111b87e5508b1ce78deca24832c71dc4bcf44",
+          "label": "tested and deployed preview source including Canvas Worker"
+        }
+      ]
     },
     {
       "version": "4.4.7.8",
