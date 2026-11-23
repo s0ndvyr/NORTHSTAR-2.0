@@ -1422,7 +1422,7 @@ function phase441LoadStagedUploads(a,c){
     const record=JSON.parse(localStorage.getItem(phase441StageKey(a,c))||'null');
     if(!record||Number(record.courseId)!==Number(c.canvasId)||Number(record.assignmentId)!==Number(a.canvasId)||!Array.isArray(record.files))return map;
     record.files.forEach(item=>{
-      if(!item||typeof item.signature!=='string'||!Number.isSafeInteger(Number(item.id))||Number(item.id)<1||Number(item.expiresAt)<Date.now())return;
+      if(!item||typeof item.signature!=='string'||!Number.isSafeInteger(Number(item.id))||Number(item.id)<1||!Number.isFinite(Number(item.expiresAt))||Number(item.expiresAt)<Date.now())return;
       map.set(item.signature,{id:Number(item.id),name:String(item.name||''),size:Number(item.size)||0,type:String(item.type||'application/octet-stream'),signature:item.signature,expiresAt:Number(item.expiresAt)});
     });
     if(!map.size)localStorage.removeItem(phase441StageKey(a,c));
@@ -1512,7 +1512,7 @@ async function phase441ReconcileSubmission(a){
         const attachments=Array.isArray(submission.attachments)?submission.attachments:Array.isArray(submission.submitted_files)?submission.submitted_files:null;
         const fileIds=(marker.fileIds||[]).map(Number).filter(Number.isSafeInteger);
         const filesMatch=!fileIds.length||(attachments&&fileIds.every(fileId=>attachments.some(file=>Number(file.id)===fileId)));
-        newerThanUncertain=submitted&&typeMatches&&filesMatch&&((expected>0&&attempt>=expected)||(time>baselineTime));
+        newerThanUncertain=submitted&&typeMatches&&filesMatch&&(expected>0?attempt>=expected:time>baselineTime);
         if(newerThanUncertain)phase441ClearSubmissionUncertain(a);
         else if(submitted&&(attempt<(expected||attempt)||!filesMatch||!typeMatches)){
           if(status)status.textContent='Canvas returned a submission, but it does not yet match the attempt/files expected from the uncertain request. The submit action remains locked; refresh status again before retrying.';
@@ -1576,7 +1576,7 @@ window.submitAssignment=async function(){
     if(status)status.textContent='Canvas has not reconciled the previous submit request. Refresh the official submission record before making another request.';
     if(button)button.disabled=true;return;
   }
-  let submissionRequestStarted=false,expectedAttempt=Math.max(0,Number(a.attempt)||0)+1,baselineAttempt=Number(a.attempt)||0,baselineSubmittedAt=a.submittedAt||null,submissionType=null,fileIds=[];
+  let submissionRequestStarted=false,submissionPostResponseReceived=false,expectedAttempt=Math.max(0,Number(a.attempt)||0)+1,baselineAttempt=Number(a.attempt)||0,baselineSubmittedAt=a.submittedAt||null,submissionType=null,fileIds=[];
   try{
     const creds=getCredentials();
     if(!creds?.proxy)throw Error('Connect using your private Canvas bridge first. Direct-mode submissions are disabled.');
@@ -1604,6 +1604,7 @@ window.submitAssignment=async function(){
     }else status.textContent='Sending the assignment submission to Canvas once…';
     submissionRequestStarted=true;
     const result=await window.NorthstarSubmissions.send({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId,data});
+    submissionPostResponseReceived=true;
     const responseAttempt=Number(result?.attempt)||0;
     expectedAttempt=Math.max(expectedAttempt,responseAttempt);
     status.textContent='Canvas accepted the submission request. Reading the official student submission record…';
@@ -1642,7 +1643,7 @@ window.submitAssignment=async function(){
     refreshAll();
   }catch(error){
     const message=String(error?.message||error);
-    const uncertain=submissionRequestStarted&&(error?.outcomeUnknown===true||error?.status>=500||error?.status===409||!Number.isFinite(Number(error?.status)));
+    const uncertain=submissionRequestStarted&&(submissionPostResponseReceived||error?.outcomeUnknown===true||error?.status>=500||error?.status===409||!Number.isFinite(Number(error?.status)));
     if(uncertain){
       phase441MarkSubmissionUncertain(a,{baselineAttempt,baselineSubmittedAt,expectedAttempt,submissionType,fileIds,requestStartedAt:Date.now()});
       const warning=$('#nsSubmissionUnknown');if(warning)warning.hidden=false;
