@@ -77,8 +77,15 @@ function collectFiles(details,base){
  if(details.annotatable_attachment_id)add(details.annotatable_attachment_id,'Document to annotate','application/pdf','');
  return files;
 }
-const pdfState={assignment:null,file:null,bytes:null,doc:null,page:1,scale:1.15,tool:'pen',inputMode:'hand',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{},activePointers:new Map(),activeGesture:null,preview:null};
+const pdfState={assignment:null,file:null,identity:null,bytes:null,doc:null,page:1,scale:1.15,tool:'pen',inputMode:'hand',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{},activePointers:new Map(),activeGesture:null,preview:null};
 function pdfKey(){const preview=String(location.pathname||'').includes('/preview/');return 'northstar_'+(preview?'preview_':'')+'pdf_markup_v2_'+String(pdfState.assignment?.id||'assignment')+'_'+String(pdfState.file?.id||'file');}
+function pdfIdentityKey(){return pdfKey().replace('_pdf_markup_v2_','_pdf_identity_v1_');}
+function persistPdfIdentity(){
+ const file=pdfState.file||{},assignment=pdfState.assignment||{};
+ const identity={schemaVersion:1,canvasFileId:Number(file.id)||null,courseId:Number(assignment.canvasCourseId)||null,assignmentId:String(assignment.canvasAssignmentId||assignment.id||''),originalFilename:String(file.originalName||file.name||''),contentType:String(file.contentType||'application/pdf'),size:Number(file.size)||null,canvasFilePath:'/courses/'+Number(assignment.canvasCourseId)+'/files/'+Number(file.id),importedFilename:String(file.importedFileName||'')};
+ pdfState.identity=identity;
+ try{localStorage.setItem(pdfIdentityKey(),JSON.stringify(identity));return true;}catch{return false;}
+}
 function legacyPdfKey(){return pdfKey().replace('_pdf_markup_v2_','_pdf_markup_v1_');}
 function getPageState(page){const key=String(page);if(!pdfState.annotations[key])pdfState.annotations[key]={strokes:[],texts:[]};return pdfState.annotations[key];}
 function persistAnnotations(){try{localStorage.setItem(pdfKey(),JSON.stringify(pdfState.annotations));return true;}catch{notify('The annotation could not be saved on this device. Export a copy to keep it.');return false;}}
@@ -621,15 +628,16 @@ function renderNativePdfFallback(host,file,assignment,credentials,source){
  const frame=previewUrl?'<iframe class="ns-pdf-native-preview" title="Canvas original PDF preview" src="'+escapeHtml(previewUrl)+'" referrerpolicy="no-referrer"></iframe>':'<div class="ns-pdf-native-placeholder"><span class="eyebrow">CANVAS FILE</span><h3>Original PDF ready in Canvas</h3><p>Open the official file preview to save a local copy, then import that copy here to edit and export it.</p></div>';
  host.innerHTML='<div class="ns-pdf-native-fallback">'+
   '<div class="ns-pdf-native-head"><span class="eyebrow">DOCUMENT STUDIO / BROWSER DELIVERY</span><h2>'+escapeHtml(file.name)+'</h2>'+
-  '<p>Canvas has authorized this file, but its storage host will not allow NORTHSTAR’s server to read the PDF bytes. Safari can open the authorized preview directly; the editor needs a local copy to safely load and export it.</p></div>'+
+  '<p>Canvas has authorized this attachment, but Safari may be required to open its temporary preview. NORTHSTAR cannot always read cross-origin storage bytes directly. Temporary preview links can expire; use Refresh Canvas preview to request a new one.</p></div>'+
   '<div class="ns-pdf-native-preview-wrap">'+frame+'</div>'+
   '<div class="ns-pdf-native-actions">'+
    (previewUrl?'<a class="btn btn-primary" href="'+escapeHtml(previewUrl)+'" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open original PDF in Safari</a>':'')+
+   '<button class="btn btn-ghost" type="button" id="nsPdfRefreshPreview">Refresh Canvas preview</button>'+
    '<button class="btn btn-ghost" type="button" id="nsPdfOpenCanvas">Open official Canvas file</button>'+
    '<button class="btn btn-primary" type="button" id="nsPdfImportLocal">Import downloaded PDF to edit</button>'+
    '<input id="nsPdfLocalFile" type="file" accept="application/pdf,.pdf" hidden>'+
   '</div>'+
-  '<p class="ns-pdf-native-help">On iPad: open the original PDF, use Safari’s Share button and choose <strong>Save to Files</strong>. Return here, choose <strong>Import downloaded PDF to edit</strong>, and select that saved file. Your annotations will then be editable in NORTHSTAR and exportable as a flattened PDF for Canvas.</p>'+
+  '<p class="ns-pdf-native-help">On iPad: open the original PDF, use Safari’s Share button and choose <strong>Save to Files</strong>. Return here, choose <strong>Import downloaded PDF to edit</strong>, and select that saved file. NORTHSTAR keeps this Canvas attachment’s file, course and assignment IDs as the working context; verify that the selected PDF is the intended attachment. Your annotations can then be edited and exported for Canvas.</p>'+
   '<p class="ns-pdf-native-status" id="nsPdfNativeStatus" role="status" aria-live="polite">'+
    (browserResult==='browser_fetch_blocked'?'Safari could not expose the PDF bytes to JavaScript. The native preview path is being used.':'Preview delivery is using the browser-native route.')+
   '</p></div>';
@@ -641,11 +649,28 @@ function renderNativePdfFallback(host,file,assignment,credentials,source){
   try{
    const bytes=new Uint8Array(await local.arrayBuffer());
    if(bytes.byteLength>100*1024*1024)throw Error('This PDF is larger than NORTHSTAR’s 100 MB in-browser editing limit.');
-   pdfState.file={...file,name:local.name||file.name};
+   const header=String.fromCharCode(...bytes.subarray(0,Math.min(bytes.byteLength,1024)));
+   if(!header.includes('%PDF-'))throw Error('The selected file is not a readable PDF. Choose the PDF for this Canvas attachment.');
+   pdfState.file={...file,originalName:String(file.originalName||file.name||''),importedFileName:String(local.name||''),name:String(file.originalName||file.name||'Canvas PDF')};
+   persistPdfIdentity();
    await initializePdfEditor(host,bytes);
   }catch(error){if(status)status.textContent='Could not import this PDF: '+error.message;}
   finally{choose.disabled=false;}
  });
+ const refreshButton=host.querySelector('#nsPdfRefreshPreview');
+ if(refreshButton)refreshButton.onclick=async()=>{
+  refreshButton.disabled=true;if(status)status.textContent='Requesting a fresh temporary preview from Canvas…';
+  try{
+   const refreshed=await root.NorthstarWorkspace.downloadCanvasFile({credentials,courseId:assignment.canvasCourseId,fileId:file.id});
+   if(Number(refreshed?.id)!==Number(file.id))throw Error('Canvas returned a different attachment. The current assignment was not changed.');
+   pdfState.file={...file,originalName:String(file.originalName||file.name||''),name:String(refreshed.name||file.name||''),contentType:String(refreshed.contentType||file.contentType||'application/pdf'),size:Number(refreshed.size)||Number(file.size)||null};
+   persistPdfIdentity();
+   if(refreshed.bytes){await initializePdfEditor(host,refreshed.bytes);return;}
+   renderNativePdfFallback(host,file,assignment,credentials,refreshed);
+   const refreshedStatus=host.querySelector('#nsPdfNativeStatus');
+   if(refreshedStatus)refreshedStatus.textContent=refreshed.previewUrl?'A fresh Canvas preview is ready. Open it in Safari if the embedded preview does not load.':'Canvas did not provide a usable preview. Open the official Canvas file or try again.';
+  }catch(error){if(status)status.textContent='Could not refresh the Canvas preview: '+error.message+' You can retry when your connection is available.';refreshButton.disabled=false;}
+ };
  const canvasButton=host.querySelector('#nsPdfOpenCanvas');
  if(canvasButton)canvasButton.onclick=async()=>{
   const tab=root.open('about:blank','_blank');
@@ -661,7 +686,7 @@ function renderNativePdfFallback(host,file,assignment,credentials,source){
 }
 async function openPdf(host,file,assignment,credentials){
  if(pdfState.textEditor)pdfState.textEditor.unmount();
- pdfState.assignment=assignment;pdfState.file=file;pdfState.host=host;pdfState.page=1;pdfState.scale=1.15;pdfState.tool='pen';pdfState.activePointers.clear();pdfState.activeGesture=null;pdfState.preview=null;pdfState.annotations={};pdfState.history=[];pdfState.redo=[];pdfState.viewports={};pdfState.bytes=null;pdfState.doc=null;
+ pdfState.assignment=assignment;pdfState.file={...file,originalName:String(file.originalName||file.name||'')};pdfState.host=host;persistPdfIdentity();pdfState.page=1;pdfState.scale=1.15;pdfState.tool='pen';pdfState.activePointers.clear();pdfState.activeGesture=null;pdfState.preview=null;pdfState.annotations={};pdfState.history=[];pdfState.redo=[];pdfState.viewports={};pdfState.bytes=null;pdfState.doc=null;
  try{
   const saved=localStorage.getItem(pdfKey())||localStorage.getItem(legacyPdfKey())||'{}';
   pdfState.annotations=JSON.parse(saved);
@@ -676,7 +701,8 @@ async function openPdf(host,file,assignment,credentials){
  const loading=host.querySelector('.ns-room-loading');if(!loading)host.innerHTML='<div class="ns-room-loading"><h2>Opening '+escapeHtml(file.name)+'</h2><p>Requesting the Canvas-authorized preview…</p></div>';
  const api=await root.NorthstarWorkspace.downloadCanvasFile({credentials,courseId:assignment.canvasCourseId,fileId:file.id});
  if(api.bytes){
-  pdfState.file={...file,name:api.name||file.name};
+  pdfState.file={...file,originalName:String(file.originalName||file.name||''),name:api.name||file.name,contentType:api.contentType||file.contentType||'application/pdf',size:Number(api.size)||Number(file.size)||null};
+  persistPdfIdentity();
   try{await initializePdfEditor(host,api.bytes);}
   catch(error){
    error.browserDelivery=api.previewDelivery||null;
@@ -689,6 +715,8 @@ async function openPdf(host,file,assignment,credentials){
    throw error;
   }
  }else{
+  pdfState.file={...file,originalName:String(file.originalName||file.name||''),name:api.name||file.name,contentType:api.contentType||file.contentType||'application/pdf',size:Number(api.size)||Number(file.size)||null};
+  persistPdfIdentity();
   renderNativePdfFallback(host,file,assignment,credentials,api);
  }
 }
