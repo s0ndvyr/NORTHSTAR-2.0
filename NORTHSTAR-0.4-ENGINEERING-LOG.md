@@ -740,3 +740,14 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Temporary signed preview URLs remain in memory only. They are not written to localStorage, sent to the Worker a second time, or included in diagnostics. Canvas bearer credentials remain confined to the exact school Canvas origin.
 - Added Worker tests proving that `public_url` is proxied and no Worker storage fetch occurs; browser tests for signed-byte success, CORS fallback, hostile URL rejection and Canvas-origin-only fallback; native preview UI tests for Safari/Canvas handoff, signed URL privacy and local PDF import validation; safe diagnostic tests for browser delivery outcome.
 - Candidate: NORTHSTAR 4.4.8.0 / package 0.4.24; Worker 0.4.21. Phase 4 CI, Worker validation/deployment, Pages preview deployment and live NNPS/iPad acceptance are pending. Production remains 4.4.7.5 / package 0.4.19.
+
+
+### NORTHSTAR 4.4.8.0 preview deployment closeout — November 23, 2026
+
+- PR #17 was squash-merged into the preview branch as commit `4d91d7adcf10f682ae0701849f010695107167c0`.
+- Phase 4 passed on the exact merged preview commit in workflow run `45110744431`.
+- The private Canvas bridge validation and regression suite passed; Worker 0.4.21 deployed successfully by workflow run `45110744432`. Cloudflare Worker version ID: `31115f06-a899-4fa0-874f-8ac3dc5ccb76`.
+- PR #18 corrected the Pages freshness gate. It now checks the exact current main and preview commit check-runs and requires the `test` job to conclude successfully before publication.
+- GitHub Pages freshness verification, build and deployment succeeded in run `45111251593`. The build log verified preview release NORTHSTAR `4.4.8.0 / 0.4.24` and generated `./preview/index.html` and `./preview/release.json`.
+- Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production remains NORTHSTAR `4.4.7.5 / 0.4.19`.
+- Automated tests and deployment do not establish live NNPS Canvas acceptance. The same attachment must still be exercised on the real connected iPad: browser-native preview or Safari Save to Files → Import, Document Studio edit/export, then instructor-approved Canvas upload/finalization/submission.
