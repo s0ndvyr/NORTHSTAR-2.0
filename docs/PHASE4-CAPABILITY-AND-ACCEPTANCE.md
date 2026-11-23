@@ -159,3 +159,6 @@ The Document Studio annotated-PDF handoff now has a browser boot integration tes
 
 
 Phase 4.4.7.4 also corrects a stale release-history test that confused the previous deployed preview with the current pending candidate. The Document Studio submission UI test and annotated-PDF-only behavior are carried forward unchanged.
+
+
+Release 4.4.7.4 is now deployed to the preview Pages path. The production frontend remains on 4.4.6.9. The Canvas Worker has been deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.

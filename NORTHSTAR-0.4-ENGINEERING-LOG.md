@@ -622,3 +622,13 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Updated the test to validate .7.4's pending status and separately retain .7.2's successful preview deployment record.
 - Carries forward the Document Studio annotated-PDF-only selection behavior and browser boot integration test.
 - Release: `4.4.7.4 / 0.4.18`. CI and preview deployment pending.
+
+
+### 4.4.7.4 deployment closeout
+
+- Phase 4 tests passed on exact preview commit `fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc` in run `45086802452`.
+- The Pages freshness gate verified both exact branch heads; production was built from 4.4.6.9 and preview from 4.4.7.4 / package 0.4.18.
+- GitHub Pages deployment run `45086841863` completed successfully.
+- The Canvas bridge Worker deployment from run `45085853219` remains active; it was built and deployed from commit `3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14`.
+- Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production frontend remains on 4.4.6.9.
+- Automated checks and preview deployment are complete. A real upload and assignment submission in the connected Canvas tenant remain the final acceptance gate.
