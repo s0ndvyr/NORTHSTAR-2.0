@@ -203,26 +203,37 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
 async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fetch}){
   const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
   const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
-  // Prefer Canvas's short-lived, file-specific download URL from metadata and fetch it
-  // from the student's browser network. This avoids the Cloudflare-to-Cloudflare
-  // Worker egress path that has been returning branded HTTP 406 HTML from storage.
-  // The URL is treated as a temporary capability: never log, persist, or forward
-  // the Canvas bearer token to it.
+  // Canvas now requires the student's bearer token on authenticated file-download URLs.
+  // Fetch the short-lived metadata URL in the browser first, but only when its HTTPS
+  // host belongs to the explicit Instructure allowlist. Send no browser cookies.
+  // If CORS blocks the Authorization preflight or the response cannot be read, the
+  // private bridge performs the same authenticated download with bounded redirects.
+  // Never log, persist, or send the bearer token to an untrusted host.
   const raw=metadata.url||metadata.download_url;
   const trustedHost=host=>{const h=String(host||'').toLowerCase();const base=new URL(credentials.base).hostname.toLowerCase();return h===base||h.endsWith('.instructure.com')||h.endsWith('.canvas-user-content.com')||h.endsWith('.inscloudgate.net');};
+  const trustedFileUrl=value=>{
+    try{
+      const url=value instanceof URL?value:new URL(value,credentials.base);
+      return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&
+        !url.searchParams.has('access_token')&&trustedHost(url.hostname);
+    }catch{return false;}
+  };
   const browserDelivery={attempted:false,result:'not_attempted',status:null,host:null,contentType:null};
   if(typeof raw==='string'&&raw){
     try{
       const target=new URL(raw,credentials.base);
-      if(target.protocol==='https:'&&!target.username&&!target.password&&trustedHost(target.hostname)&&!target.searchParams.has('access_token')){
+      if(trustedFileUrl(target)){
         browserDelivery.attempted=true;browserDelivery.host=target.hostname;
-        const response=await fetchImpl(target.href,{method:'GET',headers:{Accept:'application/pdf,application/octet-stream,*/*'},mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
+        const response=await fetchImpl(target.href,{method:'GET',headers:{
+          Accept:'application/pdf,application/octet-stream,*/*',
+          Authorization:'Bearer '+String(credentials.token)
+        },mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
         const finalUrl=response.url?new URL(response.url):target;
-        browserDelivery.host=trustedHost(finalUrl.hostname)?finalUrl.hostname:'untrusted-redirect';
+        browserDelivery.host=trustedFileUrl(finalUrl)?finalUrl.hostname:'untrusted-redirect';
         browserDelivery.status=response.status;
         browserDelivery.contentType=response.headers.get('Content-Type')||'';
         if(!response.ok)browserDelivery.result='http_error';
-        else if(finalUrl.protocol!=='https:'||!trustedHost(finalUrl.hostname))browserDelivery.result='untrusted_redirect';
+        else if(!trustedFileUrl(finalUrl))browserDelivery.result='untrusted_redirect';
         else{
           const bytes=new Uint8Array(await response.arrayBuffer());
           if(bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-'){

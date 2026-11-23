@@ -103,7 +103,7 @@ Phase 4.4.1 changes the interaction model: supported assignments open as full-sc
 
 - Opening a standard assignment creates a deep-link route inside NORTHSTAR (#assignment/assignment-id), with a full-screen loading transition, a themed assignment header, instructions, resource list, private working area, assignment details, and submission controls.
 - Canvas assignment descriptions are rendered through a restrictive HTML allowlist. Script tags, embedded forms, executable content, inline event handlers and unsafe links are removed.
-- PDF attachments first use the short-lived download URL returned by Canvas file metadata and fetch it directly from the student's browser, without forwarding the Canvas bearer token or browser cookies to storage. If browser CORS or the signed URL prevents that path, NORTHSTAR falls back to the private Canvas bridge. The browser remains on the NORTHSTAR assignment route.
+- PDF attachments first use the short-lived download URL returned by Canvas file metadata and fetch it directly from the student's browser with the Canvas bearer token in the Authorization header, but only when the URL uses HTTPS on the configured Canvas host or an explicitly allowlisted Instructure file host. Browser cookies are omitted. If CORS blocks the Authorization preflight or the response cannot be read, NORTHSTAR falls back to the private Canvas bridge, which forwards the token only to allowlisted Instructure file hosts while following bounded redirects. The browser remains on the NORTHSTAR assignment route.
 - Quiz attempts and graded discussions use the same full-screen assignment shell. Supported quiz questions, saving, and completion use the existing Canvas quiz APIs; discussion posts and replies use the Canvas discussion API.
 - Back navigation and browser history return to the previous NORTHSTAR view. The assignment page is not an iframe of Canvas.
 
@@ -125,7 +125,7 @@ The PDF renderer and PDF export library are loaded from version-pinned jsDelivr 
 ### Supported paths and provider boundaries
 
 - Online text entry / online URL: work in the NORTHSTAR assignment page, review, submit or resubmit to Canvas.
-- Online file upload: upload a file up to 25 MB through Canvas' signed upload flow. The Canvas bearer token is never sent to the signed file storage URL.
+- Online file upload: upload a file up to 25 MB through Canvas' signed upload flow. The Canvas bearer token is never sent to the signed upload destination. This is separate from authenticated file downloads, where Canvas requires the bearer token on the HTTPS download URL and NORTHSTAR restricts it to allowlisted Instructure hosts.
 - Classic quizzes: start an official Canvas attempt, answer supported question types in NORTHSTAR, save answers and complete the attempt. Canvas controls time, availability and grading.
 - Graded discussions: read visible threads and publish initial posts or replies in NORTHSTAR.
 - PDF attachments: read, annotate with Apple Pencil tools, export a flattened copy, and submit it where online_upload is permitted.
