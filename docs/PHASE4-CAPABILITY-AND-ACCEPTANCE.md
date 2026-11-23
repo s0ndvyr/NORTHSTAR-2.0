@@ -1,9 +1,9 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.22 / NORTHSTAR 4.4.7.8  
-**Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** NORTHSTAR 4.4.7.8 / package 0.4.22 is deployed to preview by Pages run 45104813239. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS Canvas attachment acceptance remains open. Live Canvas account and physical iPad/Apple Pencil acceptance remain open.  
-**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Preview: NORTHSTAR 4.4.7.8 / package 0.4.22. The Pages freshness gate verified the exact tested preview head before publication.
+**Development version:** 0.4.23 / NORTHSTAR 4.4.7.9  
+**Development branch:** `northstar-4.4.7.9-canvas-signed-preview-fix`  
+**Status:** NORTHSTAR 4.4.7.9 / package 0.4.23 is a candidate; Phase 4 validation, private Worker deployment and Pages preview deployment are pending. The last verified preview remains NORTHSTAR 4.4.7.8 / package 0.4.22. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS Canvas attachment, Canvas account, and physical iPad/Apple Pencil acceptance remain open.  
+**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.8 / package 0.4.22.
 
 This document distinguishes four different states:
 
@@ -25,8 +25,8 @@ This document distinguishes four different states:
 | PowerPoint | In-dashboard text-first slide preview, edit slide text, export a new .pptx | Theme/layout editing, animations, SmartArt, embedded media and pixel-perfect slide rendering are not provided |
 | Text/CSV/Markdown resources | In-dashboard reader | Large or unusual encodings may need download |
 | Canvas assignment availability | Fetches Canvas `can_submit`, lock/publish status, lock explanation and allowed extensions before showing a submit action | NORTHSTAR blocks submission unless Canvas explicitly says `can_submit: true`; group assignments remain blocked pending correct group identity support |
-| Assignment resource downloads | Prefers Canvas's authenticated `/api/v1/files/:id/public_url` endpoint and retrieves the resulting signed preview URL; falls back to the authenticated download URL using only the configured Canvas origin and explicit Instructure file-host allowlist | Course context is preserved for metadata lookup; the bearer token is not sent to external signed AWS object storage |
-| Attachment failure diagnostics | A failed PDF download reports metadata/content stage, bridge and upstream HTTP status, safe hostnames, redirect count, and Cloudflare request references; the workspace offers a copyable diagnostic report | Reports deliberately exclude Canvas tokens, cookies, signed URLs, response bodies and document contents; Worker logs record safe structured metadata only |
+| Assignment resource downloads | Authenticates Canvas's `/api/v1/files/:id/public_url` request, then fetches every validated returned preview URL as a short-lived signed capability without adding the Canvas bearer token or browser User-Agent, regardless of whether the allowlisted storage host is AWS or Instructure; retains a separate authenticated legacy download fallback | Course context is preserved for metadata lookup; strict HTTPS and host allowlists remain mandatory and the fallback's credentials remain limited to explicit Canvas/Instructure hosts |
+| Attachment failure diagnostics | A failed PDF download reports metadata/content stage, bridge and upstream HTTP status, safe hostnames, redirect count, Cloudflare request references, and the `public_url` endpoint/fetch outcome; the workspace offers a copyable diagnostic report | Reports deliberately exclude Canvas tokens, cookies, signed URL queries, response bodies and document contents; only allowlisted host/status/ray metadata is recorded |
 | Submission state | Canvas submission response updates the assignment state, attempt, timestamps, grade/feedback snapshot and history | Canvas remains the system of record |
 | Discussions | Read thread, create initial posts and replies from NORTHSTAR | The publish action is sent to Canvas after explicit confirmation; drafts are local |
 | Classic Canvas quizzes | In-dashboard attempt workspace with resume/recovery, question navigation, flags, autosave, time-limit resync and final submit | Only supported question formats are edited in NORTHSTAR; unsupported formats are visibly routed to the same Canvas attempt |
@@ -209,3 +209,21 @@ The new test fixture covers a signed S3-style preview URL, ensures the Canvas to
 
 
 **NORTHSTAR 4.4.7.8 preview deployment:** Phase 4 passed on preview commit `fa2d9103811ae54def96ea456fcc5656c16f3917` (run `45104758130`). Worker 0.4.19 deployed by run `45104758113`; Cloudflare Worker version ID `69a055e5-4edc-426b-9f0b-c3a964b92d66`. Pages preview deployed by run `45104813239`. Production remains 4.4.7.5. Live NNPS PDF retrieval is still unaccepted and must be tested by reopening the same attachment in preview.
+
+
+## NORTHSTAR 4.4.7.9 — Signed public-preview capabilities and safe diagnostics
+
+The 4.4.7.8 live diagnostic remained HTTP 406 at `inst-fs-iad-prod.inscloudgate.net`. Source inspection found that the preferred `public_url` path only withheld credentials from AWS URLs; it still attached the Canvas bearer token and browser User-Agent to signed preview URLs hosted on Instructure storage domains. The route also silently abandoned its failure details before the legacy fallback.
+
+Worker 0.4.20 corrects that boundary:
+
+1. The configured Canvas origin receives the bearer token and browser User-Agent when requesting the authenticated `public_url` API.
+2. Every URL returned by that API is treated as a short-lived signed capability. Its fetch and bounded, allowlisted redirects receive neither the Canvas bearer token nor the browser User-Agent, regardless of the storage hostname.
+3. HTTPS, URL credential, port, `access_token`, and explicit trusted-host checks remain enforced. Redirects carry only an origin-level Referer.
+4. The existing metadata download URL remains a separate fallback and retains its own bounded, authenticated Canvas/Instructure policy.
+5. Failure diagnostics now expose only the public-preview endpoint result/status/content type, returned hostname, fetch status/hostname/content type/server/Cloudflare ray, and redirect host list. No URL query, signature, token, body or file content is recorded.
+
+Regression coverage includes successful signed-preview retrieval from an Instructure host, confirmation that signed-preview fetches receive no bearer token or browser User-Agent, endpoint failure fallback, and a signed-preview 406 plus legacy fallback 406 with safe diagnostics.
+
+**Release:** NORTHSTAR 4.4.7.9 / package 0.4.23; Worker 0.4.20.  
+**Status:** Candidate branch validation and preview deployment pending. Live NNPS PDF retrieval is still unaccepted. Production remains 4.4.7.5 / package 0.4.19 until the real PDF edit/export/upload/submission lifecycle is verified.
