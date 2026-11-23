@@ -7,11 +7,11 @@
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas PDF redirect-authentication recovery Worker 0.4.17 (4.4.7.6) is a candidate on northstar-4.4.7.6-canvas-pdf-recovery; validation and deployment to the preview Worker are pending."
+    "status": "Canvas PDF redirect recovery Worker 0.4.17 (4.4.7.6) deployed successfully to the preview bridge by workflow run 45099837678. Cloudflare Worker version ID: 4c1ac8f8-0733-478a-8291-cb85b0c11f97. Live NNPS PDF acceptance remains open."
   },
   "deployment": {
-    "production": "No production promotion yet. Preview candidate awaits exact-head Phase 4 CI and Pages freshness verification.",
-    "preview": "Candidate 4.4.7.6 / package 0.4.20; awaiting exact-head Phase 4 CI, Worker validation/deployment and Pages publication."
+    "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
+    "preview": "NORTHSTAR 4.4.7.6 / package 0.4.20 deployed successfully by GitHub Pages workflow run 45099890111 from tested preview commit 1e1d9fe9979b204b6f92d500c209ff622687a880. The preview Canvas bridge Worker 0.4.17 deployed successfully by run 45099837678."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -29,9 +29,18 @@
         "Worker security",
         "Regression tests"
       ],
-      "status": "Candidate. Phase 4 CI, Worker dry-run/deployment, live NNPS PDF retrieval and preview Pages publication are pending.",
+      "status": "Preview deployment successful. Phase 4 passed on exact preview commit 1e1d9fe9979b204b6f92d500c209ff622687a880 (run 45099837658); Worker 0.4.17 deployed by run 45099837678; Pages preview deployed by run 45099890111. Live NNPS PDF retrieval and subsequent real assignment submission remain pending. Production intentionally remains on 4.4.7.5 until live acceptance.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "1e1d9fe9979b204b6f92d500c209ff622687a880",
+          "label": "tested and deployed preview source including Canvas Worker"
+        },
+        {
+          "sha": "f45ada23e56d6f76340353f25029cad5e210e914",
+          "label": "exact source head with passing Phase 4 CI"
+        }
+      ]
     },
     {
       "version": "4.4.7.5",
