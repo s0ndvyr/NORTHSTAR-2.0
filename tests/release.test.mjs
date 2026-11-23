@@ -23,8 +23,9 @@ assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata an
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Phase 4 CI'),'the current candidate waits for exact-head Phase 4 and freshness-gated Pages validation');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Candidate'),'the current release remains pending until live and automated acceptance is complete');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45099837678'),'the release records the successful preview Worker deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45099890111'),'the release records the successful preview Pages deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.5').commits.some(commit=>commit.sha==='f347cc304356be67e7de8f22b80d0d6e11efebe9'),'the previous release records its tested production main source SHA');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.5').commits.some(commit=>commit.sha==='df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc'),'the previous release records its tested preview source SHA');
