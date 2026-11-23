@@ -27,7 +27,7 @@ assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('pending'),'the current candidate is not falsely marked deployed');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('User-Agent'),'the current release documents the constrained User-Agent change');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('public_url'),'the current release documents the Canvas public-preview API strategy');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('public_url'),'the candidate documents the authenticated Canvas preview URL flow');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
