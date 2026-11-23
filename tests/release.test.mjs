@@ -33,9 +33,10 @@ assert.ok(!roomJs.includes('localStorage.setItem')||roomJs.includes('previewUrl'
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
-assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.9').commits.some(commit=>commit.sha==='a4c111b87e5508b1ce78deca24832c71dc4bcf44'),'the release records its tested and deployed preview source commit');
+assert.ok(manifest.releases.find(entry=>entry.version==='4.4.8.0').commits.some(commit=>commit.sha==='4d91d7adcf10f682ae0701849f010695107167c0'),'the current release records its tested and deployed preview source commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('pending'),'the current candidate does not claim a deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45110744432'),'the current release records successful Worker deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45111251593'),'the current release records successful Pages preview deployment');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');
@@ -61,7 +62,7 @@ assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/rel
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
 assert.ok(releaseJs.includes("northstarVersion:'4.4.8.0'")&&releaseJs.includes("packageVersion:'0.4.24'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes("Candidate branch; Phase 4 CI, Worker validation/deployment and Pages preview deployment pending")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
+assert.ok(releaseJs.includes("Preview deployed successfully: Worker 0.4.21 run 45110744432 and Pages run 45111251593")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
 assert.ok(releaseJs.includes("phase:'4.4.8'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
 assert.ok(pkg.northstarRelease==='4.4.8.0'&&pkg.version==='0.4.24','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
@@ -70,8 +71,8 @@ assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersio
 assert.ok(!premiumJs.includes("NORTHSTAR / .4.4.5")&&!premiumJs.includes('version.textContent=NORTHSTAR_RELEASE'),'dashboard rendering cannot overwrite the manifest-driven version pill');
 assert.ok(roomJs.includes('justifyGap')&&roomJs.includes('completedParagraphs'),'PDF export handles justified text and paragraph spacing');
 assert.ok(roomJs.includes("'•':'•'")&&roomJs.includes("'–':'–'"),'PDF export maps common punctuation and list markers');
-assert.ok(pagesWorkflow.includes('/actions/workflows/northstar-phase4.yml/runs'),'Pages freshness gate queries Phase 4 workflow history');
-assert.ok(pagesWorkflow.includes('run.head_sha === sha')&&pagesWorkflow.includes("run.conclusion === 'success'"),'Pages only accepts successful runs for the exact current branch SHA');
+assert.ok(pagesWorkflow.includes("'/commits/' + sha + '/check-runs?per_page=100'"),'Pages freshness gate queries the exact current commit check runs');
+assert.ok(pagesWorkflow.includes("check.head_sha === sha && check.name === 'test' && check.conclusion === 'success'"),'Pages only accepts a successful Phase 4 test job for the exact current branch SHA');
 assert.ok(pagesWorkflow.includes('needs: freshness'),'Pages build depends on the freshness gate');
 assert.ok(pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.main_sha }}')&&pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.preview_sha }}'),'Pages checks out the exact tested SHAs');
 assert.ok(pagesWorkflow.includes('needs: [freshness, build]'),'Pages deployment depends on both freshness and build');
