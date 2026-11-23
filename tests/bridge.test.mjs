@@ -112,11 +112,13 @@ globalThis.fetch=async(url,opts)=>{
   }
   if(target.hostname===userContentHost){
     assert.equal(opts.headers.Authorization,undefined,'the Canvas bearer token is stripped at the first cross-origin storage redirect');
+    assert.equal(opts.headers['User-Agent'],undefined,'the user's Safari User-Agent is not spoofed on Worker-to-storage requests');
     assert.equal(opts.headers.Referer,'https://'+canvasFileHost+'/','the next hop receives only the previous origin as referrer');
     return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/private/attachment.pdf?signature=opaque'}});
   }
   if(target.hostname===storageHost){
     assert.equal(opts.headers.Authorization,undefined,'the signed Instructure storage host never receives the Canvas bearer token');
+    assert.equal(opts.headers['User-Agent'],undefined,'the user's Safari User-Agent is not replayed to the storage edge');
     assert.equal(opts.headers.Referer,'https://'+userContentHost+'/','the final storage hop receives only the immediate previous origin');
     return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});
   }
@@ -150,7 +152,7 @@ globalThis.fetch=async(url,opts)=>{
 const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
 assert.equal(failedFile.status,406);
 const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.16 (4.4.7.2)');
+assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.17 (4.4.7.6)');
 assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
 assert.equal(failedDetails.stage,'content');
 assert.equal(failedDetails.upstreamStatus,406);
