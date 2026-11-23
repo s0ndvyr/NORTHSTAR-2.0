@@ -46,7 +46,7 @@ assert.ok(roomJs.includes('contains a character wider than its text box')&&roomJ
 assert.ok(roomJs.includes('points[i-1].pressure')&&roomJs.includes('points[i].pressure'),'flattened freehand output incorporates the saved Pencil pressure values');
 assert.ok(storageJs.includes('QuotaExceededError')===false,'the adapter reports raw browser storage errors for UI classification');
 assert.ok(storageJs.includes('getLastError')&&storageJs.includes('rememberError')&&storageJs.includes('clearError'),'IndexedDB open/read/write/abort failures retain actionable diagnostics');
-assert.ok(exportTest.includes("pdfjs.getDocument({data:outputBytes")&&exportTest.includes('page.setRotation')&&exportTest.includes('originalSourceBytes'),'the export test independently reopens rotated multi-page PDFs and checks source immutability');
+assert.ok(exportTest.includes("pdfjs.getDocument({data:outputBytes")&&exportTest.includes('second.setRotation')&&exportTest.includes('third.setRotation')&&exportTest.includes('originalSourceBytes'),'the export test independently reopens rotated multi-page PDFs and checks source immutability');
 assert.ok(bootJs.includes("'document-storage.js'")&&html.includes('scripts/document-storage.js'),'IndexedDB persistence loads before the assignment workspace');
 assert.ok(!roomJs.includes('localStorage.setItem')||roomJs.includes('previewUrl'),'preview URLs are not intentionally persisted as attachment state');
 
