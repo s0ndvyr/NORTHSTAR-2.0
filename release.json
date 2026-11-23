@@ -32,7 +32,7 @@
         "Independent PDF parser export verification",
         "Regression and release provenance"
       ],
-      "status": "Preview deployed successfully by GitHub Pages workflow run 45247533870 from exact candidate source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That exact source passed Phase 4 automated qualification in run 45247195554. Production remains 4.4.7.5 / package 0.4.19 and Canvas Worker 0.4.21 is unchanged. Physical iPad Safari, Apple Pencil, and manual multi-page exported-PDF acceptance have not yet been performed for this sub-priority.",
+      "status": "Preview deployed successfully by GitHub Pages workflow run 45247533870 from exact candidate source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That exact source passed Phase 4 automated qualification in run 45247195554. Production remains 4.4.7.5 / package 0.4.19 and Canvas Worker 0.4.21 is unchanged. Physical iPad Safari and Apple Pencil validation, including manual multi-page exported-PDF inspection, has not yet been performed for this sub-priority.",
       "historical": false,
       "commits": [
         {
