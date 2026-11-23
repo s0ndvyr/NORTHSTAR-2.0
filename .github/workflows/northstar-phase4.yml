@@ -13,6 +13,7 @@ on:
       - northstar-4.4.8.0-native-pdf-delivery
       - northstar-4.4.8.1-document-studio
       - northstar-4.4.8.1.1-document-studio-verification
+      - northstar-4.4.8.2-canvas-submission
       - northstar-4.4.7.9-canvas-signed-preview-fix
   pull_request:
     branches:
