@@ -714,7 +714,8 @@ async function initializePdfEditor(host,bytes,context){
  renderToolbar(host);
  const name=$('#nsPdfFileName');if(name)name.textContent=pdfState.file?.name||'Assignment PDF';
  const lib=await loadPdfEngine();
- const parsedDocument=await lib.getDocument({data:pdfState.bytes.slice()}).promise;
+ const parseBytes=pdfState.bytes.slice();
+ const parsedDocument=await lib.getDocument({data:parseBytes}).promise;
  if(context.token!==pdfState.openToken)return false;
  pdfState.doc=parsedDocument;
  // Only persist bytes after PDF.js has successfully parsed the source file.
@@ -722,6 +723,7 @@ async function initializePdfEditor(host,bytes,context){
  const sourceSaved=await persistPdfSource(data,context);
  if(context.token!==pdfState.openToken)return false;
  attachCanvasEvents();wireToolbar();await renderPage();
+ if(context.token!==pdfState.openToken)return false;
  if(pdfState.textEditor)pdfState.textEditor.unmount();
  if(root.NorthstarDocumentEditor){
   pdfState.textEditor=root.NorthstarDocumentEditor.mount({
@@ -733,7 +735,9 @@ async function initializePdfEditor(host,bytes,context){
   pdfState.textEditor.setMode(pdfState.inputMode);pdfState.textEditor.setTool(pdfState.tool);pdfState.textEditor.render();
   persistAnnotations();
  }
- if(pdfState.persistQueue)await pdfState.persistQueue.catch(()=>false);
+ const completedDraftSave=pdfState.persistQueue;
+ if(completedDraftSave)await completedDraftSave.catch(()=>false);
+ if(context.token!==pdfState.openToken)return false;
  if(!sourceSaved)setSaveState(storageFailureMessage(pdfState.persistenceWarning,'PDF opened, but its original bytes could not be saved for automatic recovery. Export a backup before leaving.'));
  else if(pdfState.persistenceWarning)setSaveState('PDF opened and the original is saved. '+storageFailureMessage(pdfState.persistenceWarning,'Some saved annotations could not be read; the compatibility draft was retained.'));
  else if(pdfState.persistenceMode==='IndexedDB')setSaveState('Saved on this iPad · PDF and annotations recover automatically.');
@@ -849,6 +853,7 @@ async function openPdf(host,file,assignment,credentials){
    if(token!==pdfState.openToken)return false;
    if(initialized===false)return false;
   }catch(error){
+   if(token!==pdfState.openToken)return false;
    error.browserDelivery=api.previewDelivery||null;
    error.publicPreviewDelivery={
     publicUrlEndpointResult:api.publicUrlEndpoint?.result||'not_recorded',
