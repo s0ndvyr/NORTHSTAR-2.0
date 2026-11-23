@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app files or production release identity are changed by the 4.4.8.1.1 candidate.",
-    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 is deployed to the GitHub Pages preview by Pages workflow run 45247533870 from exact preview source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That SHA passed Phase 4 run 45247195554. The Pages freshness gate also verified production main SHA 99b49b2cc1115abaf7623a19da2485529c1a2dbd. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged. Physical iPad Safari/Apple Pencil and owner export acceptance remain outstanding."
+    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 is deployed to the GitHub Pages preview by Pages workflow run 45249098517 from exact preview source SHA 3312aecf49d03ef16030f7a17b896b99364e73f5. That exact SHA passed Phase 4 run 45248995494. The Pages freshness gate verified production main SHA 99b49b2cc1115abaf7623a19da2485529c1a2dbd. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged. Physical iPad Safari/Apple Pencil and owner export acceptance remain outstanding."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -32,12 +32,16 @@
         "Independent PDF parser export verification",
         "Regression and release provenance"
       ],
-      "status": "Preview deployed successfully by GitHub Pages workflow run 45247533870 from exact candidate source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That exact source passed Phase 4 automated qualification in run 45247195554. Production remains 4.4.7.5 / package 0.4.19 and Canvas Worker 0.4.21 is unchanged. Physical iPad Safari and Apple Pencil validation, including manual multi-page exported-PDF inspection, has not yet been performed for this sub-priority.",
+      "status": "Preview deployed successfully by GitHub Pages workflow run 45249098517 from exact candidate source SHA 3312aecf49d03ef16030f7a17b896b99364e73f5. That exact source passed Phase 4 automated qualification in run 45248995494. Production remains 4.4.7.5 / package 0.4.19 and Canvas Worker 0.4.21 is unchanged. Physical iPad Safari and Apple Pencil validation, including manual multi-page exported-PDF inspection, has not yet been performed for this sub-priority.",
       "historical": false,
       "commits": [
         {
+          "sha": "3312aecf49d03ef16030f7a17b896b99364e73f5",
+          "label": "exact-head Phase 4 passed in run 45248995494; deployed to preview by Pages run 45249098517"
+        },
+        {
           "sha": "e5f262de09ba1daec5d139f29495b2ad0ad466d1",
-          "label": "exact-head Phase 4 passed and preview deployed"
+          "label": "initial 4.4.8.1.1 candidate preview deployment"
         }
       ]
     },

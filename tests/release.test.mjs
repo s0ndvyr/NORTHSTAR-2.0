@@ -59,8 +59,8 @@ const parentRelease=manifest.releases.find(entry=>entry.version==='4.4.8.1');
 assert.ok(String(parentRelease.status||'').includes('45212530217')&&String(parentRelease.status||'').includes('45212652910'),'the parent release records its exact source test and preview deployment provenance');
 assert.ok(parentRelease.commits.some(commit=>commit.sha==='917c3a5e3f2862dba263fab4ee7ff0ab620b2566'),'the parent changelog records its verified preview source SHA');
 const candidateRelease=manifest.releases.find(entry=>entry.version===manifest.northstarVersion);
-assert.ok(String(candidateRelease.status||'').includes('45247195554')&&String(candidateRelease.status||'').includes('45247533870'),'the current candidate records exact-head test and preview deployment provenance');
-assert.ok(candidateRelease.commits.some(commit=>commit.sha==='e5f262de09ba1daec5d139f29495b2ad0ad466d1'),'the candidate release records the deployed preview source SHA');
+assert.ok(String(candidateRelease.status||'').includes('45248995494')&&String(candidateRelease.status||'').includes('45249098517'),'the current candidate records final exact-head test and preview deployment provenance');
+assert.ok(candidateRelease.commits.some(commit=>commit.sha==='3312aecf49d03ef16030f7a17b896b99364e73f5'),'the candidate release records the final deployed preview source SHA');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.8.0').description||'').includes('Safari'),'the original PDF delivery release documents browser-native Safari preview');
@@ -86,7 +86,7 @@ assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/rel
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
 assert.ok(releaseJs.includes("northstarVersion:'4.4.8.1.1'")&&releaseJs.includes("packageVersion:'0.4.27'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes('45247533870')&&releaseJs.includes('production remains 4.4.7.5'),'the offline fallback records the verified preview deployment and unchanged production identity');
+assert.ok(releaseJs.includes('45249098517')&&releaseJs.includes('production remains 4.4.7.5'),'the offline fallback records the final verified preview deployment and unchanged production identity');
 assert.ok(releaseJs.includes("phase:'4.4.8'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
 assert.ok(pkg.northstarRelease==='4.4.8.1.1'&&pkg.version==='0.4.27','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
