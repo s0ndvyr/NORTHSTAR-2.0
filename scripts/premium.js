@@ -833,7 +833,7 @@ function phase4RenderQuizReceipt(a,quiz,submission){
     '<p><b>Score</b><br>'+safe(score)+' · '+safe(grade)+'</p>',
     '<p><b>Canvas attempt ID</b><br>'+safe(submission?.id||'—')+'</p>',
     '<button class="btn btn-ghost mt" id="phase4RefreshQuizReceipt">Refresh Canvas result</button>',
-    '<button class="btn btn-primary mt" onclick="closeOverlay(\\'wsOverlay\\')">Return to coursework</button></div>'
+    '<button class="btn btn-primary mt" onclick="closeOverlay(\'wsOverlay\')">Return to coursework</button></div>'
   ].join('');
   $('#nsQuizBody').innerHTML=details;
   $('#nsQuizSubhead').textContent='Canvas-verified completion · attempt '+attempt;
