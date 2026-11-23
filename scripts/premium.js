@@ -570,7 +570,7 @@ function phase4RenderNewQuizPreview(a,c,quiz,items,creds){
   $('#nsQuizSubhead').textContent=(rows?rows.length+' items':'Question preview unavailable')+' · New Quizzes · official attempt remains in Canvas';
 }
 async function openCanvasQuiz(a){
-  activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),quizId=a.quizId||a.canvasId;
+  phase4QuizCompleting=false;activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),quizId=a.quizId||a.canvasId;
   $('#workspace').innerHTML='<div class="ns-assignment-page"><header class="ns-room-header"><button class="ns-room-back" onclick="closeAssignmentRoom()"><span>←</span> Back to coursework</button><div class="ns-room-title"><span class="eyebrow">'+safe(c.code)+' / CANVAS QUIZ</span><h1 id="nsQuizTitle">'+safe(a.title)+'</h1><p id="nsQuizSubhead">Loading official quiz details…</p></div><div class="ns-room-actions"><span class="ns-room-status">Canvas connected</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header><div class="ns-room-layout" style="grid-template-columns:minmax(0,1fr)"><section class="ns-room-main"><div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">ASSESSMENT WORKSPACE</span><h2>Quiz environment</h2><p>Canvas-authoritative assessment workspace</p></div></div><div class="ns-room-panel" id="nsQuizBody">'+window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code)+'</div></div></section></div></div>';
   $('#wsOverlay').classList.add('open');
   $('#phase4HideAssignment').onclick=()=>phase4ToggleHidden(a.id);
@@ -631,7 +631,7 @@ async function phase4StartQuizAttempt(a,quiz,creds){
     }
   }
 }
-let phase4QuizSaveTimer=null,phase4QuizSaveInFlight=false,phase4QuizSavePending=false,phase4LastQuizSavedSignature='',phase4LastQuizSavedAnswersSignature='';
+let phase4QuizSaveTimer=null,phase4QuizSaveInFlight=false,phase4QuizSavePending=false,phase4QuizCompleting=false,phase4LastQuizSavedSignature='',phase4LastQuizSavedAnswersSignature='';
 function phase4QuizAnswersSignature(answers,flags=[]){return JSON.stringify({answers:answers||[],flags:flags||[]});}
 function phase4ScheduleQuizAutoSave(){if(!activeQuizSession)return;if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);const status=$('#phase4AttemptStatus');if(status)status.textContent='Quiz response changed · saving to Canvas shortly…';phase4QuizSaveTimer=setTimeout(()=>phase4AutoSaveQuizAnswers(),1200);}
 function phase4CollectQuizFlags(s=activeQuizSession){
@@ -746,9 +746,10 @@ async function phase4CompleteQuizAttempt(){
   if(s.questions.some(row=>!phase4QuestionSupported(row))){toast('This quiz contains question formats NORTHSTAR cannot safely edit. Continue the same attempt in Canvas before submitting.');return;}
   const answers=phase4CollectQuizAnswers(s.questions);
   const unanswered=s.questions.filter(row=>!phase4IsQuestionAnswered(row,answers.find(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id))?.answer)).length;
-  if(phase4QuizSaveInFlight){toast('Wait for the current answer save to finish before submitting.');return;}
+  if(phase4QuizCompleting){toast('Canvas completion is already being reconciled. Check the attempt status before taking another action.');return;}
   const confirmation='Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'+(unanswered?'\\n\\n'+unanswered+' supported question(s) are unanswered. Submit anyway?':'');
   if(!confirm(confirmation))return;
+  phase4QuizCompleting=true;
   const status=$('#phase4AttemptStatus'),button=$('#phase4CompleteQuiz'),saveButton=$('#phase4SaveQuiz');
   try{
     button.disabled=true;saveButton.disabled=true;
@@ -778,9 +779,11 @@ async function phase4CompleteQuizAttempt(){
       ?error.message+' Do not submit again. Refresh Canvas attempt status first.'
       :error.message+' Canvas has not confirmed completion; your active attempt and local session were preserved.';
     if(statusUnknown){
+      phase4QuizCompleting=true;
       button.disabled=true;saveButton.disabled=true;
       const reconcile=$('#phase4ReconcileQuiz');if(reconcile)reconcile.hidden=false;
     }else{
+      phase4QuizCompleting=false;
       button.disabled=false;saveButton.disabled=false;
     }
   }
@@ -808,6 +811,7 @@ async function phase4ReconcileQuizAttempt(){
       return;
     }
     if(!current.finished_at&&!['complete','pending_review'].includes(state)){
+      phase4QuizCompleting=false;
       status.textContent='Canvas independently confirms that attempt '+current.attempt+' is still in progress. Review your answers; a new completion request may now be made only when you choose Submit again.';
       if(complete)complete.disabled=false;if(save)save.disabled=false;
       if(button)button.hidden=true;
@@ -1414,7 +1418,13 @@ window.openWorkspace=openWorkspace;
 
 let submissionBusy=false;let phase441AnnotatedPdf=null;const phase441PendingUploads=new Map();const phase441PreparedFile=new Map();const phase441UnknownSubmissionChecks=new Set();
 function phase441ScopedStorageKey(key){return 'northstar_'+(String(location.pathname||'').includes('/preview/')?'preview_':'')+key;}
-function phase441FileSignature(file){return [file.name,file.size,file.lastModified||0,file.type||''].join('|');}
+async function phase441FileSignature(file){
+  if(!window.crypto?.subtle)throw Error('Secure file fingerprinting is unavailable in this Safari session. Reconnect on HTTPS before reusing previously staged uploads.');
+  const bytes=await file.arrayBuffer();
+  const digest=await window.crypto.subtle.digest('SHA-256',bytes);
+  const fingerprint=Array.from(new Uint8Array(digest),value=>value.toString(16).padStart(2,'0')).join('');
+  return [file.name,file.size,file.lastModified||0,file.type||'',fingerprint].join('|');
+}
 function phase441StageKey(a,c){return phase441ScopedStorageKey('canvas_staged_uploads_v1_'+String(c.canvasId)+'_'+String(a.canvasId)+'_'+String(a.id));}
 function phase441LoadStagedUploads(a,c){
   const map=new Map();
@@ -1472,7 +1482,7 @@ async function phase441UploadSelectedFiles(files,a,c,credentials,status){
   }
   const staged=phase441PendingUploads.get(String(a.id))||phase441LoadStagedUploads(a,c);phase441PendingUploads.set(String(a.id),staged);const result=[];
   for(let index=0;index<rows.length;index++){
-    const file=rows[index],key=phase441FileSignature(file);let record=staged.get(key);
+    const file=rows[index],key=await phase441FileSignature(file);let record=staged.get(key);
     if(!record){
       status.textContent='Uploading '+(index+1)+' of '+rows.length+': '+file.name+'…';
       try{
