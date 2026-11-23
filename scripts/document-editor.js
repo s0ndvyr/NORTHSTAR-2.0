@@ -320,6 +320,12 @@ class Editor{
   this.before();this.selected=id;this.editing=id;this.render();
   const content=this.nodes.get(id)?.querySelector('.ns-doc-text-content');if(content){content.contentEditable='true';content.focus();const range=root.document.createRange();range.selectNodeContents(content);range.collapse(false);const selection=root.getSelection();selection.removeAllRanges();selection.addRange(range);}
  }
+ flush(){
+  if(this.saveTimer){root.clearTimeout(this.saveTimer);this.saveTimer=0;}
+  const id=this.editing,note=id?this.texts().find(item=>item.id===id):null,editor=id?this.nodes.get(id)?.querySelector('.ns-doc-text-content'):null;
+  if(note&&editor)this.captureEditor(note,editor);
+  this.changed(true);
+ }
  endEdit(){
   if(!this.editing)return;
   if(this.saveTimer){root.clearTimeout(this.saveTimer);this.saveTimer=0;}
