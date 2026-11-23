@@ -174,7 +174,12 @@ assert.ok(draftRecord.annotations['3']?.texts?.some(note=>String(note.text).incl
 
 const exported=await room.getAnnotatedFile();
 assert.equal(exported.type,'application/pdf');
-const outputBytes=new Uint8Array(await exported.arrayBuffer());
+const outputBytes=await new Promise((resolve,reject)=>{
+ const reader=new window.FileReader();
+ reader.onload=()=>resolve(new Uint8Array(reader.result));
+ reader.onerror=()=>reject(reader.error||new Error('Generated PDF could not be read back from the test browser File object.'));
+ reader.readAsArrayBuffer(exported);
+});
 const reopened=await pdfjs.getDocument({data:outputBytes,disableWorker:true,useSystemFonts:true}).promise;
 assert.equal(reopened.numPages,3,'an independent PDF.js parser confirms the original three-page count');
 const originalParsed=await pdfjs.getDocument({data:sourceBytes.slice(),disableWorker:true,useSystemFonts:true}).promise;
