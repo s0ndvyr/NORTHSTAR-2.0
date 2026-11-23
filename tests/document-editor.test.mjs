@@ -119,6 +119,15 @@ editor.applyStyle('paragraphSpacing',8);
 assert.equal(created.paragraphSpacing,8,'paragraph spacing is saved on the selected text object');
 editor.applyList('ul');
 assert.ok(created.html.includes('<ul>')&&created.html.includes('<li>'),'list formatting creates semantic list markup');
+editor.beginEdit(created.id);
+contentNode=editor.nodes.get(created.id).querySelector('.ns-doc-text-content');
+contentNode.innerHTML='Draft before app suspension';
+contentNode.dispatchEvent(new window.Event('input',{bubbles:true}));
+const savesBeforeFlush=saves;
+editor.flush();
+assert.equal(created.text,'Draft before app suspension','flush captures in-progress rich text before page suspension');
+assert.ok(saves>savesBeforeFlush,'flush immediately invokes the durable draft callback');
+editor.endEdit();
 
 const object=editor.nodes.get(created.id);
 object.setPointerCapture=()=>{};
