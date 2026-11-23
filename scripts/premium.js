@@ -967,25 +967,24 @@ async function openCanvasDiscussion(a){
   try{
     const api=window.NorthstarWorkspace.transport(creds);
     const topic=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId));
-    if(topic.published===false||topic.locked===true||topic.locked_for_user===true){
-      const reason=topic.lock_explanation||topic.lock_info?.asset_string||'Canvas reports that this discussion is locked or unpublished.';
-      $('#nsDiscussionBody').innerHTML='<div class="ns-room-loading-error"><h3>Discussion is not available for posting</h3><p>'+safe(reason)+'</p><p class="ns-room-help">NORTHSTAR will not attempt to publish or edit a locked discussion.</p></div>';return;
-    }
+    const readOnly=topic.published===false||topic.locked===true||topic.locked_for_user===true;
+    const readOnlyReason=topic.lock_explanation||topic.lock_info?.asset_string||'Canvas reports that this discussion is locked or unpublished.';
     let userId=null,entries=[];
     try{const me=await api.get('/api/v1/users/self');userId=Number(me?.id)||null;}catch{}
     const result=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');
     entries=Array.isArray(result)?result:(Array.isArray(result?.entries)?result.entries:[]);
-    phase4DiscussionContext={a,c,topicId,api,topic,userId};
+    phase4DiscussionContext={a,c,topicId,api,topic,userId,readOnly,readOnlyReason};
     phase4ActiveDiscussionEditId=null;
     const draftKey=phase4DiscussionDraftKey(phase4DiscussionContext,'initial');
     let initialDraft='';try{initialDraft=localStorage.getItem(draftKey)||'';}catch{}
     $('#nsDiscussionTitle').textContent=topic.title||a.title;
     $('#nsDiscussionSubhead').textContent=(topic.require_initial_post?'Initial post required · ':'')+(entries.length+' visible discussion thread(s)');
-    $('#nsDiscussionBody').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(topic.message||a.desc||'')+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post / edit</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…">'+safe(initialDraft)+'</textarea><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-primary" id="phase4PostDiscussion">Post to Canvas</button><button class="btn btn-ghost" id="phase4RefreshDiscussion">Refresh and check Canvas</button></div><p id="phase4DiscussionStatus" class="small muted mt" role="status">Draft saves on this device. It is not published until Canvas confirms it.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries"></div></div></div></div><div class="ns-room-resource-note">Posts, replies, and edits are sent to Canvas. A post is marked published only after NORTHSTAR re-reads its Canvas entry record.</div>';
+    $('#nsDiscussionBody').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+safe(asText(topic.message||a.desc||''))+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post / edit</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…" '+(readOnly?'disabled':'')+'>'+safe(initialDraft)+'</textarea><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-primary" id="phase4PostDiscussion" '+(readOnly?'disabled':'')+'>Post to Canvas</button><button class="btn btn-ghost" id="phase4RefreshDiscussion">Refresh and check Canvas</button></div><p id="phase4DiscussionStatus" class="small muted mt" role="status">Draft saves on this device. It is not published until Canvas confirms it.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries"></div></div></div></div><div class="ns-room-resource-note">Posts, replies, and edits are sent to Canvas. A post is marked published only after NORTHSTAR re-reads its Canvas entry record.</div>';
     phase4DiscussionContext.statusNode=$('#phase4DiscussionStatus');
+    if(readOnly)$('#phase4DiscussionStatus').textContent=readOnlyReason+' The thread remains readable; Canvas controls when posting or editing is allowed.';
     const input=$('#phase4DiscussionDraft');
     input.addEventListener('input',()=>{
-      const key=phase441ReadUnknownSubmission?phase4DiscussionDraftKey(phase4DiscussionContext,phase4ActiveDiscussionEditId?'edit_'+phase4ActiveDiscussionEditId:'initial'):draftKey;
+      const key=phase4DiscussionDraftKey(phase4DiscussionContext,phase4ActiveDiscussionEditId?'edit_'+phase4ActiveDiscussionEditId:'initial');
       try{localStorage.setItem(key,input.value);$('#phase4DiscussionStatus').textContent='Draft saved on this device; not published.';}
       catch{$('#phase4DiscussionStatus').textContent='Local draft storage is unavailable. Copy your draft before leaving this page.';}
     });
@@ -997,6 +996,7 @@ async function openCanvasDiscussion(a){
 }
 async function phase4SendDiscussionMessage(a,topicId,replyTo,editEntryId){
   const context=phase4DiscussionContext;if(!context)return;
+  if(context.readOnly){const node=$('#phase4DiscussionStatus');if(node)node.textContent=context.readOnlyReason||'Canvas has locked this discussion.';return;}
   const slot=editEntryId?'edit_'+editEntryId:replyTo?'reply_'+replyTo:'initial';
   const draftKey=phase4DiscussionDraftKey(context,slot);
   const input=replyTo?$('#phase4ReplyDraft'+replyTo):$('#phase4DiscussionDraft');
