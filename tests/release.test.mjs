@@ -36,7 +36,7 @@ assert.ok(roomJs.includes('getCanvasSessionUrl')&&roomJs.includes("returnTo"),'t
 assert.ok(storageJs.includes("const DOCUMENTS='documents'")&&storageJs.includes("const DRAFTS='drafts'"),'PDF source files and changing annotation drafts use separate IndexedDB stores');
 assert.ok(roomJs.includes('restoreStoredPdf')&&roomJs.includes('persistPdfSource')&&roomJs.includes('queuePdfDraftSave'),'Document Studio restores source PDFs and autosaves drafts');
 const pdfParseIndex=roomJs.indexOf('const parsedDocument=await lib.getDocument');
-const persistSourceIndex=roomJs.indexOf('const sourceSaved=await persistPdfSource(data)');
+const persistSourceIndex=roomJs.indexOf('const sourceSaved=await persistPdfSource(data,context)');
 assert.ok(pdfParseIndex>=0&&persistSourceIndex>pdfParseIndex,'PDF source bytes are not cached until PDF.js successfully parses the document');
 assert.ok(roomJs.includes("addEventListener('pagehide',flushPdfDraft)")&&roomJs.includes("visibilitychange"),'Safari page suspension flushes the current rich-text draft');
 assert.ok(roomJs.includes('renderedPage.getViewport({scale:pdfState.scale})'),'flattened export resolves a PDF.js viewport for every annotated page');
