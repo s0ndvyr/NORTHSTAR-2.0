@@ -152,7 +152,8 @@ const fileReport=dbg.buildFileDiagnosticReport({
   diagnostics:{stage:'content',upstreamStatus:406,upstreamHost:'storage.example.net',upstreamServer:'cloudflare',upstreamContentType:'text/html',upstreamRayId:'upstream-ray-406',redirectCount:1,redirectHosts:['school.instructure.com'],courseScoped:true,
     publicUrlAttempt:{endpointResult:'url_returned',endpointStatus:200,endpointContentType:'application/json',urlReturned:true,urlHost:'cdn.inscloudgate.net',fetchResult:'http_error',fetchStatus:406,fetchHost:'cdn.inscloudgate.net',fetchContentType:'text/html',fetchServer:'cloudflare',fetchRayId:'preview-ray-406',redirectCount:2,redirectHosts:['cdn.inscloudgate.net','storage.inscloudgate.net']}},
 
-  browserDelivery:{attempted:true,result:'http_error',status:406,host:'cdn.inscloudgate.net',contentType:'text/html'}
+  browserDelivery:{attempted:true,result:'http_error',status:406,host:'cdn.inscloudgate.net',contentType:'text/html'},
+  publicPreviewDelivery:{publicUrlEndpointResult:'response',publicUrlEndpointStatus:200,attempted:true,result:'browser_fetch_blocked',status:null,host:'cdn.inscloudgate.net',contentType:'',canvasViewerAvailable:true,previewUrl:'https://cdn.inscloudgate.net/preview.pdf?signature=must-not-leak'}
 });
 const parsedFileReport=JSON.parse(fileReport);
 assert.equal(parsedFileReport.stage,'content');
@@ -171,6 +172,12 @@ assert.equal(parsedFileReport.request.publicUrlAttempt.urlHost,'cdn.inscloudgate
 assert.equal(parsedFileReport.request.publicUrlAttempt.fetchResult,'http_error');
 assert.equal(parsedFileReport.request.publicUrlAttempt.fetchStatus,406);
 assert.equal(parsedFileReport.request.publicUrlAttempt.fetchRayId,'preview-ray-406');
+assert.equal(parsedFileReport.request.publicPreviewDelivery.publicUrlEndpointResult,'response');
+assert.equal(parsedFileReport.request.publicPreviewDelivery.publicUrlEndpointStatus,200);
+assert.equal(parsedFileReport.request.publicPreviewDelivery.result,'browser_fetch_blocked');
+assert.equal(parsedFileReport.request.publicPreviewDelivery.host,'cdn.inscloudgate.net');
+assert.equal(parsedFileReport.request.publicPreviewDelivery.canvasViewerAvailable,true);
+assert(!fileReport.includes('must-not-leak'),'native preview diagnostics never include the temporary signed URL');
 assert.deepEqual(parsedFileReport.request.publicUrlAttempt.redirectHosts,['cdn.inscloudgate.net','storage.inscloudgate.net']);
 
 assert(!fileReport.includes('signature='));
