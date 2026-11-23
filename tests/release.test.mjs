@@ -36,6 +36,7 @@ assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/rel
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
 assert.ok(releaseJs.includes("northstarVersion:'4.4.7.5'")&&releaseJs.includes("packageVersion:'0.4.19'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(releaseJs.includes("Production and preview are deployed")&&releaseJs.includes("Live Canvas/iPad acceptance remains open"),'the offline release fallback does not report a deployed release as pending');
 assert.ok(releaseJs.includes("phase:'4.4.7'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
 assert.ok(pkg.northstarRelease==='4.4.7.5'&&pkg.version==='0.4.19','package metadata maps to the current preview release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
