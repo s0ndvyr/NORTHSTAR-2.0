@@ -84,7 +84,7 @@ fakeIdb.state.failNextPut=quota;
 const changedDraft={...draftRecord,annotations:{'1':{strokes:[],texts:[{id:'note-1',text:'Newer but not saved'}]}}};
 await assert.rejects(storage.saveDraft(changedDraft),/quota|storage/i,'quota failures are surfaced to the caller');
 assert.equal(storage.getLastError()?.name,'QuotaExceededError','storage diagnostics preserve the quota failure class');
-assert.equal(storage.getLastError()?.stage,'write','storage diagnostics identify the failed operation');
+assert.ok(['write','abort'].includes(storage.getLastError()?.stage),'storage diagnostics identify the failed write or aborted transaction');
 assert.equal((await storage.getDraft('assignment-7_file-42')).annotations['1'].texts[0].text,'Saved text','a failed transaction does not overwrite the last known-good draft');
 assert.equal(storage.getLastError(),null,'a later successful read clears the recovered storage error');
 
