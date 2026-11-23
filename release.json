@@ -30,7 +30,7 @@
         "Submission continuity",
         "Full regression tests"
       ],
-      "status": "Candidate branch; Phase 4 CI, Worker validation/deployment and Pages preview deployment pending. Live NNPS PDF viewing/edit/export and assignment submission remain unaccepted. Production remains on 4.4.7.5 / package 0.4.19.",
+      "status": "Candidate branch; Phase 4 CI, Worker validation/deployment and Pages preview deployment pending. Live NNPS PDF retrieval/viewing/edit/export and assignment submission remain unaccepted. Production remains on 4.4.7.5 / package 0.4.19.",
       "historical": false,
       "commits": []
     },
