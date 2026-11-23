@@ -1,6 +1,6 @@
 {
   "name": "northstar-academic-command-center",
-  "version": "0.4.24",
+  "version": "0.4.25",
   "private": true,
   "description": "NORTHSTAR personal academic command center",
   "scripts": {
