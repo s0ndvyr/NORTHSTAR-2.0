@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.6.6`
-Package version: `0.4.11`
+Release identifier: `NORTHSTAR / 4.4.7.5`
+Package version: `0.4.19`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -227,7 +227,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 
 ## PDF Document Studio
 
-- Attached PDFs are downloaded through the personal HTTPS Canvas bridge and rendered in the in-app document studio using PDF.js.
+- Attached PDFs first attempt a browser-direct authenticated download from a short-lived Canvas metadata URL on an HTTPS Instructure allowlisted host; if CORS blocks the Authorization header or the browser cannot read the response, the private HTTPS Canvas bridge performs the authenticated download. PDF.js renders the returned bytes in the in-app document studio.
 - The annotation canvas accepts freehand drawing, highlighting, erasing, lines, arrows, rectangles and ellipses only when the Pointer Events input reports pointerType = pen. Finger touch and mouse input are rejected for ink/shape tools.
 - Typed text notes can be placed on the PDF. Page navigation, zoom, color and size, per-page undo/redo, and local annotation persistence are available.
 - Export produces a flattened annotated PDF with the source document preserved. When an assignment permits online_upload, the exported PDF can be attached through Canvas' signed upload flow.
@@ -237,7 +237,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 
 ## Canvas file retrieval and bridge
 
-canvas-bridge/worker.js now supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves the file metadata from the configured Canvas host, validates the HTTPS download URL, follows a bounded number of redirects, and forwards the Canvas bearer token only while the request remains on the exact configured Canvas origin. The token is not forwarded to cross-origin signed storage hosts. CORS exposes only the content headers needed to identify the downloaded document.
+canvas-bridge/worker.js supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves file metadata from the configured Canvas host, validates HTTPS destinations, follows a bounded number of redirects, and forwards the Canvas bearer token only to the configured Canvas host and explicitly allowlisted Instructure file-storage hosts. It does not forward the token to arbitrary third-party hosts or signed upload destinations. The browser-direct path follows the same allowlist and authenticates without sending browser cookies.
 
 The Worker must be redeployed separately in the user's Cloudflare dashboard before in-app PDF viewing can be live-tested. Verify the existing CANVAS_ORIGIN and ALLOWED_ORIGIN values before deployment. GitHub Pages deployment alone does not update the manually managed personal Canvas bridge.
 
@@ -632,3 +632,15 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The Canvas bridge Worker deployment from run `45085853219` remains active; it was built and deployed from commit `3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14`.
 - Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production frontend remains on 4.4.6.9.
 - Automated checks and preview deployment are complete. A real upload and assignment submission in the connected Canvas tenant remain the final acceptance gate.
+
+
+## Phase 4.4.7.5 — Authenticated Canvas PDF retrieval and preview release alignment
+
+- Corrected the browser-direct Canvas PDF retrieval path to send the student bearer token in the Authorization header only to HTTPS destinations on the configured Canvas host or explicitly allowlisted Instructure file-host suffixes.
+- Rejected browser-direct targets with URL credentials, a non-default port, an access_token query parameter, an untrusted host, or a non-HTTPS scheme. The final response URL is validated against the same allowlist before PDF bytes are accepted.
+- Browser cookies remain omitted. If CORS blocks the Authorization preflight or browser retrieval fails, NORTHSTAR retains the authenticated private Worker download fallback and its bounded redirect policy.
+- Kept signed upload security unchanged: the Canvas bearer token is never sent to the signed upload-storage destination. The existing three-step Worker upload finalization and annotated-PDF-only submission flow remain intact.
+- Added regression coverage for direct authenticated delivery, CORS fallback, rejection of untrusted metadata URLs, and package/manifest/offline release identity.
+- No Worker source change is required for this frontend authentication correction; the active Worker remains version 0.4.16 (4.4.7.2), separately deployed by workflow run 45085853219 from commit 3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14.
+- The 4.4.7.5 preview release will be published only after the exact current preview branch head passes Phase 4 tests and the Pages freshness gate verifies both production and preview heads.
+- Automated tests cannot certify that the live NNPS Canvas storage host permits the browser Authorization preflight. Real attachment retrieval, an instructor-approved PDF upload/submission, and iPad Safari/Apple Pencil acceptance remain required before closing Phase 4.
