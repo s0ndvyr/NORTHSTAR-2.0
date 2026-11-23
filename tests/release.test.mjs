@@ -10,11 +10,13 @@ const roomJs=readFileSync(new URL('scripts/assignment-room.js',root),'utf8');
 const premiumJs=readFileSync(new URL('scripts/premium.js',root),'utf8');
 const workerJs=readFileSync(new URL('canvas-bridge/worker.js',root),'utf8');
 const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
+const storageJs=readFileSync(new URL('scripts/document-storage.js',root),'utf8');
+const bootJs=readFileSync(new URL('tests/boot.test.mjs',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const assignmentCss=readFileSync(new URL('styles/assignment-room.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.8.0','release manifest identifies the browser-native Canvas PDF delivery rebuild');
+assert.equal(manifest.northstarVersion,'4.4.8.1','release manifest identifies the Document Studio persistence milestone');
 assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.21 (4.4.8.0)'"),'the Worker reports the browser-native PDF API proxy build');
 assert.ok(workerJs.includes('public_url$/.test(path)'),'the Worker allowlists Canvas public inline-preview URL requests');
 assert.ok(workerJs.includes("if(request.method==='GET'&&!allowedRead(url.pathname+url.search))"),'all proxied Canvas reads still pass through the exact allowlist');
@@ -28,6 +30,11 @@ assert.ok(workspaceJs.includes("redirect:authorization?'error':'follow'"),'Canva
 assert.ok(workspaceJs.includes('previewUrl:previewUrl?.href||\'\''),'a CORS-blocked signed preview URL is returned only to the in-memory UI fallback');
 assert.ok(roomJs.includes('ns-pdf-native-preview')&&roomJs.includes('Save to Files')&&roomJs.includes('Import downloaded PDF to edit'),'Document Studio provides the native preview and local-import recovery path');
 assert.ok(roomJs.includes('getCanvasSessionUrl')&&roomJs.includes("returnTo"),'the fallback can use a temporary authenticated Canvas file-view session');
+assert.ok(storageJs.includes("const DOCUMENTS='documents'")&&storageJs.includes("const DRAFTS='drafts'"),'PDF source files and changing annotation drafts use separate IndexedDB stores');
+assert.ok(roomJs.includes('restoreStoredPdf')&&roomJs.includes('persistPdfSource')&&roomJs.includes('queuePdfDraftSave'),'Document Studio restores source PDFs and autosaves drafts');
+assert.ok(roomJs.includes("addEventListener('pagehide',flushPdfDraft)")&&roomJs.includes("visibilitychange"),'Safari page suspension flushes the current rich-text draft');
+assert.ok(roomJs.includes('renderedPage.getViewport({scale:pdfState.scale})'),'flattened export resolves a PDF.js viewport for every annotated page');
+assert.ok(bootJs.includes("'document-storage.js'")&&html.includes('scripts/document-storage.js'),'IndexedDB persistence loads before the assignment workspace');
 assert.ok(!roomJs.includes('localStorage.setItem')||roomJs.includes('previewUrl'),'preview URLs are not intentionally persisted as attachment state');
 
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
@@ -35,13 +42,13 @@ assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.9').commits.some(commit=>commit.sha==='a4c111b87e5508b1ce78deca24832c71dc4bcf44'),'the release records its tested and deployed preview source commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Candidate preview deployed successfully by GitHub Pages workflow run 45204976839'),'the current candidate records its verified preview deployment while keeping live Canvas acceptance open');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Phase 2 candidate; automated tests and preview deployment pending'),'the current candidate records its verified preview deployment while keeping live Canvas acceptance open');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104813239'),'the previous signed-preview release retains its successful preview Pages deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('local import'),'the candidate documents the local PDF editing recovery');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS Canvas PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Physical iPad verification'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Worker'),'the current release documents the Worker storage-fetch removal');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('CORS'),'the current release documents the browser CORS fallback');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
@@ -60,10 +67,10 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.8.0'")&&releaseJs.includes("packageVersion:'0.4.25'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes("Preview deployed successfully by Pages workflow run 45204976839. Phase 4 CI passed, Worker 0.4.21 deployed, and explicit preview refresh/attachment identity regression tests passed")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.8.1'")&&releaseJs.includes("packageVersion:'0.4.26'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(releaseJs.includes("Phase 2 candidate; automated tests and preview deployment pending")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
 assert.ok(releaseJs.includes("phase:'4.4.8'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
-assert.ok(pkg.northstarRelease==='4.4.8.0'&&pkg.version==='0.4.25','package metadata maps to the current candidate release');
+assert.ok(pkg.northstarRelease==='4.4.8.1'&&pkg.version==='0.4.26','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');
