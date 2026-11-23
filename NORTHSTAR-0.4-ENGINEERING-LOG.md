@@ -3,8 +3,8 @@
 Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.7.9`
-Package version: `0.4.23`
+Release identifier: `NORTHSTAR / 4.4.8.0`
+Package version: `0.4.24`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -728,3 +728,15 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - GitHub Pages freshness verification, build and deployment succeeded in run `45107205281`. The build log verified preview release NORTHSTAR `4.4.7.9 / 0.4.23` and generated `./preview/index.html` and `./preview/release.json`.
 - Preview: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Production remains NORTHSTAR `4.4.7.5 / 0.4.19`.
 - This deployment does not establish live Canvas PDF acceptance. The next required test is the same NNPS attachment in preview, then—only after it opens—the Document Studio edit/export and real Canvas upload/finalization/submission lifecycle.
+
+
+
+## NORTHSTAR 4.4.8.0 — Browser-native Canvas PDF delivery rebuild (2026-11-23)
+
+- The user's 4.4.7.9 live diagnostic provided decisive evidence: Canvas's authenticated `public_url` endpoint returned 200, but the signed URL was hosted at `inst-fs-iad-prod.inscloudgate.net` and the Cloudflare edge returned HTTP 406. This is a storage-edge/egress rejection, not a Canvas permission failure and not a PDF.js rendering error.
+- Stopped iterating on Worker-side storage fetches. Removed the Worker file-download handlers and storage redirect machinery. The private Worker now proxies Canvas API JSON only; it authenticates metadata and `public_url` on the configured Canvas origin and never fetches signed storage bytes.
+- Rebuilt `NorthstarWorkspace.downloadCanvasFile` to request Canvas metadata and the authenticated `public_url` via the bridge, then fetch the signed URL from the user's browser with CORS mode, no Canvas bearer token, no cookies, trusted-host validation, PDF magic validation and a 100 MB safety ceiling.
+- If the browser can read the PDF, Document Studio uses its existing PDF.js editor and flattened export. If cross-origin storage CORS blocks byte access, the assignment workspace shows the native Safari PDF preview and direct Safari link; it also offers the official Canvas course/file session handoff. On iPad the user can Save to Files and import the local PDF into the same editor and export pipeline.
+- Temporary signed preview URLs remain in memory only. They are not written to localStorage, sent to the Worker a second time, or included in diagnostics. Canvas bearer credentials remain confined to the exact school Canvas origin.
+- Added Worker tests proving that `public_url` is proxied and no Worker storage fetch occurs; browser tests for signed-byte success, CORS fallback, hostile URL rejection and Canvas-origin-only fallback; native preview UI tests for Safari/Canvas handoff, signed URL privacy and local PDF import validation; safe diagnostic tests for browser delivery outcome.
+- Candidate: NORTHSTAR 4.4.8.0 / package 0.4.24; Worker 0.4.21. Phase 4 CI, Worker validation/deployment, Pages preview deployment and live NNPS/iPad acceptance are pending. Production remains 4.4.7.5 / package 0.4.19.
