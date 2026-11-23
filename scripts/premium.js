@@ -850,30 +850,201 @@ function phase4RenderQuizReceipt(a,quiz,submission){
 }
 
 
+let phase4DiscussionContext=null,phase4ActiveDiscussionEditId=null;
+function phase4DiscussionDraftKey(context,slot){
+  return phase441ScopedStorageKey('discussion_draft_v1_'+Number(context.c.canvasId)+'_'+Number(context.topicId)+'_'+String(slot||'initial'));
+}
+function phase4DiscussionUnknownKey(context){
+  return phase441ScopedStorageKey('discussion_uncertain_v1_'+Number(context.c.canvasId)+'_'+Number(context.topicId));
+}
+function phase4DiscussionPlain(value){
+  const doc=new DOMParser().parseFromString(String(value||''),'text/html');
+  return String(doc.body.textContent||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+}
+function phase4FlattenDiscussionEntries(entries){
+  const out=[];
+  const visit=(entry,parentId=null)=>{
+    if(!entry||typeof entry!=='object')return;
+    out.push({entry,parentId});
+    const children=Array.isArray(entry.recent_replies)?entry.recent_replies:Array.isArray(entry.replies)?entry.replies:[];
+    children.forEach(child=>visit(child,Number(entry.id)||parentId));
+  };
+  (Array.isArray(entries)?entries:[]).forEach(entry=>visit(entry,null));
+  return out;
+}
+function phase4FindDiscussionEntry(entries,id){
+  return phase4FlattenDiscussionEntries(entries).find(row=>Number(row.entry.id)===Number(id))||null;
+}
+async function phase4VerifyDiscussionEntry(context,marker,entries){
+  const api=context.api;
+  let candidates=[];
+  if(Number(marker.entryId)>0){
+    try{
+      const response=await api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entry_list?ids%5B%5D='+Number(marker.entryId));
+      const rows=Array.isArray(response)?response:[];
+      candidates.push(...rows.map(entry=>({entry,parentId:Number(entry.parent_id||entry.parentId)||null})));
+    }catch{}
+  }
+  if(!candidates.length){
+    const current=entries||await (async()=>{
+      const response=await api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entries?per_page=50');
+      return Array.isArray(response)?response:(response.entries||[]);
+    })();
+    candidates=phase4FlattenDiscussionEntries(current);
+  }
+  const wanted=phase4DiscussionPlain(marker.message),since=(Number(marker.requestStartedAt)||Date.now())-5000;
+  return candidates.find(row=>{
+    const entry=row.entry||{};
+    if(marker.entryId&&Number(entry.id)!==Number(marker.entryId))return false;
+    if(Number(marker.userId)>0&&Number(entry.user_id)!==Number(marker.userId))return false;
+    if(phase4DiscussionPlain(entry.message)!==wanted)return false;
+    if(marker.replyTo&&Number(row.parentId||entry.parent_id||entry.parentId)!==Number(marker.replyTo))return false;
+    if(marker.editEntryId&&Number(entry.id)!==Number(marker.editEntryId))return false;
+    const created=Date.parse(entry.created_at||entry.updated_at||'')||0;
+    if(!marker.editEntryId&&created&&created<since)return false;
+    return true;
+  })?.entry||null;
+}
+function phase4RenderDiscussionThreads(entries,context){
+  const host=$('#phase4DiscussionEntries');if(!host)return;
+  const renderEntry=(entry,parentId=null)=>{
+    const id=Number(entry.id)||0,owned=Number(context.userId)>0&&Number(entry.user_id)===Number(context.userId);
+    const replies=Array.isArray(entry.recent_replies)?entry.recent_replies:Array.isArray(entry.replies)?entry.replies:[];
+    return '<article class="card mt" data-discussion-entry="'+id+'"><p class="small">'+asText(entry.message||'')+'</p><p class="tiny muted mt">'+safe(entry.user_name||'Canvas participant')+' · '+(entry.created_at?new Date(entry.created_at).toLocaleString():'')+'</p><div class="flex mt" style="gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" data-discussion-reply="'+id+'">Reply</button>'+(owned?'<button class="btn btn-ghost btn-sm" data-discussion-edit="'+id+'">Edit your post</button>':'')+'</div><div class="ns-discussion-replies">'+replies.map(reply=>renderEntry(reply,id)).join('')+'</div><div id="phase4ReplyBox'+id+'"></div></article>';
+  };
+  host.innerHTML=entries.length?entries.map(entry=>renderEntry(entry)).join(''):'<p class="small muted mt">No visible posts were returned. Canvas may require an initial post before it displays the thread.</p>';
+  host.querySelectorAll('[data-discussion-reply]').forEach(button=>button.onclick=()=>{
+    const parentId=Number(button.dataset.discussionReply),box=$('#phase4ReplyBox'+parentId),slot='reply_'+parentId,draftKey=phase4DiscussionDraftKey(context,slot);
+    box.innerHTML='<textarea class="editor mt" rows="3" id="phase4ReplyDraft'+parentId+'" placeholder="Write a reply…"></textarea><button class="btn btn-primary btn-sm mt" id="phase4ReplySend'+parentId+'">Post reply</button><p class="tiny muted mt" id="phase4ReplyStatus'+parentId+'" role="status">Draft saved on this device; not published.</p>';
+    const input=$('#phase4ReplyDraft'+parentId),status=$('#phase4ReplyStatus'+parentId);
+    try{input.value=localStorage.getItem(draftKey)||'';}catch{}
+    input.addEventListener('input',()=>{try{localStorage.setItem(draftKey,input.value);status.textContent='Draft saved on this device; not published.';}catch{status.textContent='Local draft storage failed. Keep this panel open and copy your text before leaving.';}});
+    $('#phase4ReplySend'+parentId).onclick=()=>phase4SendDiscussionMessage(context.a,context.topicId,parentId,null);
+  });
+  host.querySelectorAll('[data-discussion-edit]').forEach(button=>button.onclick=()=>{
+    const id=Number(button.dataset.discussionEdit),found=phase4FindDiscussionEntry(entries,id);
+    if(!found||Number(found.entry.user_id)!==Number(context.userId)){toast('Canvas edit permission could not be verified for this entry.');return;}
+    phase4ActiveDiscussionEditId=id;
+    const input=$('#phase4DiscussionDraft'),draftKey=phase4DiscussionDraftKey(context,'edit_'+id);
+    try{input.value=localStorage.getItem(draftKey)??phase4DiscussionPlain(found.entry.message||'');}catch{input.value=phase4DiscussionPlain(found.entry.message||'');}
+    const post=$('#phase4PostDiscussion');if(post)post.textContent='Save edit to Canvas';
+    const status=$('#phase4DiscussionStatus');if(status)status.textContent='Editing your own Canvas entry. Canvas will verify edit permission when you save.';
+    input.focus();
+  });
+}
+async function phase4RefreshDiscussionThread(options={}){
+  const context=phase4DiscussionContext;if(!context)return null;
+  const status=$('#phase4DiscussionStatus'),button=$('#phase4RefreshDiscussion');
+  if(button)button.disabled=true;
+  try{
+    const response=await context.api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(context.topicId)+'/entries?per_page=50');
+    const entries=Array.isArray(response)?response:(Array.isArray(response?.entries)?response.entries:[]);
+    let marker=null;try{marker=JSON.parse(localStorage.getItem(phase4DiscussionUnknownKey(context))||'null');}catch{}
+    if(marker){
+      const verified=await phase4VerifyDiscussionEntry(context,marker,entries);
+      if(verified){
+        try{localStorage.removeItem(phase4DiscussionUnknownKey(context));localStorage.removeItem(marker.draftKey);}catch{}
+        if(status)status.textContent=marker.editEntryId?'Canvas verified that your edit was saved.':'Canvas verified your discussion post was published.';
+        phase4ActiveDiscussionEditId=null;const post=$('#phase4PostDiscussion');if(post)post.textContent='Post to Canvas';
+      }else{
+        if(status)status.textContent='Canvas has not yet returned the exact post/edit from the previous request. It remains unconfirmed; do not publish it again yet.';
+      }
+    }else if(status&&options.message)status.textContent=options.message;
+    phase4RenderDiscussionThreads(entries,context);
+    $('#nsDiscussionSubhead').textContent=(context.topic.require_initial_post?'Initial post required · ':'')+(entries.length+' visible discussion thread(s)');
+    return entries;
+  }catch(error){
+    if(status)status.textContent='Discussion refresh failed: '+error.message+' Your local draft is preserved.';
+    return null;
+  }finally{if(button)button.disabled=false;}
+}
 async function openCanvasDiscussion(a){
   activeAssignment=a;const c=courseById(a.course),creds=getCredentials(),topicId=a.discussionTopicId||a.canvasId;
-  $('#workspace').innerHTML='<div class="ns-assignment-page"><header class="ns-room-header"><button class="ns-room-back" onclick="closeAssignmentRoom()"><span>←</span> Back to coursework</button><div class="ns-room-title"><span class="eyebrow">'+safe(c.code)+' / CANVAS DISCUSSION</span><h1 id="nsDiscussionTitle">'+safe(a.title)+'</h1><p id="nsDiscussionSubhead">Loading the official discussion…</p></div><div class="ns-room-actions"><span class="ns-room-status">Canvas connected</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header><div class="ns-room-layout"><section class="ns-room-main"><div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">DISCUSSION WORKSPACE</span><h2>Course conversation</h2><p>Read the thread and contribute from inside NORTHSTAR.</p></div></div><div class="ns-room-panel" id="nsDiscussionBody">'+window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code)+'</div></div></section></div></div>';
-  $('#wsOverlay').classList.add('open');
-  $('#phase4HideAssignment').onclick=()=>phase4ToggleHidden(a.id);
+  $('#workspace').innerHTML='<div class="ns-assignment-page"><header class="ns-room-header"><button class="ns-room-back" onclick="closeAssignmentRoom()"><span>←</span> Back to coursework</button><div class="ns-room-title"><span class="eyebrow">'+safe(c.code)+' / CANVAS DISCUSSION</span><h1 id="nsDiscussionTitle">'+safe(a.title)+'</h1><p id="nsDiscussionSubhead">Loading the official discussion…</p></div><div class="ns-room-actions"><span class="ns-room-status">Canvas connected</span><button class="btn btn-ghost btn-sm" id="phase4HideAssignment">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header><div class="ns-room-layout"><section class="ns-room-main"><div class="ns-room-card"><div class="ns-room-card-head"><div><span class="eyebrow">DISCUSSION WORKSPACE</span><h2>Course conversation</h2><p>Read, contribute, and edit your own posts where Canvas permits.</p></div></div><div class="ns-room-panel" id="nsDiscussionBody">'+window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code)+'</div></div></section></div></div>';
+  $('#wsOverlay').classList.add('open');$('#phase4HideAssignment').onclick=()=>phase4ToggleHidden(a.id);
   if(!creds?.proxy){$('#nsDiscussionBody').innerHTML='<div class="ns-room-loading-error"><h3>Private Canvas bridge required</h3><p>Connect through your private Canvas bridge to read and publish discussion posts from NORTHSTAR.</p></div>';return;}
   try{
     const api=window.NorthstarWorkspace.transport(creds);
     const topic=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId));
-    let entries=[];try{const result=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');entries=Array.isArray(result)?result:result.entries||[];}catch(error){}
+    if(topic.published===false||topic.locked===true||topic.locked_for_user===true){
+      const reason=topic.lock_explanation||topic.lock_info?.asset_string||'Canvas reports that this discussion is locked or unpublished.';
+      $('#nsDiscussionBody').innerHTML='<div class="ns-room-loading-error"><h3>Discussion is not available for posting</h3><p>'+safe(reason)+'</p><p class="ns-room-help">NORTHSTAR will not attempt to publish or edit a locked discussion.</p></div>';return;
+    }
+    let userId=null,entries=[];
+    try{const me=await api.get('/api/v1/users/self');userId=Number(me?.id)||null;}catch{}
+    const result=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');
+    entries=Array.isArray(result)?result:(Array.isArray(result?.entries)?result.entries:[]);
+    phase4DiscussionContext={a,c,topicId,api,topic,userId};
+    phase4ActiveDiscussionEditId=null;
+    const draftKey=phase4DiscussionDraftKey(phase4DiscussionContext,'initial');
+    let initialDraft='';try{initialDraft=localStorage.getItem(draftKey)||'';}catch{}
     $('#nsDiscussionTitle').textContent=topic.title||a.title;
     $('#nsDiscussionSubhead').textContent=(topic.require_initial_post?'Initial post required · ':'')+(entries.length+' visible discussion thread(s)');
-    $('#nsDiscussionBody').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(topic.message||a.desc||'')+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…"></textarea><button class="btn btn-primary mt" id="phase4PostDiscussion">Post to Canvas</button><p id="phase4DiscussionStatus" class="small muted mt" role="status">Your draft stays here until you choose Post.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries">'+(entries.length?entries.map((e,i)=>'<article class="card mt"><p class="small">'+asText(e.message||'')+'</p><p class="tiny muted mt">'+safe(e.user_name||'Canvas participant')+' · '+(e.created_at?new Date(e.created_at).toLocaleString():'')+'</p><button class="btn btn-ghost btn-sm mt" data-discussion-reply="'+Number(e.id)+'">Reply</button><div id="phase4ReplyBox'+Number(e.id)+'"></div></article>').join(''):'<p class="small muted mt">No visible posts yet, or Canvas requires your initial post before displaying the thread.</p>')+'</div></div></div></div><div class="ns-room-resource-note">Posts and replies are published to Canvas immediately after confirmation.</div>';
-    $('#phase4PostDiscussion').onclick=()=>phase4SendDiscussionMessage(a,topicId,null);
-    document.querySelectorAll('[data-discussion-reply]').forEach(button=>button.onclick=()=>{const id=Number(button.dataset.discussionReply),box=$('#phase4ReplyBox'+id);box.innerHTML='<textarea class="editor" rows="3" id="phase4ReplyDraft'+id+'" placeholder="Write a reply…"></textarea><button class="btn btn-primary btn-sm mt" id="phase4ReplySend'+id+'">Post reply</button>';$('#phase4ReplySend'+id).onclick=()=>phase4SendDiscussionMessage(a,topicId,id);});
+    $('#nsDiscussionBody').innerHTML='<div class="grid2"><div><div class="card"><span class="eyebrow">ASSIGNMENT BRIEF</span><div class="small mt" style="line-height:1.7">'+asText(topic.message||a.desc||'')+'</div><div class="divider"></div><label class="set-lbl" for="phase4DiscussionDraft">Your discussion post / edit</label><textarea class="editor" id="phase4DiscussionDraft" rows="8" placeholder="Write your response…">'+safe(initialDraft)+'</textarea><div class="flex mt" style="gap:7px;flex-wrap:wrap"><button class="btn btn-primary" id="phase4PostDiscussion">Post to Canvas</button><button class="btn btn-ghost" id="phase4RefreshDiscussion">Refresh and check Canvas</button></div><p id="phase4DiscussionStatus" class="small muted mt" role="status">Draft saves on this device. It is not published until Canvas confirms it.</p></div></div><div><div class="card"><span class="eyebrow">DISCUSSION THREADS</span><div id="phase4DiscussionEntries"></div></div></div></div><div class="ns-room-resource-note">Posts, replies, and edits are sent to Canvas. A post is marked published only after NORTHSTAR re-reads its Canvas entry record.</div>';
+    phase4DiscussionContext.statusNode=$('#phase4DiscussionStatus');
+    const input=$('#phase4DiscussionDraft');
+    input.addEventListener('input',()=>{
+      const key=phase441ReadUnknownSubmission?phase4DiscussionDraftKey(phase4DiscussionContext,phase4ActiveDiscussionEditId?'edit_'+phase4ActiveDiscussionEditId:'initial'):draftKey;
+      try{localStorage.setItem(key,input.value);$('#phase4DiscussionStatus').textContent='Draft saved on this device; not published.';}
+      catch{$('#phase4DiscussionStatus').textContent='Local draft storage is unavailable. Copy your draft before leaving this page.';}
+    });
+    $('#phase4PostDiscussion').onclick=()=>phase4SendDiscussionMessage(a,topicId,null,phase4ActiveDiscussionEditId);
+    $('#phase4RefreshDiscussion').onclick=()=>phase4RefreshDiscussionThread();
+    phase4RenderDiscussionThreads(entries,phase4DiscussionContext);
+    await phase4RefreshDiscussionThread();
   }catch(error){$('#nsDiscussionBody').innerHTML='<div class="ns-room-loading-error"><h3>Discussion could not be loaded</h3><p>'+safe(error.message)+'</p></div>';}
 }
-async function phase4SendDiscussionMessage(a,topicId,replyTo){
-  const c=courseById(a.course),input=replyTo?$('#phase4ReplyDraft'+replyTo):$('#phase4DiscussionDraft'),status=$('#phase4DiscussionStatus'),message=(input?.value||'').trim();
-  if(!message){if(status)status.textContent='Write your response before posting.';return;}
-  if(!confirm((replyTo?'Post this reply':'Publish your discussion post')+' to Canvas now?'))return;
-  const button=replyTo?$('#phase4ReplySend'+replyTo):$('#phase4PostDiscussion');if(button)button.disabled=true;
-  try{const path='/api/v1/courses/'+Number(c.canvasId)+'/discussion_topics/'+Number(topicId)+(replyTo?'/entries/'+Number(replyTo)+'/replies':'/entries');await window.NorthstarWorkspace.transport(getCredentials()).post(path,{message});if(input)input.value='';if(status)status.textContent='Canvas confirmed your post. Refreshing assignment status…';await syncCanvas({quiet:true});refreshAll();if(status)status.textContent='Canvas confirmed your post. Your discussion is published.';toast('Discussion posted to Canvas');}
-  catch(error){if(status)status.textContent=error.message;if(button)button.disabled=false;}
+async function phase4SendDiscussionMessage(a,topicId,replyTo,editEntryId){
+  const context=phase4DiscussionContext;if(!context)return;
+  const slot=editEntryId?'edit_'+editEntryId:replyTo?'reply_'+replyTo:'initial';
+  const draftKey=phase4DiscussionDraftKey(context,slot);
+  const input=replyTo?$('#phase4ReplyDraft'+replyTo):$('#phase4DiscussionDraft');
+  const status=replyTo?$('#phase4ReplyStatus'+replyTo):$('#phase4DiscussionStatus');
+  const message=(input?.value||'').trim(),button=replyTo?$('#phase4ReplySend'+replyTo):$('#phase4PostDiscussion');
+  if(!message){if(status)status.textContent='Write your response before sending it to Canvas.';return;}
+  if(message.length>16000){if(status)status.textContent='Canvas discussion messages are limited to 16,000 characters.';return;}
+  let existingMarker=null;try{existingMarker=JSON.parse(localStorage.getItem(phase4DiscussionUnknownKey(context))||'null');}catch{}
+  if(existingMarker){
+    if(status)status.textContent='A previous discussion request is still unconfirmed. Refresh and check Canvas before posting again.';
+    await phase4RefreshDiscussionThread();return;
+  }
+  const action=editEntryId?'Save this edit':replyTo?'Post this reply':'Publish your discussion post';
+  if(!confirm(action+' to Canvas now?'))return;
+  if(button)button.disabled=true;
+  const requestStartedAt=Date.now();
+  const userId=Number(context.userId)||0;
+  const marker={entryId:Number(editEntryId)||null,editEntryId:Number(editEntryId)||null,replyTo:Number(replyTo)||null,userId,message,requestStartedAt,draftKey};
+  let requestSent=false;
+  try{
+    if(editEntryId){
+      const found=phase4FindDiscussionEntry(await (async()=>{const response=await context.api.get('/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(topicId)+'/entries?per_page=50');return Array.isArray(response)?response:response.entries||[];})(),editEntryId);
+      if(!found||!userId||Number(found.entry.user_id)!==userId)throw Error('Canvas ownership could not be verified for this post. Only the original author can edit it through this workspace.');
+    }
+    const path='/api/v1/courses/'+Number(context.c.canvasId)+'/discussion_topics/'+Number(topicId)+(editEntryId?'/entries/'+Number(editEntryId):replyTo?'/entries/'+Number(replyTo)+'/replies':'/entries');
+    requestSent=true;
+    const response=editEntryId
+      ?await context.api.put(path,{message})
+      :await context.api.post(path,{message});
+    marker.entryId=Number(response?.id)||marker.entryId;
+    try{localStorage.setItem(phase4DiscussionUnknownKey(context),JSON.stringify(marker));}catch{}
+    const verified=await phase4VerifyDiscussionEntry(context,marker);
+    if(!verified)throw Object.assign(Error('Canvas returned a response, but a fresh read did not confirm the exact post/edit. Do not repeat the request until you refresh the thread.'),{outcomeUnknown:true});
+    try{localStorage.removeItem(phase4DiscussionUnknownKey(context));localStorage.removeItem(draftKey);}catch{}
+    if(input)input.value='';
+    phase4ActiveDiscussionEditId=null;
+    const post=$('#phase4PostDiscussion');if(post)post.textContent='Post to Canvas';
+    if(status)status.textContent=editEntryId?'Canvas verified that your entry was edited.':'Canvas verified that your discussion post was published.';
+    await phase4RefreshDiscussionThread({message:status?.textContent||'Canvas verified the discussion update.'});
+    await syncCanvas({quiet:true});refreshAll();
+    toast(editEntryId?'Discussion entry updated in Canvas':'Discussion posted to Canvas');
+  }catch(error){
+    const uncertain=requestSent&&(error?.outcomeUnknown===true||error?.status>=500||!Number.isFinite(Number(error?.status)));
+    if(uncertain){
+      try{localStorage.setItem(phase4DiscussionUnknownKey(context),JSON.stringify(marker));}catch{}
+      if(status)status.textContent='Canvas may have accepted the request, but the post/edit is not yet independently confirmed. Your draft was kept. Refresh status before trying again.';
+    }else if(status)status.textContent=error.message+' Your draft has been preserved.';
+    if(button)button.disabled=false;
+  }finally{if(button&&!localStorage.getItem(phase4DiscussionUnknownKey(context)))button.disabled=false;}
 }
 
 function phase441StatusLabel(a){const current=statusOf(a);return current==='Awaiting Grading'?'Submitted · Awaiting grading':current;}
