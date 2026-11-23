@@ -653,13 +653,25 @@ async function exportAnnotatedPdf(){
     for(const token of tokens){
      if(!token)continue;
      if(token==='\n'){lines[lines.length-1].paragraphEnd=true;lines.push({tokens:[],width:0,maxSize:12,paragraphEnd:false});continue;}
-     const tokenWidth=font.widthOfTextAtSize(token,size);
-     let line=lines[lines.length-1];
-     if(line.tokens.length&&line.width+tokenWidth>maxWidth&&!/^\s+$/.test(token)){
-      lines.push({tokens:[],width:0,maxSize:12,paragraphEnd:false});line=lines[lines.length-1];
+     const chunks=[];
+     if(!/^\\s+$/.test(token)&&font.widthOfTextAtSize(token,size)>maxWidth){
+      let chunk='';
+      for(const character of Array.from(token)){
+       const candidate=chunk+character;
+       if(chunk&&font.widthOfTextAtSize(candidate,size)>maxWidth){chunks.push(chunk);chunk=character;}else chunk=candidate;
+      }
+      if(chunk)chunks.push(chunk);
+     }else chunks.push(token);
+     for(const piece of chunks){
+      const tokenWidth=font.widthOfTextAtSize(piece,size);
+      if(tokenWidth>maxWidth)throw Error('A text annotation on page '+(index+1)+' contains a character wider than its text box. Widen the box before exporting.');
+      let line=lines[lines.length-1];
+      if(line.tokens.length&&line.width+tokenWidth>maxWidth&&!/^\\s+$/.test(piece)){
+       lines.push({tokens:[],width:0,maxSize:12,paragraphEnd:false});line=lines[lines.length-1];
+      }
+      if(/^\\s+$/.test(piece)&&!line.tokens.length)continue;
+      line.tokens.push({text:piece,style,font,size,width:tokenWidth});line.width+=tokenWidth;line.maxSize=Math.max(line.maxSize,size);
      }
-     if(/^\s+$/.test(token)&&!line.tokens.length)continue;
-     line.tokens.push({text:token,style,font,size,width:tokenWidth});line.width+=tokenWidth;line.maxSize=Math.max(line.maxSize,size);
     }
    }
    if(lines.length>1&&!lines[lines.length-1].tokens.length)lines.pop();
