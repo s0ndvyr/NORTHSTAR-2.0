@@ -3,10 +3,11 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.7.2',packageVersion:'0.4.16',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.7.3',packageVersion:'0.4.17',
  bridge:{version:'1.2',status:'source updated; deployment pending'},releaseDate:'2026-11-22',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
+  {version:'4.4.7.3',date:'2026-11-23',title:'Document Studio to Canvas submission UI verification',description:'The Use annotated PDF action now submits the exported PDF as the sole attachment and has a browser boot integration test covering the complete in-dashboard UI handoff.',category:'Canvas integration',areas:['Document Studio export handoff','Annotated PDF selection','Assignment submission UI'],status:'Awaiting Phase 4 CI and preview deployment; live Canvas acceptance remains pending.'},
   {version:'4.4.7.2',date:'2026-11-22',title:'Canvas upload finalization — version-aligned diagnostics',description:'Carries forward the private-bridge Canvas upload finalization and makes attachment diagnostics read the app version from the release manifest.',category:'Canvas integration',areas:['Assignment PDF submission','Signed uploads','Authenticated finalization','Diagnostic version consistency'],status:'Awaiting Phase 4 CI and live Canvas acceptance.'},
   {version:'4.4.7.1',date:'2026-11-22',title:'Canvas file upload finalization',description:'Assignment and Classic Quiz uploads now complete Canvas’s documented signed upload flow through the private bridge, including the authenticated create_success request. The Canvas token is never sent to signed storage.',category:'Canvas integration',areas:['Assignment PDF submission','Signed uploads','Authenticated finalization','Submission pipeline'],status:'Awaiting Phase 4 CI and live Canvas acceptance.'},
   {version:'4.4.6.9',date:'2026-11-22',title:'Test-pinned deployment gate',

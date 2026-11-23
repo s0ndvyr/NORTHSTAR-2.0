@@ -1,10 +1,10 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.2",
-  "packageVersion": "0.4.16",
+  "northstarVersion": "4.4.7.3",
+  "packageVersion": "0.4.17",
   "channel": "route-derived",
-  "releaseDate": "2026-11-22",
+  "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
     "status": "Source updated; live deployment must pass the bridge deployment workflow before Canvas acceptance."
@@ -15,6 +15,22 @@
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.7.3",
+      "date": "2026-11-23",
+      "title": "Document Studio to Canvas submission UI verification",
+      "description": "Ensures the Use annotated PDF action sends the exported Document Studio PDF as the sole attachment, rather than silently including other selected files. Adds a browser boot integration test that opens an online_upload assignment, stages the exported PDF, submits its finalized Canvas file ID, and confirms the Canvas submission response. Corrects a cross-realm array assertion in the test harness.",
+      "category": "Canvas integration",
+      "areas": [
+        "Document Studio export handoff",
+        "Annotated PDF selection",
+        "Assignment submission UI",
+        "End-to-end browser test"
+      ],
+      "status": "Awaiting Phase 4 CI and preview deployment; live Canvas acceptance remains pending.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.7.2",
       "date": "2026-11-22",

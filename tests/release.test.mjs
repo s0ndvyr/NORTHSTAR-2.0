@@ -13,11 +13,11 @@ const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.7.2','release manifest identifies the current .2 quality release');
+assert.equal(manifest.northstarVersion,'4.4.7.3','release manifest identifies the current .2 quality release');
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
-assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.2').status||'').includes('45085996901'),'the current Canvas upload candidate remains pending until its own checks pass');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.3').status||'').includes('45085996901'),'the current Canvas upload candidate remains pending until its own checks pass');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('45081377927'),'the current release records its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.6.9').commits.some(commit=>commit.sha==='fe5b69948d98969768fb5dc155f6f41ab1d861a8'),'the deployed release records its tested source commit');
@@ -30,8 +30,8 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.7.2'")&&releaseJs.includes("packageVersion:'0.4.16'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(pkg.northstarRelease==='4.4.7.2'&&pkg.version==='0.4.16','package metadata maps to the .2 release');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.7.3'")&&releaseJs.includes("packageVersion:'0.4.17'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(pkg.northstarRelease==='4.4.7.3'&&pkg.version==='0.4.17','package metadata maps to the .2 release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');
@@ -57,3 +57,5 @@ assert.ok(workspaceJs.includes("redirect:'error'"),'the browser never follows a 
 assert.ok(debugJs.includes('global.NorthstarRelease?.manifest?.northstarVersion'),'Canvas attachment diagnostics use the active release manifest');
 
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.2').commits.some(commit=>commit.sha==='3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14'),'the current release records the deployed Canvas bridge Worker commit');
+
+assert.ok(premiumJs.includes("annotated?[annotated]:[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[])]"),'an exported annotated PDF replaces other selected upload files as promised by the UI');

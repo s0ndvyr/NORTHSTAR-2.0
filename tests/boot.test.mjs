@@ -354,7 +354,7 @@ assert.equal(uploadedFromStudio.length,1,'one annotated PDF is uploaded for this
 assert.equal(uploadedFromStudio[0].file.name,'annotated-homework.pdf','the file exported from Document Studio is the one sent to Canvas');
 assert.equal(uploadedFromStudio[0].courseId,1);
 assert.equal(uploadedFromStudio[0].assignmentId,14);
-assert.deepEqual(sentFromStudio.data.submission.file_ids,[777],'the finalized Canvas file ID is submitted to the assignment');
+assert.deepEqual(Array.from(sentFromStudio.data.submission.file_ids),[777],'the finalized Canvas file ID is submitted to the assignment');
 assert.equal(sentFromStudio.data.submission.submission_type,'online_upload');
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas confirmed your submission'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===14).status,'Submitted');
