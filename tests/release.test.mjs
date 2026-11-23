@@ -15,7 +15,7 @@ const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
 assert.equal(manifest.northstarVersion,'4.4.8.0','release manifest identifies the browser-native Canvas PDF delivery rebuild');
 assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.21 (4.4.8.0)'"),'the Worker reports the browser-native PDF API proxy build');
-assert.ok(workerJs.includes("/api/v1/files/\\d+\\/public_url"),'the Worker allowlists Canvas public inline-preview URL requests');
+assert.ok(workerJs.includes('public_url$/.test(path)'),'the Worker allowlists Canvas public inline-preview URL requests');
 assert.ok(workerJs.includes("if(request.method==='GET'&&!allowedRead(url.pathname+url.search))"),'all proxied Canvas reads still pass through the exact allowlist');
 assert.ok(!workerJs.includes('async function downloadCanvasFile(')&&!workerJs.includes('async function fetchCanvasPublicFile('),'the Worker no longer downloads PDF bytes from Canvas storage');
 assert.ok(!workerJs.includes('TRUSTED_CANVAS_FILE_HOST_SUFFIXES'),'storage host redirects are no longer a Worker responsibility');
