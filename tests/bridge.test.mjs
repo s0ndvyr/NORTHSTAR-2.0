@@ -208,7 +208,7 @@ assert(!JSON.stringify(metadataNetworkDetails).includes('signature='));
 assert(!JSON.stringify(metadataNetworkDetails).includes('test-secret'));
 
 globalThis.fetch=async(url,opts)=>{
-  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://storage.example.net/private/signed-file?signature=do-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://inst-fs-iad-prod.inscloudgate.net/private/signed-file?signature=do-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
   throw Error('network failed for '+url);
 };
 const contentNetwork=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-content-network'}}));
@@ -216,7 +216,7 @@ const contentNetworkDetails=await contentNetwork.json();
 assert.equal(contentNetwork.status,502);
 assert.equal(contentNetworkDetails.code,'CANVAS_FILE_CONTENT_NETWORK_FAILED');
 assert.equal(contentNetworkDetails.stage,'content');
-assert.equal(contentNetworkDetails.diagnostics.upstreamHost,'storage.example.net');
+assert.equal(contentNetworkDetails.diagnostics.upstreamHost,'inst-fs-iad-prod.inscloudgate.net');
 assert.equal(contentNetworkDetails.diagnostics.failureType,'network');
 assert(!JSON.stringify(contentNetworkDetails).includes('signature='));
 
