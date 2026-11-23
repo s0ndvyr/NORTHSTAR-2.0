@@ -264,3 +264,6 @@ NORTHSTAR routes assignment and Classic Quiz file uploads through its private Ca
 ### Document Studio → Canvas submission handoff — Phase 4.4.7.3
 
 The **Use annotated PDF from Document Studio** action stages the exported flattened PDF as the sole upload for that submission, matching the button's promise that it replaces other selected files. The browser boot integration test opens an `online_upload` assignment fixture, invokes the Document Studio export handoff, verifies the exported file reaches the Canvas upload helper, and verifies the finalized Canvas file ID is submitted.
+
+
+Phase 4.4.7.4 corrects the release-history regression assertion so the current preview candidate is kept pending until its own CI and deployment pass, while the earlier 4.4.7.2 preview deployment remains recorded as verified.

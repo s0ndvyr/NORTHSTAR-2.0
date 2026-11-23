@@ -614,3 +614,11 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - The first test attempt reached the expected `[777]` file-ID payload but the Node/jsdom assertion compared arrays from different JavaScript realms. The test now normalizes the array before comparison.
 - Release: `4.4.7.3 / 0.4.17`. Phase 4 CI and preview deployment pending.
 - Live Canvas tenant acceptance is still required; browser tests use a mocked Canvas response.
+
+
+## Phase 4.4.7.4 — Release test history correction
+
+- The .7.3 candidate's Phase 4 run exposed a stale release test that expected the previous .7.2 preview deployment ID on the current pending candidate.
+- Updated the test to validate .7.4's pending status and separately retain .7.2's successful preview deployment record.
+- Carries forward the Document Studio annotated-PDF-only selection behavior and browser boot integration test.
+- Release: `4.4.7.4 / 0.4.18`. CI and preview deployment pending.
