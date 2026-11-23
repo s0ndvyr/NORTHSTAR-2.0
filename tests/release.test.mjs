@@ -13,11 +13,12 @@ const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
-assert.equal(manifest.northstarVersion,'4.4.7.4','release manifest identifies the current Canvas UI release');
+assert.equal(manifest.northstarVersion,'4.4.7.5','release manifest identifies the authenticated Canvas PDF retrieval release');
 assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata and release manifest agree');
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
-assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the current Canvas UI candidate remains pending until its own checks pass');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('GitHub Actions'),'the current candidate waits for exact-head Phase 4 and freshness-gated Pages validation');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.2').status||'').includes('45085996901'),'the previous Canvas upload release retains its verified preview deployment');
 assert.ok(manifest.releases.some(entry=>entry.version==='4.4.6.1'&&String(entry.status||'').includes('Deployed')),'the previous release records its verified Pages deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.6.9').status||'').includes('45081377927'),'the current release records its verified production and preview Pages deployment');
@@ -31,8 +32,8 @@ assert.ok(html.includes('id="versionPill"')&&html.includes('scripts/release.js')
 assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/release-notes.css'));
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
-assert.ok(releaseJs.includes("northstarVersion:'4.4.7.4'")&&releaseJs.includes("packageVersion:'0.4.18'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(pkg.northstarRelease==='4.4.7.4'&&pkg.version==='0.4.18','package metadata maps to the .2 release');
+assert.ok(releaseJs.includes("northstarVersion:'4.4.7.5'")&&releaseJs.includes("packageVersion:'0.4.19'"),'the offline release fallback agrees with the authoritative manifest');
+assert.ok(pkg.northstarRelease==='4.4.7.5'&&pkg.version==='0.4.19','package metadata maps to the current preview release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
 assert.ok(editorJs.includes('bar.addEventListener(\'pointerdown\',event=>{'),'formatting controls snapshot text selection without cancelling native input');
 assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersion'),'dashboard/settings read the active release from the manifest');
@@ -62,3 +63,6 @@ assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.2').commits.some(
 assert.ok(premiumJs.includes("annotated?[annotated]:[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[])]"),'an exported annotated PDF replaces other selected upload files as promised by the UI');
 
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.4').commits.some(commit=>commit.sha==='fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc'),'the current release records its tested and deployed preview source commit');
+assert.ok(workspaceJs.includes("Authorization:'Bearer '+String(credentials.token)"),'browser PDF downloads authenticate through the allowlisted Workspace path');
+assert.ok(workspaceJs.includes('const trustedFileUrl=value=>'),'browser PDF target and final-response validation is centralized');
+assert.ok(workerJs.includes('TRUSTED_CANVAS_FILE_HOST_SUFFIXES'),'the private Worker keeps an explicit Instructure file-host allowlist');
