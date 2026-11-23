@@ -639,6 +639,22 @@ async function phase4SaveQuizState(s=activeQuizSession){
   phase4LastQuizSavedSignature=desiredSignature;
   phase4PersistQuizSession(s.assignment,s.submission,s.accessCode,s.flaggedQuestionIds);
 }
+async function phase4FlushQuizState(s=activeQuizSession){
+  if(!s)throw Error('There is no active Canvas quiz attempt to save.');
+  if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}
+  for(let pass=0;pass<6;pass++){
+    const started=Date.now();
+    while(phase4QuizSaveInFlight&&Date.now()-started<15000)await new Promise(resolve=>setTimeout(resolve,40));
+    if(phase4QuizSaveInFlight)throw Error('A previous Canvas answer save is still in progress. Wait and refresh the attempt status before continuing.');
+    const expected=phase4CurrentQuizSignature(s);
+    if(expected===phase4LastQuizSavedSignature){phase4QuizSavePending=false;return true;}
+    phase4QuizSaveInFlight=true;
+    try{await phase4SaveQuizState(s);}
+    finally{phase4QuizSaveInFlight=false;}
+    if(phase4CurrentQuizSignature(s)===phase4LastQuizSavedSignature){phase4QuizSavePending=false;return true;}
+  }
+  throw Error('The quiz answers kept changing while Canvas was saving. The latest answers have not been confirmed; do not submit the quiz yet.');
+}
 async function phase4AutoSaveQuizAnswers(){
  const s=activeQuizSession;if(!s)return;if(phase4QuizSaveInFlight){phase4QuizSavePending=true;return;}
  const signature=phase4CurrentQuizSignature(s);if(signature===phase4LastQuizSavedSignature)return;
@@ -679,8 +695,9 @@ function phase4RenderQuizAttempt(){
           if(row)row.answer=String(uploaded.id);
           if(status)status.textContent='Uploaded to Canvas: '+uploaded.name+'. Saving this question answer…';
           phase4UpdateQuizProgress();
-          await phase4AutoSaveQuizAnswers();
-          if(status)status.textContent='Canvas attachment '+uploaded.id+' uploaded and linked to this quiz question.';
+          await phase4FlushQuizState(s);
+          if(phase4CurrentQuizSignature(s)!==phase4LastQuizSavedSignature)throw Error('Canvas has not confirmed the uploaded file answer yet. Refresh this same attempt before continuing.');
+          if(status)status.textContent='Canvas attachment '+uploaded.id+' is uploaded and its question answer is saved to the active attempt.';
         }catch(error){
           if(status)status.textContent='Quiz file upload was not confirmed: '+error.message+' Check this attempt in Canvas before retrying.';
         }finally{input.disabled=false;}
@@ -698,21 +715,115 @@ async function phase4SaveQuizAnswers(){
   if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}
   if(phase4QuizSaveInFlight){if(status)status.textContent='A Canvas save is already in progress. Wait for its confirmation.';return;}
   if(phase4CurrentQuizSignature(s)===phase4LastQuizSavedSignature){if(status)status.textContent='All answers and review flags are already saved to Canvas.';return;}
-  try{phase4QuizSaveInFlight=true;if(button)button.disabled=true;if(status)status.textContent='Saving answers and review flags to Canvas…';await phase4SaveQuizState(s);if(status)status.textContent='Answers and review flags saved to Canvas.';}
+  try{if(button)button.disabled=true;if(status)status.textContent='Saving answers and review flags to Canvas…';await phase4FlushQuizState(s);if(status)status.textContent='Answers and review flags saved to Canvas.';}
   catch(error){if(status)status.textContent='Save could not be confirmed: '+error.message+' Check Canvas before retrying.';}
   finally{phase4QuizSaveInFlight=false;if(button)button.disabled=false;}
 }
 async function phase4CompleteQuizAttempt(){
   const s=activeQuizSession;if(!s)return;
   if(s.questions.some(row=>!phase4QuestionSupported(row))){toast('This quiz contains question formats NORTHSTAR cannot safely edit. Continue the same attempt in Canvas before submitting.');return;}
-  const answers=phase4CollectQuizAnswers(s.questions),flags=phase4CollectQuizFlags(s);
+  const answers=phase4CollectQuizAnswers(s.questions);
   const unanswered=s.questions.filter(row=>!phase4IsQuestionAnswered(row,answers.find(x=>Number(x.id)===Number((row.quiz_question||row.question||row).id||row.id))?.answer)).length;
   if(phase4QuizSaveInFlight){toast('Wait for the current answer save to finish before submitting.');return;}
-  const confirmation='Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'+(unanswered?'\n\n'+unanswered+' supported question(s) are unanswered. Submit anyway?':'');
+  const confirmation='Submit this quiz to Canvas now? Canvas will mark this attempt complete and answers can no longer be changed.'+(unanswered?'\\n\\n'+unanswered+' supported question(s) are unanswered. Submit anyway?':'');
   if(!confirm(confirmation))return;
-  const status=$('#phase4AttemptStatus'),button=$('#phase4CompleteQuiz');
-  try{phase4QuizSaveInFlight=true;if(phase4QuizSaveTimer){clearTimeout(phase4QuizSaveTimer);phase4QuizSaveTimer=null;}button.disabled=true;$('#phase4SaveQuiz').disabled=true;status.textContent='Saving final answers and review flags to Canvas…';if(phase4CurrentQuizSignature(s)!==phase4LastQuizSavedSignature)await phase4SaveQuizState(s);status.textContent='Completing quiz attempt in Canvas…';await window.NorthstarWorkspace.completeQuiz({credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId,submission:s.submission,accessCode:s.accessCode});phase4ClearQuizSession(s.assignment);phase4QuizSaveInFlight=false;status.textContent='Canvas confirmed completion. Refreshing coursework…';activeQuizSession=null;if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);await syncCanvas({quiet:true});refreshAll();$('#nsQuizBody').innerHTML='<div class="card"><h2>Quiz submitted</h2><p class="small muted mt">Canvas confirmed completion. Your official score will appear when Canvas releases it.</p><button class="btn btn-primary mt" onclick="closeOverlay(\'wsOverlay\')">Return to coursework</button></div>';}
-  catch(error){phase4QuizSaveInFlight=false;status.textContent=error.message+' Check Canvas before retrying; NORTHSTAR will not automatically repeat a completion request.';button.disabled=false;$('#phase4SaveQuiz').disabled=false;}
+  const status=$('#phase4AttemptStatus'),button=$('#phase4CompleteQuiz'),saveButton=$('#phase4SaveQuiz');
+  try{
+    button.disabled=true;saveButton.disabled=true;
+    status.textContent='Saving final answers and review flags to Canvas…';
+    await phase4FlushQuizState(s);
+    status.textContent='Sending the official completion request for attempt '+s.submission.attempt+'…';
+    const completion=await window.NorthstarWorkspace.completeQuiz({
+      credentials:getCredentials(),
+      courseId:courseById(s.assignment.course).canvasId,
+      quizId:s.assignment.quizId||s.assignment.canvasId,
+      submission:s.submission,
+      accessCode:s.accessCode
+    });
+    if(!completion?.confirmed||Number(completion.submission?.id)!==Number(s.submission.id)||Number(completion.submission?.attempt)!==Number(s.submission.attempt)){
+      const error=Error('Canvas did not independently confirm this exact attempt as completed. Check the Canvas attempt status before retrying.');
+      error.completionOutcomeUnknown=true;throw error;
+    }
+    phase4ClearQuizSession(s.assignment);
+    if(phase4QuizTimer)clearInterval(phase4QuizTimer);
+    if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);
+    activeQuizSession=null;phase4QuizSaveInFlight=false;
+    await syncCanvas({quiet:true});refreshAll();
+    phase4RenderQuizReceipt(s.assignment,s.quiz,completion.submission);
+  }catch(error){
+    const statusUnknown=error?.completionOutcomeUnknown===true;
+    status.textContent=statusUnknown
+      ?error.message+' Do not submit again. Refresh Canvas attempt status first.'
+      :error.message+' Canvas has not confirmed completion; your active attempt and local session were preserved.';
+    if(statusUnknown){
+      button.disabled=true;saveButton.disabled=true;
+      const reconcile=$('#phase4ReconcileQuiz');if(reconcile)reconcile.hidden=false;
+    }else{
+      button.disabled=false;saveButton.disabled=false;
+    }
+  }
+}
+async function phase4ReconcileQuizAttempt(){
+  const s=activeQuizSession;if(!s)return;
+  const status=$('#phase4AttemptStatus'),button=$('#phase4ReconcileQuiz'),complete=$('#phase4CompleteQuiz'),save=$('#phase4SaveQuiz');
+  if(button)button.disabled=true;
+  if(status)status.textContent='Reading the official Canvas attempt status…';
+  try{
+    const current=await window.NorthstarWorkspace.getCurrentQuizSubmission({
+      credentials:getCredentials(),courseId:courseById(s.assignment.course).canvasId,quizId:s.assignment.quizId||s.assignment.canvasId
+    });
+    if(!current||Number(current.id)!==Number(s.submission.id)||Number(current.attempt)!==Number(s.submission.attempt)){
+      if(status)status.textContent='Canvas returned a different or missing attempt. NORTHSTAR will not complete or replace the saved attempt automatically.';
+      return;
+    }
+    const state=String(current.workflow_state||'').toLowerCase();
+    if(!!current.finished_at&&['complete','pending_review'].includes(state)){
+      phase4ClearQuizSession(s.assignment);
+      if(phase4QuizTimer)clearInterval(phase4QuizTimer);
+      if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);
+      activeQuizSession=null;await syncCanvas({quiet:true});refreshAll();
+      phase4RenderQuizReceipt(s.assignment,s.quiz,current);
+      return;
+    }
+    if(!current.finished_at&&!['complete','pending_review'].includes(state)){
+      status.textContent='Canvas independently confirms that attempt '+current.attempt+' is still in progress. Review your answers; a new completion request may now be made only when you choose Submit again.';
+      if(complete)complete.disabled=false;if(save)save.disabled=false;
+      return;
+    }
+    if(status)status.textContent='Canvas returned an intermediate attempt state ('+(state||'unknown')+'). Keep this attempt open and refresh again; do not start another attempt.';
+  }catch(error){if(status)status.textContent='Canvas attempt status could not be refreshed: '+error.message+' No completion request was repeated.';}
+  finally{if(button)button.disabled=false;}
+}
+function phase4RenderQuizReceipt(a,quiz,submission){
+  const attempt=Number(submission?.attempt)||'—',state=String(submission?.workflow_state||'unknown').replace(/_/g,' ');
+  const submitted=submission?.finished_at?new Date(submission.finished_at).toLocaleString():'Canvas completion timestamp unavailable';
+  const score=submission?.score===null||submission?.score===undefined?'Not released':String(submission.score);
+  const grade=submission?.grade?String(submission.grade):'Not released';
+  const details=[
+    '<div class="card"><span class="eyebrow">CANVAS VERIFIED ATTEMPT</span><h2>Quiz submitted</h2>',
+    '<p class="small muted">Canvas confirms this Classic Quiz attempt is complete. NORTHSTAR has not calculated or substituted a grade.</p>',
+    '<div class="divider"></div><p><b>Assessment</b><br>'+safe(a.title)+'</p>',
+    '<p><b>Course</b><br>'+safe(courseById(a.course)?.name||'Canvas course')+'</p>',
+    '<p><b>Attempt</b><br>'+safe(attempt)+'</p>',
+    '<p><b>Canvas state</b><br>'+safe(state)+'</p>',
+    '<p><b>Completed</b><br>'+safe(submitted)+'</p>',
+    '<p><b>Score</b><br>'+safe(score)+' · '+safe(grade)+'</p>',
+    '<p><b>Canvas attempt ID</b><br>'+safe(submission?.id||'—')+'</p>',
+    '<button class="btn btn-ghost mt" id="phase4RefreshQuizReceipt">Refresh Canvas result</button>',
+    '<button class="btn btn-primary mt" onclick="closeOverlay(\\'wsOverlay\\')">Return to coursework</button></div>'
+  ].join('');
+  $('#nsQuizBody').innerHTML=details;
+  $('#nsQuizSubhead').textContent='Canvas-verified completion · attempt '+attempt;
+  const refresh=$('#phase4RefreshQuizReceipt');
+  if(refresh)refresh.onclick=async()=>{
+    refresh.disabled=true;
+    try{
+      const current=await window.NorthstarWorkspace.getCurrentQuizSubmission({credentials:getCredentials(),courseId:courseById(a.course).canvasId,quizId:a.quizId||a.canvasId});
+      if(!current||Number(current.id)!==Number(submission.id)||Number(current.attempt)!==Number(submission.attempt)||!current.finished_at||!['complete','pending_review'].includes(String(current.workflow_state||'').toLowerCase()))throw Error('Canvas has not returned the same completed attempt yet.');
+      phase4RenderQuizReceipt(a,quiz,current);
+    }catch(error){toast('Canvas receipt refresh: '+error.message);}
+    finally{const button=$('#phase4RefreshQuizReceipt');if(button)button.disabled=false;}
+  };
 }
 
 
