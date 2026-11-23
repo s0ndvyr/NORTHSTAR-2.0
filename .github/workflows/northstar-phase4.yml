@@ -8,6 +8,7 @@ on:
       - northstar-0.4.4.1-native-assignment-experience
       - northstar-0.4.4.2-quiz-continuity
       - northstar-4.4.8.0-native-pdf-delivery
+      - northstar-4.4.8.1-document-studio
   pull_request:
     branches:
       - main
