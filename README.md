@@ -294,3 +294,51 @@ Phase 1 was accepted by the owner on a physical iPad: actual Canvas assignment P
 The Document Studio candidate adds IndexedDB-backed PDF source storage and independent annotation drafts. It restores a cached PDF only when its Canvas file ID, course ID and assignment ID match the active attachment. In-progress text is flushed when Safari backgrounds or closes the page. Multi-page export resolves a viewport for each annotated page and continues to add flattened annotations to the original PDF rather than recreating its pages.
 
 The editor's existing Apple Pencil, finger navigation, highlighting, text, shapes, eraser, undo/redo and export controls are preserved. Automated tests cover the IndexedDB storage adapter and rich-text flush. The 4.4.8.1 candidate is deployed to the GitHub Pages preview (workflow run 45211301327). Automated Phase 4 tests passed on the exact candidate commit (run 45211194018). The new persistence/reload/export behavior still needs physical iPad verification before Phase 2 can be signed off. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
+
+## NORTHSTAR 4.4.8.1.1 — Phase 2 Document Studio qualification
+
+This is a sub-priority release within the existing 4.4.8.1 Document Studio milestone. It does **not** rebuild the 4.4.8.0 Canvas PDF delivery path, replace PDF.js, rewrite the annotation engine, or change the Canvas upload/submission implementation. The published 4.4.8.1 parent preview is retained as the baseline.
+
+### Existing architecture retained
+
+- Canvas file/course/assignment identity keys the IndexedDB source-document record and its separately stored annotation draft.
+- The original PDF bytes are only cached after PDF.js successfully parses the file. Annotation updates do not rewrite the original PDF record.
+- LocalStorage remains a compatibility fallback for annotation drafts.
+- Pagehide, hidden-document visibility changes, assignment-room exit, and Document Studio editor flushes persist the active draft.
+- Recovery checks the local matching source and draft before asking Canvas for another copy.
+- The existing per-page PDF.js viewport conversion preserves the original PDF page model when flattening annotations. Canvas remains the authoritative submission and grading service.
+
+### 4.4.8.1.1 hardening
+
+- Explicit Canvas assignment IDs are included in the attachment identity. Legacy identity records remain readable through the local assignment-key fallback.
+- Draft writes are serialized per document key. Rapid edits and repeated opens cannot allow an older pending write to overtake a newer write for the same attachment.
+- Async recovery/editor initialization is scoped to the active open operation. Stale reads and parses cannot mount an old editor over a newly opened assignment.
+- IndexedDB exposes the stage and browser error for unavailable storage, blocked/open errors, transaction failures, quota exhaustion, and interrupted writes. A later successful transaction clears a recovered error.
+- Source PDF writes validate the PDF header and the 100 MB storage ceiling. A failed draft write leaves the previous completed record intact; the source record and draft record remain separate.
+- Flattened export verifies the source page count, uses the viewport for each annotated page, retains Pencil pressure differences in freehand strokes, wraps long unbroken words, and reports text that cannot fit inside its text object rather than silently clipping it.
+- Export qualification creates multi-page PDFs with distinct page sizes and rotations, exports annotations, and reopens the result with PDF.js as an independent parser. Source bytes and original page content are checked.
+
+### Qualification status
+
+The 4.4.8.1 parent was tested in its exact preview source at commit 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 (Phase 4 run 45212530217) and deployed by Pages run 45212652910. The owner separately reported on-device Safari persistence after navigating away, leaving the site, and powering down the iPad. The parent version remains available as the published baseline while 4.4.8.1.1 is qualified.
+
+The 4.4.8.1.1 candidate is preview-only until its own exact-head Phase 4 run and Pages deployment are confirmed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; the deployed Canvas Worker remains 0.4.21. Automated PDF parsing and simulated browser tests do not establish physical iPad or Apple Pencil acceptance.
+
+### Owner iPad Safari acceptance checklist
+
+Use a real Canvas PDF, preferably a three-or-more-page file with at least two different page orientations/sizes:
+
+- [ ] Open the real attachment in the 4.4.8.1.1 preview and confirm course, assignment and file context.
+- [ ] Draw on one page with Apple Pencil; add editable text and formatting on another; annotate only selected pages.
+- [ ] Navigate to another page and back; verify the annotations remain correctly positioned.
+- [ ] Leave the assignment, return to the dashboard, reopen the same assignment and confirm the saved source/draft restore without re-importing the Canvas file.
+- [ ] Reload Safari, reopen the site and assignment, and confirm the saved work is still present.
+- [ ] Background Safari, return, and verify the most recent rich-text change remains.
+- [ ] Open a second assignment with a different attachment; confirm its edits do not appear in the first assignment.
+- [ ] Test Pencil-only drawing, finger navigation, two-finger pan/pinch, text selection/move/resize, undo and redo.
+- [ ] Rotate iPad portrait/landscape, revisit pages, and check toolbars and text objects remain usable.
+- [ ] Export the edited PDF, open the exported copy in Files/Preview, and check every page, orientation, original content, annotation position, text formatting and clipping.
+- [ ] Compare the exported PDF against the original; confirm the source attachment remains unchanged.
+- [ ] If an export or save warning appears, preserve the original and last-known-good draft; report the visible error before trying destructive recovery.
+
+Do not mark the phase iPad-accepted until this physical checklist, especially export inspection, is completed on the owner's device.
