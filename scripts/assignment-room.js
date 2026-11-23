@@ -745,7 +745,9 @@ async function initializePdfEditor(host,bytes,context){
  else setSaveState('Draft saved in browser storage. Export a backup before leaving.');
 }
 function renderNativePdfFallback(host,file,assignment,credentials,source){
+ const token=pdfState.openToken;
  if(Number(pdfState.file?.id)===Number(file.id))file={...file,...pdfState.file};
+ const fileSnapshot={...file},assignmentSnapshot={...assignment},identity=currentPdfIdentity(),key=pdfKey();
  const previewUrl=String(source?.previewUrl||'');
  const returnTo=String(source?.canvasReturnTo||('/courses/'+assignment.canvasCourseId+'/files/'+file.id));
  const browserResult=String(source?.previewDelivery?.result||'');
@@ -769,31 +771,34 @@ function renderNativePdfFallback(host,file,assignment,credentials,source){
  if(choose&&input)choose.onclick=()=>input.click();
  if(input)input.addEventListener('change',async()=>{
   const local=input.files?.[0];if(!local)return;
-  choose.disabled=true;if(status)status.textContent='Reading '+local.name+'…';
+  const activeToken=token;choose.disabled=true;if(status)status.textContent='Reading '+local.name+'…';
   try{
    const bytes=new Uint8Array(await local.arrayBuffer());
+   if(activeToken!==pdfState.openToken)return;
    if(bytes.byteLength>100*1024*1024)throw Error('This PDF is larger than NORTHSTAR’s 100 MB in-browser editing limit.');
    const header=String.fromCharCode(...bytes.subarray(0,Math.min(bytes.byteLength,1024)));
    if(!header.includes('%PDF-'))throw Error('The selected file is not a readable PDF. Choose the PDF for this Canvas attachment.');
-   pdfState.file={...file,originalName:String(file.originalName||file.name||''),importedFileName:String(local.name||''),name:String(file.originalName||file.name||'Canvas PDF')};
+   pdfState.file={...fileSnapshot,originalName:String(fileSnapshot.originalName||fileSnapshot.name||''),importedFileName:String(local.name||''),name:String(fileSnapshot.originalName||fileSnapshot.name||'Canvas PDF')};
    persistPdfIdentity();
-   await initializePdfEditor(host,bytes);
-  }catch(error){if(status)status.textContent='Could not import this PDF: '+error.message;}
+   const context={token:activeToken,key:pdfKey(),identity:currentPdfIdentity(),file:{...pdfState.file}};
+   await initializePdfEditor(host,bytes,context);
+  }catch(error){if(activeToken===pdfState.openToken&&status)status.textContent='Could not import this PDF: '+error.message;}
   finally{choose.disabled=false;}
  });
  const refreshButton=host.querySelector('#nsPdfRefreshPreview');
  if(refreshButton)refreshButton.onclick=async()=>{
   refreshButton.disabled=true;if(status)status.textContent='Requesting a fresh temporary preview from Canvas…';
   try{
-   const refreshed=await root.NorthstarWorkspace.downloadCanvasFile({credentials,courseId:assignment.canvasCourseId,fileId:file.id});
-   if(Number(refreshed?.id)!==Number(file.id))throw Error('Canvas returned a different attachment. The current assignment was not changed.');
-   pdfState.file={...file,originalName:String(file.originalName||file.name||''),name:String(refreshed.name||file.name||''),contentType:String(refreshed.contentType||file.contentType||'application/pdf'),size:Number(refreshed.size)||Number(file.size)||null};
+   const refreshed=await root.NorthstarWorkspace.downloadCanvasFile({credentials,courseId:assignmentSnapshot.canvasCourseId,fileId:fileSnapshot.id});
+   if(token!==pdfState.openToken)return;
+   if(Number(refreshed?.id)!==Number(fileSnapshot.id))throw Error('Canvas returned a different attachment. The current assignment was not changed.');
+   pdfState.file={...fileSnapshot,originalName:String(fileSnapshot.originalName||fileSnapshot.name||''),name:String(refreshed.name||fileSnapshot.name||''),contentType:String(refreshed.contentType||fileSnapshot.contentType||'application/pdf'),size:Number(refreshed.size)||Number(fileSnapshot.size)||null};
    persistPdfIdentity();
-   if(refreshed.bytes){await initializePdfEditor(host,refreshed.bytes);return;}
-   renderNativePdfFallback(host,file,assignment,credentials,refreshed);
+   if(refreshed.bytes){await initializePdfEditor(host,refreshed.bytes,{token,key:pdfKey(),identity:currentPdfIdentity(),file:{...pdfState.file}});return;}
+   renderNativePdfFallback(host,fileSnapshot,assignmentSnapshot,credentials,refreshed);
    const refreshedStatus=host.querySelector('#nsPdfNativeStatus');
    if(refreshedStatus)refreshedStatus.textContent=refreshed.previewUrl?'A fresh Canvas preview is ready. Open it in Safari if the embedded preview does not load.':'Canvas did not provide a usable preview. Open the official Canvas file or try again.';
-  }catch(error){if(status)status.textContent='Could not refresh the Canvas preview: '+error.message+' You can retry when your connection is available.';refreshButton.disabled=false;}
+  }catch(error){if(token===pdfState.openToken&&status)status.textContent='Could not refresh the Canvas preview: '+error.message+' You can retry when your connection is available.';if(token===pdfState.openToken)refreshButton.disabled=false;}
  };
  const canvasButton=host.querySelector('#nsPdfOpenCanvas');
  if(canvasButton)canvasButton.onclick=async()=>{
