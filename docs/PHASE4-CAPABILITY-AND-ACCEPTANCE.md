@@ -1,6 +1,6 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.21 / NORTHSTAR 4.4.7.7 (candidate)  
+**Development version:** 0.4.21 / NORTHSTAR 4.4.7.7  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
 **Status:** NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735. Live Canvas account and physical iPad/Apple Pencil acceptance remain open.  
 **Production:** Production and preview are both on NORTHSTAR 4.4.7.5; the Pages freshness gate verified both tested source heads before publication.
@@ -196,3 +196,6 @@ The regression fixture now reproduces the observed two-hop route: Canvas → `a1
 The 4.4.7.6 live test reached the configured school Canvas host but received HTTP 403 before any redirect. Comparing the previous deployed Worker source with 0.4.17 identified one material header difference: the previous Worker sent the requesting browser User-Agent on the file-content request, while 0.4.17 omitted it. The 4.4.7.7 candidate restores that User-Agent only when the destination origin exactly matches the configured school Canvas origin. The Canvas bearer token remains scoped to that same origin. Both headers remain absent on cross-origin storage requests; the allowlist, HTTPS checks, origin-only Referer handling, and signed-URL secrecy remain in place.
 
 This is a targeted hypothesis, not a confirmed root cause. Automated tests assert that the school Canvas origin receives the browser User-Agent and bearer token, while both cross-origin storage hosts receive neither. The candidate is not live-accepted until the same NNPS PDF opens in the deployed preview.
+
+
+**Deployment status:** Worker 0.4.18 is deployed to the preview bridge by run 45103459358 (Cloudflare version ID `2e7ced36-da0b-4091-9bd2-7dedfcf4adc2`). NORTHSTAR 4.4.7.7 / package 0.4.21 is deployed to the preview Pages path by run 45103520416 from preview commit `d4740f8f280b358bbe9d64770d6b2ae94714b842`. Production remains on 4.4.7.5. The same live NNPS attachment must still be tested; deployment and mocked tests do not prove Canvas retrieval.
