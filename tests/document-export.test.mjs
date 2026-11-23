@@ -15,6 +15,7 @@ const third=source.addPage([792,612]);
 third.setRotation(pdfLib.degrees(270));
 third.drawText('ORIGINAL PAGE THREE',{x:48,y:560,size:14,font:helvetica});
 const sourceBytes=new Uint8Array(await source.save());
+const originalSourceBytes=sourceBytes.slice();
 
 const dom=new JSDOM('<!doctype html><html><body><div id="host"></div></body></html>',{
  url:'https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/',runScripts:'outside-only',pretendToBeVisual:true
@@ -145,7 +146,7 @@ for(let pageNumber=1;pageNumber<=3;pageNumber++){
  if(pageNumber===3)assert.ok(text.includes('Document Studio verification note'),'editable rich-text annotation is flattened into the PDF');
  if(pageNumber===2)assert.ok(!text.includes('Document Studio verification note'),'the unannotated page is not duplicated or modified by the annotation layer');
 }
-assert.deepEqual([...sourceBytes],[...new Uint8Array(await source.save())],'the original in-memory source remains unchanged after export');
+assert.deepEqual([...sourceBytes],[...originalSourceBytes],'the original in-memory source remains unchanged after export');
 
 const savedKey=[...documents.keys()][0];
 await room.openPdf(host,file,assignment,credentials);
