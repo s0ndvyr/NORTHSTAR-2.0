@@ -3,8 +3,8 @@
 Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.7.6`
-Package version: `0.4.20`
+Release identifier: `NORTHSTAR / 4.4.7.8`
+Package version: `0.4.22`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -698,3 +698,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Added the documented Canvas `GET /api/v1/files/:id/public_url` path as the preferred retrieval route. It returns a user-authorized inline-preview URL; signed AWS object URLs are fetched without the Canvas bearer token.
 - Retained a fallback through the existing Canvas download URL. The bearer token and requesting browser User-Agent are sent only to the configured Canvas origin and explicit trusted Instructure file-host allowlist; external signed object storage receives neither.
 - Candidate release NORTHSTAR `4.4.7.8` / package `0.4.22`, Worker `0.4.19`. Production remains unchanged; Phase 4 CI, preview deployment, and live NNPS retrieval remain pending.
+
+
+## NORTHSTAR 4.4.7.8 — Preview deployment verified (2026-11-23)
+
+- Exact preview commit `fa2d9103811ae54def96ea456fcc5656c16f3917` passed the full Phase 4 suite in run `45104758130`.
+- Private Cloudflare Worker 0.4.19 deployed successfully by run `45104758113`; Worker version ID `69a055e5-4edc-426b-9f0b-c3a964b92d66`.
+- Pages workflow run `45104813239` passed freshness, build, and deployment; preview is NORTHSTAR 4.4.7.8 / package 0.4.22.
+- The preferred PDF retrieval path now uses the authenticated Canvas `public_url` endpoint, then retrieves a signed object URL without forwarding the Canvas token to external object storage. Authenticated fallback remains restricted to the configured Canvas origin and Instructure file-host allowlist.
+- Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF retrieval remains unaccepted; next action is to retry `ionic nomenclature problem set 2026.pdf` in preview and inspect any fresh diagnostic.
