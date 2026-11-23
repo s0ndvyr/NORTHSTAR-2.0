@@ -112,7 +112,7 @@ function isTrustedCanvasFileHost(hostname){
 function safePublicUrlAttempt(value){
   if(!isObject(value))return null;
   const numberOrNull=v=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null);
-  const clean=(v,max=180)=>String(v||'').replace(/[\\r\\n\\t]+/g,' ').slice(0,max);
+  const clean=(v,max=180)=>String(v||'').replace(/[\r\n\t]+/g,' ').slice(0,max);
   return {
     endpointResult:clean(value.endpointResult,40),
     endpointStatus:numberOrNull(value.endpointStatus),
