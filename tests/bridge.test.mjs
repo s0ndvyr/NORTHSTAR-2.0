@@ -112,13 +112,13 @@ globalThis.fetch=async(url,opts)=>{
   }
   if(target.hostname===userContentHost){
     assert.equal(opts.headers.Authorization,undefined,'the Canvas bearer token is stripped at the first cross-origin storage redirect');
-    assert.equal(opts.headers['User-Agent'],undefined,'the user's Safari User-Agent is not spoofed on Worker-to-storage requests');
+    assert.equal(opts.headers['User-Agent'],undefined,"the user Safari User-Agent is not replayed on Worker-to-storage requests");
     assert.equal(opts.headers.Referer,'https://'+canvasFileHost+'/','the next hop receives only the previous origin as referrer');
     return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/private/attachment.pdf?signature=opaque'}});
   }
   if(target.hostname===storageHost){
     assert.equal(opts.headers.Authorization,undefined,'the signed Instructure storage host never receives the Canvas bearer token');
-    assert.equal(opts.headers['User-Agent'],undefined,'the user's Safari User-Agent is not replayed to the storage edge');
+    assert.equal(opts.headers['User-Agent'],undefined,"the user Safari User-Agent is not replayed on Worker-to-storage requests");
     assert.equal(opts.headers.Referer,'https://'+userContentHost+'/','the final storage hop receives only the immediate previous origin');
     return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});
   }
