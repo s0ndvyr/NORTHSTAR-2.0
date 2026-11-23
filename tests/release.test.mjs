@@ -12,6 +12,7 @@ const workerJs=readFileSync(new URL('canvas-bridge/worker.js',root),'utf8');
 const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
 const css=readFileSync(new URL('styles/release-notes.css',root),'utf8');
+const assignmentCss=readFileSync(new URL('styles/assignment-room.css',root),'utf8');
 const pagesWorkflow=readFileSync(new URL('.github/workflows/github-pages-production-preview.yml',root),'utf8');
 assert.equal(manifest.northstarVersion,'4.4.8.0','release manifest identifies the browser-native Canvas PDF delivery rebuild');
 assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.21 (4.4.8.0)'"),'the Worker reports the browser-native PDF API proxy build');
@@ -96,4 +97,4 @@ assert.ok(workspaceJs.includes("mode:'cors'")&&workspaceJs.includes("credentials
 assert.ok(workspaceJs.includes('function trustedCanvasPreviewUrl'),'Canvas preview destinations are centrally validated before fetch or navigation');
 assert.ok(workspaceJs.includes('canvasReturnTo'), 'the local-import fallback retains only the safe Canvas course/file route');
 assert.ok(roomJs.includes('nsPdfLocalFile')&&roomJs.includes('arrayBuffer()'),'the downloaded PDF can be imported into the existing native Document Studio editor');
-assert.ok(css.includes('.ns-pdf-native-fallback'),'the Safari preview recovery has dedicated responsive styling');
+assert.ok(assignmentCss.includes('.ns-pdf-native-fallback'),'the Safari preview recovery has dedicated responsive styling');
