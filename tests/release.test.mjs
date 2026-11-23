@@ -97,19 +97,3 @@ assert.ok(workspaceJs.includes('function trustedCanvasPreviewUrl'),'Canvas previ
 assert.ok(workspaceJs.includes('canvasReturnTo'), 'the local-import fallback retains only the safe Canvas course/file route');
 assert.ok(roomJs.includes('nsPdfLocalFile')&&roomJs.includes('arrayBuffer()'),'the downloaded PDF can be imported into the existing native Document Studio editor');
 assert.ok(css.includes('.ns-pdf-native-fallback'),'the Safari preview recovery has dedicated responsive styling');
-),'the separate upload handler still finalizes files through Canvas');
-assert.ok(workspaceJs.includes("bridge.searchParams.set('action','upload-file')"),'the browser sends file bytes to the private bridge');
-assert.ok(workspaceJs.includes("redirect:'error'"),'the browser never follows a bridge redirect automatically');
-
-assert.ok(debugJs.includes('global.NorthstarRelease?.manifest?.northstarVersion'),'Canvas attachment diagnostics use the active release manifest');
-
-assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.2').commits.some(commit=>commit.sha==='3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14'),'the current release records the deployed Canvas bridge Worker commit');
-
-assert.ok(premiumJs.includes("annotated?[annotated]:[...(prepared?[prepared]:[]),...Array.from($('#submissionFile')?.files||[])]"),'an exported annotated PDF replaces other selected upload files as promised by the UI');
-
-assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.4').commits.some(commit=>commit.sha==='fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc'),'the current release records its tested and deployed preview source commit');
-assert.ok(workspaceJs.includes("mode:'cors'")&&workspaceJs.includes("credentials:'omit'"),'browser signed-preview retrieval is CORS-aware and credential-free');
-assert.ok(workspaceJs.includes('function trustedCanvasPreviewUrl'),'Canvas preview destinations are centrally validated before fetch or navigation');
-assert.ok(workspaceJs.includes('canvasReturnTo'), 'the local-import fallback retains only the safe Canvas course/file route');
-assert.ok(roomJs.includes('nsPdfLocalFile')&&roomJs.includes('arrayBuffer()'),'the downloaded PDF can be imported into the existing native Document Studio editor');
-assert.ok(css.includes('.ns-pdf-native-fallback'),'the Safari preview recovery has dedicated responsive styling');
