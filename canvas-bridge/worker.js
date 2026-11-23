@@ -1,13 +1,14 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
-// Build marker: 0.4.21 — browser-native Canvas PDF delivery.
+// Build marker: 0.4.22 — validated Canvas discussion entry edits.
 // Delivery invariant: this Worker may fetch Canvas API JSON, never file-storage bytes.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
-const WORKER_BUILD = '0.4.21 (4.4.8.0)';
+const WORKER_BUILD = '0.4.22 (4.4.8.2)';
 const cors = {'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS', 'Access-Control-Allow-Headers':'Authorization, Accept, Content-Type', 'Access-Control-Expose-Headers':'Content-Type, Content-Length, Content-Disposition, Content-Range, Accept-Ranges, X-Northstar-Stage, X-Northstar-Upstream-Status, X-Northstar-Request-Id, X-Northstar-Failure, X-Northstar-Worker-Version', 'X-Northstar-Worker-Version':WORKER_BUILD, 'Vary':'Origin', 'Cache-Control':'no-store'};
 function reply(message,status){return new Response(JSON.stringify({error:message}),{status,headers:{...cors,'Content-Type':'application/json'}});}
 const isObject=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const isQuizFlagPath=path=>/^\/api\/v1\/quiz_submissions\/\d+\/questions\/\d+\/(?:flag|unflag)$/.test(path);
+const isDiscussionEntryEditPath=path=>/^\/api\/v1\/courses\/\d+\/discussion_topics\/\d+\/entries\/\d+$/.test(path);
 const keysOnly=(o,keys)=>isObject(o)&&Object.keys(o).every(k=>keys.includes(k));
 function validAnswer(v){
   if(v===null)return true;
@@ -153,11 +154,11 @@ export default {
     let body;
     if(request.method==='POST'||request.method==='PUT'){
       if(request.method==='POST'&&!isWritePath(url.pathname))return reply('Write path not allowed',405);
-      if(request.method==='PUT'&&!isQuizFlagPath(url.pathname))return reply('Write path not allowed',405);
+      if(request.method==='PUT'&&!isQuizFlagPath(url.pathname)&&!isDiscussionEntryEditPath(url.pathname))return reply('Write path not allowed',405);
       if(!request.headers.get('Content-Type')?.startsWith('application/json'))return reply('JSON required',415);
       const raw=await request.text();if(new TextEncoder().encode(raw).length>200000)return reply('Request too large',413);
       let data;try{data=JSON.parse(raw);}catch{return reply('Invalid JSON',400);}
-      const invalid=request.method==='PUT'?(!keysOnly(data,['attempt','validation_token','access_code'])||!Number.isSafeInteger(data.attempt)||data.attempt<1||typeof data.validation_token!=='string'||!data.validation_token||data.validation_token.length>512||(data.access_code!==undefined&&data.access_code!==null&&typeof data.access_code!=='string')?'Invalid quiz flag request':null):validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
+      const invalid=request.method==='PUT'?(isDiscussionEntryEditPath(url.pathname)?(!keysOnly(data,['message'])||typeof data.message!=='string'||!data.message.trim()||data.message.length>16000?'Invalid discussion edit message':null):(!keysOnly(data,['attempt','validation_token','access_code'])||!Number.isSafeInteger(data.attempt)||data.attempt<1||typeof data.validation_token!=='string'||!data.validation_token||data.validation_token.length>512||(data.access_code!==undefined&&data.access_code!==null&&typeof data.access_code!=='string')?'Invalid quiz flag request':null)):validateWrite(url.pathname,data);if(invalid)return reply(invalid,400);
       body=JSON.stringify(data);
     }
     try{
