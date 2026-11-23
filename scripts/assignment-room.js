@@ -77,7 +77,7 @@ function collectFiles(details,base){
  if(details.annotatable_attachment_id)add(details.annotatable_attachment_id,'Document to annotate','application/pdf','');
  return files;
 }
-const pdfState={assignment:null,file:null,identity:null,bytes:null,doc:null,page:1,scale:1.15,tool:'pen',inputMode:'hand',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{},activePointers:new Map(),activeGesture:null,preview:null};
+const pdfState={assignment:null,file:null,identity:null,bytes:null,doc:null,page:1,scale:1.15,tool:'pen',inputMode:'hand',color:'#c4e87b',width:2.8,annotations:{},history:[],redo:[],host:null,renderToken:0,viewports:{},activePointers:new Map(),activeGesture:null,preview:null,persistQueue:Promise.resolve(),persistenceMode:'unavailable'};
 function pdfKey(){const preview=String(location.pathname||'').includes('/preview/');return 'northstar_'+(preview?'preview_':'')+'pdf_markup_v2_'+String(pdfState.assignment?.id||'assignment')+'_'+String(pdfState.file?.id||'file');}
 function pdfIdentityKey(){return pdfKey().replace('_pdf_markup_v2_','_pdf_identity_v1_');}
 function persistPdfIdentity(){
@@ -88,7 +88,61 @@ function persistPdfIdentity(){
 }
 function legacyPdfKey(){return pdfKey().replace('_pdf_markup_v2_','_pdf_markup_v1_');}
 function getPageState(page){const key=String(page);if(!pdfState.annotations[key])pdfState.annotations[key]={strokes:[],texts:[]};return pdfState.annotations[key];}
-function persistAnnotations(){try{localStorage.setItem(pdfKey(),JSON.stringify(pdfState.annotations));return true;}catch{notify('The annotation could not be saved on this device. Export a copy to keep it.');return false;}}
+function currentPdfIdentity(){if(pdfState.identity)return pdfState.identity;persistPdfIdentity();return pdfState.identity;}
+function samePdfIdentity(a,b){return !!a&&!!b&&Number(a.canvasFileId)>0&&Number(a.canvasFileId)===Number(b.canvasFileId)&&Number(a.courseId)>0&&Number(a.courseId)===Number(b.courseId)&&String(a.assignmentId||'')===String(b.assignmentId||'');}
+function normalizePdfAnnotations(value){
+ const annotations=value&&typeof value==='object'?value:{};
+ Object.keys(annotations).forEach(key=>{
+  if(!/^\d+$/.test(key))return;
+  const page=annotations[key];if(!page||typeof page!=='object'){delete annotations[key];return;}
+  page.strokes=Array.isArray(page.strokes)?page.strokes:[];
+  page.texts=root.NorthstarDocumentEditor?root.NorthstarDocumentEditor.migrateTextAnnotations(page.texts):Array.isArray(page.texts)?page.texts:[];
+ });
+ annotations.__schemaVersion=2;return annotations;
+}
+async function restoreStoredPdf(){
+ const storage=root.NorthstarDocumentStorage;if(!storage?.getDocument)return null;
+ try{
+  const key=pdfKey(),identity=currentPdfIdentity();
+  const [documentRecord,draft]=await Promise.all([storage.getDocument(key),storage.getDraft(key)]);
+  if(!documentRecord||!samePdfIdentity(documentRecord.identity,identity))return null;
+  const bytes=documentRecord.bytes instanceof Uint8Array?documentRecord.bytes:new Uint8Array(documentRecord.bytes||[]);
+  if(bytes.byteLength<5||String.fromCharCode(...bytes.subarray(0,5))!=='%PDF-')return null;
+  if(draft&&samePdfIdentity(draft.identity,identity)){
+   pdfState.annotations=normalizePdfAnnotations(draft.annotations);
+   pdfState.page=Math.max(1,Math.min(500,Number(draft.page)||1));
+   pdfState.scale=Math.max(.65,Math.min(2.5,Number(draft.scale)||1.15));
+  }
+  pdfState.file={...pdfState.file,name:String(documentRecord.filename||pdfState.file?.name||'Assignment PDF'),contentType:String(documentRecord.contentType||pdfState.file?.contentType||'application/pdf'),size:Number(documentRecord.size)||bytes.byteLength};
+  pdfState.persistenceMode='IndexedDB';return {bytes,draftUpdatedAt:Number(draft?.updatedAt)||null};
+ }catch{return null;}
+}
+async function persistPdfSource(bytes){
+ const storage=root.NorthstarDocumentStorage;if(!storage?.saveDocument)return false;
+ try{
+  const saved=await storage.saveDocument({key:pdfKey(),identity:currentPdfIdentity(),bytes,filename:pdfState.file?.name||'Assignment PDF',contentType:pdfState.file?.contentType||'application/pdf',updatedAt:Date.now()});
+  if(saved)pdfState.persistenceMode='IndexedDB';return !!saved;
+ }catch{return false;}
+}
+function queuePdfDraftSave(){
+ const storage=root.NorthstarDocumentStorage;if(!storage?.saveDraft)return Promise.resolve(false);
+ let annotations;try{annotations=JSON.parse(JSON.stringify(pdfState.annotations));}catch{return Promise.resolve(false);}
+ const record={key:pdfKey(),identity:currentPdfIdentity(),annotations,page:pdfState.page,scale:pdfState.scale,updatedAt:Date.now()},key=record.key;
+ const task=pdfState.persistQueue.catch(()=>false).then(()=>storage.saveDraft(record));
+ pdfState.persistQueue=task.then(saved=>{
+  if(saved){pdfState.persistenceMode='IndexedDB';if(key===pdfKey())setSaveState('Saved on this iPad · PDF and annotations recover automatically.');}
+  else if(key===pdfKey())setSaveState('Draft remains in browser storage; IndexedDB recovery is unavailable. Export a backup.');
+  return !!saved;
+ }).catch(()=>{if(key===pdfKey())setSaveState('Draft remains in browser storage; IndexedDB recovery failed. Export a backup.');return false;});
+ return pdfState.persistQueue;
+}
+function persistAnnotations(){
+ let localSaved=false;try{localStorage.setItem(pdfKey(),JSON.stringify(pdfState.annotations));localSaved=true;}catch{}
+ if(root.NorthstarDocumentStorage?.saveDraft){setSaveState('Saving draft to this iPad…');queuePdfDraftSave();return true;}
+ if(localSaved){pdfState.persistenceMode='localStorage';return true;}
+ notify('The annotation could not be saved on this device. Export a copy to keep it.');return false;
+}
+function flushPdfDraft(){try{if(pdfState.textEditor?.flush)pdfState.textEditor.flush();else persistAnnotations();}catch{persistAnnotations();}}
 function notify(message){if(typeof root.toast==='function')root.toast(message);else{const n=$('#toast');if(n){n.textContent=message;n.classList.add('show');}}}
 function isPenPointer(pointerType){return pointerType==='pen';}
 function loadPdfEngine(){
@@ -511,11 +565,14 @@ function richTextRuns(note){
 }
 async function exportAnnotatedPdf(){
  if(!pdfState.bytes||!pdfState.doc)throw Error('Open a PDF first.');
+ if(pdfState.textEditor?.flush)pdfState.textEditor.flush();
+ if(pdfState.persistQueue)await pdfState.persistQueue.catch(()=>false);
  const lib=await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm');
  const pdf=await lib.PDFDocument.load(pdfState.bytes),pages=pdf.getPages(),rgb=lib.rgb;
  for(const key of Object.keys(pdfState.annotations)){
   if(!/^\d+$/.test(key))continue;
   const index=Number(key)-1,page=pages[index];if(!page)continue;const width=page.getWidth(),height=page.getHeight(),s=pdfState.annotations[key];
+  if(!pdfState.viewports[index+1]){const renderedPage=await pdfState.doc.getPage(index+1);pdfState.viewports[index+1]=renderedPage.getViewport({scale:pdfState.scale});}
   (s.strokes||[]).forEach(stroke=>{
    const points=stroke.points||[];if(!points.length)return;
    const viewport=pdfState.viewports[index+1]||{width,height,convertToPdfPoint:(x,y)=>[x,height-y]};
@@ -603,6 +660,8 @@ async function initializePdfEditor(host,bytes){
  const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
  if(data.byteLength<5||String.fromCharCode(...data.slice(0,5))!=='%PDF-')throw Error('The selected file is not a readable PDF. Choose the original PDF from Files.');
  pdfState.bytes=data;pdfState.doc=null;pdfState.renderToken++;
+ setSaveState('Saving the original PDF to this iPad…');
+ const sourceSaved=await persistPdfSource(data);
  renderToolbar(host);
  const name=$('#nsPdfFileName');if(name)name.textContent=pdfState.file?.name||'Assignment PDF';
  const lib=await loadPdfEngine();
@@ -614,12 +673,15 @@ async function initializePdfEditor(host,bytes){
    getHost:()=>host,getPageElement:()=>$('#nsPdfCanvas')?.parentElement,getTexts:()=>getPageState(pdfState.page).texts,
    canInteract:pointerType=>canAnnotatePointer(pointerType,pdfState.inputMode),
    getBrushSize:()=>pdfState.width*3,beforeChange:()=>pushHistory(),
-   onChange:()=>{setSaveState('Saving…');const saved=persistAnnotations();setSaveState(saved?'Saved on this device.':'Unable to save. Export a copy to keep it.');}
+   onChange:()=>{setSaveState('Saving…');persistAnnotations();}
   });
   pdfState.textEditor.setMode(pdfState.inputMode);pdfState.textEditor.setTool(pdfState.tool);pdfState.textEditor.render();
   persistAnnotations();
  }
- setSaveState('Ready. Select Text to create editable objects directly on the page.');
+ if(pdfState.persistQueue)await pdfState.persistQueue.catch(()=>false);
+ if(!sourceSaved&&pdfState.persistenceMode!=='IndexedDB')setSaveState('PDF opened, but IndexedDB could not save a recovery copy. Export a backup before leaving.');
+ else if(pdfState.persistenceMode==='IndexedDB')setSaveState('Saved on this iPad · PDF and annotations recover automatically.');
+ else setSaveState('Draft saved in browser storage. Export a backup before leaving.');
 }
 function renderNativePdfFallback(host,file,assignment,credentials,source){
  if(Number(pdfState.file?.id)===Number(file.id))file={...file,...pdfState.file};
