@@ -23,39 +23,7 @@ function transport(credentials,fetchImpl=root.fetch){
     catch{throw Error('Canvas request did not return a response. Check Canvas before retrying; NORTHSTAR will not retry a write automatically.');}
     return json(response);
   }
-  async function getBinary(path){
-    const api=new URL(path,base);
-    if(api.origin!==base.origin||!api.pathname.startsWith('/api/v1/'))throw Error('Canvas file path is outside your connected school.');
-    if(!credentials.proxy)throw Error('In-dashboard document viewing requires your private Canvas bridge.');
-    const bridge=new URL(credentials.proxy);if(bridge.protocol!=='https:')throw Error('Canvas bridge must use HTTPS.');
-    bridge.searchParams.set('path',api.pathname+api.search);
-    let response;try{response=await fetchImpl(bridge.href,{method:'GET',headers:{Authorization:'Bearer '+credentials.token,Accept:'application/pdf,application/octet-stream,*/*'},cache:'no-store',redirect:'error'});}
-    catch{throw Error('The PDF could not be downloaded through the private Canvas bridge.');}
-    if(!response.ok){
-      let detail={};try{detail=await response.json();}catch{}
-      const stage=detail.stage||response.headers.get('X-Northstar-Stage')||'unknown';
-      const upstreamHeader=response.headers.get('X-Northstar-Upstream-Status');
-      const upstreamStatus=detail.upstreamStatus!==undefined?detail.upstreamStatus:(upstreamHeader!==null?Number(upstreamHeader):null);
-      const code=detail.code||'CANVAS_FILE_DOWNLOAD_FAILED';
-      const requestId=detail.requestId||response.headers.get('X-Northstar-Request-Id')||'';
-      const failureType=detail.diagnostics?.failureType||response.headers.get('X-Northstar-Failure')||'http';
-      const message=failureType==='network'
-        ? (stage==='metadata'?'NORTHSTAR could not reach Canvas for attachment metadata (bridge HTTP '+response.status+').':'NORTHSTAR could not reach the file host during download (bridge HTTP '+response.status+').')
-        : failureType==='redirect'
-          ? 'NORTHSTAR stopped an unsafe or invalid file redirect (bridge HTTP '+response.status+').'
-          : stage==='metadata'
-            ? 'Canvas rejected the file metadata request (HTTP '+upstreamStatus+').'
-            : stage==='content'
-              ? 'Canvas rejected the actual file download (HTTP '+upstreamStatus+').'
-              : 'Canvas file download failed (HTTP '+response.status+').';
-      const error=Error(message+(requestId?' Reference: '+requestId:''));error.status=response.status;error.upstreamStatus=upstreamStatus===null?null:Number(upstreamStatus);error.stage=stage;error.code=code;error.requestId=requestId;error.failureType=failureType;error.workerVersion=response.headers.get('X-Northstar-Worker-Version')||'';error.diagnostics=detail.diagnostics&&typeof detail.diagnostics==='object'?detail.diagnostics:{};error.bridgeStatus=response.status;throw error;
-    }
-    const contentType=response.headers.get('Content-Type')||'application/octet-stream';
-    const disposition=response.headers.get('Content-Disposition')||'';
-    const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^;"]+)/i);
-    return {bytes:new Uint8Array(await response.arrayBuffer()),contentType,filename:match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'',workerVersion:response.headers.get('X-Northstar-Worker-Version')||''};
-  }
-  return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true),put:(path,body)=>request('PUT',path,body,true),getBinary};
+  return {get:path=>request('GET',path),post:(path,body)=>request('POST',path,body,true),put:(path,body)=>request('PUT',path,body,true)};
 }
 function safeCanvasReturnTo(value){
   if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.includes('#'))return false;
