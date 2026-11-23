@@ -2,8 +2,8 @@
 
 **Development version:** 0.4.19 / NORTHSTAR 4.4.7.5  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** Authenticated PDF download correction is in the preview candidate; exact-head Phase 4 and Pages validation pending; live Canvas acceptance remains open.  
-**Production:** `main` contains NORTHSTAR 4.4.6.10; its exact-head Pages publication is gated on the current preview branch also passing Phase 4.
+**Status:** NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735. Live Canvas account and physical iPad/Apple Pencil acceptance remain open.  
+**Production:** Production and preview are both on NORTHSTAR 4.4.7.5; the Pages freshness gate verified both tested source heads before publication.
 
 This document distinguishes four different states:
 
@@ -161,7 +161,7 @@ The Document Studio annotated-PDF handoff now has a browser boot integration tes
 Phase 4.4.7.4 also corrects a stale release-history test that confused the previous deployed preview with the current pending candidate. The Document Studio submission UI test and annotated-PDF-only behavior are carried forward unchanged.
 
 
-Release 4.4.7.4 was deployed to the preview Pages path by run 45086841863. Production source has since advanced to NORTHSTAR 4.4.6.10 on main; its Pages publication is controlled by the same exact-head freshness gate as the preview branch. The Canvas Worker remains deployed separately; the remaining acceptance requirement is a real student-account upload and submission test.
+Release 4.4.7.4 was the previous preview release. NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735, from tested main source f347cc304356be67e7de8f22b80d0d6e11efebe9 and preview source df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc. The Canvas Worker remains deployed separately by run 45085853219. The real student-account upload/submission and physical iPad acceptance checks remain open.
 
 
 ## NORTHSTAR 4.4.7.5 — Authenticated Canvas PDF downloads
