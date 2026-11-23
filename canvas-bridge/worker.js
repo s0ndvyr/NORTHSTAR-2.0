@@ -1,5 +1,6 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
 // Build marker: 0.4.21 — browser-native Canvas PDF delivery.
+// Delivery invariant: this Worker may fetch Canvas API JSON, never file-storage bytes.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
 const WORKER_BUILD = '0.4.21 (4.4.8.0)';
