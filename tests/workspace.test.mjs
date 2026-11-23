@@ -54,9 +54,15 @@ assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
 await W.updateQuizQuestionFlag({credentials,submission:started.submission,questionId:9,flagged:false,fetchImpl});
 assert.equal(new URL(calls.at(-1).url).searchParams.get('path'),'/api/v1/quiz_submissions/77/questions/9/unflag');
 
-await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl});
-assert(new URL(calls.at(-1).url).searchParams.get('path').includes('/complete'));
-assert.equal(JSON.parse(calls.at(-1).opts.body).attempt,1);
+const callsBeforeComplete=calls.length;
+const completionResult=await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl});
+const completionCalls=calls.slice(callsBeforeComplete);
+const completionRequest=completionCalls.find(call=>new URL(call.url).searchParams.get('path')==='/api/v1/courses/11/quizzes/22/submissions/77/complete');
+assert.ok(completionRequest,'official Canvas quiz completion request was sent');
+assert.equal(completionRequest.opts.method,'POST');
+assert.equal(JSON.parse(completionRequest.opts.body).attempt,1);
+assert.equal(new URL(completionCalls.at(-1).url).searchParams.get('path'),'/api/v1/courses/11/quizzes/22/submission','completion is followed by an authoritative Canvas attempt read');
+assert.equal(completionResult.confirmed,true);
 await assert.rejects(W.startQuiz({credentials:{base:credentials.base,token:'x'},courseId:11,quizId:22,fetchImpl}),/private Canvas bridge/);
 await assert.rejects(W.saveQuizAnswers({credentials,submission:started.submission,answers:[],fetchImpl}),/no answers/i);
 
