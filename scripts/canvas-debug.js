@@ -422,6 +422,16 @@
           host: clean(input.browserDelivery.host || "", 180),
           contentType: clean(input.browserDelivery.contentType || "", 120)
         } : null,
+        publicPreviewDelivery: input.publicPreviewDelivery && typeof input.publicPreviewDelivery === "object" ? {
+          publicUrlEndpointResult: clean(input.publicPreviewDelivery.publicUrlEndpointResult || "unknown", 40),
+          publicUrlEndpointStatus: numberOrNull(input.publicPreviewDelivery.publicUrlEndpointStatus),
+          attempted: !!input.publicPreviewDelivery.attempted,
+          result: clean(input.publicPreviewDelivery.result || "unknown", 40),
+          httpStatus: numberOrNull(input.publicPreviewDelivery.status),
+          host: clean(input.publicPreviewDelivery.host || "", 180),
+          contentType: clean(input.publicPreviewDelivery.contentType || "", 120),
+          canvasViewerAvailable: !!input.publicPreviewDelivery.canvasViewerAvailable
+        } : null,
         publicUrlAttempt: d.publicUrlAttempt && typeof d.publicUrlAttempt === "object" ? {
           endpointResult: clean(d.publicUrlAttempt.endpointResult || "unknown", 40),
           endpointStatus: numberOrNull(d.publicUrlAttempt.endpointStatus),
