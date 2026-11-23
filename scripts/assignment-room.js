@@ -714,6 +714,7 @@ async function initializePdfEditor(host,bytes,context){
  renderToolbar(host);
  const name=$('#nsPdfFileName');if(name)name.textContent=pdfState.file?.name||'Assignment PDF';
  const lib=await loadPdfEngine();
+ if(context.token!==pdfState.openToken)return false;
  const parseBytes=pdfState.bytes.slice();
  const parsedDocument=await lib.getDocument({data:parseBytes}).promise;
  if(context.token!==pdfState.openToken)return false;
@@ -818,9 +819,10 @@ async function openPdf(host,file,assignment,credentials){
  }catch{pdfState.annotations={__schemaVersion:2};}
  const loading=host.querySelector('.ns-room-loading');if(!loading)host.innerHTML='<div class="ns-room-loading"><h2>Opening '+escapeHtml(file.name)+'</h2><p>Restoring your saved document or requesting Canvas…</p></div>';
  const key=pdfKey(),identity=currentPdfIdentity();
- let cached=null;
- try{cached=await restoreStoredPdf(key,identity);}catch(error){pdfState.persistenceWarning={stage:'recovery-read',name:String(error?.name||'StorageReadError'),message:String(error?.message||'The saved recovery copy could not be read.')};}
+ let cached=null,recoveryError=null;
+ try{cached=await restoreStoredPdf(key,identity);}catch(error){recoveryError={stage:'recovery-read',name:String(error?.name||'StorageReadError'),message:String(error?.message||'The saved recovery copy could not be read.')};}
  if(token!==pdfState.openToken)return false;
+ if(recoveryError)pdfState.persistenceWarning=recoveryError;
  if(cached?.draft&&samePdfIdentity(cached.draft.identity,identity)){pdfState.annotations=normalizePdfAnnotations(cached.draft.annotations);pdfState.page=Math.max(1,Math.min(500,Number(cached.draft.page)||1));pdfState.scale=Math.max(.65,Math.min(2.5,Number(cached.draft.scale)||1.15));}
  if(cached?.identityMismatch)throw Error(storageFailureMessage(cached.warning,'Saved PDF identity does not match this assignment. The record was preserved and not overwritten.'));
  if(cached?.warning)pdfState.persistenceWarning=cached.warning;
