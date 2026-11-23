@@ -3,8 +3,8 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.7.5',packageVersion:'0.4.19',
- bridge:{version:'1.2',status:'Worker 0.4.16 (4.4.7.2) remains separately deployed; no Worker source change in .7.5.'},releaseDate:'2026-11-22',
+ product:'NORTHSTAR',phase:'4.4.7',northstarVersion:'4.4.7.5',packageVersion:'0.4.19',
+ bridge:{version:'1.2',status:'Worker 0.4.16 (4.4.7.2) remains separately deployed; no Worker source change in .7.5.'},releaseDate:'2026-11-23',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
   {version:'4.4.7.5',date:'2026-11-23',title:'Authenticated Canvas PDF retrieval',description:'Browser-direct PDF retrieval now sends the Canvas bearer token only to HTTPS Canvas/Instructure allowlisted file hosts. Browser cookies remain omitted; untrusted destinations are rejected and CORS failures fall back to the authenticated private Worker. The signed-upload token isolation and annotated-PDF-only submission workflow remain intact.',category:'Canvas integration and security',areas:['Authenticated PDF retrieval','Instructure host allowlist','CORS fallback','Signed upload token isolation','Document Studio submission'],status:'Awaiting exact-head Phase 4 CI and freshness-gated Pages deployment; live Canvas/iPad acceptance remains open.'},
