@@ -31,7 +31,7 @@
         "Canvas Worker security allowlist",
         "Phase 4 regression qualification"
       ],
-      "status": "Development candidate on northstar-4.4.8.2-canvas-submission. Automated qualification and preview deployment are pending. The Worker 0.4.22 candidate has not yet been deployed; the last confirmed deployed Worker remains 0.4.21. Real Canvas and iPad acceptance have not been performed for this Phase 3 candidate. Production remains 4.4.7.5 / package 0.4.19.",
+      "status": "Development candidate on northstar-4.4.8.2-canvas-submission. Automated qualification and preview deployment are pending. The Worker 0.4.22 candidate has not yet been deployed; the last confirmed deployed Worker remains 0.4.21. Real Canvas record verification remains open. Physical iPad Safari and Apple Pencil acceptance, including upload/quiz/discussion recovery, has not yet been performed for this Phase 3 candidate. Production remains 4.4.7.5 / package 0.4.19.",
       "historical": false,
       "commits": []
     },
