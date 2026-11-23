@@ -11,15 +11,21 @@ const dom=new JSDOM('<!doctype html><html><body><div id="host"></div></body></ht
 const {window}=dom;
 const host=window.document.getElementById('host');
 const previewUrl='https://inst-fs-iad-prod.inscloudgate.net/inline/worksheet.pdf?signature=short-lived-secret';
-let sessionRequest=null,openedTab=null;
+let sessionRequest=null,openedTab=null,downloadCalls=0;
+const refreshedPreviewUrl='https://inst-fs-iad-prod.inscloudgate.net/inline/worksheet.pdf?signature=refreshed-short-lived';
 window.open=()=>{openedTab={location:{href:'about:blank'},close(){this.closed=true;},closed:false};return openedTab;};
 window.NorthstarWorkspace={
-  downloadCanvasFile:async()=>({
-    id:61162022,name:'ionic nomenclature problem set 2026.pdf',contentType:'application/pdf',
-    bytes:null,previewUrl,canvasReturnTo:'/courses/155417/files/61162022',
-    publicUrlEndpoint:{result:'response',status:200},
-    previewDelivery:{attempted:true,result:'browser_fetch_blocked',status:null,host:'inst-fs-iad-prod.inscloudgate.net',contentType:''}
-  }),
+  downloadCanvasFile:async({courseId,fileId})=>{
+    downloadCalls++;
+    assert.equal(courseId,155417,'preview refresh remains scoped to the original Canvas course');
+    assert.equal(fileId,61162022,'preview refresh remains scoped to the original Canvas file');
+    return {
+      id:downloadCalls===3?999:fileId,name:'ionic nomenclature problem set 2026.pdf',contentType:'application/pdf',size:34567,
+      bytes:null,previewUrl:downloadCalls===1?previewUrl:refreshedPreviewUrl,canvasReturnTo:'/courses/155417/files/61162022',
+      publicUrlEndpoint:{result:'response',status:200},
+      previewDelivery:{attempted:true,result:'browser_fetch_blocked',status:null,host:'inst-fs-iad-prod.inscloudgate.net',contentType:''}
+    };
+  },
   getCanvasSessionUrl:async args=>{sessionRequest=args;return {sessionUrl:'https://nnps.instructure.com/login?session_url=temporary-session'};}
 };
 window.eval(source);
@@ -35,6 +41,19 @@ assert.ok(host.textContent.includes('Save to Files'),'the iPad save-to-Files wor
 assert.ok(host.textContent.includes('Import downloaded PDF to edit'),'the fallback clearly returns the document to Document Studio');
 assert.equal(host.querySelector('#nsPdfLocalFile')?.accept,'application/pdf,.pdf');
 assert.equal([...Array(window.localStorage.length)].map((_,i)=>window.localStorage.key(i)).filter(Boolean).some(key=>String(window.localStorage.getItem(key)).includes('signature=')),false,'signed URLs are not persisted');
+const identityKey=[...Array(window.localStorage.length)].map((_,i)=>window.localStorage.key(i)).find(key=>key&&key.includes('_pdf_identity_v1_'));
+assert.ok(identityKey,'the active Canvas attachment identity is persisted separately from annotations');
+const identity=JSON.parse(window.localStorage.getItem(identityKey));
+assert.equal(identity.canvasFileId,61162022);
+assert.equal(identity.courseId,155417);
+assert.equal(identity.assignmentId,'assignment-1');
+assert.equal(identity.originalFilename,'ionic nomenclature problem set 2026.pdf');
+
+host.querySelector('#nsPdfRefreshPreview').click();
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.equal(downloadCalls,2,'an explicit refresh requests a new Canvas public_url instead of reusing the expired capability');
+assert.equal(host.querySelector('.ns-pdf-native-preview')?.src,refreshedPreviewUrl,'the embedded preview receives the newly issued URL');
+assert.equal(host.querySelector('a[href]')?.href,refreshedPreviewUrl,'the Safari open link receives the newly issued URL');
 
 host.querySelector('#nsPdfOpenCanvas').click();
 await new Promise(resolve=>setTimeout(resolve,0));
@@ -49,4 +68,7 @@ Object.defineProperty(input,'files',{configurable:true,value:[{
 input.dispatchEvent(new window.Event('change'));
 await new Promise(resolve=>setTimeout(resolve,0));
 assert.match(status.textContent,/not a readable PDF/i,'invalid imports are rejected before the PDF renderer runs');
-console.log('PASS: native Canvas PDF recovery UI, Safari preview, temporary session handoff, signed-URL privacy, and local PDF validation');
+host.querySelector('#nsPdfRefreshPreview').click();
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.match(host.querySelector('#nsPdfNativeStatus').textContent,/different attachment/i,'a refresh response for another Canvas file cannot replace the active attachment context');
+console.log('PASS: native Canvas PDF recovery, explicit signed-URL refresh, attachment identity, session handoff, URL privacy, and local PDF validation');
