@@ -38,7 +38,7 @@ const assignmentRead=between(workspace,'async function getAssignmentSubmission',
 assert.ok(assignmentRead.includes('include%5B%5D=submission&include%5B%5D=can_submit'),'assignment retrieval includes current student submission and can_submit');
 assert.ok(assignmentRead.includes('/api/v1/users/self'),'history is scoped to the authenticated student');
 assert.ok(assignmentRead.includes("'/submissions/'+userId+'?include%5B%5D=submission_history"),'history/comments/rubric are retrieved for the current user');
-const completion=between(workspace,'async function completeQuiz','function questionType','quiz completion API');
+const completion=between(workspace,'async function completeQuiz','function trustedCanvasPreviewUrl','quiz completion API');
 assert.ok(completion.includes("'/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(submission.id)+'/complete'"),'the official quiz completion endpoint is called for the exact attempt');
 assert.ok(completion.includes('getCurrentQuizSubmission'),'quiz completion is independently reconciled');
 assert.ok(completion.includes('completionOutcomeUnknown'),'lost confirmation is not converted into success or retried');
