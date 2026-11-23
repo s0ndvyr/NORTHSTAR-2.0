@@ -95,216 +95,37 @@ assert.equal((await worker.fetch(request('/api/quiz/v1/courses/1/quizzes/12'))).
 assert.equal((await worker.fetch(request('/api/quiz/v1/courses/1/quizzes/12/items'))).status,200,'New Quiz items are readable');
 assert.equal((await worker.fetch(request('/api/quiz/v1/courses/1/quizzes/12/items',{method:'POST'}))).status,405,'New Quiz writes remain disallowed');
 assert.equal((await worker.fetch(request('/api/v1/courses/1/files/42'))).status,200,'course file metadata is readable');
-let fileCalls=[];
-const canvasFileHost='school.instructure.com';
-const userContentHost='a16702-61162022.cluster277.canvas-user-content.com';
-const storageHost='inst-fs-iad-prod.inscloudgate.net';
-const signedUrlHost='northstar-test-bucket.s3.amazonaws.com';
+// The Worker authenticates Canvas's public_url API request, but never fetches
+// the returned storage URL. The browser owns native navigation and PDF bytes.
+const previewCalls=[];
+const previewStorageHost='inst-fs-iad-prod.inscloudgate.net';
 globalThis.fetch=async(url,opts)=>{
-  fileCalls.push({url,opts});
+  previewCalls.push({url,opts});
   const target=new URL(url);
-  if(target.pathname==='/api/v1/files/123'||target.pathname==='/api/v1/courses/1/files/124'){
-    const id=target.pathname.endsWith('/123')?'123':'124';
-    return new Response(JSON.stringify({id,url:'https://'+canvasFileHost+'/files/'+id+'/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({
+    id:124,display_name:'ionic nomenclature problem set 2026.pdf',size:34567,
+    url:'https://school.instructure.com/files/124/download'
+  }),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url'){
+    assert.equal(opts.headers.Authorization,'Bearer test-secret','the public-preview URL is generated through authenticated Canvas API access');
+    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the Canvas API request retains the browser User-Agent');
+    return new Response(JSON.stringify({public_url:'https://'+previewStorageHost+'/inline/61162022?signature=short-lived'}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(target.pathname==='/api/v1/files/123/public_url'||target.pathname==='/api/v1/files/124/public_url'){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','Canvas public-preview URL generation is authenticated');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','Canvas public-preview URL generation retains the browser User-Agent');
-    return new Response(JSON.stringify({public_url:'https://'+signedUrlHost+'/course/worksheet.pdf?X-Amz-Signature=opaque'}),{status:200,headers:{'Content-Type':'application/json'}});
-  }
-  if(target.hostname===signedUrlHost){
-    assert.equal(opts.headers.Authorization,undefined,'the Canvas bearer token is never sent to a signed AWS URL');
-    assert.equal(opts.headers['User-Agent'],undefined,'the browser User-Agent is not replayed to signed external object storage');
-    return new Response(new Uint8Array([37,80,68,70]),{status:200,headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="worksheet.pdf"'}});
-  }
-  throw Error('unexpected URL '+target.href);
+  if(target.hostname===previewStorageHost)throw Error('The private Worker must never fetch Canvas storage bytes.');
+  throw Error('Unexpected preview API URL '+target.href);
 };
-const fileResponse=await worker.fetch(request('/api/v1/files/123/download'));
-assert.equal(fileResponse.status,200);
-assert.equal(fileResponse.headers.get('Content-Type'),'application/pdf');
-assert.equal(fileResponse.headers.get('Content-Disposition'),'attachment; filename="worksheet.pdf"');
-assert.deepEqual([...new Uint8Array(await fileResponse.arrayBuffer())],[37,80,68,70]);
-assert.equal(fileCalls.length,3,'metadata, authenticated public-preview URL and signed object bytes are retrieved');
-const scopedFileResponse=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-assert.equal(scopedFileResponse.status,200,'course-scoped file download prefers the authenticated public-preview URL');
-assert(fileCalls.some(x=>x.url==='https://school.instructure.com/api/v1/courses/1/files/124'),'scoped attachment metadata request retains course context');
-assert.equal((await worker.fetch(request('/api/v1/files/123/public_url'))).status,200,'public-preview URL endpoint is narrowly allowlisted for Canvas reads');
-
-// Instructure-hosted public_url values are signed capabilities too: never add
-// the Canvas bearer token or the student's browser User-Agent to that URL.
-let signedInstructureCalls=[];
-globalThis.fetch=async(url,opts)=>{
-  const target=new URL(url);signedInstructureCalls.push({url:target.href,opts});
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.pathname==='/api/v1/files/124/public_url')return new Response(JSON.stringify({public_url:'https://'+storageHost+'/inline/124?signature=opaque'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.hostname===storageHost){
-    assert.equal(opts.headers.Authorization,undefined,'a signed Instructure public-preview URL receives no Canvas bearer token');
-    assert.equal(opts.headers['User-Agent'],undefined,'a signed Instructure public-preview URL receives no browser User-Agent');
-    return new Response(new Uint8Array([37,80,68,70,45,49]),{status:200,headers:{'Content-Type':'application/pdf'}});
-  }
-  throw Error('unexpected signed Instructure URL '+target.href);
-};
-const signedInstructureFile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-assert.equal(signedInstructureFile.status,200,'signed public-preview URLs on Instructure storage hosts are fetched directly');
-assert.deepEqual([...new Uint8Array(await signedInstructureFile.arrayBuffer())],[37,80,68,70,45,49]);
-assert.equal(signedInstructureCalls.length,3);
-
-
-// Reproduce the NNPS redirect chain when Canvas public-preview URL generation
-// is unavailable, and retain safe diagnostics if the storage edge rejects it.
-let failedChain=[];
-globalThis.fetch=async(url,opts)=>{
-  const target=new URL(url);failedChain.push({url:target.href,opts});
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.pathname==='/api/v1/files/124/public_url')return new Response('public URL unavailable',{status:403,headers:{'Content-Type':'text/html'}});
-  if(target.hostname===canvasFileHost){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','the Canvas download endpoint receives the bearer token');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the Canvas download endpoint receives the browser User-Agent');
-    return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/cluster/61162022/file.pdf'}});
-  }
-  if(target.hostname===userContentHost){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated download token is sent to the explicit Instructure file-host allowlist');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the browser User-Agent is preserved for the Instructure file host');
-    assert.equal(opts.headers.Referer,'https://'+canvasFileHost+'/','the storage hop receives only the previous origin as referrer');
-    return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/download/61162022?signature=must-not-leak'}});
-  }
-  if(target.hostname===storageHost){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','the authenticated download token remains restricted to explicitly trusted Instructure file hosts');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)','the browser User-Agent is preserved for the trusted Instructure storage edge');
-    assert.equal(opts.headers.Referer,'https://'+userContentHost+'/','the final storage hop receives only the immediate previous origin');
-    return new Response('private upstream error body',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'upstream-ray-406'}});
-  }
-  throw Error('unexpected diagnostic URL '+target.href);
-};
-const failedFile=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-ray-406'}}));
-assert.equal(failedFile.status,406);
-const failedDetails=await failedFile.json();
-assert.equal(failedFile.headers.get('X-Northstar-Worker-Version'),'0.4.20 (4.4.7.9)');
-assert.match(failedFile.headers.get('Access-Control-Expose-Headers'),/X-Northstar-Worker-Version/);
-assert.equal(failedDetails.stage,'content');
-assert.equal(failedDetails.upstreamStatus,406);
-assert.equal(failedDetails.requestId,'outer-ray-406');
-assert.equal(failedDetails.diagnostics.upstreamHost,storageHost);
-assert.equal(failedDetails.diagnostics.upstreamRayId,'upstream-ray-406');
-assert.equal(failedDetails.diagnostics.courseScoped,true);
-assert.equal(failedDetails.diagnostics.publicUrlAttempt.endpointResult,'http_error','the diagnostic records when Canvas public_url itself refuses the request');
-assert.equal(failedDetails.diagnostics.publicUrlAttempt.endpointStatus,403);
-assert.equal(failedDetails.diagnostics.publicUrlAttempt.fetchResult,'not_attempted');
-
-assert.equal(failedDetails.diagnostics.redirectCount,2);
-assert.deepEqual(failedDetails.diagnostics.redirectHosts,[canvasFileHost,userContentHost]);
-assert(!JSON.stringify(failedDetails).includes('signature='));
-assert(!JSON.stringify(failedDetails).includes('private upstream error body'));
-assert(!JSON.stringify(failedDetails).includes('test-secret'),'diagnostics never include the Canvas bearer token');
-assert.equal(failedChain.length,5,'metadata, public URL fallback, and three download hops are accounted for');
-assert.equal(failedChain[2].opts.headers.Authorization,'Bearer test-secret');
-assert.equal(failedChain[3].opts.headers.Authorization,'Bearer test-secret');
-assert.equal(failedChain[4].opts.headers.Authorization,'Bearer test-secret');
-
-// Reproduce a public_url response on the live Instructure storage edge. The
-// signed URL request must carry no credentials; a failed result must survive
-// the legacy fallback in the final safe diagnostic.
-let signedStorageFailureCalls=[];
-globalThis.fetch=async(url,opts)=>{
-  const target=new URL(url);signedStorageFailureCalls.push({url:target.href,opts});
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://'+canvasFileHost+'/files/124/download','content-type':'application/pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.pathname==='/api/v1/files/124/public_url')return new Response(JSON.stringify({public_url:'https://'+storageHost+'/inline/124?signature=private-signature'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.pathname==='/inline/124'){
-    assert.equal(opts.headers.Authorization,undefined);
-    assert.equal(opts.headers['User-Agent'],undefined);
-    return new Response('signed-preview edge refused',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'public-url-ray-406'}});
-  }
-  if(target.hostname===canvasFileHost)return new Response(null,{status:302,headers:{Location:'https://'+userContentHost+'/cluster/61162022/file.pdf'}});
-  if(target.hostname===userContentHost)return new Response(null,{status:302,headers:{Location:'https://'+storageHost+'/fallback/61162022'}});
-  if(target.hostname===storageHost&&target.pathname==='/fallback/61162022'){
-    assert.equal(opts.headers.Authorization,'Bearer test-secret','the legacy fallback retains its separately tested authentication policy');
-    assert.equal(opts.headers['User-Agent'],'Mozilla/5.0 (test browser)');
-    return new Response('fallback edge refused',{status:406,headers:{'Content-Type':'text/html','Server':'cloudflare','cf-ray':'fallback-ray-406'}});
-  }
-  throw Error('unexpected signed-preview failure URL '+target.href);
-};
-const signedStorageFailure=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'signed-storage-outer-ray'}}));
-assert.equal(signedStorageFailure.status,406);
-const signedStorageFailureBody=await signedStorageFailure.json();
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.endpointResult,'url_returned');
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.urlHost,storageHost);
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchResult,'http_error');
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchStatus,406);
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchHost,storageHost);
-assert.equal(signedStorageFailureBody.diagnostics.publicUrlAttempt.fetchRayId,'public-url-ray-406');
-assert(!JSON.stringify(signedStorageFailureBody).includes('private-signature'));
-assert(!JSON.stringify(signedStorageFailureBody).includes('private upstream error body'));
-assert(!JSON.stringify(signedStorageFailureBody).includes('test-secret'));
-assert.equal(signedStorageFailureCalls.length,6,'public_url endpoint, signed capability fetch and validated legacy fallback are all accounted for');
-
-
-// A hostile initial URL or redirect is rejected before any request is made to it.
-let hostileCalls=[];
-globalThis.fetch=async(url,opts)=>{
-  hostileCalls.push({url,opts});
-  const target=new URL(url);
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://evil.example/private.pdf'}),{status:200,headers:{'Content-Type':'application/json'}});
-  throw Error('Untrusted file destination must never be fetched: '+target.href);
-};
-const hostile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-assert.equal(hostile.status,502);
-assert.equal((await hostile.json()).code,'CANVAS_FILE_URL_UNSAFE');
-assert.equal(hostileCalls.length,2,'untrusted metadata URLs are rejected before contacting their host; only metadata and the Canvas public_url endpoint are contacted');
-let hostileRedirectCalls=[];
-globalThis.fetch=async(url,opts)=>{
-  hostileRedirectCalls.push({url,opts});
-  const target=new URL(url);
-  if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.pathname==='/api/v1/files/124/public_url')return new Response('preview unavailable',{status:403});
-  if(target.hostname==='school.instructure.com')return new Response(null,{status:302,headers:{Location:'https://evil.example/private.pdf'}});
-  throw Error('Untrusted redirect target must never be fetched: '+target.href);
-};
-const hostileRedirect=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-assert.equal(hostileRedirect.status,502);
-assert.equal((await hostileRedirect.json()).code,'CANVAS_FILE_REDIRECT_UNSAFE');
-assert.equal(hostileRedirectCalls.length,3,'untrusted redirect hosts are rejected before contacting their host; public_url failure falls back to the validated download URL');
-
-
-// Network failures are stage-specific and never include exception messages or signed URLs.
-globalThis.fetch=async()=>{throw Error('network failed for https://storage.example.net/private?signature=do-not-leak');};
-const metadataNetwork=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-metadata-network'}}));
-assert.equal(metadataNetwork.status,502);
-const metadataNetworkDetails=await metadataNetwork.json();
-assert.equal(metadataNetworkDetails.code,'CANVAS_FILE_METADATA_NETWORK_FAILED');
-assert.equal(metadataNetworkDetails.stage,'metadata');
-assert.equal(metadataNetworkDetails.diagnostics.failureType,'network');
-assert.equal(metadataNetworkDetails.upstreamStatus,null);
-assert(!JSON.stringify(metadataNetworkDetails).includes('signature='));
-assert(!JSON.stringify(metadataNetworkDetails).includes('test-secret'));
-
-globalThis.fetch=async(url,opts)=>{
-  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://inst-fs-iad-prod.inscloudgate.net/private/signed-file?signature=do-not-leak'}),{status:200,headers:{'Content-Type':'application/json'}});
-  throw Error('network failed for '+url);
-};
-const contentNetwork=await worker.fetch(request('/api/v1/courses/1/files/124/download',{headers:{'cf-ray':'outer-content-network'}}));
-const contentNetworkDetails=await contentNetwork.json();
-assert.equal(contentNetwork.status,502);
-assert.equal(contentNetworkDetails.code,'CANVAS_FILE_CONTENT_NETWORK_FAILED');
-assert.equal(contentNetworkDetails.stage,'content');
-assert.equal(contentNetworkDetails.diagnostics.upstreamHost,'inst-fs-iad-prod.inscloudgate.net');
-assert.equal(contentNetworkDetails.diagnostics.failureType,'network');
-assert(!JSON.stringify(contentNetworkDetails).includes('signature='));
-
-// Redirect errors are categorized without exposing the redirect target URL.
-globalThis.fetch=async(url,opts)=>{
-  if(url==='https://school.instructure.com/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(url==='https://school.instructure.com/files/124/download')return new Response(null,{status:302});
-  throw Error('unexpected URL '+url);
-};
-const redirectFailure=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
-const redirectDetails=await redirectFailure.json();
-assert.equal(redirectFailure.status,502);
-assert.equal(redirectDetails.code,'CANVAS_FILE_REDIRECT_LOCATION_MISSING');
-assert.equal(redirectDetails.stage,'redirect');
-assert.equal(redirectDetails.diagnostics.failureType,'redirect');
-
-console.log('PASS: bridge file diagnostics cover HTTP failures, network failures and unsafe redirects without exposing secrets');
-
+const previewResponse=await worker.fetch(request('/api/v1/files/124/public_url'));
+assert.equal(previewResponse.status,200);
+assert.equal(previewResponse.headers.get('Content-Type'),'application/json');
+const previewData=await previewResponse.json();
+assert.equal(new URL(previewData.public_url).hostname,previewStorageHost);
+assert.equal(previewCalls.length,1,'the Worker only calls the authenticated Canvas API');
+assert.equal(previewCalls[0].opts.headers.Authorization,'Bearer test-secret');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/files/124'))).status,200,'course file metadata remains readable');
+assert.equal((await worker.fetch(request('/api/v1/files/124/download'))).status,403,'legacy server-side file downloads are no longer exposed');
+assert.equal((await worker.fetch(request('/api/v1/courses/1/files/124/download'))).status,403,'course-scoped server-side file downloads are no longer exposed');
+assert.equal((await worker.fetch(request('/api/v1/files/124/public_url?access_token=secret'))).status,403,'public-preview requests cannot smuggle credentials in the query string');
+console.log('PASS: Canvas preview URL is authenticated and proxied without any Worker-to-storage fetch');
 
 // Full Canvas signed upload: storage never receives the bearer token, and the
 // authenticated Canvas create_success GET is required before a file ID is returned.
