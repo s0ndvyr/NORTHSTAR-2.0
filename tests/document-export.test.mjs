@@ -23,11 +23,12 @@ const dom=new JSDOM('<!doctype html><html><body><div id="host"></div></body></ht
 const {window}=dom;
 const host=window.document.getElementById('host');
 const documents=new Map(),drafts=new Map();
+let holdNextDraftSave=false,releaseHeldDraft=null;
 window.NorthstarDocumentStorage={
  async getDocument(key){const value=documents.get(key);return value?{...value,bytes:value.bytes.slice()}:null;},
  async saveDocument(record){documents.set(record.key,{...record,bytes:record.bytes.slice()});return true;},
  async getDraft(key){const value=drafts.get(key);return value?JSON.parse(JSON.stringify(value)):null;},
- async saveDraft(record){drafts.set(record.key,JSON.parse(JSON.stringify(record)));return true;},
+ async saveDraft(record){const snapshot=JSON.parse(JSON.stringify(record));if(holdNextDraftSave){holdNextDraftSave=false;await new Promise(resolve=>{releaseHeldDraft=resolve;});}drafts.set(record.key,snapshot);return true;},
  getLastError(){return null;}
 };
 let downloadCalls=0;
@@ -115,8 +116,25 @@ assert.ok(textObject,'the native text object layer created a real editable page 
 const textEditor=textObject.querySelector('.ns-doc-text-content');
 textEditor.innerHTML='<p>Document Studio verification note</p>';
 textEditor.dispatchEvent(new window.Event('input',{bubbles:true}));
+holdNextDraftSave=true;
 window.dispatchEvent(new window.Event('pagehide'));
+for(let attempt=0;attempt<20&&!releaseHeldDraft;attempt++)await Promise.resolve();
+assert.equal(typeof releaseHeldDraft,'function','the first async draft write has reached the delayed storage transaction');
+textEditor.innerHTML='<p>Newest serialized draft</p>';
+textEditor.dispatchEvent(new window.Event('input',{bubbles:true}));
+window.dispatchEvent(new window.Event('pagehide'));
+releaseHeldDraft();
+releaseHeldDraft=null;
 await new Promise(resolve=>setTimeout(resolve,0));
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.ok([...drafts.values()][0].annotations['3'].texts.some(note=>String(note.text).includes('Newest serialized draft')),'a newer write is queued behind the interrupted older write and wins');
+Object.defineProperty(window.document,'visibilityState',{configurable:true,get:()=> 'hidden'});
+textEditor.innerHTML='<p>Saved by Safari visibility change</p>';
+textEditor.dispatchEvent(new window.Event('input',{bubbles:true}));
+window.document.dispatchEvent(new window.Event('visibilitychange'));
+await new Promise(resolve=>setTimeout(resolve,0));
+await new Promise(resolve=>setTimeout(resolve,0));
+assert.ok([...drafts.values()][0].annotations['3'].texts.some(note=>String(note.text).includes('Saved by Safari visibility change')),'Safari hidden visibility flush persists the latest in-progress rich-text change');
 
 const sourceRecord=[...documents.values()][0];
 assert.ok(sourceRecord,'the original PDF is persisted separately from its draft');
@@ -143,7 +161,7 @@ for(let pageNumber=1;pageNumber<=3;pageNumber++){
  const extracted=await exportedPage.getTextContent();
  const text=extracted.items.map(item=>item.str).join(' ');
  assert.ok(text.includes('ORIGINAL PAGE '+(pageNumber===1?'ONE':pageNumber===2?'TWO':'THREE')),'source page '+pageNumber+' content remains present');
- if(pageNumber===3)assert.ok(text.includes('Document Studio verification note'),'editable rich-text annotation is flattened into the PDF');
+ if(pageNumber===3)assert.ok(text.includes('Saved by Safari visibility change'),'the latest flushed rich-text annotation is flattened into the PDF');
  if(pageNumber===2)assert.ok(!text.includes('Document Studio verification note'),'the unannotated page is not duplicated or modified by the annotation layer');
 }
 assert.deepEqual([...sourceBytes],[...originalSourceBytes],'the original in-memory source remains unchanged after export');
@@ -152,7 +170,7 @@ const savedKey=[...documents.keys()][0];
 await room.openPdf(host,file,assignment,credentials);
 assert.equal(downloadCalls,1,'reopening restores the local source before asking Canvas for another download');
 assert.match(host.querySelector('#nsPdfPageIndicator').textContent,/Page 3 \/ 3/,'the last viewed page is recovered from the draft');
-assert.ok(host.querySelector('.ns-doc-text-content')?.textContent.includes('Document Studio verification note'),'rich text restores after leaving and reopening');
+assert.ok(host.querySelector('.ns-doc-text-content')?.textContent.includes('Saved by Safari visibility change'),'rich text restores after leaving and reopening');
 assert.equal([...documents.keys()].filter(key=>key===savedKey).length,1,'reopening does not create duplicate source records');
 
 const otherFile={id:612,name:'second-assignment.pdf',contentType:'application/pdf',size:sourceBytes.byteLength};
@@ -162,5 +180,23 @@ assert.equal(documents.size,2,'two assignments retain separate original PDFs');
 assert.equal(drafts.size,2,'two assignments retain separate annotation drafts');
 assert.notEqual([...drafts.values()][0].identity.canvasAssignmentId,[...drafts.values()][1].identity.canvasAssignmentId,'assignment identity prevents cross-assignment draft collisions');
 
+let resolveFirst=null,resolveSecond=null;
+window.NorthstarWorkspace.downloadCanvasFile=({fileId})=>new Promise(resolve=>{if(fileId===613)resolveFirst=resolve;else if(fileId===614)resolveSecond=resolve;else throw Error('unexpected concurrent file ID '+fileId);});
+const assignmentThree={id:'local-assignment-3',canvasAssignmentId:9003,canvasCourseId:501,title:'Slow first open'};
+const assignmentFour={id:'local-assignment-4',canvasAssignmentId:9004,canvasCourseId:501,title:'Newer active open'};
+const slowFirst=room.openPdf(host,{id:613,name:'slow-first.pdf',contentType:'application/pdf'},assignmentThree,credentials);
+for(let attempt=0;attempt<20&&!resolveFirst;attempt++)await Promise.resolve();
+assert.equal(typeof resolveFirst,'function','the first Canvas attachment request is pending');
+const newestOpen=room.openPdf(host,{id:614,name:'newer-active.pdf',contentType:'application/pdf'},assignmentFour,credentials);
+for(let attempt=0;attempt<20&&!resolveSecond;attempt++)await Promise.resolve();
+assert.equal(typeof resolveSecond,'function','the second Canvas attachment request is pending');
+resolveSecond({id:614,name:'newer-active.pdf',contentType:'application/pdf',size:sourceBytes.byteLength,bytes:sourceBytes.slice()});
+await newestOpen;
+resolveFirst({id:613,name:'slow-first.pdf',contentType:'application/pdf',size:sourceBytes.byteLength,bytes:sourceBytes.slice()});
+await slowFirst;
+assert.equal(host.querySelector('#nsPdfFileName')?.textContent,'newer-active.pdf','a stale Canvas fetch cannot replace the newer assignment editor');
+assert.ok([...documents.values()].some(record=>record.identity.canvasAssignmentId===9004),'the newest assignment PDF is stored under its own Canvas identity');
+assert.ok(![...documents.values()].some(record=>record.identity.canvasAssignmentId===9003),'the stale open cannot persist its PDF into the active assignment state');
+
 dom.window.close();
-console.log('PASS: multi-page rotated PDF export, independent PDF.js reopen, source preservation, page/draft recovery, and assignment isolation');
+console.log('PASS: rotated multi-page PDF export, independent PDF.js reopen, Safari pagehide/visibility flush, serialized async drafts, recovery, and stale-open isolation');
