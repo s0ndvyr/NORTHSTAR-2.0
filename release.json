@@ -10,8 +10,8 @@
     "status": "Worker 0.4.16 (4.4.7.2) remains separately deployed by workflow run 45085853219. No Worker source change is required for this browser-direct authenticated-download correction; live Canvas acceptance is still pending."
   },
   "deployment": {
-    "preview": "The preview Pages workflow publishes only after the exact current main and preview branch heads have successful Phase 4 runs; see GitHub Actions for the latest deployment.",
-    "production": "The production Pages workflow publishes only after the exact current main and preview branch heads have successful Phase 4 runs; see GitHub Actions for the latest deployment."
+    "production": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested main commit f347cc304356be67e7de8f22b80d0d6e11efebe9.",
+    "preview": "NORTHSTAR 4.4.7.5 / package 0.4.19 deployed successfully by GitHub Pages run 45092722735 from tested preview commit df606c6f3b6e2b91c491a0a93bf085ac0ab6f2a96."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -29,9 +29,22 @@
         "Document Studio submission handoff",
         "Release metadata"
       ],
-      "status": "GitHub Actions must pass exact-head Phase 4 validation and the Pages freshness gate before publication. Live Canvas account and iPad acceptance remain open.",
+      "status": "Production and preview deployed successfully by GitHub Pages workflow run 45092722735. GitHub Actions Phase 4 passed on main commit f347cc304356be67e7de8f22b80d0d6e11efebe9 (run 45092663265) and preview commit df606c6f3f6b6e2b91c491a0a93bf085ac0ab6f2a96 (run 45092565490). Canvas Worker 0.4.16 (4.4.7.2) remains separately deployed by run 45085853219. Live Canvas account and physical iPad acceptance remain open.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "f347cc304356be67e7de8f22b80d0d6e11efebe9",
+          "label": "tested production main source"
+        },
+        {
+          "sha": "df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc",
+          "label": "tested preview source"
+        },
+        {
+          "sha": "3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14",
+          "label": "separately deployed Canvas bridge Worker"
+        }
+      ]
     },
     {
       "version": "4.4.7.4",
