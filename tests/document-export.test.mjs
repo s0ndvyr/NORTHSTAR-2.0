@@ -143,7 +143,7 @@ const draftRecord=[...drafts.values()][0];
 assert.ok(draftRecord,'the annotation draft is stored independently');
 assert.equal(draftRecord.identity.canvasAssignmentId,9001,'the stored identity includes the canonical Canvas assignment ID');
 assert.ok(draftRecord.annotations['1']?.strokes?.length,'the first page pencil stroke is in the saved draft');
-assert.ok(draftRecord.annotations['3']?.texts?.some(note=>String(note.text).includes('Document Studio verification note')),'the third page rich-text annotation is saved');
+assert.ok(draftRecord.annotations['3']?.texts?.some(note=>String(note.text).includes('Saved by Safari visibility change')),'the third page rich-text annotation is saved after the latest Safari flush');
 
 const exported=await room.getAnnotatedFile();
 assert.equal(exported.type,'application/pdf');
