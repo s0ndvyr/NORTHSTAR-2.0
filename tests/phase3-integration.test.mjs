@@ -16,7 +16,7 @@ function between(source,start,end,label){
 const upload=between(premium,'async function phase441UploadSelectedFiles','async function phase441ReconcileSubmission','staged assignment upload');
 assert.ok(upload.includes('phase441LoadStagedUploads(a,c)'),'staged Canvas file IDs survive a page reload');
 assert.ok(upload.includes('phase441PersistStagedUploads(a,c,staged)'),'finalized IDs are persisted by course and assignment');
-assert.ok(premium.includes('crypto.subtle.digest(\'SHA-256\''),'staged upload reuse is bound to file content, not only filename/size metadata');
+assert.ok(premium.includes("subtle.digest('SHA-256'"),'staged upload reuse is bound to file content, not only filename/size metadata');
 assert.ok(upload.includes('expiresAt'),'the staged file index has an expiry');
 assert.ok(!upload.includes('localStorage.setItem')||!upload.includes('file.bytes'),'the staging index does not persist raw file bytes');
 const submission=between(premium,'window.submitAssignment=async function(){','\nrenderNotes =','standard assignment submit');
@@ -79,7 +79,7 @@ assert.ok(discussion.includes('context.api.put(path,{message})'),'author edits u
 assert.ok(discussion.includes('phase4DiscussionPlain(entry.message)!==wanted'),'reconciliation matches the actual post content');
 assert.ok(discussion.includes('context.readOnly'),'locked/unpublished threads remain read-only');
 assert.ok(discussion.includes('data-discussion-more'),'threads with more than the recent reply window expose a load-older control');
-assert.ok(discussion.includes('/entries/'+Number(marker.replyTo)+'/replies?per_page=100'),'uncertain replies are verified against the exact parent thread');
+assert.ok(discussion.includes("'/entries/'+Number(marker.replyTo)+'/replies?per_page=100'"),'uncertain replies are verified against the exact parent thread');
 
 assert.ok(worker.includes("const WORKER_BUILD = '0.4.22 (4.4.8.2)'"),'the Worker candidate is versioned independently');
 assert.ok(worker.includes('isDiscussionEntryEditPath'),'discussion edits use an exact ID-scoped allowlist');
