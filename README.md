@@ -283,3 +283,14 @@ The Canvas Worker authenticates Canvas API metadata and `public_url` requests on
 Temporary preview URLs are refreshed only after an explicit user action and are never persisted. Canvas attachment identity is stored separately from annotations using the Canvas file, course and assignment identifiers. The local import keeps the original Canvas filename and records the selected local filename separately; the user must confirm the selected local PDF is the intended attachment.
 
 Automated Phase 4 tests and Worker deployment have passed. The preview is not yet accepted against the live NNPS Canvas account or a physical iPad. Live PDF retrieval, Safari preview, Files import, editing, export and actual Canvas submission remain manual acceptance requirements. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19 until those checks pass.
+
+## NORTHSTAR 4.4.8.1 — PDF Document Studio
+
+**Preview candidate:** https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/  
+**Frontend package:** 0.4.26 · **Canvas Worker:** 0.4.21 (unchanged)
+
+Phase 1 was accepted by the owner on a physical iPad: actual Canvas assignment PDFs open in NORTHSTAR, can be fully viewed and accept text annotations.
+
+The Document Studio candidate adds IndexedDB-backed PDF source storage and independent annotation drafts. It restores a cached PDF only when its Canvas file ID, course ID and assignment ID match the active attachment. In-progress text is flushed when Safari backgrounds or closes the page. Multi-page export resolves a viewport for each annotated page and continues to add flattened annotations to the original PDF rather than recreating its pages.
+
+The editor's existing Apple Pencil, finger navigation, highlighting, text, shapes, eraser, undo/redo and export controls are preserved. Automated tests cover the IndexedDB storage adapter and rich-text flush. The new persistence/reload/export behavior still needs physical iPad verification before Phase 2 can be signed off. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
