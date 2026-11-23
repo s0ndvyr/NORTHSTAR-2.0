@@ -33,7 +33,8 @@ assert.equal(pkg.northstarRelease,manifest.northstarVersion,'package metadata an
 assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three-part semver');
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('pending'),'the current candidate does not claim a successful deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45107151368'),'the current release records the successful Worker deployment');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('45107205281'),'the current release records the successful Pages preview deployment');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('public_url'),'the current release documents the Canvas public-preview API strategy');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104813239'),'the previous signed-preview release retains its successful preview Pages deployment record');
@@ -58,7 +59,7 @@ assert.ok(html.includes('scripts/document-editor.js')&&html.includes('styles/rel
 assert.ok(releaseJs.includes('aria-modal="true"')&&releaseJs.includes('Escape'),'release dialog supports accessible open/close interactions');
 assert.ok(editorJs.includes('createTextBox')&&editorJs.includes('resizeTextObject'),'document editor exposes creation and resizing operations');
 assert.ok(releaseJs.includes("northstarVersion:'4.4.7.9'")&&releaseJs.includes("packageVersion:'0.4.23'"),'the offline release fallback agrees with the authoritative manifest');
-assert.ok(releaseJs.includes("Candidate branch; Phase 4 CI, Worker deployment and Pages preview deployment pending")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback accurately reports the candidate as pending');
+assert.ok(releaseJs.includes("Preview deployed successfully: Worker 0.4.20 run 45107151368 and Pages run 45107205281")&&releaseJs.includes("production stays on 4.4.7.5"),'the offline release fallback records the successful preview deployment while keeping live acceptance open');
 assert.ok(releaseJs.includes("phase:'4.4.7'")&&releaseJs.includes("releaseDate:'2026-11-23'"),'offline fallback phase and date match the current manifest release family');
 assert.ok(pkg.northstarRelease==='4.4.7.9'&&pkg.version==='0.4.23','package metadata maps to the current candidate release');
 assert.ok(editorJs.includes('removeEventListener(\'pointermove\',this.pageMoveHandler)'),'document editor releases page hover handlers on unmount');
