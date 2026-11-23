@@ -1,5 +1,5 @@
 // NORTHSTAR Canvas bridge — narrowly allowlisted student reads and submissions.
-// Build marker: redeploy after deployment-workflow credential setup; behavior is unchanged.
+// Build marker: 0.4.17 — authenticated Canvas PDF redirect recovery.
 const ALLOWED_ORIGIN = 'https://s0ndvyr.github.io';
 const CANVAS_ORIGIN = 'https://nnps.instructure.com';
 const WORKER_BUILD = '0.4.17 (4.4.7.6)';
