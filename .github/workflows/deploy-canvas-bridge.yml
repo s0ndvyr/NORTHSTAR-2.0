@@ -7,6 +7,7 @@ on:
       - northstar-0.4.4.2-quiz-continuity
       - northstar-4.4.7.7-canvas-download-ua
       - northstar-4.4.7.8-canvas-public-url
+      - northstar-4.4.7.9-canvas-signed-preview-fix
     paths:
       - canvas-bridge/**
       - wrangler.jsonc

@@ -1,20 +1,37 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.8",
-  "packageVersion": "0.4.22",
+  "northstarVersion": "4.4.7.9",
+  "packageVersion": "0.4.23",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas public-preview PDF retrieval Worker 0.4.19 (4.4.7.8) deployed successfully to the preview bridge by workflow run 45104758113. Cloudflare Worker version ID: 69a055e5-4edc-426b-9f0b-c3a964b92d66. Live NNPS PDF acceptance remains open."
+    "status": "Candidate Canvas preview Worker 0.4.20 (4.4.7.9) — signed preview capability retrieval and safe diagnostics. Deployment pending validation; live NNPS PDF acceptance remains open."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.8 / package 0.4.22 deployed successfully to the preview Pages path by workflow run 45104813239 from preview commit fa2d9103811ae54def96ea456fcc5656c16f3917. The preview Canvas bridge Worker 0.4.19 deployed successfully by run 45104758113. Production remains on 4.4.7.5."
+    "preview": "NORTHSTAR 4.4.7.9 / package 0.4.23 is a candidate on branch northstar-4.4.7.9-canvas-signed-preview-fix. Phase 4, Worker deployment and Pages preview deployment are pending. Last verified preview remains 4.4.7.8 / package 0.4.22. Production remains on 4.4.7.5."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.7.9",
+      "date": "2026-11-23",
+      "title": "Canvas signed preview capability retrieval and safe diagnostics",
+      "description": "Treats every HTTPS URL returned by Canvas's authenticated public_url endpoint as a short-lived signed capability, irrespective of its allowlisted Instructure or AWS hostname. The Canvas bearer token and browser User-Agent are never attached to the capability URL or its storage redirects. Strict URL/host validation and the separately authenticated legacy fallback remain in place. Adds safe diagnostics for public_url endpoint status, returned host, fetch status, Cloudflare reference and redirect hosts without recording signed query strings, tokens or bodies.",
+      "category": "Canvas integration and security",
+      "areas": [
+        "Document Studio attachment retrieval",
+        "Signed preview capability handling",
+        "Canvas credential isolation",
+        "Safe content-delivery diagnostics",
+        "Worker regression tests"
+      ],
+      "status": "Candidate branch created; Phase 4 CI, private Worker deployment and Pages preview deployment pending. Live NNPS PDF retrieval and real assignment submission remain unaccepted. Production remains on 4.4.7.5 / package 0.4.19.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.7.8",
       "date": "2026-11-23",

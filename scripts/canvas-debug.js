@@ -398,7 +398,7 @@
     var report = {
       reportType: "NORTHSTAR Canvas attachment diagnostic",
       generatedAt: clean(input.generatedAt || new Date().toISOString(), 48),
-      appVersion: String(global.NorthstarRelease?.manifest?.northstarVersion || "4.4.7.2"),
+      appVersion: String(global.NorthstarRelease?.manifest?.northstarVersion || "4.4.7.9"),
       workerVersion: clean(input.workerVersion || "unknown", 60),
       environment: clean(input.environment || "preview", 32),
       stage: clean(d.stage || input.stage || "unknown", 40),
@@ -421,6 +421,21 @@
           httpStatus: numberOrNull(input.browserDelivery.status),
           host: clean(input.browserDelivery.host || "", 180),
           contentType: clean(input.browserDelivery.contentType || "", 120)
+        } : null,
+        publicUrlAttempt: d.publicUrlAttempt && typeof d.publicUrlAttempt === "object" ? {
+          endpointResult: clean(d.publicUrlAttempt.endpointResult || "unknown", 40),
+          endpointStatus: numberOrNull(d.publicUrlAttempt.endpointStatus),
+          endpointContentType: clean(d.publicUrlAttempt.endpointContentType || "", 120),
+          urlReturned: !!d.publicUrlAttempt.urlReturned,
+          urlHost: clean(d.publicUrlAttempt.urlHost || "", 180),
+          fetchResult: clean(d.publicUrlAttempt.fetchResult || "unknown", 40),
+          fetchStatus: numberOrNull(d.publicUrlAttempt.fetchStatus),
+          fetchHost: clean(d.publicUrlAttempt.fetchHost || "", 180),
+          fetchContentType: clean(d.publicUrlAttempt.fetchContentType || "", 120),
+          fetchServer: clean(d.publicUrlAttempt.fetchServer || "", 120),
+          fetchRayId: clean(d.publicUrlAttempt.fetchRayId || "", 80),
+          redirectCount: numberOrNull(d.publicUrlAttempt.redirectCount),
+          redirectHosts: Array.isArray(d.publicUrlAttempt.redirectHosts) ? d.publicUrlAttempt.redirectHosts.slice(0, 6).map(function (host) { return clean(host, 180); }) : []
         } : null
       },
       assignment: {

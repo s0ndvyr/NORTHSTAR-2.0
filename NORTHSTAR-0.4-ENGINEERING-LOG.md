@@ -707,3 +707,14 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Pages workflow run `45104813239` passed freshness, build, and deployment; preview is NORTHSTAR 4.4.7.8 / package 0.4.22.
 - The preferred PDF retrieval path now uses the authenticated Canvas `public_url` endpoint, then retrieves a signed object URL without forwarding the Canvas token to external object storage. Authenticated fallback remains restricted to the configured Canvas origin and Instructure file-host allowlist.
 - Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF retrieval remains unaccepted; next action is to retry `ionic nomenclature problem set 2026.pdf` in preview and inspect any fresh diagnostic.
+
+
+
+## NORTHSTAR 4.4.7.9 — Canvas signed preview capability retrieval (2026-11-23)
+
+- The 4.4.7.8 live NNPS test still returned HTTP 406 from `inst-fs-iad-prod.inscloudgate.net`. The final storage edge and redirect chain confirm that the Document Studio viewer/editor still cannot receive PDF bytes; this remains a retrieval issue, not a PDF.js rendering issue.
+- Code inspection found that the preferred authenticated Canvas `public_url` route did not treat all returned preview URLs as signed capabilities. It withheld credentials from AWS hosts but replayed the Canvas bearer token and browser User-Agent to trusted Instructure storage URLs, and silently dropped the direct-route failure details before attempting the legacy fallback.
+- Worker 0.4.20 now treats every validated `public_url` result and its bounded redirects as a self-authorizing signed capability: no Canvas bearer token or browser User-Agent is sent to that URL or storage redirect, including `*.inscloudgate.net`. Strict HTTPS, URL credential, port, access-token and trusted-host validation remains active. The legacy metadata URL fallback remains separate and keeps its previously bounded authentication rules.
+- Added safe `publicUrlAttempt` diagnostics to record endpoint result/status/content type, returned host, fetch status/host/content type/server/Cloudflare ray and redirect hosts only. No signed query, full URL, bearer token, response body or PDF contents are exposed.
+- Added regression tests for successful Instructure-hosted signed preview retrieval, token/User-Agent isolation, endpoint failure fallback, and a signed-preview 406 followed by a legacy fallback 406. Report sanitization and release regression assertions were extended.
+- Release candidate: NORTHSTAR 4.4.7.9 / package 0.4.23; private Worker build 0.4.20. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Phase 4, Worker deployment, Pages preview deployment and live NNPS PDF acceptance remain pending.
