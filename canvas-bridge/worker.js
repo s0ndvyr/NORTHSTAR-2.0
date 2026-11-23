@@ -35,10 +35,10 @@ function allowedRead(path){
     const returnTo=requested.searchParams.get('return_to');
     return returnTo===null||safeCanvasReturnTo(returnTo);
   }
-  const entryListPath=requested.pathname.match(/^\\/api\\/v1\\/courses\\/(\\d+)\\/discussion_topics\\/(\\d+)\\/entry_list$/);
+  const entryListPath=requested.pathname.match(/^\/api\/v1\/courses\/(\d+)\/discussion_topics\/(\d+)\/entry_list$/);
   if(entryListPath){
     const ids=[...requested.searchParams.entries()];
-    return ids.length>0&&ids.length<=10&&ids.every(([key,value])=>key==='ids[]'&&/^\\d+$/.test(value)&&Number(value)>0&&Number.isSafeInteger(Number(value)));
+    return ids.length>0&&ids.length<=10&&ids.every(([key,value])=>key==='ids[]'&&/^\d+$/.test(value)&&Number(value)>0&&Number.isSafeInteger(Number(value)));
   }
   if(/^\/api\/v1\/courses\/\d+\/external_tools\/sessionless_launch$/.test(requested.pathname)){
     const params=[...requested.searchParams.entries()];
