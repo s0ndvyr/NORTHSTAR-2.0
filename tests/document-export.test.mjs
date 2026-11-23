@@ -39,7 +39,15 @@ window.NorthstarWorkspace={
   return {id:fileId,name:'rotated-multipage.pdf',contentType:'application/pdf',size:sourceBytes.byteLength,bytes:sourceBytes.slice()};
  }
 };
-window.NorthstarPdfLib=pdfLib;
+window.NorthstarPdfLib=Object.assign({},pdfLib,{
+ PDFDocument:new Proxy(pdfLib.PDFDocument,{
+  get(target,key){
+   if(key==='load')return (bytes,options)=>target.load(Buffer.from(bytes),options);
+   const value=Reflect.get(target,key,target);
+   return typeof value==='function'?value.bind(target):value;
+  }
+ })
+});
 window.NorthstarPdfJs={
  GlobalWorkerOptions:pdfjs.GlobalWorkerOptions,
  getDocument(options){
