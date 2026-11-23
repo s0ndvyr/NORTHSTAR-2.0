@@ -1,20 +1,37 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.7",
-  "packageVersion": "0.4.21",
+  "northstarVersion": "4.4.7.8",
+  "packageVersion": "0.4.22",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas PDF request compatibility Worker 0.4.18 (4.4.7.7) deployed successfully to the preview bridge by workflow run 45103459358. Cloudflare Worker version ID: 2e7ced36-da0b-4091-9bd2-7dedfcf4adc2. Live NNPS PDF acceptance remains open."
+    "status": "Canvas public-preview URL recovery Worker 0.4.19 (4.4.7.8) candidate; preview deployment and live NNPS PDF acceptance pending."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.7 / package 0.4.21 deployed successfully to the preview Pages path by workflow run 45103520416 from preview commit d4740f8f280b358bbe9d64770d6b2ae94714b842. The preview Canvas bridge Worker 0.4.18 deployed successfully by run 45103459358. Production intentionally remains on 4.4.7.5."
+    "preview": "NORTHSTAR 4.4.7.8 / package 0.4.22 candidate; Phase 4 verification and preview deployment pending."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.7.8",
+      "date": "2026-11-23",
+      "title": "Canvas authenticated public-preview PDF retrieval",
+      "description": "Prefers Canvas's authenticated GET /api/v1/files/:id/public_url response for inline document viewing, then fetches its signed storage URL without forwarding the Canvas bearer token to external object storage. If the preview URL is unavailable, falls back to the authenticated file-download URL and sends the token only to the configured Canvas origin and explicit Instructure file-host allowlist. Adds safe URL validation and regression coverage.",
+      "category": "Canvas integration and security",
+      "areas": [
+        "Document Studio attachment retrieval",
+        "Canvas Files API public preview URL",
+        "Signed object storage",
+        "Trusted Instructure download authentication",
+        "Regression tests"
+      ],
+      "status": "Candidate only. Phase 4 tests and preview Worker/Pages deployments pending. Live NNPS PDF retrieval remains unaccepted; production remains unchanged.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.7.7",
       "date": "2026-11-23",
