@@ -7,11 +7,11 @@
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas public-preview URL recovery Worker 0.4.19 (4.4.7.8) candidate; preview deployment and live NNPS PDF acceptance pending."
+    "status": "Canvas public-preview PDF retrieval Worker 0.4.19 (4.4.7.8) deployed successfully to the preview bridge by workflow run 45104758113. Cloudflare Worker version ID: 69a055e5-4edc-426b-9f0b-c3a964b92d66. Live NNPS PDF acceptance remains open."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.8 / package 0.4.22 candidate; Phase 4 verification and preview deployment pending."
+    "preview": "NORTHSTAR 4.4.7.8 / package 0.4.22 deployed successfully to the preview Pages path by workflow run 45104813239 from preview commit fa2d9103811ae54def96ea456fcc5656c16f3917. The preview Canvas bridge Worker 0.4.19 deployed successfully by run 45104758113. Production remains on 4.4.7.5."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -28,9 +28,14 @@
         "Trusted Instructure download authentication",
         "Regression tests"
       ],
-      "status": "Candidate only. Phase 4 tests and preview Worker/Pages deployments pending. Live NNPS PDF retrieval remains unaccepted; production remains unchanged.",
+      "status": "Preview deployment successful. Phase 4 passed on exact preview commit fa2d9103811ae54def96ea456fcc5656c16f3917 (run 45104758130); Worker 0.4.19 deployed by run 45104758113; Pages preview deployed by run 45104813239. Live NNPS PDF retrieval and subsequent real assignment submission remain pending. Production intentionally remains on 4.4.7.5 until live acceptance.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "fa2d9103811ae54def96ea456fcc5656c16f3917",
+          "label": "tested and deployed preview source including Canvas Worker"
+        }
+      ]
     },
     {
       "version": "4.4.7.7",
