@@ -1,20 +1,41 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.1",
-  "packageVersion": "0.4.26",
+  "northstarVersion": "4.4.8.1.1",
+  "packageVersion": "0.4.27",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) deployed successfully by Cloudflare workflow run 45110523121 from commit 5b1daa09e97872c3f7fedfa49014ad9aa1849261; Cloudflare version ID 77127915-573e-4f41-87f6-9ba50c73592d. The Worker proxies Canvas API JSON only and never fetches file-storage bytes. Live NNPS Canvas acceptance remains pending."
+    "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) remains deployed from Cloudflare workflow run 45110523121; this Document Studio qualification does not change or redeploy the Worker."
   },
   "deployment": {
-    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.8.1 Document Studio release remains preview-only pending physical iPad verification of IndexedDB recovery and multi-page export.",
-    "preview": "NORTHSTAR 4.4.8.1 / package 0.4.26 deployed to the GitHub Pages preview by workflow run 45211301327. The build verified production 4.4.7.5 / package 0.4.19 and preview 4.4.8.1 / package 0.4.26. Canvas Worker 0.4.21 is unchanged. Physical iPad acceptance of the new persistence/recovery and export behavior remains outstanding."
+    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app files or production release identity are changed by the 4.4.8.1.1 candidate.",
+    "preview": "The published preview remains the verified 4.4.8.1 parent baseline / package 0.4.26. Parent source 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 passed Phase 4 run 45212530217 and was included in successful Pages deployment 45212652910. The 4.4.8.1.1 candidate is not deployed yet; it will be eligible only after exact-head tests and preview deployment are confirmed. Worker 0.4.21 is unchanged."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.1.1",
+      "date": "2026-11-23",
+      "title": "Document Studio lifecycle hardening and independent PDF export qualification",
+      "description": "Sub-priority qualification of the existing 4.4.8.1 Document Studio. Preserves the parent IndexedDB architecture, PDF.js renderer, annotation tools, Canvas delivery flow and submission implementation. Hardens attachment identity with explicit Canvas assignment IDs, serializes draft writes per document, scopes asynchronous recovery and editor initialization to the active open token, validates cached source PDFs, preserves the last known-good draft on storage quota/write failure, exposes actionable storage diagnostics, and prevents silent text overflow during flattened export by wrapping long words and rejecting vertically clipped text. Adds independent PDF.js reopening tests for multi-page documents with differing dimensions and rotations, plus persistence and assignment-isolation coverage.",
+      "category": "Document Studio qualification",
+      "areas": [
+        "Canvas attachment identity and assignment isolation",
+        "Per-document IndexedDB save serialization",
+        "Safari interruption and recovery lifecycle",
+        "Storage quota and transaction diagnostics",
+        "Source PDF validation and last-known-good recovery",
+        "Pressure-aware annotation export",
+        "Long-word wrapping and text clipping prevention",
+        "Independent PDF parser export verification",
+        "Regression and release provenance"
+      ],
+      "status": "Development candidate on northstar-4.4.8.1.1-document-studio-verification. Awaiting exact-head Phase 4 qualification and preview deployment. The 4.4.8.1 parent preview remains the published baseline. Physical iPad Safari, Apple Pencil and multi-page export acceptance has not yet been performed for this sub-priority. Production remains 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.8.1",
       "date": "2026-11-23",
@@ -30,12 +51,12 @@
         "PDF viewport and export preservation",
         "Document Studio regression tests"
       ],
-      "status": "Preview deployed successfully by GitHub Pages workflow run 45211301327 from source commit c2dc832833f658c339fbce0bc3c4b96098dc3a29. Phase 4 automated tests passed on that exact source in run 45211194018. Physical iPad verification of IndexedDB recovery after reload/interruption, Safari background recovery, Pencil editing and multi-page flattened export remains required. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+      "status": "Parent baseline retained and verified: source branch northstar-4.4.8.1-document-studio at exact head 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 passed Phase 4 run 45212530217. Pages run 45212652910 successfully deployed that exact preview source as NORTHSTAR 4.4.8.1 / package 0.4.26, while production remained 4.4.7.5 / package 0.4.19. Owner reports physical iPad Safari assignment edits survived leaving the page, leaving the site and powering off the iPad. Multi-page export hardware acceptance remains a separate check; the parent baseline is preserved unchanged.",
       "historical": false,
       "commits": [
         {
-          "sha": "c2dc832833f658c339fbce0bc3c4b96098dc3a29",
-          "label": "Phase 2 Document Studio persistence candidate, exact-head automated tests passed"
+          "sha": "917c3a5e3f2862dba263fab4ee7ff0ab620b2566",
+          "label": "accepted 4.4.8.1 parent preview source; exact-head Phase 4 passed"
         }
       ]
     },
