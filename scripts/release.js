@@ -3,13 +3,16 @@
 (function(root){
 'use strict';
 const fallback={
- product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.9',packageVersion:'0.4.14',
+ product:'NORTHSTAR',phase:'4.4.6',northstarVersion:'4.4.6.10',packageVersion:'0.4.15',
  bridge:{version:'1.1',status:'unchanged'},releaseDate:'2026-11-22',
  deployment:{preview:'CI-gated GitHub Pages deployment',production:'CI-gated GitHub Pages deployment'},
  releases:[
-  {version:'4.4.6.9',date:'2026-11-22',title:'Test-pinned deployment gate',
-   description:'GitHub Pages verifies both source branches have passing Phase 4 push runs at their current heads and checks out those exact tested SHAs. A delayed successful event cannot publish a newer untested branch tip.',
-   category:'Deployment',areas:['GitHub Actions','Source freshness','Test-pinned checkout','Release integrity'],status:'See the release-specific Phase 4 and Pages runs.'},
+  {version:'4.4.6.10',date:'2026-11-22',title:'Authenticated Canvas PDF retrieval',
+   description:'Browser-direct PDF retrieval now sends the Canvas bearer token only to HTTPS Canvas/Instructure allowlisted file hosts. Browser cookies remain omitted; blocked CORS requests fall back to the authenticated private bridge.',
+   category:'Canvas integration',areas:['PDF retrieval','Instructure host allowlist','CORS fallback','Token isolation'],status:'Live Canvas account and physical iPad acceptance remain external checks.'},
+  {version:'4.4.6.9',date:'2026-11-22',title:'Manifest-driven browser boot assertion',
+   description:'Removes the last hardcoded NORTHSTAR version from the browser boot regression test. The test reads release.json and compares the visible version pill against the manifest.',
+   category:'Test reliability',areas:['Browser boot test','Release manifest','Version consistency'],status:'Deployed to production and preview; see recorded release-specific GitHub Actions runs.'},
   {version:'4.4.6.3',date:'2026-11-22',title:'Manifest-driven version identity',
    description:'Removes the legacy hardcoded version override from dashboard rendering. The version pill remains owned by the release manifest and Settings reads the current manifest version.',
    category:'Bug fixes',areas:['Release manifest','Dashboard rendering','Version pill','Settings'],status:'See the release-specific GitHub Actions test and Pages deployment.'},
