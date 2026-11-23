@@ -58,15 +58,15 @@ assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status
 const parentRelease=manifest.releases.find(entry=>entry.version==='4.4.8.1');
 assert.ok(String(parentRelease.status||'').includes('45212530217')&&String(parentRelease.status||'').includes('45212652910'),'the parent release records its exact source test and preview deployment provenance');
 assert.ok(parentRelease.commits.some(commit=>commit.sha==='917c3a5e3f2862dba263fab4ee7ff0ab620b2566'),'the parent changelog records its verified preview source SHA');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('not deployed yet'),'the candidate does not claim a preview deployment before its exact-head run');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Awaiting exact-head Phase 4 qualification and preview deployment'),'the candidate does not claim a preview deployment before its exact-head run');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104813239'),'the previous signed-preview release retains its successful preview Pages deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('local import'),'the candidate documents the local PDF editing recovery');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Physical iPad verification'),'the release does not claim live Canvas acceptance prematurely');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.8.0').description||'').includes('local import'),'the parent PDF delivery release documents the local PDF editing recovery');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Physical iPad Safari')&&String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('has not yet been performed'),'the release does not claim physical iPad acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Worker'),'the current release documents the Worker storage-fetch removal');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('CORS'),'the current release documents the browser CORS fallback');
+assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.8.0').description||'').includes('CORS'),'the parent PDF delivery release documents the browser CORS fallback');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.5').commits.some(commit=>commit.sha==='f347cc304356be67e7de8f22b80d0d6e11efebe9'),'the previous release records its tested production main source SHA');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.5').commits.some(commit=>commit.sha==='df606c6f3bf085ac0ab6f2a96c29ee0b800fc9bc'),'the previous release records its tested preview source SHA');
