@@ -48,6 +48,8 @@ assert.equal(identity.canvasFileId,61162022);
 assert.equal(identity.courseId,155417);
 assert.equal(identity.assignmentId,'assignment-1');
 assert.equal(identity.originalFilename,'ionic nomenclature problem set 2026.pdf');
+assert.equal(identity.contentType,'application/pdf');
+assert.equal(identity.size,34567,'the attachment metadata size is retained with its stable Canvas identity');
 
 host.querySelector('#nsPdfRefreshPreview').click();
 await new Promise(resolve=>setTimeout(resolve,0));
