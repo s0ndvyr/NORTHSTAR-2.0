@@ -184,8 +184,8 @@ async function fetchCanvasPublicFile(raw,metadata,requestId,attempt){
   let refererOrigin='';
   for(let hop=0;hop<6;hop++){
     // Canvas's public_url is already an authenticated, short-lived preview
-    // capability. Do not decorate it with the Canvas bearer token or browser
-    // identity, even when its storage hostname is an Instructure domain.
+    // capability. Never reattach the bearer token or browser User-Agent here;
+    // only a new origin-only Referer may cross a validated redirect boundary.
     const headers={Accept:'application/pdf,application/octet-stream,*/*'};
     if(refererOrigin)headers.Referer=refererOrigin+'/';
     let response;
