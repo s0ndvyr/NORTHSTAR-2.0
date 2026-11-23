@@ -29,7 +29,7 @@
         "Document Studio submission handoff",
         "Release metadata"
       ],
-      "status": "Awaiting exact-head Phase 4 validation and freshness-gated Pages deployment. Live Canvas account and iPad acceptance remain open.",
+      "status": "GitHub Actions must pass exact-head Phase 4 validation and the Pages freshness gate before publication. Live Canvas account and iPad acceptance remain open.",
       "historical": false,
       "commits": []
     },
