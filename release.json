@@ -1,32 +1,50 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.7",
-  "northstarVersion": "4.4.7.4",
-  "packageVersion": "0.4.18",
+  "northstarVersion": "4.4.7.5",
+  "packageVersion": "0.4.19",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Source updated; live deployment must pass the bridge deployment workflow before Canvas acceptance."
+    "status": "Worker 0.4.16 (4.4.7.2) remains separately deployed by workflow run 45085853219. No Worker source change is required for this browser-direct authenticated-download correction; live Canvas acceptance is still pending."
   },
   "deployment": {
-    "preview": "NORTHSTAR 4.4.7.4 preview deployed successfully by GitHub Pages workflow run 45086841863 from tested preview commit fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc.",
-    "production": "NORTHSTAR 4.4.6.9 deployed successfully by GitHub Pages workflow run 45081377927 from tested main/preview source commit fe5b69948d98969768fb5dc155f6f41ab1d861a8."
+    "preview": "The preview Pages workflow publishes only after the exact current main and preview branch heads have successful Phase 4 runs; see GitHub Actions for the latest deployment.",
+    "production": "The production Pages workflow publishes only after the exact current main and preview branch heads have successful Phase 4 runs; see GitHub Actions for the latest deployment."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
     {
+      "version": "4.4.7.5",
+      "date": "2026-11-23",
+      "title": "Authenticated Canvas PDF retrieval",
+      "description": "Corrects browser-direct PDF downloads to send the Canvas bearer token only to HTTPS Canvas/Instructure allowlisted file hosts, keeps browser cookies omitted, rejects untrusted metadata destinations, and preserves the authenticated private Worker fallback. Carries forward the three-step signed upload finalization and annotated-PDF-only assignment submission flow.",
+      "category": "Canvas integration and security",
+      "areas": [
+        "Authenticated PDF retrieval",
+        "Instructure host allowlist",
+        "CORS fallback",
+        "Signed upload token isolation",
+        "Document Studio submission handoff",
+        "Release metadata"
+      ],
+      "status": "Awaiting exact-head Phase 4 validation and freshness-gated Pages deployment. Live Canvas account and iPad acceptance remain open.",
+      "historical": false,
+      "commits": []
+    },
+    {
       "version": "4.4.7.4",
       "date": "2026-11-23",
       "title": "Canvas UI release-history assertion correction",
-      "description": "Corrects the release regression test so the current .7.4 candidate is expected to remain pending while the previously deployed .7.2 preview retains its successful deployment record. Carries forward the Document Studio annotated-PDF-only submission handoff and browser boot integration test.",
+      "description": "Corrects the release-history regression assertion while carrying forward the Document Studio annotated-PDF-only submission handoff and browser boot integration test.",
       "category": "Test reliability",
       "areas": [
         "Canvas submission UI",
         "Release history tests",
         "Version consistency"
       ],
-      "status": "Preview deployed successfully by Pages run 45086841863 from tested preview commit fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc. The Canvas bridge Worker remains deployed from run 45085853219 / commit 3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14. Production frontend remains on 4.4.6.9. Live Canvas upload and submission acceptance is still pending.",
+      "status": "Preview deployed successfully by Pages run 45086841863 from tested preview commit fd7b6e453bf085ac0ab6f2a96c29ee0b800fc9bc. The Canvas bridge Worker remains deployed from run 45085853219 / commit 3bbc5475c6c0b4fb32cdbc341087a7beb0cf3c14. Live Canvas upload and submission acceptance is still pending.",
       "historical": false,
       "commits": [
         {
