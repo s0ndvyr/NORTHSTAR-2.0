@@ -1236,6 +1236,49 @@ window.openWorkspace=openWorkspace;
 let submissionBusy=false;let phase441AnnotatedPdf=null;const phase441PendingUploads=new Map();const phase441PreparedFile=new Map();const phase441UnknownSubmissionChecks=new Set();
 function phase441ScopedStorageKey(key){return 'northstar_'+(String(location.pathname||'').includes('/preview/')?'preview_':'')+key;}
 function phase441FileSignature(file){return [file.name,file.size,file.lastModified||0,file.type||''].join('|');}
+function phase441StageKey(a,c){return phase441ScopedStorageKey('canvas_staged_uploads_v1_'+String(c.canvasId)+'_'+String(a.canvasId)+'_'+String(a.id));}
+function phase441LoadStagedUploads(a,c){
+  const map=new Map();
+  try{
+    const record=JSON.parse(localStorage.getItem(phase441StageKey(a,c))||'null');
+    if(!record||Number(record.courseId)!==Number(c.canvasId)||Number(record.assignmentId)!==Number(a.canvasId)||!Array.isArray(record.files))return map;
+    record.files.forEach(item=>{
+      if(!item||typeof item.signature!=='string'||!Number.isSafeInteger(Number(item.id))||Number(item.id)<1||Number(item.expiresAt)<Date.now())return;
+      map.set(item.signature,{id:Number(item.id),name:String(item.name||''),size:Number(item.size)||0,type:String(item.type||'application/octet-stream'),signature:item.signature,expiresAt:Number(item.expiresAt)});
+    });
+    if(!map.size)localStorage.removeItem(phase441StageKey(a,c));
+  }catch{}
+  return map;
+}
+function phase441PersistStagedUploads(a,c,map){
+  try{
+    const files=[...map.entries()].map(([signature,item])=>({signature,id:Number(item.id),name:String(item.name||''),size:Number(item.size)||0,type:String(item.type||''),expiresAt:Number(item.expiresAt)||Date.now()+7*86400000}));
+    localStorage.setItem(phase441StageKey(a,c),JSON.stringify({courseId:Number(c.canvasId),assignmentId:Number(a.canvasId),localAssignmentId:String(a.id),updatedAt:Date.now(),files}));
+    return true;
+  }catch{return false;}
+}
+function phase441UnknownKey(a){return phase441ScopedStorageKey('canvas_submission_uncertain_v1_'+String(a.canvasId||a.id)+'_'+String(a.id));}
+function phase441ReadUnknownSubmission(a){
+  try{return JSON.parse(localStorage.getItem(phase441UnknownKey(a))||'null');}catch{return null;}
+}
+function phase441MarkSubmissionUncertain(a,details){
+  const marker={assignmentId:Number(a.canvasId)||null,localAssignmentId:String(a.id),markedAt:Date.now(),...details};
+  phase441UnknownSubmissionChecks.add(String(a.id));
+  try{localStorage.setItem(phase441UnknownKey(a),JSON.stringify(marker));}catch{}
+  return marker;
+}
+function phase441ClearSubmissionUncertain(a){
+  phase441UnknownSubmissionChecks.delete(String(a.id));
+  try{localStorage.removeItem(phase441UnknownKey(a));}catch{}
+}
+function phase441RenderSubmissionReceipt(a,c,submission,type,uploadedFiles=[]){
+  const host=$('#nsSubmissionReceipt');if(!host)return;
+  if(!submission||!['submitted','graded','pending_review'].includes(String(submission.workflow_state||'').toLowerCase())){host.innerHTML='';return;}
+  const files=Array.isArray(submission.attachments)?submission.attachments:Array.isArray(submission.submitted_files)?submission.submitted_files:[];
+  const fileRows=files.length?files.map(file=>'<li>'+esc(file.display_name||file.filename||file.name||('Canvas file '+file.id))+'</li>').join(''):uploadedFiles.map(file=>'<li>'+esc(file.name)+'</li>').join('');
+  const submittedAt=submission.submitted_at?new Date(submission.submitted_at).toLocaleString():'Timestamp not returned by Canvas';
+  host.innerHTML='<div class="ns-submission-receipt" role="status"><span class="eyebrow">CANVAS VERIFIED RECEIPT</span><h4>Submission confirmed</h4><p><b>'+esc(a.title)+'</b></p><p>'+esc(c?.name||'Canvas course')+'</p><p>Type: '+esc(type||submission.submission_type||'Not returned')+'</p><p>Attempt: '+esc(submission.attempt||'—')+' · Status: '+esc(String(submission.workflow_state||'').replace(/_/g,' '))+'</p><p>Submitted: '+esc(submittedAt)+'</p><p>Canvas submission ID: '+esc(submission.id||'—')+'</p>'+(fileRows?'<p>Submitted files:</p><ul>'+fileRows+'</ul>':'')+'<p class="ns-room-help">This receipt is based on a fresh read of the official Canvas submission record.</p></div>';
+}
 async function phase441UploadSelectedFiles(files,a,c,credentials,status){
   const rows=Array.from(files||[]);
   if(!rows.length)throw Error('Choose at least one file.');
@@ -1248,7 +1291,7 @@ async function phase441UploadSelectedFiles(files,a,c,credentials,status){
     const ext=(file.name.split('.').pop()||'').toLowerCase();
     if(allowed.length&&!allowed.includes(ext))throw Error(file.name+' is not an allowed file type for this Canvas assignment.');
   }
-  const staged=phase441PendingUploads.get(String(a.id))||new Map();phase441PendingUploads.set(String(a.id),staged);const result=[];
+  const staged=phase441PendingUploads.get(String(a.id))||phase441LoadStagedUploads(a,c);phase441PendingUploads.set(String(a.id),staged);const result=[];
   for(let index=0;index<rows.length;index++){
     const file=rows[index],key=phase441FileSignature(file);let record=staged.get(key);
     if(!record){
@@ -1257,7 +1300,7 @@ async function phase441UploadSelectedFiles(files,a,c,credentials,status){
         const uploaded=await window.NorthstarWorkspace.uploadAssignmentFile({credentials,courseId:c.canvasId,assignmentId:a.canvasId,file});
         record={id:Number(uploaded.id),name:String(uploaded.display_name||uploaded.filename||file.name),size:file.size,type:file.type||'application/octet-stream'};
         if(!Number.isSafeInteger(record.id)||record.id<1)throw Error('Canvas returned an invalid file ID for '+file.name+'.');
-        staged.set(key,record);
+        record.signature=key;record.expiresAt=Date.now()+7*86400000;staged.set(key,record);phase441PersistStagedUploads(a,c,staged);
       }catch(error){error.uploadedFiles=result.slice();error.failedFile=file.name;throw error;}
     }else status.textContent='Reusing the Canvas upload already staged for '+file.name+'…';
     result.push(record);
