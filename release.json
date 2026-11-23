@@ -2,16 +2,16 @@
   "product": "NORTHSTAR",
   "phase": "4.4.8",
   "northstarVersion": "4.4.8.0",
-  "packageVersion": "0.4.24",
+  "packageVersion": "0.4.25",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Candidate Canvas API-only Worker 0.4.21 (4.4.8.0): public_url requests are proxied, but the Worker no longer fetches file storage bytes. Validation and deployment pending."
+    "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) deployed successfully by Cloudflare workflow run 45110523121 from commit 5b1daa09e97872c3f7fedfa49014ad9aa1849261; Cloudflare version ID 77127915-573e-4f41-87f6-9ba50c73592d. The Worker proxies Canvas API JSON only and never fetches file-storage bytes. Live NNPS Canvas acceptance remains pending."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.8.0 / package 0.4.24 candidate on branch northstar-4.4.8.0-native-pdf-delivery. Phase 4, Worker deployment and Pages preview deployment pending. Last verified preview remains 4.4.7.9 / package 0.4.23. Production remains 4.4.7.5."
+    "preview": "NORTHSTAR 4.4.8.0 / package 0.4.25 candidate on branch northstar-4.4.8.0-native-pdf-delivery. Phase 4 automated tests pass on the candidate source; Pages preview publication is gated on successful tests for the exact current main and candidate branch heads. Production remains 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -30,9 +30,22 @@
         "Submission continuity",
         "Full regression tests"
       ],
-      "status": "Candidate branch; Phase 4 CI, Worker validation/deployment and Pages preview deployment pending. Live NNPS PDF retrieval/viewing/edit/export and assignment submission remain unaccepted. Production remains on 4.4.7.5 / package 0.4.19.",
+      "status": "Candidate branch. Phase 4 syntax, Worker dry-run, unit and browser boot tests passed, including explicit temporary-preview refresh, attachment identity, signed-URL privacy and local PDF signature validation. Worker 0.4.21 deployed successfully (Cloudflare version 77127915-573e-4f41-87f6-9ba50c73592d). Pages preview deployment is pending exact-head freshness verification. Live NNPS PDF retrieval/viewing/edit/export and actual assignment submission remain unaccepted. Production remains 4.4.7.5 / package 0.4.19.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "5b1daa09e97872c3f7fedfa49014ad9aa1849261",
+          "label": "API-only Worker PDF delivery boundary"
+        },
+        {
+          "sha": "69105e4ac71c94b9d289e90031b558cdfd8fc46a",
+          "label": "temporary preview refresh and persistent attachment identity"
+        },
+        {
+          "sha": "1da4daa5f40cc9fc48233e4caacfd8b49d4c5ad7",
+          "label": "preview refresh, attachment identity and local PDF validation regression tests"
+        }
+      ]
     },
     {
       "version": "4.4.7.9",
