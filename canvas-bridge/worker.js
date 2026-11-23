@@ -98,9 +98,11 @@ function validateWrite(path,data){
   }
   return 'Write path not allowed';
 }
-// Canvas file delivery redirects through Instructure-owned storage domains.
- // Keep the bearer token on those verified domains because Canvas now requires
- // authenticated file downloads; never forward it to arbitrary third-party hosts.
+// Canvas file downloads begin on the authenticated school origin and may then
+// redirect to signed Instructure storage URLs. The Canvas bearer token belongs on
+// the school-origin request only: never forward it to a different origin, even
+// when that origin is operated by Instructure. Cross-origin storage URLs carry
+// their own short-lived authorization in the URL returned by Canvas.
 const TRUSTED_CANVAS_FILE_HOST_SUFFIXES=['.instructure.com','.canvas-user-content.com','.inscloudgate.net'];
 function isTrustedCanvasFileHost(hostname){
   const host=String(hostname||'').toLowerCase();
@@ -152,21 +154,27 @@ async function downloadCanvasFile(fileId,courseId,authorization,userAgent,reques
   const raw=metadata.url||metadata.download_url;
   if(typeof raw!=='string'||!raw)return fileDiagnosticFailure('metadata','CANVAS_FILE_METADATA_NO_DOWNLOAD_URL',502,'Canvas did not provide a file download URL',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId},metaResponse);
   let current;try{current=new URL(raw,CANVAS_ORIGIN);}catch{return fileRedirectFailure('CANVAS_FILE_URL_INVALID','Canvas returned an invalid file destination',requestId,{upstreamHost:new URL(apiUrl).hostname,courseScoped:!!courseId});}
-  if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_URL_UNSAFE','Canvas file destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,courseScoped:!!courseId});
+  if(current.protocol!=='https:'||current.username||current.password||current.port||current.searchParams.has('access_token')||!isTrustedCanvasFileHost(current.hostname))return fileRedirectFailure('CANVAS_FILE_URL_UNSAFE','Canvas file destination failed the HTTPS host security check',requestId,{upstreamHost:current.hostname,courseScoped:!!courseId});
   const redirectHosts=[];
+  let refererOrigin='';
   for(let hop=0;hop<6;hop++){
     const headers={Accept:'application/pdf,application/octet-stream,*/*','User-Agent':userAgent};
-    // Canvas's authenticated file flow requires the bearer token on its own
-    // storage hosts after redirects. Restrict forwarding to verified Instructure domains.
-    if(isTrustedCanvasFileHost(current.hostname))headers.Authorization=authorization;
+    // Authenticate the Canvas download endpoint only. Signed cross-origin
+    // storage redirects must not receive the student's Canvas bearer token.
+    if(current.origin===CANVAS_ORIGIN)headers.Authorization=authorization;
+    // Preserve the browser-like origin-only referrer across cross-origin hops;
+    // never forward a path, query string, signed URL, or Canvas credential.
+    if(refererOrigin)headers.Referer=refererOrigin+'/';
     let response;
     try{response=await fetch(current.href,{method:'GET',headers,redirect:'manual'});}
     catch{return fileTransportFailure('content',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
     if(response.status>=300&&response.status<400){
       if(redirectHosts.length<6)redirectHosts.push(current.hostname);
       const location=response.headers.get('Location');if(!location)return fileRedirectFailure('CANVAS_FILE_REDIRECT_LOCATION_MISSING','The file host returned a redirect without a destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
-      try{current=new URL(location,current);}catch{return fileRedirectFailure('CANVAS_FILE_REDIRECT_DESTINATION_INVALID','The file host returned an invalid redirect destination',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
-      if(current.protocol!=='https:'||current.username||current.password||current.searchParams.has('access_token'))return fileRedirectFailure('CANVAS_FILE_REDIRECT_UNSAFE','The file redirect destination failed the HTTPS security check',requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
+      const previous=current;
+      try{current=new URL(location,current);}catch{return fileRedirectFailure('CANVAS_FILE_REDIRECT_DESTINATION_INVALID','The file host returned an invalid redirect destination',requestId,{upstreamHost:previous.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});}
+      if(current.protocol!=='https:'||current.username||current.password||current.port||current.searchParams.has('access_token')||!isTrustedCanvasFileHost(current.hostname))return fileRedirectFailure('CANVAS_FILE_REDIRECT_UNSAFE','The file redirect destination failed the HTTPS host security check',requestId,{upstreamHost:previous.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
+      if(previous.origin!==current.origin)refererOrigin=previous.origin;
       continue;
     }
     if(!response.ok)return fileUpstreamFailure('content',response,requestId,{upstreamHost:current.hostname,redirectCount:redirectHosts.length,redirectHosts,courseScoped:!!courseId});
