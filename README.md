@@ -342,3 +342,31 @@ Use a real Canvas PDF, preferably a three-or-more-page file with at least two di
 - [ ] If an export or save warning appears, preserve the original and last-known-good draft; report the visible error before trying destructive recovery.
 
 Do not mark the phase iPad-accepted until this physical checklist, especially export inspection, is completed on the owner's device.
+
+## NORTHSTAR 4.4.8.2 — Phase 3: Native Canvas submission and assessment integration
+
+This development candidate is based on the exact qualified 4.4.8.1.1 source. It preserves the PDF delivery and Document Studio architecture. It does not promote production.
+
+### Submission and assessment behavior
+
+- Standard assignment uploads and text/URL submits now distinguish finalized file upload from official assignment submission. After the submission POST, NORTHSTAR reads the current user's official assignment submission record and checks state, timestamp, expected attempt, type, and (for files) all finalized attachment IDs before showing a verified receipt.
+- Finalized but not-yet-submitted file IDs are stored by Canvas course, assignment, local assignment and file signature for recovery after refresh. The raw file bytes, bearer token and signed storage URL are not stored in this staged-upload index.
+- Ambiguous assignment submit outcomes are persisted and lock another submit action until the current Canvas record is read. The receipt displays only on an authoritative submitted/graded/pending-review record.
+- Classic Quiz completion now requires a fresh Canvas attempt read for the same attempt ID and number, with a finished timestamp and completed/pending-review workflow state. Final answer saves are flushed before completion; the UI preserves an attempt and asks for reconciliation when the result is uncertain.
+- Classic Quiz file-upload question status is shown as linked only after the uploaded file answer has been saved to the active attempt.
+- New Quizzes remains an official provider-owned assessment workflow. Canvas documents New Quiz and item APIs for retrieving/building assessments, but the documented student response/attempt write path used by Classic Quizzes is not the same API. NORTHSTAR does not fabricate New Quiz answers or completion. The official player is launched and the assignment submission record is refreshed afterward where accessible.
+- Discussions now retain local drafts, publish/reply through Canvas, independently look up the returned entry, and permit an edit request only for an entry whose author ID matches the connected Canvas user. Canvas remains authoritative and may reject edits when the institution locks a thread or does not allow changes.
+
+### Worker versioning and security
+
+- Frontend candidate: NORTHSTAR 4.4.8.2 / package 0.4.28.
+- Canvas Worker candidate: 0.4.22 / NORTHSTAR 4.4.8.2, tracked independently. The last confirmed deployed Worker remains 0.4.21 until its own Cloudflare validation/deployment job succeeds.
+- Worker discussion edits use a narrowly allowlisted PUT route and message-only JSON body; entry lookup accepts a bounded list of numeric IDs. Canvas still verifies that the connected user may edit the entry.
+- No Canvas bearer token is forwarded to signed file storage, and no New Quizzes private endpoints are used.
+
+### Qualification status
+
+This is a development candidate. Its exact-head Phase 4 run, preview deployment, and separate Worker deployment must be recorded before it is marked deployed. No real Canvas test assignment, actual student record, or physical iPad test was available to verify in this engineering pass. Mocked API tests do not constitute real Canvas acceptance. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
+
+Before Phase 3 signoff, use instructor-approved test assignments and quizzes, then verify the actual Canvas submission/attempt records and receipt fields. Physical iPad acceptance must include Files picker imports, upload interruptions, Classic Quiz recovery and final receipts, and discussion post/edit flows.
+

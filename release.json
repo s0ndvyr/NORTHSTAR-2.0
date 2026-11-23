@@ -1,20 +1,40 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.1.1",
-  "packageVersion": "0.4.27",
+  "northstarVersion": "4.4.8.2",
+  "packageVersion": "0.4.28",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) remains deployed from Cloudflare workflow run 45110523121; this Document Studio qualification does not change or redeploy the Worker."
+    "status": "Canvas Worker 0.4.22 (4.4.8.2) is the Phase 3 development candidate. Source validation and deployment are pending; the last confirmed deployed Worker remains 0.4.21 (4.4.8.0). Worker deployment is tracked separately from the frontend."
   },
   "deployment": {
-    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app files or production release identity are changed by the 4.4.8.1.1 candidate.",
-    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 is deployed to the GitHub Pages preview by Pages workflow run 45249098517 from exact preview source SHA 3312aecf49d03ef16030f7a17b896b99364e73f5. That exact SHA passed Phase 4 run 45248995494. The Pages freshness gate verified production main SHA 99b49b2cc1115abaf7623a19da2485529c1a2dbd. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged. Physical iPad Safari/Apple Pencil and owner export acceptance remain outstanding."
+    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app or Worker changes are authorized by Phase 3 development.",
+    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 remains the last confirmed published preview baseline from Pages run 45249098517. NORTHSTAR 4.4.8.2 / package 0.4.28 is under Phase 3 development and is not deployed yet. The Phase 3 candidate Worker 0.4.22 is not deployed yet. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.2",
+      "date": "2026-11-23",
+      "title": "Native Canvas assignment submission and assessment integration",
+      "description": "Phase 3 candidate built on the qualified 4.4.8.1.1 source. Preserves Document Studio and Canvas PDF delivery. Adds independent Canvas submission readback and durable uncertain-outcome protection for standard assignment submits; verified Classic Quiz attempt completion, flush-before-submit answer saves, and a Canvas attempt receipt; durable staged assignment file IDs; discussion draft persistence, Canvas entry verification, and author-only official entry-edit requests. The Worker candidate is versioned independently as 0.4.22.",
+      "category": "Canvas submission and assessment integration",
+      "areas": [
+        "Standard assignment submissions and receipts",
+        "Durable staged file IDs and uncertain-outcome reconciliation",
+        "Classic Quiz answer-save flush and verified completion",
+        "Quiz attempt receipt and refresh",
+        "New Quizzes provider status synchronization",
+        "Discussion drafts, replies, verified publishing and author edits",
+        "Canvas Worker security allowlist",
+        "Phase 4 regression qualification"
+      ],
+      "status": "Development candidate on northstar-4.4.8.2-canvas-submission. Automated qualification and preview deployment are pending. The Worker 0.4.22 candidate has not yet been deployed; the last confirmed deployed Worker remains 0.4.21. Real Canvas and iPad acceptance have not been performed for this Phase 3 candidate. Production remains 4.4.7.5 / package 0.4.19.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.8.1.1",
       "date": "2026-11-23",
