@@ -42,7 +42,7 @@ assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'npm package version uses valid three
 assert.ok(manifest.releases.some(entry=>entry.version===manifest.northstarVersion),'current release has its own changelog entry');
 assert.ok(manifest.releases.find(entry=>entry.version==='4.4.7.9').commits.some(commit=>commit.sha==='a4c111b87e5508b1ce78deca24832c71dc4bcf44'),'the release records its tested and deployed preview source commit');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.4').status||'').includes('45086841863'),'the previous Canvas UI release retains its verified preview deployment record');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Phase 2 candidate; automated tests and preview deployment pending'),'the current candidate records its verified preview deployment while keeping live Canvas acceptance open');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Preview deployed successfully by GitHub Pages workflow run 45211301327'),'the current candidate records its verified preview deployment while keeping live Canvas acceptance open');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');

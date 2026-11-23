@@ -10,8 +10,8 @@
     "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) deployed successfully by Cloudflare workflow run 45110523121 from commit 5b1daa09e97872c3f7fedfa49014ad9aa1849261; Cloudflare version ID 77127915-573e-4f41-87f6-9ba50c73592d. The Worker proxies Canvas API JSON only and never fetches file-storage bytes. Live NNPS Canvas acceptance remains pending."
   },
   "deployment": {
-    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.8.1 Document Studio candidate is preview-only until its automated and physical iPad acceptance criteria pass.",
-    "preview": "NORTHSTAR 4.4.8.1 / package 0.4.26 candidate on branch northstar-4.4.8.1-document-studio. Phase 2 adds IndexedDB-backed PDF source and draft persistence, reload recovery and interruption-safe rich-text flushing. Preview deployment pending exact-head Phase 4 validation. Canvas Worker remains 0.4.21; production remains 4.4.7.5 / package 0.4.19."
+    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.8.1 Document Studio release remains preview-only pending physical iPad verification of IndexedDB recovery and multi-page export.",
+    "preview": "NORTHSTAR 4.4.8.1 / package 0.4.26 deployed to the GitHub Pages preview by workflow run 45211301327. The build verified production 4.4.7.5 / package 0.4.19 and preview 4.4.8.1 / package 0.4.26. Canvas Worker 0.4.21 is unchanged. Physical iPad acceptance of the new persistence/recovery and export behavior remains outstanding."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -30,9 +30,14 @@
         "PDF viewport and export preservation",
         "Document Studio regression tests"
       ],
-      "status": "Phase 2 candidate; automated tests and preview deployment pending. Existing Pencil, finger gesture, highlight, text, shapes, eraser, undo/redo and flattened export tools are preserved. Physical iPad verification of IndexedDB recovery after reload/interruption and multi-page PDF export remains required. Production remains 4.4.7.5 / package 0.4.19.",
+      "status": "Preview deployed successfully by GitHub Pages workflow run 45211301327 from source commit c2dc832833f658c339fbce0bc3c4b96098dc3a29. Phase 4 automated tests passed on that exact source in run 45211194018. Physical iPad verification of IndexedDB recovery after reload/interruption, Safari background recovery, Pencil editing and multi-page flattened export remains required. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "c2dc832833f658c339fbce0bc3c4b96098dc3a29",
+          "label": "Phase 2 Document Studio persistence candidate, exact-head automated tests passed"
+        }
+      ]
     },
     {
       "version": "4.4.8.0",
