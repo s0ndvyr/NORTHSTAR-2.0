@@ -188,19 +188,20 @@ globalThis.fetch=async(url,opts)=>{
 const hostile=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
 assert.equal(hostile.status,502);
 assert.equal((await hostile.json()).code,'CANVAS_FILE_URL_UNSAFE');
-assert.equal(hostileCalls.length,1,'untrusted metadata URLs are rejected before contacting their host');
+assert.equal(hostileCalls.length,2,'untrusted metadata URLs are rejected before contacting their host; only metadata and the Canvas public_url endpoint are contacted');
 let hostileRedirectCalls=[];
 globalThis.fetch=async(url,opts)=>{
   hostileRedirectCalls.push({url,opts});
   const target=new URL(url);
   if(target.pathname==='/api/v1/courses/1/files/124')return new Response(JSON.stringify({url:'https://school.instructure.com/files/124/download'}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.pathname==='/api/v1/files/124/public_url')return new Response('preview unavailable',{status:403});
   if(target.hostname==='school.instructure.com')return new Response(null,{status:302,headers:{Location:'https://evil.example/private.pdf'}});
   throw Error('Untrusted redirect target must never be fetched: '+target.href);
 };
 const hostileRedirect=await worker.fetch(request('/api/v1/courses/1/files/124/download'));
 assert.equal(hostileRedirect.status,502);
 assert.equal((await hostileRedirect.json()).code,'CANVAS_FILE_REDIRECT_UNSAFE');
-assert.equal(hostileRedirectCalls.length,2,'untrusted redirect hosts are rejected before contacting their host');
+assert.equal(hostileRedirectCalls.length,3,'untrusted redirect hosts are rejected before contacting their host; public_url failure falls back to the validated download URL');
 
 
 // Network failures are stage-specific and never include exception messages or signed URLs.
