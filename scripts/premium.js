@@ -1311,36 +1311,64 @@ async function phase441ReconcileSubmission(a){
   const status=$('#submissionStatus'),button=$('#nsReconcileSubmission'),warning=$('#nsSubmissionUnknown');
   if(!a||!getCredentials()?.proxy){if(status)status.textContent='Connect Canvas through the private bridge before checking submission status.';return;}
   if(button)button.disabled=true;
-  if(status)status.textContent='Refreshing the official Canvas assignment and submission record…';
+  if(status)status.textContent='Refreshing the official Canvas assignment and student submission record…';
   try{
-    const c=courseById(a.course),api=window.NorthstarWorkspace.transport(getCredentials());
-    const details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
-    if(!Object.prototype.hasOwnProperty.call(details,'submission'))throw Error('Canvas did not include the current submission record. The previous result remains unconfirmed; do not submit again yet.');
-    a.canSubmit=details.can_submit===true;
-    a.lockedForUser=details.locked_for_user===true;
-    a.published=details.published!==false;
-    a.lockExplanation=details.lock_explanation||details.lock_info?.asset_string||'';
-    a.unlockAt=details.unlock_at||null;
-    a.groupAssignment=Number.isInteger(details.group_category_id)&&details.group_category_id>0;
-    if(details.submission){
-      const current=CANVAS_SYNC.submission(details.submission);
+    const c=courseById(a.course),record=await window.NorthstarWorkspace.getAssignmentSubmission({credentials:getCredentials(),courseId:c.canvasId,assignmentId:a.canvasId});
+    const details=record.assignment,submission=record.submission,marker=phase441ReadUnknownSubmission(a);
+    Object.assign(a,{
+      canSubmit:record.canSubmit,lockedForUser:record.lockedForUser,published:record.published,
+      lockExplanation:record.lockExplanation,unlockAt:record.unlockAt,groupAssignment:record.groupAssignment,
+      submissionTypes:details.submission_types||a.submissionTypes||[],
+      allowedExtensions:details.allowed_extensions||a.allowedExtensions||[]
+    });
+    if(submission){
+      const current=CANVAS_SYNC.submission(submission);
       Object.assign(a,{status:current.status,subState:current.workflowState,progress:current.submitted?100:a.progress,score:current.score,grade:current.grade,missing:current.missing,late:current.late,submittedAt:current.submittedAt,gradedAt:current.gradedAt,attempt:current.attempt});
+      const submitted=['submitted','graded','pending_review'].includes(String(submission.workflow_state||'').toLowerCase())&&!!submission.submitted_at;
+      let newerThanUncertain=false;
+      if(marker){
+        const attempt=Number(submission.attempt)||0,expected=Number(marker.expectedAttempt)||0;
+        const time=Date.parse(submission.submitted_at||'')||0,baselineTime=Date.parse(marker.baselineSubmittedAt||'')||0;
+        const typeMatches=!marker.submissionType||!submission.submission_type||String(submission.submission_type)===String(marker.submissionType);
+        const attachments=Array.isArray(submission.attachments)?submission.attachments:Array.isArray(submission.submitted_files)?submission.submitted_files:null;
+        const fileIds=(marker.fileIds||[]).map(Number).filter(Number.isSafeInteger);
+        const filesMatch=!fileIds.length||(attachments&&fileIds.every(fileId=>attachments.some(file=>Number(file.id)===fileId)));
+        newerThanUncertain=submitted&&typeMatches&&filesMatch&&((expected>0&&attempt>=expected)||(time>baselineTime));
+        if(newerThanUncertain)phase441ClearSubmissionUncertain(a);
+        else if(submitted&&(attempt<(expected||attempt)||!filesMatch||!typeMatches)){
+          if(status)status.textContent='Canvas returned a submission, but it does not yet match the attempt/files expected from the uncertain request. The submit action remains locked; refresh status again before retrying.';
+        }else if(!submitted){
+          // A successful authoritative GET confirms there is no submitted result
+          // for the uncertain request. It is now safe to make a new explicit attempt.
+          phase441ClearSubmissionUncertain(a);
+        }
+      }
+      if(submitted&&(!marker||newerThanUncertain)){
+        phase441RenderSubmissionReceipt(a,c,submission,submission.submission_type,[]);
+        if(status)status.textContent='Canvas verified '+String(submission.workflow_state).replace(/_/g,' ')+' · attempt '+(submission.attempt||'—')+'. The receipt is based on the official student submission record.';
+      }
     }else{
       Object.assign(a,{status:'Not Started',subState:'unsubmitted',progress:0,score:null,grade:null,missing:false,late:false,submittedAt:null,gradedAt:null,attempt:null});
+      if(marker)phase441ClearSubmissionUncertain(a);
+      phase441RenderSubmissionReceipt(a,c,null,null,[]);
     }
-    phase441UnknownSubmissionChecks.delete(String(a.id));
-    await persistCurrentSnapshot();
-    refreshAll();
-    if(warning)warning.hidden=true;
-    if(status)status.textContent='Canvas status refreshed: '+statusOf(a)+(a.attempt?' · attempt '+a.attempt:'')+'. Review the current record before deciding whether a permitted resubmission is needed.';
+    if(record.submissionDetails){
+      const history=$('#nsSubmissionHistory');if(history)history.innerHTML=phase441SubmissionDetailsMarkup(record.submissionDetails,details);
+    }
+    await persistCurrentSnapshot();refreshAll();
+    if(warning)warning.hidden=!phase441ReadUnknownSubmission(a);
+    if(status&&phase441ReadUnknownSubmission(a))status.textContent='Canvas status is readable, but the previous request has not been reconciled to a newer submitted attempt. Do not submit again yet.';
+    else if(status&&!submission)status.textContent='Canvas confirms there is no submitted record for this assignment. Your local draft and any finalized staged uploads remain available; submit only if the assignment is currently open.';
+    else if(status&&!marker)status.textContent='Canvas status refreshed: '+statusOf(a)+(a.attempt?' · attempt '+a.attempt:'')+'. Review this official record before choosing any permitted resubmission.';
   }catch(error){
-    if(status)status.textContent='Canvas status could not be confirmed: '+error.message+' The submit action remains locked to prevent a duplicate attempt.';
+    if(status)status.textContent='Canvas status could not be confirmed: '+error.message+' The submit action remains locked to prevent a duplicate submission.';
   }finally{
     if(button)button.disabled=false;
     const submit=$('#submitWork');
-    if(submit)submit.disabled=phase441UnknownSubmissionChecks.has(String(a.id))||a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true;
+    if(submit)submit.disabled=!!phase441ReadUnknownSubmission(a)||a.canSubmit!==true||a.lockedForUser===true||a.published===false||a.groupAssignment===true;
   }
 }
+
 function submissionPanel(a){
   if(mode!=='live') return '';
   const allTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[],types=allTypes.filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
