@@ -605,3 +605,12 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Preview frontend: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`.
 - Production frontend remains on `4.4.6.9`; this Canvas work has not been promoted to main.
 - Automated tests and deployment are complete. A real PDF upload and submission in the connected Canvas tenant are still required before claiming end-to-end success.
+
+
+## Phase 4.4.7.3 — Document Studio submission UI handoff
+
+- Corrected an important selection bug: when an annotated PDF is staged through **Use annotated PDF from Document Studio**, it now replaces other selected/prepared files for that submission. This matches the visible UI promise and prevents accidental extra attachments.
+- Added a browser boot integration test that opens an `online_upload` assignment, uses a Document Studio-exported PDF, uploads that exact file, sends the finalized Canvas file ID in the `online_upload` submission, and checks that Canvas's confirmed submission state is persisted.
+- The first test attempt reached the expected `[777]` file-ID payload but the Node/jsdom assertion compared arrays from different JavaScript realms. The test now normalizes the array before comparison.
+- Release: `4.4.7.3 / 0.4.17`. Phase 4 CI and preview deployment pending.
+- Live Canvas tenant acceptance is still required; browser tests use a mocked Canvas response.

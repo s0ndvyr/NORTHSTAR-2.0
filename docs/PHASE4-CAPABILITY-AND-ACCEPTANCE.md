@@ -1,8 +1,8 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.16 / NORTHSTAR 4.4.7.2  
+**Development version:** 0.4.17 / NORTHSTAR 4.4.7.3  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
-**Status:** Preview deployed at 4.4.7.2; automated Phase 4 checks passed; live Canvas acceptance remains open.  
+**Status:** Preview deployed at 4.4.7.3; automated Phase 4 checks passed; live Canvas acceptance remains open.  
 **Production:** `main` remains on the previous verified release until this candidate passes its own tests and is promoted.
 
 This document distinguishes four different states:
@@ -127,7 +127,7 @@ Run these tests in the 0.4.4.5 preview using a test assignment or instructor-app
 **Release rule:** Phase 4 can be called implemented when the CI and artifact checks pass. It can be called live-accepted only after the student-side tests above pass in the actual Canvas tenant, and the Quiz file-upload Worker route is deployed or explicitly excluded from the live release scope.
 
 
-## 8. Phase 4.4.7.2 — Edited PDF submission pipeline
+## 8. Phase 4.4.7.3 — Edited PDF submission pipeline
 
 The current implementation candidate sends the selected/annotated file to the private bridge as multipart data. The Worker then performs the Canvas three-step upload:
 1. Initialize a submission file using `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions/self/files`.
@@ -141,7 +141,7 @@ Automated coverage now exercises both 3xx and 201 Location responses, signed-hos
 **Live acceptance still required:** use a low-risk instructor-approved test assignment that allows PDF uploads. Annotate a PDF in Document Studio, choose **Use annotated PDF from Document Studio**, confirm submission, then verify the exact PDF attachment, attempt number, submitted timestamp and submission preview in Canvas. Refresh NORTHSTAR and verify the official Canvas submission state is reconciled. Do not use a real graded assignment for initial testing.
 
 
-## 8. Phase 4.4.7.2 — Edited PDF submission pipeline
+## 8. Phase 4.4.7.3 — Edited PDF submission pipeline
 
 The current implementation candidate sends the selected/annotated file to the private bridge as multipart data. The Worker performs the Canvas three-step upload:
 1. Initialize a submission file using `POST /api/v1/courses/:course_id/assignments/:assignment_id/submissions/self/files`.
@@ -153,3 +153,6 @@ NORTHSTAR then sends `submission_type: online_upload` with the finalized file ID
 Automated coverage exercises both 3xx and 201 Location responses, signed-host token isolation, unsafe/missing finalization locations, and the app-side upload → file ID → assignment submission chain. These are mocked tests; they do not replace live acceptance in the connected Canvas tenant.
 
 **Live acceptance still required:** use a low-risk instructor-approved test assignment that allows PDF uploads. Annotate a PDF in Document Studio, choose **Use annotated PDF from Document Studio**, confirm submission, then verify the exact PDF attachment, attempt number, submitted timestamp and submission preview in Canvas. Refresh NORTHSTAR and verify the official Canvas submission state is reconciled. Do not use a real graded assignment for initial testing.
+
+
+The Document Studio annotated-PDF handoff now has a browser boot integration test. When the exported PDF is selected, it replaces other file-picker selections for that submission, matching the interface label. The test verifies that the exported file reaches the upload helper and its finalized Canvas file ID is passed to the assignment submission API. This remains mocked acceptance, not a real student-account submission.

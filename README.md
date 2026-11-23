@@ -259,3 +259,8 @@ NORTHSTAR routes assignment and Classic Quiz file uploads through its private Ca
 ### Canvas assignment file upload finalization — Phase 4.4.7.2
 
 NORTHSTAR routes assignment and Classic Quiz file uploads through its private Canvas bridge. The Worker initializes the Canvas upload, sends the signed multipart request without a Canvas bearer token, then completes the authenticated Canvas `create_success` GET before returning a file ID. Only after that confirmation does NORTHSTAR submit the file ID to the assignment. This is the standard Canvas `online_upload` workflow, not native DocViewer annotation synchronization. Attachment diagnostic reports now read the app version from the release manifest.
+
+
+### Document Studio → Canvas submission handoff — Phase 4.4.7.3
+
+The **Use annotated PDF from Document Studio** action stages the exported flattened PDF as the sole upload for that submission, matching the button's promise that it replaces other selected files. The browser boot integration test opens an `online_upload` assignment fixture, invokes the Document Studio export handoff, verifies the exported file reaches the Canvas upload helper, and verifies the finalized Canvas file ID is submitted.
