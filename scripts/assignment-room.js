@@ -622,6 +622,7 @@ async function initializePdfEditor(host,bytes){
  setSaveState('Ready. Select Text to create editable objects directly on the page.');
 }
 function renderNativePdfFallback(host,file,assignment,credentials,source){
+ if(Number(pdfState.file?.id)===Number(file.id))file={...file,...pdfState.file};
  const previewUrl=String(source?.previewUrl||'');
  const returnTo=String(source?.canvasReturnTo||('/courses/'+assignment.canvasCourseId+'/files/'+file.id));
  const browserResult=String(source?.previewDelivery?.result||'');
