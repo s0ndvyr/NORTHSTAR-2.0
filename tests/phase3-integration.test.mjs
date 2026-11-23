@@ -16,6 +16,7 @@ function between(source,start,end,label){
 const upload=between(premium,'async function phase441UploadSelectedFiles','async function phase441ReconcileSubmission','staged assignment upload');
 assert.ok(upload.includes('phase441LoadStagedUploads(a,c)'),'staged Canvas file IDs survive a page reload');
 assert.ok(upload.includes('phase441PersistStagedUploads(a,c,staged)'),'finalized IDs are persisted by course and assignment');
+assert.ok(premium.includes('crypto.subtle.digest(\'SHA-256\''),'staged upload reuse is bound to file content, not only filename/size metadata');
 assert.ok(upload.includes('expiresAt'),'the staged file index has an expiry');
 assert.ok(!upload.includes('localStorage.setItem')||!upload.includes('file.bytes'),'the staging index does not persist raw file bytes');
 const submission=between(premium,'window.submitAssignment=async function(){','\nrenderNotes =','standard assignment submit');
@@ -49,6 +50,8 @@ assert.ok(quizSave.includes('do not submit the quiz yet'),'a changing or unconfi
 const quizComplete=between(premium,'async function phase4CompleteQuizAttempt','async function phase4ReconcileQuizAttempt','quiz complete UI');
 assert.ok(quizComplete.includes('await phase4FlushQuizState(s)'),'all latest answers are flushed before completion');
 assert.ok(quizComplete.includes('completion?.confirmed'),'the UI requires independently verified completion');
+assert.ok(premium.includes('phase4QuizCompleting'),'a duplicate quiz completion click is blocked until the attempt is reconciled');
+assert.ok(!quizComplete.includes('if(phase4QuizSaveInFlight){toast(\'Wait for the current answer save'),'completion waits for in-flight autosave through the flush routine');
 assert.ok(quizComplete.includes('phase4RenderQuizReceipt'),'the UI renders a receipt only after verified completion');
 assert.ok(quizComplete.includes('completionOutcomeUnknown'),'uncertain completion does not automatically repeat the final request');
 const quizReconcile=between(premium,'async function phase4ReconcileQuizAttempt','function phase4RenderQuizReceipt','quiz status reconciliation');
