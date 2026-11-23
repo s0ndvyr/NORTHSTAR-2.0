@@ -41,7 +41,7 @@ assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Safari'),'the current release documents browser-native Safari preview');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104813239'),'the previous signed-preview release retains its successful preview Pages deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('local import'),'the candidate documents the local PDF editing recovery');
-assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
+assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).status||'').includes('Live NNPS Canvas PDF retrieval'),'the release does not claim live Canvas acceptance prematurely');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('Worker'),'the current release documents the Worker storage-fetch removal');
 assert.ok(String(manifest.releases.find(entry=>entry.version===manifest.northstarVersion).description||'').includes('CORS'),'the current release documents the browser CORS fallback');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.5').status||'').includes('45092722735'),'the previous release retains its verified production and preview Pages deployment');
