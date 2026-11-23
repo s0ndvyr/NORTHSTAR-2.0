@@ -682,3 +682,11 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Candidate Worker `0.4.18` restores the browser User-Agent only when the download target origin exactly equals `CANVAS_ORIGIN`; cross-origin storage hosts still receive neither the Canvas bearer token nor the browser User-Agent.
 - Regression tests assert both sides of this boundary. Candidate release NORTHSTAR `4.4.7.7` / package `0.4.21`; preview deployment and live PDF acceptance pending.
 - Production remains unchanged. Do not promote until the same live NNPS attachment opens and the full PDF edit/export/upload/submission lifecycle is separately verified.
+
+
+## NORTHSTAR 4.4.7.7 — Preview deployment verified (2026-11-23)
+
+- Exact preview commit `d4740f8f280b358bbe9d64770d6b2ae94714b842` passed the full Phase 4 suite in run `45103459276`.
+- Private Cloudflare Worker 0.4.18 deployed successfully by run `45103459358`; Worker version ID `2e7ced36-da0b-4091-9bd2-7dedfcf4adc2`.
+- Pages workflow run `45103520416` passed freshness, build, and deployment; the artifact includes the `/preview/` site. Preview is NORTHSTAR 4.4.7.7 / package 0.4.21.
+- Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF retrieval is still unaccepted; next action is to reopen the same `ionic nomenclature problem set 2026.pdf` attachment in preview and provide a fresh diagnostic if it fails.
