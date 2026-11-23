@@ -57,7 +57,7 @@ assert.ok(quizReconcile.includes('Number(current.id)!==Number(s.submission.id)')
 assert.ok(quizReconcile.includes("['complete','pending_review']"),'only a terminal Canvas attempt produces a receipt');
 assert.ok(premium.includes('phase4ClearQuizSession(s.assignment)'),'the active quiz session is cleared only after a verified completion');
 
-const quizFile=between(premium,'async function phase4UploadQuizFile','async function phase4FlushQuizState','quiz file upload');
+const quizFile=between(premium,'function phase4RenderQuizAttempt(){','async function phase4CompleteQuizAttempt(){','quiz attempt renderer and file upload');
 assert.ok(quizFile.includes('uploadQuizSubmissionFile'),'quiz file uploads use the distinct Classic Quiz upload endpoint');
 assert.ok(quizFile.includes('phase4FlushQuizState(s)'),'the file answer is saved before it is reported linked');
 assert.ok(quizFile.includes('phase4LastQuizSavedSignature'),'the upload answer must be confirmed on the active attempt');
@@ -80,7 +80,7 @@ assert.ok(worker.includes("const WORKER_BUILD = '0.4.22 (4.4.8.2)'"),'the Worker
 assert.ok(worker.includes('isDiscussionEntryEditPath'),'discussion edits use an exact ID-scoped allowlist');
 assert.ok(worker.includes('Invalid discussion edit message'),'the edit route accepts only a validated message payload');
 assert.ok(worker.includes("key==='ids[]'"),'discussion entry verification reads only a bounded list of entry IDs');
-assert.ok(worker.includes('quizUploadInit'),'quiz upload initialization remains a dedicated Worker route');
+assert.ok(worker.includes('const quizUploadInit='),'quiz upload initialization remains a dedicated Worker route');
 assert.ok(worker.includes('create_success'),'file IDs are not returned before Canvas upload finalization');
 
 console.log('PASS: Phase 3 source invariants — assignment reconciliation, durable staged files, Classic Quiz save/complete receipts, New Quiz provider boundary, discussion recovery/edit ownership, and Worker allowlists');
