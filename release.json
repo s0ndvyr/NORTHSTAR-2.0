@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.0",
-  "packageVersion": "0.4.25",
+  "northstarVersion": "4.4.8.1",
+  "packageVersion": "0.4.26",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
@@ -10,11 +10,30 @@
     "status": "Canvas API-only Worker 0.4.21 (4.4.8.0) deployed successfully by Cloudflare workflow run 45110523121 from commit 5b1daa09e97872c3f7fedfa49014ad9aa1849261; Cloudflare version ID 77127915-573e-4f41-87f6-9ba50c73592d. The Worker proxies Canvas API JSON only and never fetches file-storage bytes. Live NNPS Canvas acceptance remains pending."
   },
   "deployment": {
-    "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.8.0 / package 0.4.25 deployed to GitHub Pages preview by workflow run 45204976839 from candidate source commit f476eec77950ca77f235f142990228cfc7b0ab99. Exact-head Phase 4 checks passed for production source e5fd7ab8b4dfb4fb7115d646f34e3d9ec82c30e6 and the candidate source. Production remains 4.4.7.5 / package 0.4.19."
+    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.8.1 Document Studio candidate is preview-only until its automated and physical iPad acceptance criteria pass.",
+    "preview": "NORTHSTAR 4.4.8.1 / package 0.4.26 candidate on branch northstar-4.4.8.1-document-studio. Phase 2 adds IndexedDB-backed PDF source and draft persistence, reload recovery and interruption-safe rich-text flushing. Preview deployment pending exact-head Phase 4 validation. Canvas Worker remains 0.4.21; production remains 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.1",
+      "date": "2026-11-23",
+      "title": "PDF Document Studio persistence and recovery",
+      "description": "Completes the Document Studio foundation without replacing its working annotation tools. Stores original PDF bytes and changing annotation drafts in separate IndexedDB object stores, keyed by stable Canvas course, assignment and file identity. Restores the matching saved PDF and draft before requesting another Canvas download, keeps localStorage as a compatibility fallback, flushes active rich-text edits when Safari backgrounds or closes the page, and resolves the page-specific PDF.js viewport for every annotated page during flattened export so page rotation and source dimensions remain aligned.",
+      "category": "Document Studio and PDF persistence",
+      "areas": [
+        "IndexedDB source-PDF storage",
+        "Independent annotation draft autosave",
+        "Canvas attachment identity verification",
+        "Offline/reload recovery",
+        "Safari pagehide and visibility flush",
+        "PDF viewport and export preservation",
+        "Document Studio regression tests"
+      ],
+      "status": "Phase 2 candidate; automated tests and preview deployment pending. Existing Pencil, finger gesture, highlight, text, shapes, eraser, undo/redo and flattened export tools are preserved. Physical iPad verification of IndexedDB recovery after reload/interruption and multi-page PDF export remains required. Production remains 4.4.7.5 / package 0.4.19.",
+      "historical": false,
+      "commits": []
+    },
     {
       "version": "4.4.8.0",
       "date": "2026-11-23",
@@ -30,7 +49,7 @@
         "Submission continuity",
         "Full regression tests"
       ],
-      "status": "Candidate preview deployed successfully by GitHub Pages workflow run 45204976839 from source commit f476eec77950ca77f235f142990228cfc7b0ab99. Exact-head Phase 4 tests passed, Worker 0.4.21 is deployed, and the preview includes the refreshed Canvas preview and persistent attachment identity improvements. Live NNPS Canvas PDF retrieval/viewing/edit/export and physical iPad Safari/Files acceptance remain unverified. Production remains 4.4.7.5 / package 0.4.19.",
+      "status": "Phase 1 accepted by the owner on a physical iPad: real Canvas assignment PDFs open in NORTHSTAR, can be fully viewed, and accept text annotations. Automated delivery/recovery tests passed and Worker 0.4.21 is deployed. Phase 1 acceptance does not imply Phase 2 persistence/export or Phase 3 submission acceptance. Production remains 4.4.7.5 / package 0.4.19.",
       "historical": false,
       "commits": [
         {
@@ -48,6 +67,10 @@
         {
           "sha": "f476eec77950ca77f235f142990228cfc7b0ab99",
           "label": "Phase 1 candidate with preview refresh, attachment identity and regression coverage"
+        },
+        {
+          "sha": "72868539b3a7194352c97c60eddb6b850558808e",
+          "label": "initial Phase 2 IndexedDB source and draft persistence implementation"
         }
       ]
     },
