@@ -293,7 +293,7 @@ Phase 1 was accepted by the owner on a physical iPad: actual Canvas assignment P
 
 The Document Studio candidate adds IndexedDB-backed PDF source storage and independent annotation drafts. It restores a cached PDF only when its Canvas file ID, course ID and assignment ID match the active attachment. In-progress text is flushed when Safari backgrounds or closes the page. Multi-page export resolves a viewport for each annotated page and continues to add flattened annotations to the original PDF rather than recreating its pages.
 
-The editor's existing Apple Pencil, finger navigation, highlighting, text, shapes, eraser, undo/redo and export controls are preserved. Automated tests cover the IndexedDB storage adapter and rich-text flush. The 4.4.8.1 candidate is deployed to the GitHub Pages preview (workflow run 45211301327). Automated Phase 4 tests passed on the exact candidate commit (run 45211194018). The new persistence/reload/export behavior still needs physical iPad verification before Phase 2 can be signed off. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
+The editor's existing Apple Pencil, finger navigation, highlighting, text, shapes, eraser, undo/redo and export controls are preserved. Automated tests cover the IndexedDB storage adapter and rich-text flush. The 4.4.8.1 parent source SHA 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 passed Phase 4 run 45212530217 and was deployed to preview by Pages run 45212652910. The new persistence/reload/export behavior still needs physical iPad verification before Phase 2 can be signed off. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
 
 ## NORTHSTAR 4.4.8.1.1 — Phase 2 Document Studio qualification
 
@@ -322,7 +322,7 @@ This is a sub-priority release within the existing 4.4.8.1 Document Studio miles
 
 The 4.4.8.1 parent was tested in its exact preview source at commit 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 (Phase 4 run 45212530217) and deployed by Pages run 45212652910. The owner separately reported on-device Safari persistence after navigating away, leaving the site, and powering down the iPad. The parent version remains available as the published baseline while 4.4.8.1.1 is qualified.
 
-The 4.4.8.1.1 candidate is preview-only until its own exact-head Phase 4 run and Pages deployment are confirmed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; the deployed Canvas Worker remains 0.4.21. Automated PDF parsing and simulated browser tests do not establish physical iPad or Apple Pencil acceptance.
+The 4.4.8.1.1 candidate source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1 passed exact-head Phase 4 run 45247195554 and was deployed to the GitHub Pages preview by Pages run 45247533870. The Pages freshness gate verified production main SHA 99b49b2cc1115abaf7623a19da2485529c1a2dbd and the exact candidate SHA before publishing. Preview is NORTHSTAR 4.4.8.1.1 / package 0.4.27; production remains 4.4.7.5 / package 0.4.19; the deployed Canvas Worker remains 0.4.21. Automated PDF parsing and simulated browser tests do not establish physical iPad or Apple Pencil acceptance.
 
 ### Owner iPad Safari acceptance checklist
 

@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app files or production release identity are changed by the 4.4.8.1.1 candidate.",
-    "preview": "The published preview remains the verified 4.4.8.1 parent baseline / package 0.4.26. Parent source 917c3a5e3f2862dba263fab4ee7ff0ab620b2566 passed Phase 4 run 45212530217 and was included in successful Pages deployment 45212652910. The 4.4.8.1.1 candidate is not deployed yet; it will be eligible only after exact-head tests and preview deployment are confirmed. Worker 0.4.21 is unchanged."
+    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 is deployed to the GitHub Pages preview by Pages workflow run 45247533870 from exact preview source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That SHA passed Phase 4 run 45247195554. The Pages freshness gate also verified production main SHA 99b49b2cc1115abaf7623a19da2485529c1a2dbd. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged. Physical iPad Safari/Apple Pencil and owner export acceptance remain outstanding."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -32,9 +32,14 @@
         "Independent PDF parser export verification",
         "Regression and release provenance"
       ],
-      "status": "Development candidate on northstar-4.4.8.1.1-document-studio-verification. Awaiting exact-head Phase 4 qualification and preview deployment. The 4.4.8.1 parent preview remains the published baseline. Physical iPad Safari, Apple Pencil and multi-page export acceptance has not yet been performed for this sub-priority. Production remains 4.4.7.5 / package 0.4.19; Canvas Worker 0.4.21 is unchanged.",
+      "status": "Preview deployed successfully by GitHub Pages workflow run 45247533870 from exact candidate source SHA e5f262de09ba1daec5d139f29495b2ad0ad466d1. That exact source passed Phase 4 automated qualification in run 45247195554. Production remains 4.4.7.5 / package 0.4.19 and Canvas Worker 0.4.21 is unchanged. Physical iPad Safari, Apple Pencil, and manual multi-page exported-PDF acceptance have not yet been performed for this sub-priority.",
       "historical": false,
-      "commits": []
+      "commits": [
+        {
+          "sha": "e5f262de09ba1daec5d139f29495b2ad0ad466d1",
+          "label": "exact-head Phase 4 passed and preview deployed"
+        }
+      ]
     },
     {
       "version": "4.4.8.1",
