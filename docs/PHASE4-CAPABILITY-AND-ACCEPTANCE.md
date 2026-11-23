@@ -1,6 +1,6 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.19 / NORTHSTAR 4.4.7.5  
+**Development version:** 0.4.21 / NORTHSTAR 4.4.7.7 (candidate)  
 **Development branch:** `northstar-0.4.4.2-quiz-continuity`  
 **Status:** NORTHSTAR 4.4.7.5 / package 0.4.19 is deployed to production and preview by Pages run 45092722735. Live Canvas account and physical iPad/Apple Pencil acceptance remain open.  
 **Production:** Production and preview are both on NORTHSTAR 4.4.7.5; the Pages freshness gate verified both tested source heads before publication.
@@ -189,3 +189,10 @@ The regression fixture now reproduces the observed two-hop route: Canvas → `a1
 
 **Deployment status:** Worker 0.4.17 is deployed to the preview bridge by run 45099837678. NORTHSTAR 4.4.7.6 / package 0.4.20 is deployed to the preview Pages path by run 45099890111 from preview commit 1e1d9fe9979b204b6f92d500c209ff622687a880. Production intentionally remains on 4.4.7.5 pending live acceptance.\n\n**Important acceptance boundary:** this is a protocol correction supported by the live diagnostic and regression tests; it is not yet proof that the NNPS storage edge accepts the request. Reopen the same real assignment attachment in the deployed preview. If the final storage host still returns 406, the next diagnostic must determine whether the edge requires a different referrer, signed URL shape, or school-side access policy; do not weaken the host allowlist or forward the Canvas token to arbitrary hosts.
 
+
+
+## NORTHSTAR 4.4.7.7 — Canvas-origin request compatibility candidate
+
+The 4.4.7.6 live test reached the configured school Canvas host but received HTTP 403 before any redirect. Comparing the previous deployed Worker source with 0.4.17 identified one material header difference: the previous Worker sent the requesting browser User-Agent on the file-content request, while 0.4.17 omitted it. The 4.4.7.7 candidate restores that User-Agent only when the destination origin exactly matches the configured school Canvas origin. The Canvas bearer token remains scoped to that same origin. Both headers remain absent on cross-origin storage requests; the allowlist, HTTPS checks, origin-only Referer handling, and signed-URL secrecy remain in place.
+
+This is a targeted hypothesis, not a confirmed root cause. Automated tests assert that the school Canvas origin receives the browser User-Agent and bearer token, while both cross-origin storage hosts receive neither. The candidate is not live-accepted until the same NNPS PDF opens in the deployed preview.
