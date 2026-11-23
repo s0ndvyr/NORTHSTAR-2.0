@@ -183,63 +183,83 @@ async function completeQuiz({credentials,courseId,quizId,submission,accessCode='
     attempt:Number(submission.attempt),validation_token:String(submission.validation_token),access_code:accessCode||null
   });
 }
-async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fetch}){
-  const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl);
-  const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
-  // Canvas requires the student's bearer token on authenticated file-download URLs.
-  // Fetch the short-lived metadata URL in the browser first, but only when its HTTPS
-  // host belongs to the explicit Instructure allowlist. Send no browser cookies.
-  // If CORS blocks the Authorization preflight or the response cannot be read, the
-  // private bridge performs the same authenticated download with bounded redirects.
-  // Never log, persist, or send the bearer token to an untrusted host.
-  const raw=metadata.url||metadata.download_url;
-  const trustedHost=host=>{const h=String(host||'').toLowerCase();const base=new URL(credentials.base).hostname.toLowerCase();return h===base||h.endsWith('.instructure.com')||h.endsWith('.canvas-user-content.com')||h.endsWith('.inscloudgate.net');};
-  const trustedFileUrl=value=>{
-    try{
-      const url=value instanceof URL?value:new URL(value,credentials.base);
-      return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&
-        !url.searchParams.has('access_token')&&trustedHost(url.hostname);
-    }catch{return false;}
-  };
-  const browserDelivery={attempted:false,result:'not_attempted',status:null,host:null,contentType:null};
-  if(typeof raw==='string'&&raw){
-    try{
-      const target=new URL(raw,credentials.base);
-      if(trustedFileUrl(target)){
-        browserDelivery.attempted=true;browserDelivery.host=target.hostname;
-        const response=await fetchImpl(target.href,{method:'GET',headers:{
-          Accept:'application/pdf,application/octet-stream,*/*',
-          Authorization:'Bearer '+String(credentials.token)
-        },mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'});
-        const finalUrl=response.url?new URL(response.url):target;
-        browserDelivery.host=trustedFileUrl(finalUrl)?finalUrl.hostname:'untrusted-redirect';
-        browserDelivery.status=response.status;
-        browserDelivery.contentType=response.headers.get('Content-Type')||'';
-        if(!response.ok)browserDelivery.result='http_error';
-        else if(!trustedFileUrl(finalUrl))browserDelivery.result='untrusted_redirect';
-        else{
-          const bytes=new Uint8Array(await response.arrayBuffer());
-          if(bytes.length>=5&&String.fromCharCode(...bytes.slice(0,5))==='%PDF-'){
-            const disposition=response.headers.get('Content-Disposition')||'';
-            const match=disposition.match(/filename\\*?=(?:UTF-8''|")?([^;"]+)/i);
-            return {id:f,name:(match?decodeURIComponent(match[1].replace(/^"|"$/g,'')):'')||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:browserDelivery.contentType||metadata['content-type']||metadata.content_type||'application/pdf',bytes,size:bytes.byteLength,workerVersion:'browser-direct'};
-          }
-          browserDelivery.result='not_pdf';
-        }
-      }else browserDelivery.result='url_not_trusted';
-    }catch(error){
-      // Do not retain or report the temporary URL or browser exception text.
-      browserDelivery.result='browser_fetch_blocked';
-    }
-  }else browserDelivery.result='metadata_url_missing';
+function trustedCanvasPreviewUrl(value,base){
   try{
-    const download=await api.getBinary('/api/v1/courses/'+c+'/files/'+f+'/download');
-    return {id:f,name:download.filename||metadata.display_name||metadata.filename||('Canvas file '+f),contentType:download.contentType||metadata['content-type']||metadata.content_type||'',bytes:download.bytes,size:download.bytes.byteLength,workerVersion:download.workerVersion||''};
-  }catch(error){
-    error.browserDelivery=browserDelivery;
-    throw error;
-  }
+    const url=value instanceof URL?new URL(value.href):new URL(String(value||''),base);
+    const host=url.hostname.toLowerCase(),baseHost=new URL(base).hostname.toLowerCase();
+    const trusted=host===baseHost||host.endsWith('.instructure.com')||host.endsWith('.canvas-user-content.com')||host.endsWith('.inscloudgate.net')||host==='amazonaws.com'||host.endsWith('.amazonaws.com');
+    return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&!url.searchParams.has('access_token')&&trusted?url:null;
+  }catch{return null;}
 }
+async function readBrowserPdf(url,fetchImpl,authorization){
+  const headers={Accept:'application/pdf,application/octet-stream,*/*'};
+  // A legacy file URL may still be on the school's exact Canvas origin. In
+  // that single-origin case the authenticated request cannot leak on redirect.
+  if(authorization)headers.Authorization=authorization;
+  const response=await fetchImpl(url.href,{method:'GET',headers,mode:'cors',credentials:'omit',cache:'no-store',redirect:authorization?'error':'follow'});
+  const finalUrl=trustedCanvasPreviewUrl(response.url||url.href,url.origin);
+  if(!response.ok)return {result:'http_error',status:response.status,host:finalUrl?.hostname||url.hostname,contentType:response.headers.get('Content-Type')||''};
+  if(!finalUrl)return {result:'untrusted_redirect',status:response.status,host:'untrusted-redirect',contentType:response.headers.get('Content-Type')||''};
+  const contentType=response.headers.get('Content-Type')||'';
+  const length=Number(response.headers.get('Content-Length')||0);
+  if(length>100*1024*1024)return {result:'file_too_large',status:response.status,host:finalUrl.hostname,contentType};
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.byteLength>100*1024*1024)return {result:'file_too_large',status:response.status,host:finalUrl.hostname,contentType};
+  if(bytes.byteLength<5||String.fromCharCode(...bytes.slice(0,5))!=='%PDF-')return {result:'not_pdf',status:response.status,host:finalUrl.hostname,contentType};
+  return {result:'success',status:response.status,host:finalUrl.hostname,contentType:contentType||'application/pdf',bytes};
+}
+async function downloadCanvasFile({credentials,courseId,fileId,fetchImpl=root.fetch}){
+  const c=id(courseId),f=id(fileId),api=transport(credentials,fetchImpl),base=new URL(credentials.base);
+  const metadata=await api.get('/api/v1/courses/'+c+'/files/'+f);
+  const name=String(metadata.display_name||metadata.filename||('Canvas file '+f));
+  const delivery={attempted:false,result:'not_attempted',status:null,host:'',contentType:''};
+  let previewUrl=null,endpointResult='not_attempted',endpointStatus=null;
+  try{
+    const publicData=await api.get('/api/v1/files/'+f+'/public_url');
+    endpointResult='response';endpointStatus=200;
+    const candidate=trustedCanvasPreviewUrl(publicData?.public_url,base.origin);
+    if(candidate){
+      previewUrl=candidate;
+      delivery.attempted=true;delivery.host=candidate.hostname;
+      try{
+        const read=await readBrowserPdf(candidate,fetchImpl);
+        Object.assign(delivery,{result:read.result,status:read.status,host:read.host,contentType:read.contentType});
+        if(read.result==='success')return {id:f,name,contentType:read.contentType,bytes:read.bytes,size:read.bytes.byteLength,workerVersion:'browser-public-preview',previewDelivery:delivery};
+      }catch{
+        // CORS is expected on some Canvas-managed storage hosts. Native Safari
+        // navigation does not require JavaScript to read the cross-origin bytes.
+        delivery.result='browser_fetch_blocked';
+      }
+    }else{
+      endpointResult=typeof publicData?.public_url==='string'?'url_rejected':'no_public_url';
+    }
+  }catch(error){
+    endpointResult='http_error';endpointStatus=Number.isFinite(Number(error?.status))?Number(error.status):null;
+  }
+  // Only fall back to a browser-authenticated download when the target is
+  // exactly the Canvas origin and redirects are refused. Never send a Canvas
+  // token to a storage hostname, even if it is operated by Instructure.
+  if(!previewUrl&&typeof metadata.url==='string'){
+    const legacy=trustedCanvasPreviewUrl(metadata.url,base.origin);
+    if(legacy&&legacy.origin===base.origin){
+      delivery.attempted=true;delivery.host=legacy.hostname;
+      try{
+        const read=await readBrowserPdf(legacy,fetchImpl,'Bearer '+String(credentials.token));
+        Object.assign(delivery,{result:read.result,status:read.status,host:read.host,contentType:read.contentType});
+        if(read.result==='success')return {id:f,name,contentType:read.contentType,bytes:read.bytes,size:read.bytes.byteLength,workerVersion:'browser-canvas-origin',previewDelivery:delivery};
+      }catch{delivery.result='canvas_origin_fetch_blocked';}
+    }
+  }
+  return {
+    id:f,name,contentType:metadata['content-type']||metadata.content_type||'application/pdf',
+    bytes:null,size:Number(metadata.size)||null,previewUrl:previewUrl?.href||'',
+    canvasReturnTo:'/courses/'+c+'/files/'+f,
+    publicUrlEndpoint:{result:endpointResult,status:endpointStatus},
+    previewDelivery:delivery,
+    workerVersion:'browser-native-fallback'
+  };
+}
+
 const api={transport,getCanvasSessionUrl,getExternalToolLaunch,uploadAssignmentFile,uploadAssignmentFiles,uploadQuizSubmissionFile,downloadCanvasFile,startQuiz,getCurrentQuizSubmission,resumeQuiz,getQuizTime,saveQuizAnswers,updateQuizQuestionFlag,completeQuiz,questionType,questionSupported};
 root.NorthstarWorkspace=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
