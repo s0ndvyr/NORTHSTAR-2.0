@@ -81,6 +81,17 @@ for(const p of ['/api/v1/courses/1/discussion_topics','/api/v1/courses/1/discuss
 assert.equal((await worker.fetch(post({message:'My initial response'},'/api/v1/courses/1/discussion_topics/4/entries'))).status,200);
 assert.equal((await worker.fetch(post({message:'My reply'},'/api/v1/courses/1/discussion_topics/4/entries/7/replies'))).status,200);
 assert.equal((await worker.fetch(post({message:' '},'/api/v1/courses/1/discussion_topics/4/entries'))).status,400);
+const editEntryPath='/api/v1/courses/1/discussion_topics/4/entries/7';
+const edited=await worker.fetch(put({message:'Updated by the original author'},editEntryPath));
+assert.equal(edited.status,200,'the bridge permits the official Canvas edit endpoint for one exact discussion entry');
+assert.equal(upstream.at(-1).opts.method,'PUT');
+assert.equal(upstream.at(-1).url,'https://school.instructure.com'+editEntryPath);
+assert.deepEqual(JSON.parse(upstream.at(-1).opts.body),{message:'Updated by the original author'});
+assert.equal((await worker.fetch(put({message:'Edited',user_id:999},editEntryPath))).status,400,'discussion edits accept only the message field; Canvas verifies authorship');
+assert.equal((await worker.fetch(put({attempt:1,validation_token:'v'},editEntryPath))).status,400,'quiz flag payloads cannot be sent to discussion routes');
+assert.equal((await worker.fetch(put({message:'edit'},'/api/v1/courses/1/discussion_topics/4/entries/7/replies'))).status,405,'discussion reply edit paths are not confused with entry edits');
+assert.equal((await worker.fetch(put({message:'edit'},'/api/v1/courses/1/assignments/2/submissions'))).status,405,'other Worker write routes remain restricted');
+assert.equal(edited.headers.get('X-Northstar-Worker-Version'),'0.4.22 (4.4.8.2)');
 
 for(const [path,data] of [
  ['/api/v1/courses/1/quizzes/2/submissions',{preview:true}],
