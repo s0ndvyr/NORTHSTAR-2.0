@@ -7,11 +7,11 @@
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Candidate Canvas preview Worker 0.4.20 (4.4.7.9) — signed preview capability retrieval and safe diagnostics. Deployment pending validation; live NNPS PDF acceptance remains open."
+    "status": "Canvas preview Worker 0.4.20 (4.4.7.9) deployed successfully by workflow run 45107151368. Cloudflare Worker version ID: 63004244-cd78-4fb6-b02b-9f36ef05ff45. Live NNPS PDF retrieval and assignment-submission acceptance remain open."
   },
   "deployment": {
     "production": "Production intentionally remains on NORTHSTAR 4.4.7.5 / package 0.4.19. The 4.4.7.6 recovery has not been promoted pending live NNPS Canvas PDF acceptance.",
-    "preview": "NORTHSTAR 4.4.7.9 / package 0.4.23 is a candidate on branch northstar-4.4.7.9-canvas-signed-preview-fix. Phase 4, Worker deployment and Pages preview deployment are pending. Last verified preview remains 4.4.7.8 / package 0.4.22. Production remains on 4.4.7.5."
+    "preview": "NORTHSTAR 4.4.7.9 / package 0.4.23 deployed successfully to the preview Pages path by workflow run 45107205281 from tested preview commit a4c111b87e5508b1ce78deca24832c71dc4bcf44. Preview Canvas bridge Worker 0.4.20 deployed by run 45107151368 (Cloudflare version ID 63004244-cd78-4fb6-b02b-9f36ef05ff45). Production remains on 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -28,7 +28,7 @@
         "Safe content-delivery diagnostics",
         "Worker regression tests"
       ],
-      "status": "Candidate branch created; Phase 4 CI, private Worker deployment and Pages preview deployment pending. Live NNPS PDF retrieval and real assignment submission remain unaccepted. Production remains on 4.4.7.5 / package 0.4.19.",
+      "status": "Preview deployment successful. Phase 4 passed on exact merged preview commit a4c111b87e5508b1ce78deca24832c71dc4bcf44 (run 45107151322); Worker 0.4.20 deployed by run 45107151368; Pages preview deployed by run 45107205281. Live NNPS PDF retrieval and subsequent real assignment submission remain pending. Production intentionally remains on 4.4.7.5 until live acceptance.",
       "historical": false,
       "commits": []
     },
