@@ -3,8 +3,8 @@
 Last updated: 2026-11-22
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.6.6`
-Package version: `0.4.11`
+Release identifier: `NORTHSTAR / 4.4.6.10`
+Package version: `0.4.15`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ## Product direction
@@ -227,7 +227,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 
 ## PDF Document Studio
 
-- Attached PDFs are downloaded through the personal HTTPS Canvas bridge and rendered in the in-app document studio using PDF.js.
+- Attached PDFs first attempt a browser-direct authenticated download from a short-lived Canvas metadata URL on an HTTPS Instructure allowlisted host; if CORS blocks the Authorization header or the browser cannot read the response, the private HTTPS Canvas bridge performs the authenticated download. PDF.js renders the returned bytes in the in-app document studio.
 - The annotation canvas accepts freehand drawing, highlighting, erasing, lines, arrows, rectangles and ellipses only when the Pointer Events input reports pointerType = pen. Finger touch and mouse input are rejected for ink/shape tools.
 - Typed text notes can be placed on the PDF. Page navigation, zoom, color and size, per-page undo/redo, and local annotation persistence are available.
 - Export produces a flattened annotated PDF with the source document preserved. When an assignment permits online_upload, the exported PDF can be attached through Canvas' signed upload flow.
@@ -237,7 +237,7 @@ Classic quizzes and graded discussions now use full-page NORTHSTAR assessment/wo
 
 ## Canvas file retrieval and bridge
 
-canvas-bridge/worker.js now supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves the file metadata from the configured Canvas host, validates the HTTPS download URL, follows a bounded number of redirects, and forwards the Canvas bearer token only while the request remains on the exact configured Canvas origin. The token is not forwarded to cross-origin signed storage hosts. CORS exposes only the content headers needed to identify the downloaded document.
+canvas-bridge/worker.js supports authenticated reads for an individual assignment and its course file metadata, plus a custom file-download path. The Worker retrieves file metadata from the configured Canvas host, validates HTTPS destinations, follows a bounded number of redirects, and forwards the Canvas bearer token only to the configured Canvas host and explicitly allowlisted Instructure file-storage hosts. It does not forward the token to arbitrary third-party hosts or signed upload destinations. The browser-direct path follows the same allowlist and authenticates to the file host without sending browser cookies.
 
 The Worker must be redeployed separately in the user's Cloudflare dashboard before in-app PDF viewing can be live-tested. Verify the existing CANVAS_ORIGIN and ALLOWED_ORIGIN values before deployment. GitHub Pages deployment alone does not update the manually managed personal Canvas bridge.
 
@@ -270,7 +270,7 @@ These features require separate official provider integrations and live acceptan
 - [x] Add full-screen in-app assignment navigation and loading screen.
 - [x] Add sanitized Canvas assignment description and attachment discovery.
 - [x] Add PDF.js rendering, Apple Pencil-only ink/shapes, text notes, eraser, page navigation/zoom, undo/redo, and flattened PDF export.
-- [x] Add secure bridge file download without forwarding the bearer token to cross-origin signed storage.
+- [x] Add authenticated browser/bridge file downloads with the bearer token restricted to HTTPS Canvas and allowlisted Instructure file hosts.
 - [x] Connect exported annotated PDFs to supported Canvas online_upload submission flow.
 - [x] Run syntax, unit and jsdom browser boot checks on the feature branch.
 - [ ] Redeploy the personal Canvas Worker from `canvas-bridge/worker.js` in the Cloudflare dashboard; this is separate from the repository's Cloudflare Workers build check.
@@ -550,3 +550,14 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Production Pages URL: `https://s0ndvyr.github.io/NORTHSTAR-2.0/`; preview URL: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`.
 - The .9 release removes the hardcoded browser boot version and the Pages build no longer has a redundant workflow-event filter.
 - Automated tests and GitHub Pages deployment are complete. Physical iPad/Apple Pencil acceptance and live Canvas account acceptance remain external checks.
+
+
+## Phase 4.4.6.10 — Authenticated Canvas PDF retrieval and release-record alignment
+
+- Corrected the browser-direct PDF path to send the Canvas bearer token in the Authorization header only when the metadata URL is HTTPS, has no credentials or non-default port, has no access_token query parameter, and belongs to the configured Canvas host or an explicitly allowlisted Instructure file-host suffix.
+- Kept browser cookies omitted. If the browser's cross-origin Authorization preflight is blocked, NORTHSTAR falls back to the existing private bridge, which uses bounded manual redirects and forwards the token only to the configured Canvas host or allowlisted Instructure file hosts.
+- Added regression coverage proving trusted storage receives the token, the bridge fallback remains available, and an untrusted metadata URL is never fetched by the browser.
+- Clarified that signed uploads remain a separate flow: the bearer token is never sent to the signed upload destination.
+- Corrected the stale engineering-log release header and aligned the release manifest, package metadata and offline release fallback to NORTHSTAR 4.4.6.10 / package 0.4.15.
+- The .9 Pages deployment closeout remains recorded with its verified Phase 4 and Pages workflow IDs. The .10 candidate's exact-head Phase 4 and Pages status is tracked by GitHub Actions so the published manifest does not contain a self-referential or stale deployment claim.
+- Automated tests can validate the request construction and fallback rules but cannot prove that NNPS Canvas, its current file host, the private Cloudflare Worker, or physical iPad Safari accepts a live attachment. Those live checks remain separate acceptance gates.
