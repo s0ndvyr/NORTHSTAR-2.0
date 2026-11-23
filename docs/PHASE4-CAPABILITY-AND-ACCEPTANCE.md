@@ -2,8 +2,8 @@
 
 **Development version:** 0.4.23 / NORTHSTAR 4.4.7.9  
 **Development branch:** `northstar-4.4.7.9-canvas-signed-preview-fix`  
-**Status:** NORTHSTAR 4.4.7.9 / package 0.4.23 is a candidate; Phase 4 validation, private Worker deployment and Pages preview deployment are pending. The last verified preview remains NORTHSTAR 4.4.7.8 / package 0.4.22. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS Canvas attachment, Canvas account, and physical iPad/Apple Pencil acceptance remain open.  
-**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.8 / package 0.4.22.
+**Status:** NORTHSTAR 4.4.7.9 / package 0.4.23 is deployed to preview. Phase 4, private Worker deployment and Pages deployment succeeded. Live NNPS PDF retrieval and the real edit/export/upload/submission lifecycle remain unaccepted. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Physical iPad/Apple Pencil acceptance remains open.  
+**Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Preview: NORTHSTAR 4.4.7.9 / package 0.4.23.
 
 This document distinguishes four different states:
 
@@ -226,4 +226,4 @@ Worker 0.4.20 corrects that boundary:
 Regression coverage includes successful signed-preview retrieval from an Instructure host, confirmation that signed-preview fetches receive no bearer token or browser User-Agent, endpoint failure fallback, and a signed-preview 406 plus legacy fallback 406 with safe diagnostics.
 
 **Release:** NORTHSTAR 4.4.7.9 / package 0.4.23; Worker 0.4.20.  
-**Status:** Candidate branch validation and preview deployment pending. Live NNPS PDF retrieval is still unaccepted. Production remains 4.4.7.5 / package 0.4.19 until the real PDF edit/export/upload/submission lifecycle is verified.
+**Preview deployment:** Phase 4 passed on merged preview commit `a4c111b87e5508b1ce78deca24832c71dc4bcf44` in run `45107151322`. Worker 0.4.20 deployed by run `45107151368`, Cloudflare version ID `63004244-cd78-4fb6-b02b-9f36ef05ff45`. Pages preview deployed by run `45107205281` and verified as 4.4.7.9 / package 0.4.23. Live NNPS PDF retrieval and the real PDF edit/export/upload/submission lifecycle remain unaccepted. Production remains 4.4.7.5 / package 0.4.19.
