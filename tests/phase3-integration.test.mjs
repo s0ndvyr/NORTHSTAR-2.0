@@ -78,6 +78,8 @@ assert.ok(discussion.includes('Number(found.entry.user_id)!==userId'),'edit is l
 assert.ok(discussion.includes('context.api.put(path,{message})'),'author edits use Canvas official PUT update');
 assert.ok(discussion.includes('phase4DiscussionPlain(entry.message)!==wanted'),'reconciliation matches the actual post content');
 assert.ok(discussion.includes('context.readOnly'),'locked/unpublished threads remain read-only');
+assert.ok(discussion.includes('data-discussion-more'),'threads with more than the recent reply window expose a load-older control');
+assert.ok(discussion.includes('/entries/'+Number(marker.replyTo)+'/replies?per_page=100'),'uncertain replies are verified against the exact parent thread');
 
 assert.ok(worker.includes("const WORKER_BUILD = '0.4.22 (4.4.8.2)'"),'the Worker candidate is versioned independently');
 assert.ok(worker.includes('isDiscussionEntryEditPath'),'discussion edits use an exact ID-scoped allowlist');
