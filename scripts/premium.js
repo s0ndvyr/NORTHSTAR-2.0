@@ -1662,15 +1662,10 @@ async function phase441ReconcileSubmission(a){
       const submitted=['submitted','graded','pending_review'].includes(String(submission.workflow_state||'').toLowerCase())&&!!submission.submitted_at;
       let newerThanUncertain=false;
       if(marker){
-        const attempt=Number(submission.attempt)||0,expected=Number(marker.expectedAttempt)||0;
-        const time=Date.parse(submission.submitted_at||'')||0,baselineTime=Date.parse(marker.baselineSubmittedAt||'')||0;
-        const typeMatches=!marker.submissionType||!submission.submission_type||String(submission.submission_type)===String(marker.submissionType);
-        const attachments=Array.isArray(submission.attachments)?submission.attachments:Array.isArray(submission.submitted_files)?submission.submitted_files:null;
-        const fileIds=(marker.fileIds||[]).map(Number).filter(Number.isSafeInteger);
-        const filesMatch=!fileIds.length||(attachments&&fileIds.every(fileId=>attachments.some(file=>Number(file.id)===fileId)));
-        newerThanUncertain=submitted&&typeMatches&&filesMatch&&(expected>0?attempt>=expected:time>baselineTime);
+        const receipt=window.NorthstarSubmissions.verifyReceipt({submission,expectedAttempt:marker.expectedAttempt,submissionType:marker.submissionType,fileIds:marker.fileIds,baselineSubmittedAt:marker.baselineSubmittedAt});
+        newerThanUncertain=submitted&&receipt.confirmed;
         if(newerThanUncertain)phase441ClearSubmissionUncertain(a);
-        else if(submitted&&(attempt<(expected||attempt)||!filesMatch||!typeMatches)){
+        else if(submitted&&!receipt.confirmed){
           if(status)status.textContent='Canvas returned a submission, but it does not yet match the attempt/files expected from the uncertain request. The submit action remains locked; refresh status again before retrying.';
         }else if(!submitted){
           // A successful authoritative GET confirms there is no submitted result
@@ -1777,19 +1772,10 @@ window.submitAssignment=async function(){
     const verified=await window.NorthstarWorkspace.getAssignmentSubmission({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId});
     const official=verified.submission;
     if(!official)throw Object.assign(Error('Canvas has not returned a submitted student record yet. The request may still be processing; refresh status before retrying.'),{outcomeUnknown:true});
-    const workflow=String(official.workflow_state||'').toLowerCase();
-    const submitted=['submitted','graded','pending_review'].includes(workflow)&&!!official.submitted_at;
-    const typeMatches=String(official.submission_type||'')===String(type);
-    const attemptMatches=(Number(official.attempt)||0)>=expectedAttempt;
-    let uploadedFiles=[];
-    if(type==='online_upload'){
-      const attachments=Array.isArray(official.attachments)?official.attachments:Array.isArray(official.submitted_files)?official.submitted_files:[];
-      const allFilesPresent=fileIds.length>0&&fileIds.every(fileId=>attachments.some(file=>Number(file.id)===fileId));
-      if(!allFilesPresent)throw Object.assign(Error('Canvas returned a submission record, but it did not include every expected finalized file ID. The result remains unverified; refresh Canvas status before retrying.'),{outcomeUnknown:true});
-      uploadedFiles=attachments.filter(file=>fileIds.includes(Number(file.id))).map(file=>({id:Number(file.id),name:String(file.display_name||file.filename||file.name||('Canvas file '+file.id))}));
-    }
-    if(!submitted||!typeMatches||!attemptMatches){
-      throw Object.assign(Error('Canvas has not independently confirmed the expected '+type+' submission. Current state: '+workflow+' · attempt '+(official.attempt||'—')+'. Do not submit again until the official record is refreshed.'),{outcomeUnknown:true});
+    const receipt=window.NorthstarSubmissions.verifyReceipt({submission:official,expectedAttempt,submissionType:type,fileIds,baselineSubmittedAt});
+    const uploadedFiles=type==='online_upload'?receipt.attachments.filter(file=>fileIds.includes(Number(file.id))).map(file=>({id:Number(file.id),name:String(file.display_name||file.filename||file.name||('Canvas file '+file.id))})):[];
+    if(!receipt.confirmed){
+      throw Object.assign(Error('Canvas has not independently confirmed the expected '+type+' submission: '+receipt.failures.join('; ')+'. Do not submit again until the official record is refreshed.'),{outcomeUnknown:true});
     }
     const normalized=CANVAS_SYNC.submission(official);
     Object.assign(a,{
