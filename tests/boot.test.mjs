@@ -410,6 +410,9 @@ assert.ok(window.document.getElementById('submissionStatus').textContent.include
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
 assert.ok(savedSnapshot && savedSnapshot.assignments.length===9,'successful sync is saved as an offline snapshot, including the New Quizzes assignment');
+window.dispatchEvent(new window.Event('offline'));
+assert.equal(window.document.getElementById('syncLabel').textContent,'Saved Canvas data · offline','loss of connectivity exposes the cached/offline state without discarding Canvas data');
+assert.ok(window.document.getElementById('canvasStatus').textContent.includes('last successful Canvas snapshot remains available'),'offline messaging confirms cached coursework is retained');
 // Verify the actual Document Studio button stages its exported PDF and sends only that PDF.
 window.fetch=canvasFetch;
 await window.openWorkspace('canvas_14_1');

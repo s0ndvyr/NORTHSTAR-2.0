@@ -2240,6 +2240,12 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pageshow',onCanvasResume);
 window.addEventListener('focus',onCanvasResume);
 window.addEventListener('online',()=>{if(phase44HasExternalReturnContext())phase44RefreshExternalReturnContext();else maybeRefreshCanvas(true);});
+window.addEventListener('offline',()=>{
+  if(mode!=='live')return;
+  dataFreshness='cached';
+  const label=$('#syncLabel');if(label)label.textContent='Saved Canvas data · offline';
+  const status=$('#canvasStatus');if(status)status.textContent='Offline. Your last successful Canvas snapshot remains available. NORTHSTAR will refresh automatically when the connection returns.';
+});
 bootstrapDebug();
 renderPeriodsManager();
 if($('#geminiKey')) $('#geminiKey').value=getAiKey();
