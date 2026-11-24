@@ -21,6 +21,9 @@ const exportTest=readFileSync(new URL('tests/document-export.test.mjs',root),'ut
 assert.equal(manifest.northstarVersion,'4.4.8.3.1','release manifest identifies the assignment stabilization sub-release');
 assert.equal(manifest.phase,'4.4.8','the sub-priority retains the parent 4.4.8 phase family');
 assert.equal(manifest.packageVersion,'0.4.32','the frontend package version is independently advanced');
+assert.ok(String(manifest.deployment.preview||'').includes('45410896624')&&String(manifest.deployment.preview||'').includes('89cac751db41ac523bf3bd0bd8973bb3d1ba0540'),'the preview deployment records the exact deployed stabilization source and Pages run');
+assert.ok(manifest.releases.find(entry=>entry.version==='4.4.8.3.1').commits.some(commit=>commit.sha==='89cac751db41ac523bf3bd0bd8973bb3d1ba0540'),'the stabilization release records its exact deployed preview source');
+assert.ok(releaseJs.includes('45410896624')&&releaseJs.includes('89cac751db41ac523bf3bd0bd8973bb3d1ba0540'),'the offline release fallback matches the deployed preview provenance');
 assert.ok(workerJs.includes("const WORKER_BUILD = '0.4.22 (4.4.8.2)'"),'the Worker reports the browser-native PDF API proxy build');
 assert.ok(workerJs.includes('trustedStorageHost')&&workerJs.includes('uploadUrl.hash'),'signed upload destinations are restricted to trusted HTTPS storage hosts and reject URL fragments');
 assert.ok(workerWorkflow.includes('Verify the deployed Worker build marker')&&workerWorkflow.includes('northstar-bridge.s0ndvyr.workers.dev'),'the Worker deployment is followed by a live version-header smoke check');

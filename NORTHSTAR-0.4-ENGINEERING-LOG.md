@@ -830,7 +830,7 @@ All prior release entries, including 4.4.8.2.1, remain intact.
 ## NORTHSTAR 4.4.8.3.1 — Assignment architecture stabilization
 
 **Date:** 2026-11-24  
-**Status:** Stabilization candidate; exact-head automated qualification and preview deployment pending  
+**Status:** Preview deployed; exact-head automated qualification passed. External Canvas/Google and physical iPad acceptance remain open.  
 **Branch:** `northstar-4.4.8.3.1-stabilization`  
 **Base:** `9994935f8b440445316e1ce8468d861f2e893238` (NORTHSTAR 4.4.8.3 preview source)  
 **Target:** NORTHSTAR 4.4.8.3.1 / package 0.4.32 / Canvas Worker 0.4.22 (unchanged)
@@ -856,10 +856,19 @@ All prior release entries, including 4.4.8.2.1, remain intact.
 ### Qualification boundaries
 
 - Automated tests/build: exact-head Phase 4 CI passed for functional source `d75f82c728225d8207d802377630ca3f44b234b8` in run `45409554510`. The run passed `npm test`, JavaScript syntax checks and Cloudflare Worker dry-run.
-- Preview: Pages run `45409670485` succeeded. Freshness verified main `0ca9420c45abdb68694acaf7cd8cb83ee3e4d816` and the stabilization source `d75f82c728225d8207d802377630ca3f44b234b8`; build/deploy succeeded. Preview URL: https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/.
-- The release metadata/engineering-log follow-up is a new commit; it must pass exact-head Phase 4 and Pages again before its SHA is presented as the final deployed preview source.
+- Preview: Pages run `45410896624` succeeded. Its freshness gate verified main `82017f489dfd855e1bae564a560b246cc34d5757` and the stabilization source `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`; the build checked out that exact preview SHA, verified NORTHSTAR `4.4.8.3.1 / 0.4.32`, assembled the preview artifact, and deployment succeeded. Preview URL: https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/.
+- Exact-head Phase 4 run `45410603140` passed for stabilization source `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`, including JavaScript syntax checks, Cloudflare Worker dry-run validation and unit/browser boot tests.
 - Real Canvas: not verified; authorized school-course access is unavailable in this session.
 - Real Google Assignments: not verified. A mocked Canvas launch response only validates NORTHSTAR's request shape/top-level handoff; it does not prove the school identity/resource link is accepted or resolve the screenshot's Google-origin 403.
 - Physical iPad Safari: not verified.
 - Worker: 0.4.22 unchanged; no Worker source modification was justified by the current allowlisted sessionless-launch route.
 - Production remains 4.4.7.5 / package 0.4.19 and has not been promoted.
+
+
+### 4.4.8.3.1 exact-source preview closeout
+
+- Final preview source at this checkpoint: `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`.
+- Exact-head Phase 4: run `45410603140` passed all steps.
+- GitHub Pages: run `45410896624` passed freshness, build and deploy. The freshness log explicitly verified the stabilization branch at `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`; the build checked out that exact SHA for `/preview/` and verified package `0.4.32`.
+- This is a preview deployment only. Production remains `4.4.7.5 / 0.4.19`; Worker `0.4.22` remains unchanged.
+- Real Canvas assignment/provider acceptance, authorized Google Assignments LTI acceptance (including the previously reported Google-origin 403), and physical iPad Safari acceptance remain unverified.
