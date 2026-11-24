@@ -1522,7 +1522,7 @@ async function openWorkspace(id,options){
   let details=null,files=[],submissionDetails=null;
   a.detailLoadState=mode==='live'?'loading':'sample';
   if(mode==='live'){
-    a.canSubmit=false; // fail closed until fresh availability data arrives
+    a.canSubmit=null; // fail closed until Canvas explicitly confirms availability
     try{
       const creds=getCredentials(),api=window.NorthstarWorkspace.transport(creds);
       details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
@@ -1533,7 +1533,7 @@ async function openWorkspace(id,options){
       const mergedTypes=[...new Set([...summaryTypes,...detailTypes])];
       a.submissionTypes=mergedTypes.length?mergedTypes:null;
       a.allowedExtensions=Array.isArray(details.allowed_extensions)?details.allowed_extensions:(a.allowedExtensions||[]);
-      a.canSubmit=details.can_submit===true;
+      a.canSubmit=typeof details.can_submit==='boolean'?details.can_submit:null;
       a.lockedForUser=typeof details.locked_for_user==='boolean'?details.locked_for_user:a.lockedForUser;
       a.published=typeof details.published==='boolean'?details.published:a.assignmentPublished;
       a.lockExplanation=details.lock_explanation||details.lock_info?.asset_string||'';
