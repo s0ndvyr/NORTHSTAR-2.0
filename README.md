@@ -370,3 +370,20 @@ This is a development candidate. Its exact-head Phase 4 run, preview deployment,
 
 Before Phase 3 signoff, use instructor-approved test assignments and quizzes, then verify the actual Canvas submission/attempt records and receipt fields. Physical iPad acceptance must include Files picker imports, upload interruptions, Classic Quiz recovery and final receipts, and discussion post/edit flows.
 
+
+
+## NORTHSTAR 4.4.8.2.1 — Phase 3 completion and qualification
+
+**Release candidate:** NORTHSTAR 4.4.8.2.1 / package 0.4.29  
+**Branch:** `northstar-4.4.8.2-canvas-submission`  
+**Production remains:** NORTHSTAR 4.4.7.5 / package 0.4.19
+
+This qualification sub-release preserves the existing 4.4.8.2 Canvas architecture and Document Studio. It repairs assignment submission read-back credentials and the staged PDF upload progress argument, adds Classic Quiz completion reconciliation when the completion POST response is lost, and requires an authoritative Canvas read of the exact attempt before showing a receipt. The browser qualification now provides real WebCrypto and File byte access rather than bypassing the SHA-256 staged-upload fingerprint.
+
+The Canvas Worker is independently deployed as **0.4.22 (4.4.8.2)** at [northstar-bridge.s0ndvyr.workers.dev](https://northstar-bridge.s0ndvyr.workers.dev). Cloudflare Version ID: `f06f5377-632b-44c9-b647-dcfca3166f54`. Deployment workflow run [45301624724](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45301624724) completed successfully, and its post-deployment HTTP smoke check confirmed the live `X-Northstar-Worker-Version` header.
+
+The Worker validates signed upload hosts against trusted Canvas/Instructure and S3 storage host patterns, rejects non-HTTPS destinations, credentials, unusual ports, URL fragments and access-token query parameters, and never forwards the Canvas bearer token to signed storage.
+
+**Integration boundaries:** Classic Quizzes use the native supported workflow with exact-attempt confirmation. New Quizzes retain the official Canvas provider/player handoff; NORTHSTAR does not fabricate native New Quiz answer entry or a completion receipt. Discussion actions remain subject to Canvas permissions and authoritative read-back.
+
+**Qualification status:** Automated browser, unit, PDF, bridge-security and Worker bundle tests have passed on the preceding Phase 3 candidate commits. The exact 4.4.8.2.1 release commit must pass the Phase 4 workflow before the Pages preview is published. Real Canvas verification is BLOCKED until an authorized test course and credentials are available. Physical iPad Safari and Apple Pencil acceptance has not been performed for this release. No production deployment is authorized by this development release.

@@ -1,20 +1,58 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.2",
-  "packageVersion": "0.4.28",
+  "northstarVersion": "4.4.8.2.1",
+  "packageVersion": "0.4.29",
   "channel": "route-derived",
   "releaseDate": "2026-11-23",
   "bridge": {
     "version": "1.2",
-    "status": "Canvas Worker 0.4.22 (4.4.8.2) is the Phase 3 development candidate. Source validation and deployment are pending; the last confirmed deployed Worker remains 0.4.21 (4.4.8.0). Worker deployment is tracked separately from the frontend."
+    "status": "Canvas Worker 0.4.22 (4.4.8.2) deployed successfully in workflow run 35 from source SHA 97e3c9ea80698753a9aa365015aa12d20469a3c3. Post-deployment HTTP smoke verification confirmed X-Northstar-Worker-Version: 0.4.22 (4.4.8.2). Cloudflare Version ID: f06f5377-632b-44c9-b647-dcfca3166f54."
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app or Worker changes are authorized by Phase 3 development.",
-    "preview": "NORTHSTAR 4.4.8.1.1 / package 0.4.27 remains the last confirmed published preview baseline from Pages run 45249098517. NORTHSTAR 4.4.8.2 / package 0.4.28 is under Phase 3 development and is not deployed yet. The Phase 3 candidate Worker 0.4.22 is not deployed yet. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
+    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification release candidate. GitHub Pages publishes the preview only after the exact current source SHA passes the Phase 4 workflow. Canvas Worker 0.4.22 is deployed and its live version header is verified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.2.1",
+      "date": "2026-11-23",
+      "title": "Phase 3 completion, Canvas integration repair and qualification",
+      "description": "Qualification sub-release of NORTHSTAR 4.4.8.2. Repairs the assignment submission read-back credential reference and the staged PDF upload progress argument; completes SHA-256-backed PDF upload browser qualification; reconciles Classic Quiz completion after lost POST responses while verifying the exact Canvas attempt ID, attempt number, terminal state and finished timestamp; and restricts signed upload destinations to trusted Canvas/Instructure and S3 storage hosts. Adds a post-deployment Worker version-header smoke check. Preserves the native New Quizzes provider boundary and the existing Document Studio architecture.",
+      "category": "Phase 3 completion and qualification",
+      "areas": [
+        "Written, URL and file assignment submission read-back",
+        "Staged multi-file and annotated PDF upload",
+        "Document Studio export and Canvas submission continuity",
+        "Classic Quiz lost-response reconciliation and exact-attempt receipts",
+        "New Quizzes official provider handoff",
+        "Discussion persistence and authoritative read-back",
+        "Canvas Worker signed-storage hostname validation",
+        "Worker deployment version smoke verification",
+        "Exact-source automated regression qualification"
+      ],
+      "status": "Phase 3 qualification sub-release. Automated qualification is gated on the exact release commit and the Pages preview is published only after that exact-head test succeeds. Canvas Worker 0.4.22 is deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED until an authorized test course and credentials are available. Physical iPad Safari and Apple Pencil acceptance remains unverified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+      "historical": false,
+      "commits": [
+        {
+          "sha": "e228fac4e528636af50fd5992f782b47d15f8e5a",
+          "label": "fix assignment submission read-back credentials"
+        },
+        {
+          "sha": "855cb133f22a87c05b402aa910da684652e49d3a",
+          "label": "fix staged PDF upload progress state"
+        },
+        {
+          "sha": "2ed7ecd44f9c45c42bd8c1e24e8b4b69d7b69de1",
+          "label": "restrict signed upload hosts"
+        },
+        {
+          "sha": "97e3c9ea80698753a9aa365015aa12d20469a3c3",
+          "label": "deploy and smoke-verify Canvas Worker 0.4.22"
+        }
+      ]
+    },
     {
       "version": "4.4.8.2",
       "date": "2026-11-23",
@@ -31,8 +69,8 @@
         "Canvas Worker security allowlist",
         "Phase 4 regression qualification"
       ],
-      "status": "Development candidate on northstar-4.4.8.2-canvas-submission. Automated qualification and preview deployment are pending. The Worker 0.4.22 candidate has not yet been deployed; the last confirmed deployed Worker remains 0.4.21. Real Canvas record verification remains open. Physical iPad Safari and Apple Pencil acceptance, including upload/quiz/discussion recovery, has not yet been performed for this Phase 3 candidate. Production remains 4.4.7.5 / package 0.4.19.",
-      "historical": false,
+      "status": "Phase 3 implementation baseline superseded by qualification sub-release 4.4.8.2.1. Its source is retained in Git history; final acceptance is tracked by the 4.4.8.2.1 release record.",
+      "historical": true,
       "commits": []
     },
     {

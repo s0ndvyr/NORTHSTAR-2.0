@@ -3,9 +3,50 @@
 Last updated: 2026-11-23
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.8.0`
-Package version: `0.4.24`
+Release identifier: `NORTHSTAR / 4.4.8.2.1`
+Package version: `0.4.29`
+Phase 3 qualification branch: `northstar-4.4.8.2-canvas-submission`
+Phase 3/main reconciliation merge: `1adfa3109595864eec67fea089bd3c118d573bb8`
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
+
+
+## NORTHSTAR 4.4.8.2.1 — Phase 3 completion and qualification
+
+### Branch reconciliation
+
+- Phase 3 branch started from `69551b93e5ee4f263588540938c4693a0d199f5c`; main started from `2ab78b3d5c7e94f7a057daaf966ea1884e10f8d2`.
+- The branches shared merge base `94a7b5b1a92d215b4e5bb809eb9677948b30d6c4`. Main contained 16 later commits, primarily the 4.4.7.5 production release/provenance and earlier Pages freshness/preview workflow updates.
+- All main-touched paths were also modified on the Phase 3 branch. The Phase 3 versions contain the later 4.4.8.0–4.4.8.2 Document Studio, Canvas Worker, submission, release-manifest and workflow implementation. The branch already records the 4.4.7.5 production identity and provenance; no main-only file additions needed importing.
+- A two-parent merge commit `1adfa3109595864eec67fea089bd3c118d573bb8` reconciled main ancestry while preserving the newer Phase 3 tree. No reset, force-push or blind replacement was used.
+
+### Application repairs
+
+- Fixed the standard assignment submission verification call to pass the active `creds` object as the `credentials` argument. Previously, Canvas could accept the submission POST, but a misspelled variable caused a ReferenceError before the authoritative read-back request.
+- Fixed the annotated-PDF staged-upload call to pass the assignment status element into `phase441UploadSelectedFiles`. Previously, the helper attempted to render upload progress through an undefined status reference and stopped before upload.
+- Updated browser qualification to supply Node WebCrypto and File byte access so the test exercises the actual SHA-256 staged-upload fingerprint instead of bypassing it.
+- Updated assignment and PDF boot fixtures to return the authoritative Canvas submission record and attachment ID after the submission operation.
+
+### Classic Quiz reliability
+
+- `completeQuiz` now reconciles after a lost completion POST response or server-side ambiguous response. A definite Canvas 4xx rejection remains a failed completion.
+- The current Canvas submission must independently match the exact active attempt ID and attempt number, have a finished timestamp, and be in a valid terminal state (`complete` or `pending_review`).
+- An uncertain attempt is not automatically submitted a second time. Regression coverage includes lost POST response, active attempt after uncertainty, failed reconciliation, mismatched ID, mismatched attempt number and definitive rejection.
+
+### Worker security and deployment
+
+- Canvas Worker 0.4.22 validates signed upload destinations against trusted Canvas/Instructure and S3 storage host patterns; it rejects non-HTTPS URLs, credentials, non-default ports, fragments and access-token query parameters.
+- Canvas bearer credentials are never forwarded to signed storage.
+- Worker deployment run 35: [45301624724](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45301624724), source SHA `97e3c9ea80698753a9aa365015aa12d20469a3c3`.
+- Cloudflare Version ID: `f06f5377-632b-44c9-b647-dcfca3166f54`.
+- Post-deployment HTTP smoke verification confirmed `X-Northstar-Worker-Version: 0.4.22 (4.4.8.2)`.
+
+### Qualification boundaries
+
+- Phase 4 automated runs 516, 517, 519, 520, 521 and 522 passed on their respective candidate SHAs. The final 4.4.8.2.1 release commit must still receive its own exact-head Phase 4 success before preview publication.
+- Pages freshness gate correctly holds publication when the Phase 3 branch head does not yet have a passing exact-head Phase 4 run. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
+- **Real Canvas verification: BLOCKED.** No authorized test course/credentials were available to verify actual written, URL, PDF/multiple-file, Classic Quiz, Quiz file upload, discussion or New Quiz records.
+- **Physical iPad Safari: UNVERIFIED.** No physical iPad/Files/Apple Pencil acceptance is claimed.
+- New Quizzes remains an official provider/player handoff; NORTHSTAR does not claim fully native New Quiz answer entry or fabricate a completion receipt.
 
 ## Product direction
 

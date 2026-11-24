@@ -1,9 +1,22 @@
 # NORTHSTAR Phase 4 — Native Assignment Capability & Acceptance Matrix
 
-**Development version:** 0.4.24 / NORTHSTAR 4.4.8.0  
-**Development branch:** `northstar-4.4.8.0-native-pdf-delivery`  
-**Status:** NORTHSTAR 4.4.8.0 / package 0.4.24 is a candidate. Phase 4 tests, Worker validation/deployment and Pages preview deployment are pending. Last verified preview remains NORTHSTAR 4.4.7.9 / package 0.4.23. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. Live NNPS PDF viewing, local-import editing, export/submission and physical iPad/Apple Pencil acceptance remain open.  
+**Development version:** 0.4.29 / NORTHSTAR 4.4.8.2.1  
+**Development branch:** `northstar-4.4.8.2-canvas-submission`  
+**Status:** NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification sub-release. Automated qualification is gated on the exact release SHA; Pages preview publishes only after that SHA passes the Phase 4 workflow. Canvas Worker 0.4.22 is deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED pending authorized test access. Physical iPad Safari and Apple Pencil acceptance remains unverified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.  
 **Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.9 / package 0.4.23.
+
+
+## Current Phase 3 qualification sub-release — NORTHSTAR 4.4.8.2.1
+
+- **Standard assignment submission:** written/URL/file workflows retain the native assignment workspace and require an authoritative Canvas submission read-back before displaying success.
+- **File and PDF submission:** finalized upload IDs are not treated as submissions. The exported annotated PDF is fingerprinted, staged, uploaded and then associated with the official assignment submission. The browser test environment now exercises real SHA-256 and File byte access.
+- **Classic Quizzes:** answer flush and exact active-attempt verification remain mandatory. A lost completion POST response triggers reconciliation; NORTHSTAR does not automatically repeat completion.
+- **New Quizzes:** official Canvas provider/player handoff remains the supported boundary. Native answer entry and fabricated completion receipts are unsupported.
+- **Discussions:** draft, publish, reply and author-edit operations remain subject to Canvas permissions and authoritative read-back.
+- **Worker:** version 0.4.22 (4.4.8.2) is deployed. Workflow run 45301624724 verified the live version response header and Cloudflare version ID `f06f5377-632b-44c9-b647-dcfca3166f54`.
+- **Real Canvas:** BLOCKED — an authorized test course and credentials were not available for this engineering pass. Mocks do not count as real Canvas verification.
+- **Physical iPad:** UNVERIFIED — no physical Safari/Files/Apple Pencil acceptance is claimed.
+- **Production:** unchanged at NORTHSTAR 4.4.7.5 / package 0.4.19.
 
 This document distinguishes four different states:
 
