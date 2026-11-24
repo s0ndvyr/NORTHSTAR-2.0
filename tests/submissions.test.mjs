@@ -22,6 +22,8 @@ assert.equal(S.verifyReceipt({submission:{workflow_state:'pending_review',attemp
 assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'2026-11-22T18:00:00.000Z'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501],baselineSubmittedAt:'2026-11-23T18:00:00.000Z'}).confirmed,false,'a timestamp older than the previous attempt is rejected');
 assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted',attempt:0},baselineAttempt:0}),true,'an explicit unsubmitted record at the baseline attempt permits a safe retry');
 assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted',attempt:1},baselineAttempt:0}),false,'an unexpected newer attempt does not clear an uncertain request');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted',attempt:0},baselineAttempt:1}),false,'a stale lower attempt does not clear an uncertain request');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted'},baselineAttempt:1}),false,'a missing attempt number cannot clear uncertainty after prior submissions');
 assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'submitted',attempt:1,submitted_at:'2026-11-24T18:00:00Z'},baselineAttempt:0}),false,'a submitted record is never treated as unsubmitted');
 assert.equal(S.isDefinitivelyUnsubmitted({submission:null,baselineAttempt:0}),false,'a missing submission record is not proof that an ambiguous write failed');
 
