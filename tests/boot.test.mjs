@@ -319,7 +319,19 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
 let writes=0;
-window.fetch=async(url,opts)=>{writes++;return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};};
+window.fetch=async(url,opts)=>{
+  const target=new URL(url),path=target.searchParams.get('path')||target.pathname;
+  if(opts.method==='POST'){
+    writes++;
+    return {ok:true,status:200,json:async()=>({workflow_state:'submitted',attempt:2})};
+  }
+  if(path==='/api/v1/courses/1/assignments/10?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true')
+    return {ok:true,status:200,json:async()=>({id:10,name:'Test work',submission_types:['online_text_entry','online_url'],can_submit:true,locked_for_user:false,published:true,submission:{workflow_state:'submitted',submission_type:'online_text_entry',attempt:2,submitted_at:'2026-11-23T17:30:00Z'}})};
+  if(path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:7})};
+  if(path==='/api/v1/courses/1/assignments/10/submissions/7?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment')
+    return {ok:true,status:200,json:async()=>({submission_history:[{attempt:2,workflow_state:'submitted'}],submission_comments:[],rubric_assessment:{}})};
+  throw Error('Unexpected assignment receipt request: '+path);
+};
 // Credentials are already retained in the in-memory connection created above.
 window.confirm=()=>false;
 await window.submitAssignment();
