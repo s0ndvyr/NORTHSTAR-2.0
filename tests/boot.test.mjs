@@ -254,6 +254,9 @@ window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 
+// Reset any previous unrelated resource preview before asserting provider routing.
+window.closeViewer(true);
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'provider handoff starts from a closed preview layer');
 // Provider-owned Classic and New Quizzes use fresh Canvas sessions and top-level navigation.
 const topLevelNavigations=[];
 window.NorthstarExternalNavigation.navigateTopLevel=url=>{
