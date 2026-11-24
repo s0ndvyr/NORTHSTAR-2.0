@@ -211,6 +211,18 @@ const untrustedStorage=await worker.fetch(uploadActionRequest('assignment',2,ann
 assert.equal(untrustedStorage.status,502,'arbitrary HTTPS storage hosts are rejected');
 assert.equal(untrustedStorageFetches,1,'the Worker rejects the host before transferring any file bytes');
 
+let fragmentStorageFetches=0;
+globalThis.fetch=async(url,opts)=>{
+  fragmentStorageFetches++;
+  const target=new URL(url);
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')
+    return new Response(JSON.stringify({upload_url:'https://northstar-test-bucket.s3.us-east-1.amazonaws.com/signed#fragment',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  throw Error('Fragment-bearing signed storage URLs must not be followed');
+};
+const fragmentStorage=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
+assert.equal(fragmentStorage.status,502);
+assert.equal(fragmentStorageFetches,1,'fragment-bearing storage URLs are rejected before transfer');
+
 // Unsafe and missing finalization locations must never be followed.
 globalThis.fetch=async(url,opts)=>{
   const target=new URL(url);
