@@ -20,6 +20,11 @@ assert.equal(S.verifyReceipt({submission:{...receiptBase,attachments:[]},expecte
 assert.equal(S.verifyReceipt({submission:receiptBase,expectedAttempt:2,submissionType:'online_upload',fileIds:['not-a-file-id']}).confirmed,false,'invalid expected file IDs cannot be silently discarded');
 assert.equal(S.verifyReceipt({submission:{workflow_state:'pending_review',attempt:1,submission_type:'online_text_entry',submitted_at:'2026-11-24T18:00:00.000Z'},expectedAttempt:1,submissionType:'online_text_entry'}).confirmed,true,'a matching text-entry attempt in pending review is accepted');
 assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'2026-11-22T18:00:00.000Z'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501],baselineSubmittedAt:'2026-11-23T18:00:00.000Z'}).confirmed,false,'a timestamp older than the previous attempt is rejected');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted',attempt:0},baselineAttempt:0}),true,'an explicit unsubmitted record at the baseline attempt permits a safe retry');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'unsubmitted',attempt:1},baselineAttempt:0}),false,'an unexpected newer attempt does not clear an uncertain request');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:{workflow_state:'submitted',attempt:1,submitted_at:'2026-11-24T18:00:00Z'},baselineAttempt:0}),false,'a submitted record is never treated as unsubmitted');
+assert.equal(S.isDefinitivelyUnsubmitted({submission:null,baselineAttempt:0}),false,'a missing submission record is not proof that an ambiguous write failed');
+
 
 let calls=0;
 const args={credentials:{proxy:'https://bridge.example',token:'secret'},courseId:1,assignmentId:2,data:S.payload('online_url','https://example.com')};
