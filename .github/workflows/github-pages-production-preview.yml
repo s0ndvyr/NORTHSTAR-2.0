@@ -63,10 +63,14 @@ jobs:
           async function hasPassingRun(branch, sha) {
             for (let page = 1; ; page++) {
               const query = '?branch=' + encodeURIComponent(branch) +
-                '&event=push&status=completed&per_page=100&page=' + page;
-              const history = await api('/actions/workflows/northstar-phase4.yml/runs' + query);
+                '&event=push&per_page=100&page=' + page;
+              const history = await api('/actions/runs' + query);
               if (history.workflow_runs.some(run =>
-                run.head_sha === sha && run.event === 'push' && run.conclusion === 'success'
+                run.path === '.github/workflows/northstar-phase4.yml' &&
+                run.head_branch === branch &&
+                run.head_sha === sha &&
+                run.event === 'push' &&
+                run.conclusion === 'success'
               )) return true;
               if (history.workflow_runs.length < 100) return false;
             }

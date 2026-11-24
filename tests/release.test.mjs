@@ -98,7 +98,7 @@ assert.ok(premiumJs.includes('window.NorthstarRelease?.manifest?.northstarVersio
 assert.ok(!premiumJs.includes("NORTHSTAR / .4.4.5")&&!premiumJs.includes('version.textContent=NORTHSTAR_RELEASE'),'dashboard rendering cannot overwrite the manifest-driven version pill');
 assert.ok(roomJs.includes('justifyGap')&&roomJs.includes('completedParagraphs'),'PDF export handles justified text and paragraph spacing');
 assert.ok(roomJs.includes("'•':'•'")&&roomJs.includes("'–':'–'"),'PDF export maps common punctuation and list markers');
-assert.ok(pagesWorkflow.includes('/actions/workflows/northstar-phase4.yml/runs'),'Pages freshness gate queries Phase 4 workflow history');
+assert.ok(pagesWorkflow.includes("api('/actions/runs' + query)")&&pagesWorkflow.includes("run.path === '.github/workflows/northstar-phase4.yml'"),'Pages freshness gate searches all run records but accepts only the Phase 4 workflow');
 assert.ok(pagesWorkflow.includes('northstar-4.4.8.3.1-stabilization'),'the stabilization Pages workflow is wired to its own preview source branch');
 assert.ok(pagesWorkflow.includes('run.head_sha === sha')&&pagesWorkflow.includes("run.conclusion === 'success'"),'Pages only accepts successful runs for the exact current branch SHA');
 assert.ok(pagesWorkflow.includes('test -f _site/preview/scripts/external-navigation.js'),'the preview artifact requires the external navigation helper');
