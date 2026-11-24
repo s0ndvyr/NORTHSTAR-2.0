@@ -62,8 +62,8 @@ const parentRelease=manifest.releases.find(entry=>entry.version==='4.4.8.1');
 assert.ok(String(parentRelease.status||'').includes('45212530217')&&String(parentRelease.status||'').includes('45212652910'),'the parent release records its exact source test and preview deployment provenance');
 assert.ok(parentRelease.commits.some(commit=>commit.sha==='917c3a5e3f2862dba263fab4ee7ff0ab620b2566'),'the parent changelog records its verified preview source SHA');
 const candidateRelease=manifest.releases.find(entry=>entry.version===manifest.northstarVersion);
-assert.ok(String(candidateRelease.status||'').includes('Stabilization candidate')&&String(candidateRelease.status||'').includes('Physical iPad Safari'),'the candidate keeps preview/provider/hardware acceptance pending');
-assert.equal(candidateRelease.commits.length,0,'the stabilization candidate has no deployment provenance before qualification');
+assert.ok(String(candidateRelease.status||'').includes('Preview deployed')&&String(candidateRelease.status||'').includes('45409670485')&&String(candidateRelease.status||'').includes('Physical iPad Safari'),'the release records the preview deployment while keeping real-provider and hardware acceptance outstanding');
+assert.ok(candidateRelease.commits.some(commit=>commit.sha==='d75f82c728225d8207d802377630ca3f44b234b8'),'the release records its exact-head functional source SHA');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.8.0').description||'').includes('Safari'),'the original PDF delivery release documents browser-native Safari preview');

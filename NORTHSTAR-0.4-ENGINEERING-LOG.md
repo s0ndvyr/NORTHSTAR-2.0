@@ -855,8 +855,9 @@ All prior release entries, including 4.4.8.2.1, remain intact.
 
 ### Qualification boundaries
 
-- Automated tests/build: exact-head Phase 4 CI pending.
-- Preview: exact-head Pages freshness/build/deployment qualification pending.
+- Automated tests/build: exact-head Phase 4 CI passed for functional source `d75f82c728225d8207d802377630ca3f44b234b8` in run `45409554510`. The run passed `npm test`, JavaScript syntax checks and Cloudflare Worker dry-run.
+- Preview: Pages run `45409670485` succeeded. Freshness verified main `0ca9420c45abdb68694acaf7cd8cb83ee3e4d816` and the stabilization source `d75f82c728225d8207d802377630ca3f44b234b8`; build/deploy succeeded. Preview URL: https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/.
+- The release metadata/engineering-log follow-up is a new commit; it must pass exact-head Phase 4 and Pages again before its SHA is presented as the final deployed preview source.
 - Real Canvas: not verified; authorized school-course access is unavailable in this session.
 - Real Google Assignments: not verified. A mocked Canvas launch response only validates NORTHSTAR's request shape/top-level handoff; it does not prove the school identity/resource link is accepted or resolve the screenshot's Google-origin 403.
 - Physical iPad Safari: not verified.

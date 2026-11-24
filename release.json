@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
-    "preview": "NORTHSTAR 4.4.8.3.1 / package 0.4.32 is a stabilization candidate. Preview deployment is pending exact-head Phase 4 CI and Pages freshness qualification. The previously deployed 4.4.8.3 preview remains the active preview until the stabilization candidate is qualified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
+    "preview": "NORTHSTAR 4.4.8.3.1 / package 0.4.32 preview deployed at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ (Pages run 45409670485). Exact-head Phase 4 CI run 45409554510 passed for functional source SHA d75f82c728225d8207d802377630ca3f44b234b8. Final release-metadata commit is being qualified for a repeat exact-head preview deployment. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -33,8 +33,13 @@
         "External return context privacy",
         "Assignment/provider regression tests"
       ],
-      "status": "Stabilization candidate. Exact-head Phase 4 CI and preview deployment are pending. Real Canvas and Google Workspace LTI acceptance are not verified; the Google 403 must be tested using the authorized school Google account and configured LTI resource. Physical iPad Safari acceptance has not yet been performed. Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
-      "commits": []
+      "status": "Preview deployed at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ through Pages run 45409670485. Exact-head Phase 4 CI passed for functional source SHA d75f82c728225d8207d802377630ca3f44b234b8 in run 45409554510. Pages freshness verified main 0ca9420c45abdb68694acaf7cd8cb83ee3e4d816 and stabilization branch d75f82c728225d8207d802377630ca3f44b234b8; preview build and deployment passed. Real Canvas and Google Workspace LTI acceptance are not verified; the Google 403 still requires the authorized school Google account/configuration test. Physical iPad Safari acceptance has not yet been performed. Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
+      "commits": [
+        {
+          "sha": "d75f82c728225d8207d802377630ca3f44b234b8",
+          "label": "Phase 4-qualified functional stabilization source and initial preview deployment"
+        }
+      ]
     },
     {
       "version": "4.4.8.3",
