@@ -1,6 +1,7 @@
 import {JSDOM} from 'jsdom';
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
 
 const root = new URL('../', import.meta.url).pathname;
 const releaseManifest = JSON.parse(readFileSync(root + 'release.json', 'utf8'));
@@ -17,9 +18,13 @@ const dom = new JSDOM(html, {
   beforeParse(window) {
     window.addEventListener('error', e => errors.push('window error: ' + e.message));
     if (!window.structuredClone) window.structuredClone = v => JSON.parse(JSON.stringify(v));
-    if (!window.crypto || !window.crypto.randomUUID) {
-      try { Object.defineProperty(window, 'crypto', {value: {randomUUID: () => 'test-uuid'}}); } catch {}
-    }
+    try {
+      Object.defineProperty(window, 'crypto', {value: {
+        subtle: webcrypto.subtle,
+        randomUUID: () => 'test-uuid',
+        getRandomValues: array => webcrypto.getRandomValues(array)
+      }, configurable:true});
+    } catch {}
     window.fetch = async () => { throw new Error('network disabled in test'); };
     const vault = new Map();
     window.NorthstarVault = {get: async (k, fallback) => vault.has(k) ? vault.get(k) : fallback, set: async (k, v) => { vault.set(k, v); return true; }, remove: async k => vault.delete(k)};
@@ -157,6 +162,7 @@ assert.ok(!window.document.getElementById('aiStatus').textContent.includes('AIza
 window.openInDashboard('https://school.instructure.com/courses/1/assignments/2');
 
 // Exercise real sync wiring with deterministic Canvas-shaped responses.
+let pdfAssignmentSubmission=null;
 const canvasCalls=[];
 let currentQuizAttempt=null;
 window.fetch = async (url, opts={}) => {
@@ -180,7 +186,7 @@ window.fetch = async (url, opts={}) => {
   else if (path==='/api/v1/users/self') data={id:7,name:'Test Student'};
   else if (path.startsWith('/api/v1/courses/1/assignments/10?')) data={id:10,name:'Test work',description:'Write your answer.',submission_types:['online_text_entry','online_url'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:[]};
   else if (path.startsWith('/api/v1/courses/1/assignments/11?')) data={id:11,name:'Awaiting feedback',description:'Write a short response.',submission_types:['online_text_entry'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:[],submission:{workflow_state:'submitted',attempt:1,submitted_at:new Date(Date.now()-36*60*60*1000).toISOString()}};
-  else if (path.startsWith('/api/v1/courses/1/assignments/14?')) data={id:14,name:'PDF Upload Test',description:'Upload the annotated PDF.',submission_types:['online_upload'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:['pdf']};
+  else if (path.startsWith('/api/v1/courses/1/assignments/14?')) data={id:14,name:'PDF Upload Test',description:'Upload the annotated PDF.',submission_types:['online_upload'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:['pdf'],submission:pdfAssignmentSubmission};
   else if (path.startsWith('/api/v1/courses/1/assignments/14/submissions/7?')) data={submission_history:[],submission_comments:[],rubric_assessment:{}};
   else if (path.startsWith('/api/v1/courses/1/assignments/11/submissions/7?')) data={submission_history:[{attempt:1,workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}],submission_comments:[{author_name:'Instructor',comment:'Good start. Add one more example.',created_at:'2026-11-17T12:00:00Z'}],rubric_assessment:{}};
   else if (path.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
@@ -364,7 +370,7 @@ let sentFromStudio=null;
 const originalUpload=window.NorthstarWorkspace.uploadAssignmentFile;
 const originalSend=window.NorthstarSubmissions.send;
 window.NorthstarWorkspace.uploadAssignmentFile=async args=>{uploadedFromStudio.push(args);return {id:777,display_name:args.file.name};};
-window.NorthstarSubmissions.send=async args=>{sentFromStudio=args;return {workflow_state:'submitted',attempt:1,submitted_at:'2026-11-22T12:30:00Z'};};
+window.NorthstarSubmissions.send=async args=>{sentFromStudio=args;pdfAssignmentSubmission={id:1401,workflow_state:'submitted',submission_type:'online_upload',attempt:1,submitted_at:'2026-11-22T12:30:00Z',attachments:[{id:777,display_name:'annotated-homework.pdf'}]};return {workflow_state:'submitted',attempt:1,submitted_at:'2026-11-22T12:30:00Z'};};
 window.document.getElementById('nsUseAnnotatedPdf').click();
 await new Promise(r=>setTimeout(r,10));
 assert.ok(window.document.getElementById('nsAnnotatedPdfStatus').textContent.includes('Ready to submit'));
@@ -377,7 +383,7 @@ assert.equal(uploadedFromStudio[0].courseId,1);
 assert.equal(uploadedFromStudio[0].assignmentId,14);
 assert.deepEqual(Array.from(sentFromStudio.data.submission.file_ids),[777],'the finalized Canvas file ID is submitted to the assignment');
 assert.equal(sentFromStudio.data.submission.submission_type,'online_upload');
-assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas confirmed your submission'));
+assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified your submission'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===14).status,'Submitted');
 window.NorthstarWorkspace.uploadAssignmentFile=originalUpload;
 window.NorthstarSubmissions.send=originalSend;
