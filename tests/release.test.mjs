@@ -10,6 +10,7 @@ const roomJs=readFileSync(new URL('scripts/assignment-room.js',root),'utf8');
 const premiumJs=readFileSync(new URL('scripts/premium.js',root),'utf8');
 const workerJs=readFileSync(new URL('canvas-bridge/worker.js',root),'utf8');
 const workspaceJs=readFileSync(new URL('scripts/workspace.js',root),'utf8');
+const externalNavigationJs=readFileSync(new URL('scripts/external-navigation.js',root),'utf8');
 const storageJs=readFileSync(new URL('scripts/document-storage.js',root),'utf8');
 const bootJs=readFileSync(new URL('tests/boot.test.mjs',root),'utf8');
 const debugJs=readFileSync(new URL('scripts/canvas-debug.js',root),'utf8');
@@ -133,3 +134,6 @@ assert.ok(workspaceJs.includes('function trustedCanvasPreviewUrl'),'Canvas previ
 assert.ok(workspaceJs.includes('canvasReturnTo'), 'the local-import fallback retains only the safe Canvas course/file route');
 assert.ok(roomJs.includes('nsPdfLocalFile')&&roomJs.includes('arrayBuffer()'),'the downloaded PDF can be imported into the existing native Document Studio editor');
 assert.ok(assignmentCss.includes('.ns-pdf-native-fallback'),'the Safari preview recovery has dedicated responsive styling');
+
+assert.ok(externalNavigationJs.includes('requireSavedReturnContext')&&premiumJs.includes('requireSavedReturnContext(phase44StoreExternalReturnContext(provider))'),'external-tool launch cannot proceed unless its assignment return context was durably stored');
+assert.ok(premiumJs.indexOf('await openWorkspace(a.id,{fromHistory:true})')<premiumJs.indexOf('localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY)'),'external return context is retained until the exact assignment workspace has been restored');
