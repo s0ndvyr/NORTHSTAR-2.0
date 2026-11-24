@@ -32,26 +32,9 @@
         "Worker deployment version smoke verification",
         "Exact-source automated regression qualification"
       ],
-      "status": "Phase 3 qualification sub-release. Automated qualification is gated on the exact release commit and the Pages preview is published only after that exact-head test succeeds. Canvas Worker 0.4.22 is deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED until an authorized test course and credentials are available. Physical iPad Safari and Apple Pencil acceptance remains unverified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+      "status": "Development candidate. The NORTHSTAR 4.4.8.2.1 frontend release has not yet been deployed; Pages preview publication is gated on exact-head Phase 4 success. Canvas Worker 0.4.22 is separately deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED until authorized test access is available. Physical iPad Safari and Apple Pencil acceptance has not yet been performed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
       "historical": false,
-      "commits": [
-        {
-          "sha": "e228fac4e528636af50fd5992f782b47d15f8e5a",
-          "label": "fix assignment submission read-back credentials"
-        },
-        {
-          "sha": "855cb133f22a87c05b402aa910da684652e49d3a",
-          "label": "fix staged PDF upload progress state"
-        },
-        {
-          "sha": "2ed7ecd44f9c45c42bd8c1e24e8b4b69d7b69de1",
-          "label": "restrict signed upload hosts"
-        },
-        {
-          "sha": "97e3c9ea80698753a9aa365015aa12d20469a3c3",
-          "label": "deploy and smoke-verify Canvas Worker 0.4.22"
-        }
-      ]
+      "commits": []
     },
     {
       "version": "4.4.8.2",
