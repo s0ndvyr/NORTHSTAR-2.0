@@ -3,8 +3,9 @@
 Last updated: 2026-11-24
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.8.3` (candidate; prior 4.4.8.2.1 preserved)
-Package version: `0.4.31` (candidate)
+Current stabilization release: `NORTHSTAR / 4.4.8.3.1` (package `0.4.32`)
+Next release objective: `NORTHSTAR / 4.4.8.3.2` (qualification in progress)
+
 Phase 3 qualification branch: `northstar-4.4.8.2-canvas-submission`; architecture pivot: `northstar-4.4.8.3-assignment-routing`
 Phase 3/main reconciliation merge: `1adfa3109595864eec67fea089bd3c118d573bb8`; follow-up main-only CI commits `c30a9ccc8b8bd4f61151b86b5a9bab3371cb4956` (Pages exact-head pagination) and `46a1b8a6938891c66864cd6fc6f9847a4cf2d0af` (pagination regression test) are reconciled by a second two-parent merge. The Phase 3 Pages workflow is byte-identical to main; the Phase 3 release test retains the broader 0.4.29 qualification coverage and includes the same pagination assertion.
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
@@ -376,6 +377,44 @@ These features require separate official provider integrations and live acceptan
 - The Worker and workspace transport now allow those two exact GET routes only; no New Quiz write path has been opened.
 - Confirm the NNPS token has access to the New Quizzes read endpoints and the new Worker source has been deployed before iPad live testing.
 
+
+## NORTHSTAR 4.4.8.3.2 — Assignment Workspace Qualification & Completion (in progress)
+
+Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 package/release identity remains unchanged until the 4.4.8.3.2 implementation and qualification gates are complete. No production promotion is authorized by this work-in-progress entry.
+
+### Initial engineering repairs
+
+- **Mixed submission configuration gate:** replaced the UI's ad-hoc `none` / `on_paper` presence check with the central assignment classifier's `confirmedOffline` result. A mixed configuration that includes a supported online submission method is no longer treated as offline-only. Canvas `can_submit: false` continues to block the submit control.
+- **Exact submission receipt verification:** added a shared `verifyReceipt` helper. It requires a terminal Canvas submission state, the exact expected attempt number, the expected submission type, a valid submission timestamp that is not older than the previous attempt, and every expected finalized Canvas file ID for upload submissions.
+- **Ambiguous submission reconciliation:** the uncertain-submission recovery path now uses the same exact receipt verifier. A higher unrelated attempt no longer clears the reconciliation lock merely because its attempt number is greater than expected.
+- **Upload ID validation:** malformed expected file IDs cannot be silently filtered out and treated as an empty, successful attachment check.
+
+### Regression coverage added
+
+- Mixed `none` + `online_upload` assignment with `can_submit: false` must expose the online method without enabling submission or describing the assignment as offline-only.
+- Exact receipt accepted; higher/lower attempt, wrong type, invalid timestamp, stale timestamp, missing attachment and malformed expected file ID rejected.
+
+### Change commits
+
+- `53d68784f74e275916bf6478ea40d53437df2a47` — central offline classification for submission gating.
+- `ec6155944d80d69ad21db61cf717bbfc88bd9a24` — mixed-method assignment boot regression.
+- `d9e3416b511d97684aa68359f136154810f63d96` — shared exact Canvas receipt verifier.
+- `35d9affcb27c3f1e4ad3360661c86866ea7d551a` — premium submission/reconciliation integration.
+- `ab5c17e6818ff2a2002302befac3b4e76cd89af5` — exact receipt unit coverage.
+- `2a4c62eea16fd3fb929e29eaa6b23986b4a58b8f` — reject malformed expected upload IDs.
+- `ed4209ead866f4990d849f34b91963cf28f674a4` — malformed-ID regression coverage.
+- `ceb21459ae28d3eb76bcf30268f5bda0f37a12e6` — final upload receipt expression syntax correction.
+
+### Qualification state at this checkpoint
+
+- Source-level isolated JavaScript parsing: `scripts/submissions.js` and `scripts/premium.js` passed.
+- Isolated receipt-verification harness: 7/7 targeted cases passed after the exact-attempt and timestamp checks were added; repository regression tests were also added but the full npm suite has not yet been run in this environment.
+- GitHub combined commit-status lookup: no status entries returned for the inspected commits; this is not evidence of a passing workflow.
+- Full `npm test`, Worker dry-run, full browser regression and Pages freshness/deployment: pending verification.
+- Real Canvas submission verification: blocked until an authorized test assignment/account and compatible deployed Worker are available.
+- Physical iPad Safari, Files and Apple Pencil qualification: unverified.
+
+Canvas Worker source was not changed in this initial repair batch. Its existing deployment record remains Worker `0.4.22`; current compatibility and live deployment still require a release-level check before promotion.
 
 ## NORTHSTAR / `.4.4.4` — Authenticated Canvas Sessions & LTI Launch
 
