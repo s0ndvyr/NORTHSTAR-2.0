@@ -1677,7 +1677,7 @@ window.submitAssignment=async function(){
     if(uncertain){
       phase441MarkSubmissionUncertain(a,{baselineAttempt,baselineSubmittedAt,expectedAttempt,submissionType,fileIds,requestStartedAt:Date.now()});
       const warning=$('#nsSubmissionUnknown');if(warning)warning.hidden=false;
-      if(status){const safeMessage=message.replace(/(access_token|Authorization|Bearer)\\s*[:=]?\\s*[^\\s,;]+/gi,'$1=[redacted]').slice(0,240);status.textContent='Canvas may have received this submission, but the independent result is not confirmed. '+(safeMessage?'Details: '+safeMessage+'. ':'')+'Do not submit again until you refresh the official Canvas record.';}
+      if(status){const safeMessage=message.replace(/(access_token|Authorization|Bearer)\s*[:=]?\s*[^\s,;]+/gi,'$1=[redacted]').slice(0,240);status.textContent='Canvas may have received this submission, but the independent result is not confirmed. '+(safeMessage?'Details: '+safeMessage+'. ':'')+'Do not submit again until you refresh the official Canvas record.';}
     }else if(status){
       status.textContent=message+(Array.isArray(error.uploadedFiles)&&error.uploadedFiles.length?' '+error.uploadedFiles.length+' file(s) were already finalized in Canvas; they are not submitted yet and remain staged for reuse.':'');
     }
