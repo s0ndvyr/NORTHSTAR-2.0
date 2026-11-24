@@ -389,6 +389,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - **Ambiguous submission reconciliation:** the uncertain-submission recovery path now uses the same exact receipt verifier. A higher unrelated attempt no longer clears the reconciliation lock merely because its attempt number is greater than expected.
 - **Upload ID validation:** malformed expected file IDs cannot be silently filtered out and treated as an empty, successful attachment check.
 - **Ambiguous no-record recovery:** a missing Canvas submission object no longer clears an uncertain-submission lock. A retry is permitted only when Canvas explicitly returns an `unsubmitted` record with the exact previously known baseline attempt; missing attempt numbers after prior submissions, stale lower attempts, and nonterminal states remain unknown and block duplicate submission.
+- **Assignment card qualification:** the live Ledger now identifies the actual submission method, resource/attachment type when Canvas detail data is available, and the execution boundary (NORTHSTAR workspace, official Canvas/provider workflow, in-person/paper, or unverified). Opening an assignment updates its resource summary from the authoritative detail response.
 
 ### Regression coverage added
 
@@ -410,6 +411,8 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - `b4b7bbd4ddbf9d591dfc90e58f41ac8fe64e4414` — regression coverage for missing and non-definitive records.
 - `4025a278818e7137a19af2aae832737b16a79378` — require exact baseline attempt before a safe retry.
 - `51756a9eb41a092283f9271bebfb84b25416e662` — regression coverage for stale/missing baseline attempts.
+- `fc0c0c73efcd9899bf717e5321baa5806d54d182` — resource and execution route labels on Ledger cards.
+- `d5435e7a08f52cfd0aeed169933dc25bf74b9924` — Word-resource and external-provider card regression coverage.
 
 ### Qualification state at this checkpoint
 
