@@ -52,7 +52,7 @@ async function getAssignmentSubmission({credentials,courseId,assignmentId,fetchI
       submissionDetails=await api.get('/api/v1/courses/'+c+'/assignments/'+a+'/submissions/'+userId+'?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment');
     }
   }catch(error){historyError=String(error?.message||error);}
-  return {assignment,submission:assignment.submission||null,submissionDetails,userId,historyError,canSubmit:assignment.can_submit===true,lockedForUser:assignment.locked_for_user===true,published:assignment.published!==false,lockExplanation:assignment.lock_explanation||assignment.lock_info?.asset_string||'',unlockAt:assignment.unlock_at||null,groupAssignment:Number.isInteger(assignment.group_category_id)&&assignment.group_category_id>0};
+  return {assignment,submission:assignment.submission||null,submissionDetails,userId,historyError,canSubmit:typeof assignment.can_submit==='boolean'?assignment.can_submit:null,lockedForUser:assignment.locked_for_user===true,published:assignment.published!==false,lockExplanation:assignment.lock_explanation||assignment.lock_info?.asset_string||'',unlockAt:assignment.unlock_at||null,groupAssignment:Number.isInteger(assignment.group_category_id)&&assignment.group_category_id>0};
 }
 async function getExternalToolLaunch({credentials,courseId,assignmentId,fetchImpl=root.fetch}){
   const c=id(courseId),a=id(assignmentId);
