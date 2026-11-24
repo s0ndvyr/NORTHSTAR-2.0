@@ -409,7 +409,7 @@ assert.ok(window.document.getElementById('submissionStatus').textContent.include
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
-assert.ok(savedSnapshot && savedSnapshot.assignments.length===5,'successful sync is saved as an offline snapshot, including the New Quizzes assignment');
+assert.ok(savedSnapshot && savedSnapshot.assignments.length===9,'successful sync is saved as an offline snapshot, including the New Quizzes assignment');
 // Verify the actual Document Studio button stages its exported PDF and sends only that PDF.
 window.fetch=canvasFetch;
 await window.openWorkspace('canvas_14_1');
