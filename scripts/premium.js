@@ -1277,11 +1277,80 @@ function phase441SubmissionDetailsMarkup(data,assignmentDetails){
   const rubricHtml=rubricKeys.length?rubricKeys.map(id=>{const row=rubric[id]||{},criterion=criteria.find(item=>String(item.id)===String(id));return '<article class="ns-submission-rubric"><strong>'+esc(criterion?.description||criterion?.long_description||id)+'</strong><span>'+esc(row.points===null||row.points===undefined?'Points not released':row.points)+'</span>'+(row.comments?'<p>'+esc(asText(row.comments))+'</p>':'')+'</article>';}).join(''):'<p class="ns-room-help">No released rubric assessment was returned.</p>';
   return '<div class="ns-submission-feedback"><span class="eyebrow">CANVAS RECORD</span><h4>Submission history</h4>'+historyHtml+'<h4>Instructor feedback</h4>'+commentHtml+'<h4>Rubric assessment</h4>'+rubricHtml+'</div>';
 }
+function phase441RenderExecutionControlRoom(a,c,details,files,submissionDetails,execution){
+  const isExternal=['external_tool','google_assignments','google_drive_lti'].includes(execution.kind);
+  const isOffline=['offline','offline_paper'].includes(execution.kind);
+  const isUnavailable=execution.kind==='unknown';
+  const isUpload=execution.kind==='file_upload';
+  const isQuiz=execution.kind==='quiz';
+  const isDiscussion=execution.kind==='discussion';
+  const isAnnotation=execution.kind==='student_annotation';
+  const isMedia=execution.kind==='media_recording';
+  const providerLabel=execution.kind==='google_assignments'?'Google Assignments':execution.kind==='google_drive_lti'?'Google Drive LTI':(a.providerName||details?.external_tool?.name||details?.externalTool?.name||'External tool');
+  const actionLabel=isExternal?(execution.kind==='google_assignments'?'Open in Google Assignments':execution.kind==='google_drive_lti'?'Open Google Drive LTI':'Open external tool'):isQuiz?'Take Quiz in Canvas':isDiscussion?'Open Discussion in Canvas':isAnnotation?'Open Student Annotation in Canvas':isMedia?'Open Canvas Recorder':isUpload?'Choose files to submit':'Open in Canvas';
+  const canvasUrl=phase441CanvasAssignmentUrl(a,c,details);
+  const assignmentLink=canvasUrl?'<a class="btn btn-ghost btn-sm" href="'+esc(canvasUrl)+'" target="_blank" rel="noopener noreferrer">Open Canvas assignment ↗</a>':'<span class="small muted">Canvas assignment link unavailable from the connected record.</span>';
+  const fileRows=(files||[]).map((file,index)=>{
+    const kind=phase441ResourceKind(file),caption=kind==='WordLegacy'?'Word document · DOC':kind==='Word'?'Word document · DOCX':kind==='SpreadsheetLegacy'?'Excel workbook · XLS':kind==='Spreadsheet'?'Excel workbook · XLSX':kind==='PresentationLegacy'?'PowerPoint · PPT':kind==='Presentation'?'PowerPoint · PPTX':kind==='PDF'?'PDF attachment':kind==='File'?'Canvas file':kind;
+    return '<div class="ns-control-resource"><div><strong>'+esc(file.name)+'</strong><span>'+esc(caption)+(file.size?' · '+Math.ceil(file.size/1024)+' KB':'')+'</span></div><button type="button" class="btn btn-ghost btn-sm" data-ns-open-control-file="'+index+'">Open in Canvas</button></div>';
+  }).join('');
+  const statusText=phase441StatusLabel(a);
+  const methodState=execution.submissionTypeState==='missing'?'Canvas did not return submission type metadata.':execution.submissionTypeState==='empty'?'Canvas returned an empty submission type list.':execution.submissionTypeState==='unsupported'?'Canvas returned an unrecognized submission type.':'';
+  const availability=execution.availability==='available'?'Canvas reports that submission is currently available.':execution.availability==='unavailable'?'Canvas reports that this assignment is locked or not currently submittable.':'Submission availability has not been confirmed.';
+  const providerWarning=isExternal?'<p class="ns-control-provider-help">Provider authentication is handled by the institution and provider. For a Google 403 after launch, verify you are signed into the school Google Workspace account and ask the Canvas administrator to confirm Google Assignments LTI is installed, authorized and enabled for this course. NORTHSTAR cannot bypass school or provider access restrictions.</p>':'';
+  const history=phase441SubmissionDetailsMarkup(submissionDetails,details);
+  const submissionMarkup=isUpload?submissionPanel(a):'';
+  $('#workspace').innerHTML='<div class="ns-assignment-page ns-assignment-page--control">'+
+    '<header class="ns-room-header"><button class="ns-room-back" id="nsControlBack" type="button">← Back to coursework</button>'+
+    '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(phase441ExecutionLabel(a,execution))+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+esc(String(a.points||0))+' points</span><span>·</span><span id="nsControlCurrentStatus">'+esc(statusText)+'</span></div></div>'+
+    '<div class="ns-room-actions"><span class="ns-room-status">'+(mode==='live'?'Canvas record':'Sample assignment')+'</span><button class="btn btn-ghost btn-sm" id="nsControlHide">'+(phase4IsHidden(a)?'Restore':'Hide')+'</button></div></header>'+
+    '<section class="ns-control-overview"><div><span class="eyebrow">ASSIGNMENT OVERVIEW</span><p id="nsControlBrief"></p></div><aside><span class="eyebrow">EXECUTION TYPE</span><strong>'+esc(phase441ExecutionLabel(a,execution))+'</strong><span class="eyebrow">SUBMISSION STATUS</span><strong>'+esc(statusText)+'</strong><span class="eyebrow">LAST CANVAS SYNC</span><strong>'+esc(lastCanvasSync?new Date(lastCanvasSync).toLocaleString():'Not synchronized yet')+'</strong></aside></section>'+
+    '<section class="ns-control-action"><div><span class="eyebrow">'+(isExternal?'OFFICIAL PROVIDER WORKFLOW':isQuiz?'CANVAS ASSESSMENT':isAnnotation?'CANVAS STUDENT ANNOTATION':isDiscussion?'CANVAS DISCUSSION':isOffline?'OFFLINE ASSIGNMENT':isUnavailable?'CANVAS ASSIGNMENT':'CANVAS FILE SUBMISSION')+'</span><h2>'+esc(isExternal?providerLabel:isQuiz?'Canvas quiz':isAnnotation?'Student Annotation':isDiscussion?'Canvas discussion':isOffline?'No online submission':isUnavailable?'Submission method unavailable':isUpload?'File upload':'Canvas assignment')+'</h2><p>'+(isExternal?'Canvas creates a fresh assignment-specific LTI launch. The provider owns its sign-in, editing, attachments and Turn In workflow. Opening the provider is not submission confirmation.':isQuiz?'Canvas owns the quiz attempt, timer, restrictions, answer saving and submission. NORTHSTAR will not create another attempt.':isAnnotation?'Canvas owns the Student Annotation document, annotation state and submission confirmation. A local PDF export is not a native annotation submission.':isDiscussion?'Canvas owns discussion posts, replies and graded participation.':isOffline?'Canvas explicitly identifies this as an offline or paper assignment. NORTHSTAR will not display a broken submit action.':isUnavailable?'The submission type could not be confirmed. NORTHSTAR will not guess that this assignment is offline or make it submittable.':isUpload?'This assignment accepts file uploads. Choose files directly from iPad Files or use the official Canvas file picker for Google Drive.':'Complete the supported work in NORTHSTAR and verify the Canvas receipt.')+'</p>'+
+    '<div class="ns-control-actions">'+
+      (isExternal?'<button id="nsControlProviderLaunch" class="btn btn-primary" type="button">'+esc(actionLabel)+'</button>':isQuiz||isDiscussion||isAnnotation||isMedia?'<button id="nsControlCanvasLaunch" class="btn btn-primary" type="button">'+esc(actionLabel)+'</button>':isOffline||isUnavailable?'<button id="nsControlCanvasLaunch" class="btn btn-primary" type="button">Review in Canvas</button>':'')+
+      assignmentLink+
+    '</div><p id="nsControlLaunchStatus" class="ns-room-help" role="status">'+(isExternal?'A fresh launch is requested only when you activate the provider button. Return to this tab with browser Back to refresh the Canvas submission record.':'Canvas is the authoritative source for this assignment.')+'</p>'+providerWarning+
+    (methodState?'<p class="ns-control-warning">'+esc(methodState)+' No online submission capability has been inferred.</p>':'')+
+    (isUnavailable?'<p class="ns-control-warning">'+esc(availability)+'</p>':'')+
+    '</div></section>'+
+    '<section class="ns-control-section"><div class="ns-control-section-head"><div><span class="eyebrow">SUPPORTING MATERIAL</span><h3>Assignment resources</h3></div><span class="small muted">'+(files?.length||0)+' file'+((files?.length||0)===1?'':'s')+'</span></div>'+
+    (files?.length?'<div class="ns-control-resources">'+fileRows+'</div>':'<p class="ns-room-help">No attachment metadata was returned for this assignment.</p>')+
+    '</section>'+
+    (isUpload?'<section class="ns-control-section"><span class="eyebrow">CANVAS DELIVERY</span>'+submissionMarkup+'</section>':'')+
+    '<section class="ns-control-section"><span class="eyebrow">CANVAS SUBMISSION HISTORY</span><div id="nsSubmissionHistory">'+history+'</div></section>'+
+    '</div>';
+  $('#nsControlBack').onclick=()=>window.closeAssignmentRoom();
+  $('#nsControlHide').onclick=()=>phase4ToggleHidden(a.id);
+  const brief=$('#nsControlBrief');
+  if(details?.description&&window.NorthstarAssignmentRoom)brief.append(window.NorthstarAssignmentRoom.sanitizeHtml(details.description,getCredentials()?.base||'https://nnps.instructure.com'));
+  else brief.textContent=a.desc||'No assignment instructions were returned by Canvas.';
+  document.querySelectorAll('[data-ns-open-control-file]').forEach(button=>button.onclick=()=>{
+    const file=(files||[])[Number(button.dataset.nsOpenControlFile)];
+    if(file)launchCanvasFileInApp(file,a,c);
+  });
+  const providerButton=$('#nsControlProviderLaunch');
+  if(providerButton)providerButton.onclick=()=>launchCanvasExternalTool();
+  const canvasButton=$('#nsControlCanvasLaunch');
+  if(canvasButton)canvasButton.onclick=()=>launchCanvasAssignmentExperience(isQuiz?'quiz':isDiscussion?'discussion':isAnnotation?'student-annotation':isMedia?'media-recording':'assignment');
+  if(isUpload){
+    const select=$('#submissionType');
+    if(select)select.onchange=()=>{const t=select.value;if($('#submissionUrlWrap'))$('#submissionUrlWrap').hidden=t!=='online_url';if($('#submissionFileWrap'))$('#submissionFileWrap').hidden=t!=='online_upload';};
+    if(select)select.onchange();
+    const filePicker=$('#submissionFile');
+    if(filePicker)filePicker.addEventListener('change',()=>{const node=$('#nsSelectedFiles');if(node)node.textContent=Array.from(filePicker.files||[]).map(file=>file.name+' · '+Math.ceil(file.size/1024)+' KB').join(' · ')||'No files selected.';});
+    const reconcile=$('#nsReconcileSubmission');if(reconcile)reconcile.onclick=()=>phase441ReconcileSubmission(a);
+  }
+}
 function phase441RenderRoom(a,c,details,files,submissionDetails){
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
   const hidden=phase4IsHidden(a);
-  const execution=window.NorthstarAssignmentExecution?.classify(details||a)||{kind:'unknown'};
+  const normalized={...a,...(details||{}),submission_types:Array.isArray(a.submissionTypes)?a.submissionTypes:(Array.isArray(details?.submission_types)?details.submission_types:undefined)};
+  const execution=phase441Execution(normalized);
   const providerOwned=!!execution.requiresProvider;
+  if(providerOwned||['offline','offline_paper','unknown'].includes(execution.kind)||execution.kind==='file_upload'){
+    phase441RenderExecutionControlRoom(a,c,details,files,submissionDetails,execution);
+    return;
+  }
   $('#workspace').innerHTML='<div class="ns-assignment-page">'+
     '<header class="ns-room-header"><button class="ns-room-back" id="nsRoomBack" type="button"><span>←</span> Back to dashboard</button>'+
     '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(a.type)+(period?' · '+esc(period.name):'')+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+a.points+' points</span><span>·</span><span id="nsRoomStatusText">'+esc(phase441StatusLabel(a))+'</span></div></div>'+
