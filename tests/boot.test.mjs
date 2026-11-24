@@ -320,6 +320,9 @@ await new Promise(r=>setTimeout(r,35));
 assert.ok(externalWorkspace.querySelector('#nsControlLaunchStatus').textContent.includes('Canvas denied this external-tool launch (HTTP 403)'),'Canvas launch 403 is reported explicitly');
 assert.equal(topLevelNavigations.length,launchesBeforeDenied,'failed Canvas launch does not navigate');
 externalLaunchStatus=200;
+window.renderLedger();
+const externalLedgerRow=[...window.document.querySelectorAll('.ledger-row')].find(row=>row.textContent.includes('Great Gatsby External Assignment'));
+assert.ok(externalLedgerRow?.textContent.includes('Official Canvas/provider workflow'),'external-tool assignment cards disclose the official provider handoff');
 
 // Missing metadata and a failed detail request are not interpreted as offline.
 await window.openWorkspace('canvas_16_1');
@@ -352,6 +355,10 @@ wordAttachment.click();
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('nsDocumentStage').textContent.includes('Legacy Word document (.doc)'),'legacy DOC opens a clear Canvas Office access panel');
 assert.ok(!window.document.getElementById('nsDocumentStage').querySelector('.ns-pdf-native-preview'),'legacy DOC is never sent to PDF.js');
+window.renderLedger();
+const wordLedgerRow=[...window.document.querySelectorAll('.ledger-row')].find(row=>row.textContent.includes('Valence Electrons Review'));
+assert.ok(wordLedgerRow?.textContent.includes('Word document · DOC'),'assignment cards identify the actual Word attachment type');
+assert.ok(wordLedgerRow?.textContent.includes('NORTHSTAR workspace'),'native file assignments identify their NORTHSTAR execution route');
 
 // Ordinary Canvas file uploads retain submit controls and their event-binding elements.
 await window.openWorkspace('canvas_14_1');
