@@ -47,8 +47,9 @@ function verifyReceipt({submission,expectedAttempt,submissionType,fileIds=[],bas
   const typeMatches=!!submissionType&&String(submission?.submission_type||'')===String(submissionType);
   const submittedAt=String(submission?.submitted_at||'');
   const submittedAtMs=Date.parse(submittedAt);
-  const baselineMs=baselineSubmittedAt?Date.parse(baselineSubmittedAt):NaN;
-  const timestampMatches=Number.isFinite(submittedAtMs)&&(!Number.isFinite(baselineMs)||submittedAtMs>=baselineMs);
+  const hasBaselineTimestamp=baselineSubmittedAt!==null&&baselineSubmittedAt!==undefined&&String(baselineSubmittedAt).trim()!=='';
+  const baselineMs=hasBaselineTimestamp?Date.parse(baselineSubmittedAt):NaN;
+  const timestampMatches=Number.isFinite(submittedAtMs)&&(!hasBaselineTimestamp||(Number.isFinite(baselineMs)&&submittedAtMs>=baselineMs));
   const attachments=Array.isArray(submission?.attachments)?submission.attachments:Array.isArray(submission?.submitted_files)?submission.submitted_files:null;
   const rawFileIds=Array.isArray(fileIds)?fileIds:[];
   const normalizedFileIds=rawFileIds.map(Number);
