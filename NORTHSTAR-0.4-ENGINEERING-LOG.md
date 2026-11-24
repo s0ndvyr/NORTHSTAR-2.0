@@ -1,11 +1,11 @@
 # NORTHSTAR 0.4 — Engineering Log
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 Repository: `s0ndvyr/NORTHSTAR-2.0`
 Production branch: `main`
-Release identifier: `NORTHSTAR / 4.4.8.2.1`
-Package version: `0.4.29`
-Phase 3 qualification branch: `northstar-4.4.8.2-canvas-submission`
+Release identifier: `NORTHSTAR / 4.4.8.3` (candidate; prior 4.4.8.2.1 preserved)
+Package version: `0.4.31` (candidate)
+Phase 3 qualification branch: `northstar-4.4.8.2-canvas-submission`; architecture pivot: `northstar-4.4.8.3-assignment-routing`
 Phase 3/main reconciliation merge: `1adfa3109595864eec67fea089bd3c118d573bb8`; follow-up main-only CI commits `c30a9ccc8b8bd4f61151b86b5a9bab3371cb4956` (Pages exact-head pagination) and `46a1b8a6938891c66864cd6fc6f9847a4cf2d0af` (pagination regression test) are reconciled by a second two-parent merge. The Phase 3 Pages workflow is byte-identical to main; the Phase 3 release test retains the broader 0.4.29 qualification coverage and includes the same pagination assertion.
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
@@ -797,3 +797,30 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Corrected multi-page export mapping: before drawing annotations on a page, the exporter now resolves that page's own PDF.js viewport. The original PDF is still loaded and saved with pdf-lib, rather than rebuilding pages, preserving source page dimensions, page content and per-page rotation.
 - Added IndexedDB tests for source bytes, independent draft records, stable identity metadata, page/zoom state, deletion and unsupported-browser fallback. Added editor flush regression coverage. Existing Pencil/finger, highlight, text, shape, eraser, undo/redo and flattened export implementation remains in place.
 - **Candidate:** NORTHSTAR 4.4.8.1 / package 0.4.26; Canvas Worker 0.4.21 unchanged. Phase 4 syntax, Worker dry-run, unit and browser boot tests passed on exact candidate commit `c2dc832833f658c339fbce0bc3c4b96098dc3a29` in run `45211194018`. GitHub Pages preview deployed successfully in run `45211301327`; build verified production `4.4.7.5 / 0.4.19` and preview `4.4.8.1 / 0.4.26`. Preview URL: `https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/`. Physical iPad verification of saved-draft reload recovery, browser interruption recovery, Apple Pencil resumption and multi-page flattened export remains required. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
+
+## NORTHSTAR 4.4.8.3 — Canvas-aligned assignment architecture pivot
+
+**Date:** 2026-11-24  
+**Status:** Implementation candidate; automated and external qualification pending  
+**Branch:** `northstar-4.4.8.3-assignment-routing`  
+**Base:** `313b903a365910eb3a1753299119b30b0c40cc8c`  
+**Target:** NORTHSTAR 4.4.8.3 / package 0.4.31 / Canvas Worker 0.4.22 (unchanged)
+
+### Strategy and implementation
+
+- Added centralized metadata-driven classification in `scripts/assignment-execution.js`. It preserves multiple Canvas submission types and identifies file/text/URL, quiz, discussion, Student Annotation, explicit Google Assignments/Drive LTI, generic external tools, offline and unknown workflows.
+- Provider identity is never guessed from assignment titles or arbitrary URLs. Unknown external providers remain generic until Canvas returns launch metadata.
+- Live quizzes and discussions now use official Canvas assignment/session execution by default. Legacy custom quiz/discussion code remains in the repository but is no longer the default live route.
+- Student Annotation uses Canvas's official assignment workflow; local PDF annotations are not represented as native DocViewer submissions.
+- External LTI assignments use Canvas's assignment-specific `sessionless_launch` endpoint.
+- Added identifier-only external return context and event-driven read-only Canvas refresh on Safari/PWA return and provider-view close. No one-time launch URL or credential is persisted; no submission POST is replayed.
+- Added architecture research at `docs/PHASE3-ASSIGNMENT-ARCHITECTURE.md` and classifier regression tests.
+
+### Qualification boundaries
+
+- Local tests/build: not run in this environment; exact-head CI qualification is required.
+- Real Canvas / Google Workspace LTI: not verified; authorized school test course and Google Workspace identity are unavailable in this session.
+- Physical iPad Safari: not verified in this session.
+- Worker 0.4.22 retained unchanged. Production remains 4.4.7.5 / package 0.4.19.
+
+All prior release entries, including 4.4.8.2.1, remain intact.

@@ -282,16 +282,8 @@ async function allPages(creds, path) {
   throw Error('Too many Canvas pages to sync safely. No changes were made.');
 }
 const typeOf = a => {
-  const types = Array.isArray(a.submission_types) ? a.submission_types : [];
-  if (types.includes('discussion_topic')) return 'Discussion';
-  if (types.includes('online_quiz')) return 'Quiz';
-  if (types.includes('external_tool')) return 'External Tool';
-  if (types.includes('online_upload')) return 'File Upload';
-  if (types.includes('online_text_entry')) return 'Writing';
-  if (types.includes('online_url')) return 'Website';
-  if (types.includes('media_recording')) return 'Media Recording';
-  if (types.includes('none')) return 'No Submission';
-  return 'Assignment';
+  const execution=window.NorthstarAssignmentExecution?.classify(a)||{kind:'unknown'};
+  return ({discussion:'Discussion',quiz:'Quiz',external_tool:'External Tool',google_assignments:'External Tool',google_drive_lti:'External Tool',student_annotation:'Student Annotation',media_recording:'Media Recording',file_upload:'File Upload',text_entry:'Writing',url:'Website',offline:'No Submission',offline_paper:'No Submission'})[execution.kind]||'Assignment';
 };
 function numberOrNull(value) { return CANVAS_SYNC.numberOrNull(value); }
 function courseEnrollmentGrade(course) { return CANVAS_SYNC.courseGrade(course); }
@@ -303,7 +295,7 @@ function convertAssignments(rows,c,base) {
   return rows.filter(a => Number.isInteger(a.id)).map(a=>{
     const sub=CANVAS_SYNC.submission(a.submission), parsed = a.due_at ? new Date(a.due_at) : null, hasDue = parsed && Number.isFinite(parsed.getTime());
     let href=''; try { const u=new URL(a.html_url); if(u.protocol==='https:' && u.origin===base) href=u.href; } catch {}
-    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], allowedExtensions:a.allowed_extensions||[], annotatableAttachmentId:a.annotatable_attachment_id||null, canvasUrl:href, assignmentPublished:a.published!==false,lockedForUser:!!a.locked_for_user,unlockAt:a.unlock_at||null,lockAt:a.lock_at||null};
+    return {id:'canvas_'+a.id+'_'+c.canvasId, canvasId:a.id, title:safe(a.name || 'Untitled assignment'), course:c.id, type:typeOf(a), due:hasDue?parsed:new Date('2999-01-01T00:00:00Z'), noDue:!hasDue, points:numberOrNull(a.points_possible)??0, priority:'Normal', status:sub.status, progress:sub.submitted?100:0, desc:asText(a.description).slice(0,1000) || 'Open this assignment in Canvas for its full instructions.', rubric:[], score:sub.score, grade:sub.grade, excused:sub.excused, missing:sub.missing, late:sub.late, latePolicyStatus:sub.latePolicyStatus, groupId:a.assignment_group_id, subState:sub.workflowState, submittedAt:sub.submittedAt, gradedAt:sub.gradedAt, attempt:sub.attempt, gradeMatchesCurrentSubmission:sub.gradeMatchesCurrentSubmission, submissionTypes:a.submission_types||[], allowedExtensions:a.allowed_extensions||[], annotatableAttachmentId:a.annotatable_attachment_id||null, externalToolTagAttributes:a.external_tool_tag_attributes||null, quizId:a.quiz_id||null, canvasUrl:href, assignmentPublished:a.published!==false,lockedForUser:!!a.locked_for_user,unlockAt:a.unlock_at||null,lockAt:a.lock_at||null};
   });
 }
 const originalRenderDashboard=renderDashboard, originalRenderLab=renderLab;
@@ -1269,6 +1261,8 @@ function phase441SubmissionDetailsMarkup(data,assignmentDetails){
 function phase441RenderRoom(a,c,details,files,submissionDetails){
   const period=(GRADES&&PERIODS.length)?GRADES.periodForDate(a.due,PERIODS):null;
   const hidden=phase4IsHidden(a);
+  const execution=window.NorthstarAssignmentExecution?.classify(details||a)||{kind:'unknown'};
+  const providerOwned=!!execution.requiresProvider;
   $('#workspace').innerHTML='<div class="ns-assignment-page">'+
     '<header class="ns-room-header"><button class="ns-room-back" id="nsRoomBack" type="button"><span>←</span> Back to dashboard</button>'+
     '<div class="ns-room-title"><span class="eyebrow">'+esc(c.code)+' / '+esc(a.type)+(period?' · '+esc(period.name):'')+'</span><h1>'+esc(a.title)+'</h1><div class="ns-room-meta"><span>'+ (a.noDue?'No due date':fmtDate(a.due)+' · '+fmtTime(a.due)) +'</span><span>·</span><span>'+a.points+' points</span><span>·</span><span id="nsRoomStatusText">'+esc(phase441StatusLabel(a))+'</span></div></div>'+
@@ -1295,6 +1289,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   document.querySelectorAll('[data-ns-format]').forEach(button=>{button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{input.focus();const action=button.dataset.nsFormat;if(action==='blockquote')document.execCommand('formatBlock',false,'blockquote');else document.execCommand(action,false,null);updateDraft();});});
   updateDraft();
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
+  if(providerOwned){const studio=document.querySelector('#workspace .ns-room-document');if(studio)studio.hidden=true;phase441ShowTab('submit');}
   if(details?.submission)phase441RenderSubmissionReceipt(a,c,details.submission,details.submission.submission_type);
   if(phase441ReadUnknownSubmission(a)){
     phase441UnknownSubmissionChecks.add(String(a.id));
@@ -1341,7 +1336,8 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
     event.preventDefault();if(typeof previewResourceInDashboard==='function')previewResourceInDashboard(target.href,link.textContent.trim()||'Assignment resource');
   });
   const filesNode=$('#nsAssignmentFiles');
-  if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
+  if(providerOwned){filesNode.innerHTML='<span class="small muted">This assignment is completed in its official Canvas or provider environment. NORTHSTAR will not open provider-owned files in Document Studio.</span>';}
+  else if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
   else{
     filesNode.innerHTML=files.map(file=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span class="ns-room-file-icon">'+(phase441ResourceKind(file)==='Image'?'▧':phase441ResourceKind(file)==='Video'?'▷':phase441ResourceKind(file)==='Audio'?'♫':phase441ResourceKind(file)==='Text'?'≡':'▤')+'</span><strong>'+esc(file.name)+'</strong><span class="ns-room-file-kind">'+phase441ResourceKind(file)+'</span></button>').join('');
     filesNode.querySelectorAll('[data-ns-file]').forEach(button=>button.onclick=()=>phase441OpenResource(files.find(f=>String(f.id)===button.dataset.nsFile),a,c));
@@ -1401,9 +1397,7 @@ async function openWorkspace(id,options){
   options=options||{};activeAssignment=a;
   if(window.NorthstarAssignmentRoom)window.NorthstarAssignmentRoom.enter(id,{fromHistory:!!options.fromHistory});
   const c=courseById(a.course);if(!c)return;
-  if(mode==='live'&&a.type==='Quiz'){openCanvasQuiz(a);return;}
-  if(mode==='live'&&a.type==='Discussion'){openCanvasDiscussion(a);return;}
-  a.canvasCourseId=c.canvasId;
+    a.canvasCourseId=c.canvasId;
   $('#workspace').innerHTML=window.NorthstarAssignmentRoom.loadingMarkup(a.title,c.code);
   let details=null,files=[],submissionDetails=null;
   if(mode==='live'){
@@ -1423,6 +1417,8 @@ async function openWorkspace(id,options){
       a.unlockAt=details.unlock_at||null;
       a.groupAssignment=Number.isInteger(details.group_category_id)&&details.group_category_id>0;
       a.annotatableAttachmentId=details.annotatable_attachment_id||a.annotatableAttachmentId||null;
+      a.externalToolTagAttributes=details.external_tool_tag_attributes||a.externalToolTagAttributes||null;
+      a.executionClassification=window.NorthstarAssignmentExecution?.classify(details)||null;
       if(details.points_possible!==undefined)a.points=numberOrNull(details.points_possible)??a.points;
       if(details.submission){const sub=CANVAS_SYNC.submission(details.submission);Object.assign(a,{status:sub.status,subState:sub.workflowState,progress:sub.submitted?100:a.progress,score:sub.score,grade:sub.grade,missing:sub.missing,late:sub.late,submittedAt:sub.submittedAt,gradedAt:sub.gradedAt,attempt:sub.attempt});}
       files=window.NorthstarAssignmentRoom.collectFiles(details,creds.base);
@@ -1580,7 +1576,16 @@ async function phase441ReconcileSubmission(a){
 
 function submissionPanel(a){
   if(mode!=='live') return '';
-  const allTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[],types=allTypes.filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
+  const allTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[],execution=window.NorthstarAssignmentExecution?.classify({...a,submission_types:allTypes})||{kind:'unknown'},types=allTypes.filter(t=>['online_text_entry','online_url','online_upload'].includes(t));
+  if(execution.kind==='quiz')return '<div class="ns-room-submission"><h3>Canvas quiz</h3><p class="small">The official Canvas quiz player owns the attempt, timer, restrictions, answer saving, Respondus requirements and final submission. NORTHSTAR will not create a parallel attempt.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'quiz\')">Take Quiz in Canvas</button><p id="nsQuizLaunchStatus" class="ns-room-help mt" role="status">No quiz attempt has been started.</p></div>';
+  if(execution.kind==='discussion')return '<div class="ns-room-submission"><h3>Canvas discussion</h3><p class="small">Canvas owns discussion participation, replies, due dates and graded-post state. Open the official discussion workflow to participate.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'discussion\')">Open Discussion in Canvas</button><p id="nsDiscussionLaunchStatus" class="ns-room-help mt" role="status">No discussion session has been opened.</p></div>';
+  if(execution.kind==='student_annotation')return '<div class="ns-room-submission"><h3>Canvas Student Annotation</h3><p class="small">Canvas owns the annotation state and submission confirmation. The assignment identifies '+(execution.annotatableAttachmentId?'annotatable attachment #'+execution.annotatableAttachmentId:'a Student Annotation workflow')+'. NORTHSTAR will not substitute a local PDF export.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'student-annotation\')">Open Student Annotation in Canvas</button><p id="nsStudentAnnotationStatus" class="ns-room-help mt" role="status">No annotation session has been requested.</p></div>';
+  if(['external_tool','google_assignments','google_drive_lti'].includes(execution.kind)){
+    const provider=execution.kind==='google_assignments'?'Google Assignments':execution.kind==='google_drive_lti'?'Google Drive LTI':'Canvas external tool';
+    const action=execution.kind==='google_assignments'?'Open Google Assignments':execution.kind==='google_drive_lti'?'Open Google Drive LTI':'Launch official provider';
+    return '<div class="ns-room-submission"><h3>'+provider+'</h3><p class="small">Canvas generates the assignment-specific LTI launch. The configured provider owns authentication, document editing, attachments, submission and provider-specific resubmission. Opening the provider is not a submission receipt.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasExternalTool()">'+action+'</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';
+  }
+  if(execution.kind==='media_recording')return '<div class="ns-room-submission"><h3>Canvas media recording</h3><p class="small">Canvas owns the recorder, media processing and submission confirmation.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas Recorder</button><p id="nsMediaRecordingStatus" class="ns-room-help mt" role="status">No recording session has been requested.</p></div>';
   const hasNoOnlineSubmission=allTypes.includes('none')||allTypes.includes('on_paper')||allTypes.length===0;
   const availabilityBlocked=a.lockedForUser===true||a.published===false||a.groupAssignment===true||(!hasNoOnlineSubmission&&a.canSubmit!==true);
   const unknown=phase441UnknownSubmissionChecks.has(String(a.id))||!!phase441ReadUnknownSubmission(a);
@@ -1925,11 +1930,12 @@ function openCanvasExperienceInApp(url,title,note){
   if(target.protocol!=='https:'||target.username||target.password)throw Error('Secure Canvas experiences must use HTTPS and cannot contain embedded credentials.');
   const nativeBridge=window.webkit?.messageHandlers?.northstarSecureContent;
   if(nativeBridge&&typeof nativeBridge.postMessage==='function'){
-    closeViewer();
+    closeViewer(true);
     nativeBridge.postMessage({action:'open',url:target.href,title:String(title||'Canvas experience').slice(0,160)});
     return 'native';
   }
   const frame=$('#viewerFrame'),overlay=$('#viewerOverlay'),heading=$('#viewerOverlay .ws-head h2'),noteNode=$('#viewerNote');
+  closeViewer(true);
   if(!frame||!overlay)throw Error('The NORTHSTAR secure content view is unavailable.');
   if(heading)heading.textContent=title||'Canvas experience';
   if(noteNode)noteNode.textContent=(note||'Canvas is opening its official authenticated experience inside NORTHSTAR.')+' This browser preview may be blocked by Canvas/provider framing rules or cross-site cookie restrictions. Use the in-app native WKWebView host where installed, or the explicit external fallback if the provider refuses embedding.';
@@ -1944,15 +1950,14 @@ async function launchCanvasAssignmentExperience(kind){
   if(!a)return;
   const c=courseById(a.course);
   if(!c?.canvasId||!a.canvasId)return;
-  const status=kind==='new-quiz'?$('#nsNewQuizLaunchStatus'):kind==='student-annotation'?$('#nsStudentAnnotationStatus'):kind==='media-recording'?$('#nsMediaRecordingStatus'):$('#submissionStatus');
+  const status=kind==='quiz'?$('#nsQuizLaunchStatus'):kind==='discussion'?$('#nsDiscussionLaunchStatus'):kind==='new-quiz'?$('#nsNewQuizLaunchStatus'):kind==='student-annotation'?$('#nsStudentAnnotationStatus'):kind==='media-recording'?$('#nsMediaRecordingStatus'):$('#submissionStatus');
   if(status)status.textContent='Requesting a short-lived authenticated Canvas browser session…';
   try{
     const returnTo='/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId);
     const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo});
-    const title=kind==='student-annotation'?'Canvas Student Annotation · '+a.title:kind==='new-quiz'?'New Quizzes · '+a.title:kind==='media-recording'?'Canvas Media Recorder · '+a.title:a.title;
-    const note=kind==='student-annotation'
-      ?'Canvas has opened the original assignment. In that page, choose Start Assignment, then Student Annotation. Canvas—not NORTHSTAR—owns the official annotation state and submission confirmation.'
-      :'Canvas has issued a short-lived session URL. The official Canvas assignment page/player will handle this workflow and its submission state.';
+    phase44StoreExternalReturnContext(kind);
+    const title=kind==='student-annotation'?'Canvas Student Annotation · '+a.title:kind==='quiz'?'Canvas Quiz · '+a.title:kind==='discussion'?'Canvas Discussion · '+a.title:kind==='new-quiz'?'New Quizzes · '+a.title:kind==='media-recording'?'Canvas Media Recorder · '+a.title:a.title;
+    const note=kind==='student-annotation'?'Canvas owns the official Student Annotation interface and submission confirmation. A local NORTHSTAR annotation or exported PDF is not a native annotation submission.':kind==='quiz'?'Canvas owns the official quiz attempt, timer, restrictions, saving and submission. NORTHSTAR will not create a parallel attempt.':kind==='discussion'?'Canvas owns discussion posts, replies and graded participation. Complete the discussion in Canvas.':'Canvas has issued a short-lived session URL. The official Canvas assignment page/player will handle this workflow and its submission state.';
     const host=openCanvasExperienceInApp(session.sessionUrl,title,note);
     if(status)status.textContent=host==='native'?'Canvas opened in NORTHSTAR’s secure native web view.':'Canvas opened in the embedded NORTHSTAR preview. If the page is blank or repeatedly asks you to sign in, use the visible browser fallback or the native WKWebView host.';
   }catch(error){
@@ -1967,6 +1972,9 @@ async function launchCanvasExternalTool(){
   if(status)status.textContent='Asking Canvas to generate the assignment-specific LTI assessment launch…';
   try{
     const launch=await window.NorthstarWorkspace.getExternalToolLaunch({credentials:getCredentials(),courseId:c.canvasId,assignmentId:a.canvasId});
+    a.providerName=launch.name||'Canvas external tool';
+    a.executionClassification=window.NorthstarAssignmentExecution?.classify({...a,external_tool:{name:a.providerName}})||a.executionClassification;
+    phase44StoreExternalReturnContext(a.providerName);
     const host=openCanvasExperienceInApp(launch.url,launch.name||('Course tool · '+a.title),'This is a Canvas-generated sessionless LTI assessment launch. The provider owns its assessment, identity checks, timer, answers and final submission.');
     if(status)status.textContent=host==='native'?'Provider launched in NORTHSTAR’s secure native web view.':'Provider opened in the embedded preview. If it blocks framing, use the visible browser fallback or the native WKWebView host.';
   }catch(error){
@@ -2008,13 +2016,14 @@ function openInDashboard(url){
   }
   previewResourceInDashboard(target.href,'Assignment resource');
 }
-function closeViewer(){
+function closeViewer(suppressReturnRefresh=false){
   const overlay=$('#viewerOverlay');
   if(overlay)overlay.classList.remove('open');
   const frame=$('#viewerFrame');
   if(frame){frame.src='about:blank';frame.referrerPolicy='no-referrer';}
   const link=$('#viewerExternalLink');
   if(link){link.removeAttribute('href');link.hidden=true;link.style.display='none';}
+  if(!suppressReturnRefresh)phase44RefreshExternalReturnContext();
 }
 // Expose handlers that index.html calls via onclick (premium.js is an IIFE).
 window.addPeriod = addPeriod;
@@ -2035,8 +2044,8 @@ syncCanvas = async function(options={}){
   pushEntry('info',syncMode==='bridge'?('Bridge: '+c.proxy):('Canvas: '+c.base));
   pushEntry('info','Token: '+c.token.length+' characters · never displayed, logged, or copied');
   if(!quiet)toast('Syncing Canvas…');
-  try{const result=await pullCanvasExclusive(c);pushEntry('ok','Sync complete — '+COURSES.length+' courses, '+ASSIGNMENTS.length+' assignments · '+result.completeness+' data');summarizeConnect(null);if(!quiet)toast(result.warnings.length?'Canvas synced with '+result.warnings.length+' data warning(s)':'Canvas sync complete');}
-  catch(e){pushEntry('err','Sync failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;if(!quiet){$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the debug console.');}else toast('Canvas refresh failed. Your last saved coursework is still available.');}
+  try{const result=await pullCanvasExclusive(c);pushEntry('ok','Sync complete — '+COURSES.length+' courses, '+ASSIGNMENTS.length+' assignments · '+result.completeness+' data');summarizeConnect(null);if(!quiet)toast(result.warnings.length?'Canvas synced with '+result.warnings.length+' data warning(s)':'Canvas sync complete');return result;}
+  catch(e){pushEntry('err','Sync failed: '+DBG.redact(String((e&&e.message)||e)));summarizeConnect(e);$('#canvasStatus').textContent=e.message;if(!quiet){$('#canvasTroubleshoot').open=true;openConnect();toast('Canvas sync failed. See the debug console.');}else toast('Canvas refresh failed. Your last saved coursework is still available.');return null;}
 };
 window.disconnectCanvas = async function(){
   // Disconnect removes the credential, not the student's academic history.
@@ -2074,18 +2083,35 @@ if(window.NorthstarVault){
   try{const cached=await window.NorthstarVault.get('canvas-snapshot',null);if(cached&&[1,2].includes(cached.version)&&Array.isArray(cached.courses)&&Array.isArray(cached.assignments)){COURSES.splice(0,COURSES.length,...cached.courses);ASSIGNMENTS=cached.assignments;GROUPS=cached.groups||{};COURSE_META=cached.courseMeta||{};syncWarnings=Array.isArray(cached.warnings)?cached.warnings:[];syncCompleteness=cached.completeness||(cached.version===1?'unknown':'complete');mode='live';dataFreshness='cached';lastCanvasSync=cached.lastSyncedAt||null;refreshAll();}}catch(error){console.warn('Could not restore the last Canvas snapshot:',error);}
 }
 const existing=getCredentials();if(existing){$('#canvasUrl').value=existing.base;$('#canvasProxy').value=existing.proxy||'';$('#canvasToken').value=existing.token||'';$('#canvasStatus').textContent=credentialsRemembered?'Saved encrypted connection found. Synchronizing Canvas…':'Session connection found. Tap Sync Canvas to load your coursework.';}
-// Refresh stale coursework when Safari returns to the foreground or connectivity returns.
-// This is event-driven (not a background polling loop) and rate-limited to protect Canvas.
-function maybeRefreshCanvas(force=false){
-  if(document.visibilityState!=='visible'||!getCredentials()||canvasSyncInFlight)return;
-  const now=Date.now(),last=lastCanvasSync?Date.parse(lastCanvasSync):0;
-  if(!force&&last&&now-last<5*60*1000)return;
-  if(now-lastAutoSyncTrigger<60*1000)return;
-  lastAutoSyncTrigger=now;
-  syncCanvas({quiet:true});
+// External provider return context stores identifiers only, never launch URLs or credentials.
+const PHASE44_EXTERNAL_RETURN_KEY='northstar_external_return_v1';
+let phase44ReturnRefreshInFlight=false,phase44LastReturnRefreshAt=0;
+function phase44ReadExternalReturnContext(){try{const x=JSON.parse(localStorage.getItem(PHASE44_EXTERNAL_RETURN_KEY)||'null');return x&&x.version===1&&Number.isSafeInteger(Number(x.courseId))&&Number.isSafeInteger(Number(x.assignmentId))?x:null;}catch{return null;}}
+function phase44HasExternalReturnContext(){return !!phase44ReadExternalReturnContext();}
+function phase44StoreExternalReturnContext(provider){
+ const a=activeAssignment,c=a&&courseById(a.course);if(!a||!Number.isSafeInteger(Number(c?.canvasId))||!Number.isSafeInteger(Number(a.canvasId)))return false;
+ const x={version:1,courseId:Number(c.canvasId),assignmentId:Number(a.canvasId),assignmentKey:String(a.id),provider:String(provider||'Canvas').slice(0,120),launchedAt:new Date().toISOString(),returnHash:'#assignment/'+encodeURIComponent(String(a.id)),lastSubmissionState:{status:String(a.status||''),workflowState:String(a.subState||''),attempt:Number(a.attempt)||0,submittedAt:a.submittedAt||null},lastSyncAt:lastCanvasSync||null};
+ try{localStorage.setItem(PHASE44_EXTERNAL_RETURN_KEY,JSON.stringify(x));return true;}catch{return false;}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')maybeRefreshCanvas(false);});
-window.addEventListener('online',()=>maybeRefreshCanvas(true));
+async function phase44RefreshExternalReturnContext(){
+ const x=phase44ReadExternalReturnContext();if(!x||phase44ReturnRefreshInFlight||mode!=='live'||!getCredentials())return false;
+ if(Date.now()-phase44LastReturnRefreshAt<15000)return true;
+ phase44LastReturnRefreshAt=Date.now();phase44ReturnRefreshInFlight=true;
+ try{const result=await syncCanvas({quiet:true});if(!result)return true;try{localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY);}catch{}refreshAll();const a=ASSIGNMENTS.find(v=>Number(v.canvasId)===Number(x.assignmentId)&&Number(courseById(v.course)?.canvasId)===Number(x.courseId));if(a&&activeAssignment?.id===a.id)await openWorkspace(a.id,{fromHistory:true});return true;}catch{return true;}finally{phase44ReturnRefreshInFlight=false;}
+}
+// Event-driven resume only; this does not poll and never repeats a submission write.
+function maybeRefreshCanvas(force=false){
+ if(document.visibilityState!=='visible'||!getCredentials()||canvasSyncInFlight)return;
+ const now=Date.now(),last=lastCanvasSync?Date.parse(lastCanvasSync):0;
+ if(!force&&last&&now-last<5*60*1000)return;
+ if(!force&&now-lastAutoSyncTrigger<60*1000)return;
+ lastAutoSyncTrigger=now;syncCanvas({quiet:true});
+}
+function onCanvasResume(){if(document.visibilityState!=='visible')return;if(phase44HasExternalReturnContext())phase44RefreshExternalReturnContext();else maybeRefreshCanvas(false);}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onCanvasResume();});
+window.addEventListener('pageshow',onCanvasResume);
+window.addEventListener('focus',onCanvasResume);
+window.addEventListener('online',()=>{if(phase44HasExternalReturnContext())phase44RefreshExternalReturnContext();else maybeRefreshCanvas(true);});
 bootstrapDebug();
 renderPeriodsManager();
 if($('#geminiKey')) $('#geminiKey').value=getAiKey();

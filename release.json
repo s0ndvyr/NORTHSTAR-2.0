@@ -1,20 +1,40 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.2.1",
-  "packageVersion": "0.4.29",
+  "northstarVersion": "4.4.8.3",
+  "packageVersion": "0.4.31",
   "channel": "route-derived",
-  "releaseDate": "2026-11-23",
+  "releaseDate": "2026-11-24",
   "bridge": {
     "version": "1.2",
     "status": "Canvas Worker 0.4.22 (4.4.8.2) deployed successfully in workflow run 35 from source SHA 97e3c9ea80698753a9aa365015aa12d20469a3c3. Post-deployment HTTP smoke verification confirmed X-Northstar-Worker-Version: 0.4.22 (4.4.8.2). Cloudflare Version ID: f06f5377-632b-44c9-b647-dcfca3166f54."
   },
   "deployment": {
-    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app or Worker changes are authorized by Phase 3 development.",
-    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 is published at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ only after the exact current Phase 3 branch head passes the Phase 4 workflow. The Pages build checks out the exact verified source SHA and validates the release manifest/package. The production artifact is built from main and remains NORTHSTAR 4.4.7.5 / package 0.4.19."
+    "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+    "preview": "NORTHSTAR 4.4.8.3 / package 0.4.31 is an implementation candidate; preview deployment is pending exact-head Phase 4 qualification. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.3",
+      "date": "2026-11-24",
+      "title": "Canvas-aligned assignment architecture and provider routing",
+      "description": "Dedicated assignment strategy pivot. Adds centralized metadata-driven execution classification, official Canvas routing for quizzes/discussions/Student Annotation, Canvas-generated sessionless LTI launches, and event-driven read-only synchronization after provider return. Preserves native Canvas text, URL and file submissions plus Document Studio for suitable work.",
+      "category": "Assignment architecture and provider integration",
+      "areas": [
+        "Canvas metadata classifier",
+        "Google Assignments LTI handoff",
+        "Google Drive LTI distinction",
+        "Student Annotation routing",
+        "Canvas Classic/New Quiz handoff",
+        "Discussion handoff",
+        "External return context",
+        "Automatic read-only Canvas refresh",
+        "Architecture research and regression tests"
+      ],
+      "status": "Implementation candidate. Automated qualification and preview deployment are pending exact-head Phase 4 CI. Real Canvas, Google Workspace LTI and physical iPad Safari acceptance are not verified. Canvas Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
+      "commits": []
+    },
     {
       "version": "4.4.8.2.1",
       "date": "2026-11-23",
