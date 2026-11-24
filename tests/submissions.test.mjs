@@ -10,6 +10,16 @@ assert.equal(S.richTextPayload('<p>é🙂</p>').submission.body,'<p>é🙂</p>',
 assert.throws(()=>S.richTextPayload('<p>'+('x'.repeat(16000))+'</p>'),/16 KB/);
 assert.deepEqual(S.payload('online_upload','42'),{submission:{submission_type:'online_upload',file_ids:[42]}});
 assert.throws(()=>S.payload('online_upload','not-a-file-id'));
+const receiptBase={workflow_state:'submitted',attempt:2,submission_type:'online_upload',submitted_at:'2026-11-24T18:00:00.000Z',attachments:[{id:501,display_name:'work.pdf'}]};
+assert.equal(S.verifyReceipt({submission:receiptBase,expectedAttempt:2,submissionType:'online_upload',fileIds:[501],baselineSubmittedAt:'2026-11-23T18:00:00.000Z'}).confirmed,true,'exact Canvas attempt, timestamp, type and finalized attachment are independently confirmed');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,attempt:3},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'a later unrelated attempt is not mistaken for this submission');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,attempt:1},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'an earlier attempt cannot confirm the current request');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,submission_type:'online_url'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'a different submission type cannot confirm the request');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'not-a-date'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'an invalid Canvas timestamp cannot produce a receipt');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,attachments:[]},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'missing finalized file IDs cannot produce a receipt');
+assert.equal(S.verifyReceipt({submission:{workflow_state:'pending_review',attempt:1,submission_type:'online_text_entry',submitted_at:'2026-11-24T18:00:00.000Z'},expectedAttempt:1,submissionType:'online_text_entry'}).confirmed,true,'a matching text-entry attempt in pending review is accepted');
+assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'2026-11-22T18:00:00.000Z'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501],baselineSubmittedAt:'2026-11-23T18:00:00.000Z'}).confirmed,false,'a timestamp older than the previous attempt is rejected');
+
 let calls=0;
 const args={credentials:{proxy:'https://bridge.example',token:'secret'},courseId:1,assignmentId:2,data:S.payload('online_url','https://example.com')};
 const result=await S.send({...args,fetchImpl:async(url,opts)=>{calls++;assert(!url.includes('secret'));assert.equal(opts.headers.Authorization,'Bearer secret');assert.equal(opts.redirect,'error');return {ok:true,json:async()=>({workflow_state:'submitted',attempt:2})};}});
