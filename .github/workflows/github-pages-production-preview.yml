@@ -12,6 +12,7 @@ on:
       - northstar-0.4.4.2-quiz-continuity
       - northstar-4.4.8.1.1-document-studio-verification
       - northstar-4.4.8.3-assignment-routing
+      - northstar-4.4.8.3.1-stabilization
 
   workflow_dispatch:
 
@@ -46,7 +47,7 @@ jobs:
           const token = process.env.GITHUB_TOKEN;
           const branches = [
             ['main', 'main_sha'],
-            ['northstar-4.4.8.3-assignment-routing', 'preview_sha']
+            ['northstar-4.4.8.3.1-stabilization', 'preview_sha']
           ];
           async function api(path) {
             const response = await fetch('https://api.github.com/repos/' + repo + path, {
@@ -170,6 +171,7 @@ jobs:
           test -f _site/preview/styles/release-notes.css
           test -f _site/preview/scripts/assignment-room.js
           test -f _site/preview/scripts/assignment-execution.js
+          test -f _site/preview/scripts/external-navigation.js
           test -f _site/preview/scripts/document-editor.js
           test -f _site/preview/scripts/release.js
           test -f _site/preview/scripts/workspace.js

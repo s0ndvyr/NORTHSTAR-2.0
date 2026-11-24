@@ -261,3 +261,10 @@ Regression coverage includes successful signed-preview retrieval from an Instruc
 
 **Release:** NORTHSTAR 4.4.8.0 / package 0.4.24; Worker 0.4.21.  
 **Status:** Candidate validation and deployment pending. Live NNPS viewing, local import, edit/export, real Canvas upload/finalization/submission and physical iPad/Apple Pencil acceptance are not yet claimed.
+
+
+## 4.4.8.3.1 stabilization candidate policy
+
+The stabilization separates **assignment execution**, **Canvas submission method** and **attachment type**. Missing, empty and unsupported submission metadata is unavailable, not offline. Only explicit `none` or `on_paper` means confirmed no-online-submission. External LTI assignments use a fresh same-tab top-level Canvas sessionless launch and an identifier-only return record; they do not render the generic Document Studio or a provider iframe. DOC and legacy Office resources open through the original Canvas file; DOCX/modern Office previews use the existing Office renderer; PDF.js is used only for actual PDF resources. Standard file-upload assignments keep the established Canvas submission handlers while hiding irrelevant writing UI. See [PHASE3-ASSIGNMENT-ARCHITECTURE.md](PHASE3-ASSIGNMENT-ARCHITECTURE.md).
+
+**Qualification:** exact-head Phase 4 CI, Pages preview deployment, real Canvas, Google Workspace LTI and physical iPad Safari acceptance are pending. No external integration or hardware pass is claimed.

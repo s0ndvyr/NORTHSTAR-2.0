@@ -825,3 +825,40 @@ No Canvas Worker source or private Cloudflare deployment is included.
 - Worker 0.4.22 retained unchanged. Production remains 4.4.7.5 / package 0.4.19.
 
 All prior release entries, including 4.4.8.2.1, remain intact.
+
+
+## NORTHSTAR 4.4.8.3.1 — Assignment architecture stabilization
+
+**Date:** 2026-11-24  
+**Status:** Stabilization candidate; exact-head automated qualification and preview deployment pending  
+**Branch:** `northstar-4.4.8.3.1-stabilization`  
+**Base:** `9994935f8b440445316e1ce8468d861f2e893238` (NORTHSTAR 4.4.8.3 preview source)  
+**Target:** NORTHSTAR 4.4.8.3.1 / package 0.4.32 / Canvas Worker 0.4.22 (unchanged)
+
+### Reported issues addressed in source
+
+- Canvas submission metadata: missing, empty and unsupported `submission_types` remain unknown/unavailable; only explicit `none` or `on_paper` is confirmed offline. Assignment-list and assignment-detail type arrays are merged rather than replacing valid list data with an empty detail array. Failed detail retrieval remains a failure/unknown state.
+- Assignment execution and supporting file format are separate. The resource classifier distinguishes PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, images, media, text and unknown binaries. Legacy Office files open through the original Canvas resource; they are not sent to PDF.js.
+- Provider, quiz, discussion, Student Annotation, offline and unknown assignments use a compact assignment control room without the generic empty Document Studio/writing pane.
+- External Canvas/LTI launches request a fresh assignment-specific Canvas sessionless URL and navigate the current tab at the top level. Temporary launch URLs are never persisted. Return context stores only course/assignment identity and safe state; Safari/PWA resume is event-driven and refreshes Canvas without replaying submission writes.
+- Standard file uploads retain the existing Canvas submit controls and event-binding nodes while hiding unrelated writing UI. Supporting attachment preview remains independent of the submission method.
+- Assignment cards show execution type, known resource summary, a same-school Canvas assignment link where available and no misleading 0% completion for unsubmitted work.
+- Canvas launch HTTP 403 errors are surfaced honestly. A Google-origin 403 cannot be read by NORTHSTAR after cross-origin top-level navigation; actual Google authorization requires a school-account and configured-LTI acceptance test, and is not assumed to be an iframe problem.
+
+### Files changed
+
+- `scripts/assignment-execution.js`, `scripts/external-navigation.js`, `scripts/workspace.js`, `scripts/assignment-room.js`, `scripts/premium.js`
+- `styles/assignment-room.css`, `index.html`, `package.json`
+- `tests/assignment-execution.test.mjs`, `tests/external-navigation.test.mjs`, `tests/workspace.test.mjs`, `tests/boot.test.mjs`, `tests/release.test.mjs`
+- `release.json`, `scripts/release.js`, README, capability matrix and this log
+- Phase 4 and Pages workflow files are updated in this candidate branch; the main Pages workflow will also be updated to recognize the new preview branch.
+
+### Qualification boundaries
+
+- Automated tests/build: exact-head Phase 4 CI pending.
+- Preview: exact-head Pages freshness/build/deployment qualification pending.
+- Real Canvas: not verified; authorized school-course access is unavailable in this session.
+- Real Google Assignments: not verified. A mocked Canvas launch response only validates NORTHSTAR's request shape/top-level handoff; it does not prove the school identity/resource link is accepted or resolve the screenshot's Google-origin 403.
+- Physical iPad Safari: not verified.
+- Worker: 0.4.22 unchanged; no Worker source modification was justified by the current allowlisted sessionless-launch route.
+- Production remains 4.4.7.5 / package 0.4.19 and has not been promoted.

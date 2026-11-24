@@ -1,8 +1,8 @@
 {
   "product": "NORTHSTAR",
   "phase": "4.4.8",
-  "northstarVersion": "4.4.8.3",
-  "packageVersion": "0.4.31",
+  "northstarVersion": "4.4.8.3.1",
+  "packageVersion": "0.4.32",
   "channel": "route-derived",
   "releaseDate": "2026-11-24",
   "bridge": {
@@ -11,10 +11,31 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
-    "preview": "NORTHSTAR 4.4.8.3 / package 0.4.31 is deployed at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/. Initial exact preview source SHA b844132bd49975743b291e8c5edd9a361c907081 passed Phase 4 run 45396767776 and was published by Pages run 45397062468. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
+    "preview": "NORTHSTAR 4.4.8.3.1 / package 0.4.32 is a stabilization candidate. Preview deployment is pending exact-head Phase 4 CI and Pages freshness qualification. The previously deployed 4.4.8.3 preview remains the active preview until the stabilization candidate is qualified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
+    {
+      "version": "4.4.8.3.1",
+      "date": "2026-11-24",
+      "title": "Assignment architecture stabilization and Canvas integration repair",
+      "description": "Stabilization sub-release of the 4.4.8.3 assignment architecture milestone. Corrects Canvas submission metadata normalization so missing/empty/unsupported values are not treated as offline; separates assignment execution from attachment file type; adds type-specific provider, quiz, discussion, Student Annotation, offline and unknown assignment control rooms; changes Canvas/LTI launches to fresh same-tab top-level navigation; handles DOC/DOCX and other Office attachments separately from PDF.js; removes misleading zero-percent progress; preserves upload event handlers; and adds targeted regression coverage.",
+      "category": "Assignment architecture stabilization",
+      "areas": [
+        "Canvas metadata integrity and safe unknown state",
+        "Canvas assignment URL and work-type labels",
+        "LTI provider top-level same-tab navigation",
+        "External tool 403 diagnostics",
+        "Google Assignments resource-link identification",
+        "Office and legacy DOC attachment handling",
+        "Dynamic assignment control rooms",
+        "Standard upload workflow preservation",
+        "External return context privacy",
+        "Assignment/provider regression tests"
+      ],
+      "status": "Stabilization candidate. Exact-head Phase 4 CI and preview deployment are pending. Real Canvas and Google Workspace LTI acceptance are not verified; the Google 403 must be tested using the authorized school Google account and configured LTI resource. Physical iPad Safari acceptance has not yet been performed. Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
+      "commits": []
+    },
     {
       "version": "4.4.8.3",
       "date": "2026-11-24",
