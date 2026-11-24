@@ -1667,10 +1667,11 @@ async function phase441ReconcileSubmission(a){
         if(newerThanUncertain)phase441ClearSubmissionUncertain(a);
         else if(submitted&&!receipt.confirmed){
           if(status)status.textContent='Canvas returned a submission, but it does not yet match the attempt/files expected from the uncertain request. The submit action remains locked; refresh status again before retrying.';
-        }else if(!submitted){
-          // A successful authoritative GET confirms there is no submitted result
-          // for the uncertain request. It is now safe to make a new explicit attempt.
+        }else if(window.NorthstarSubmissions.isDefinitivelyUnsubmitted({submission,baselineAttempt:marker.baselineAttempt})){
           phase441ClearSubmissionUncertain(a);
+          if(status)status.textContent='Canvas confirms the assignment remains unsubmitted at the previous attempt. It is safe to review the work and make a new explicit submission.';
+        }else if(!submitted){
+          if(status)status.textContent='Canvas has not returned a definitive unsubmitted record for the previous request. The result remains unknown; do not submit again yet.';
         }
       }
       if(submitted&&(!marker||newerThanUncertain)){
@@ -1678,8 +1679,8 @@ async function phase441ReconcileSubmission(a){
         if(status)status.textContent='Canvas verified '+String(submission.workflow_state).replace(/_/g,' ')+' · attempt '+(submission.attempt||'—')+'. The receipt is based on the official student submission record.';
       }
     }else{
-      Object.assign(a,{status:'Not Started',subState:'unsubmitted',progress:0,score:null,grade:null,missing:false,late:false,submittedAt:null,gradedAt:null,attempt:null});
-      if(marker)phase441ClearSubmissionUncertain(a);
+      if(!marker)Object.assign(a,{status:'Not Started',subState:'unsubmitted',progress:0,score:null,grade:null,missing:false,late:false,submittedAt:null,gradedAt:null,attempt:null});
+      else if(status)status.textContent='Canvas did not return a student submission record. The previous request remains unresolved; do not submit again until Canvas returns a definitive status.';
       phase441RenderSubmissionReceipt(a,c,null,null,[]);
     }
     if(record.submissionDetails){
