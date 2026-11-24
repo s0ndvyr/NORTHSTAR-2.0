@@ -7,7 +7,7 @@ const root = new URL('../', import.meta.url).pathname;
 const releaseManifest = JSON.parse(readFileSync(root + 'release.json', 'utf8'));
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-execution.js', 'document-storage.js', 'assignment-room.js', 'document-editor.js', 'release.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-execution.js', 'external-navigation.js', 'document-storage.js', 'assignment-room.js', 'document-editor.js', 'release.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
@@ -175,13 +175,15 @@ window.openInDashboard('https://school.instructure.com/courses/1/assignments/2')
 let pdfAssignmentSubmission=null;
 const canvasCalls=[];
 let currentQuizAttempt=null;
+let externalLaunchStatus=200;
 window.fetch = async (url, opts={}) => {
   const u = new URL(url);
   const path = u.searchParams.get('path') || u.pathname;
   canvasCalls.push({path,method:opts.method||'GET',body:opts.body?JSON.parse(opts.body):null});
   let data,status=200;
   if (path.startsWith('/api/v1/courses?')) data=[{id:1,name:'Math',course_code:'MATH',has_grading_periods:true,enrollments:[{type:'StudentEnrollment',computed_current_score:88.5,computed_current_grade:'B+',computed_final_score:90,current_grading_period_title:'Marking Period 2',current_grading_period_id:22,has_grading_periods:true,current_period_computed_current_score:91,current_period_computed_current_grade:'A-'}]}];
-  else if (path.endsWith('/assignments?include%5B%5D=submission') || path.includes('/assignments?')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90,grade:'A-',submitted_at:'2026-10-30T17:00:00Z',graded_at:'2026-10-31T10:00:00Z'}},{id:11,name:'Awaiting feedback',points_possible:20,assignment_group_id:5,submission_types:['online_text_entry'],due_at:'2026-11-20T19:00:00Z',submission:{workflow_state:'submitted',submitted_at:new Date(Date.now()-36*60*60*1000).toISOString(),score:null}},{id:12,name:'Canvas Quiz',points_possible:10,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-25T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:13,name:'New Canvas Quiz',points_possible:5,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-26T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:14,name:'PDF Upload Test',points_possible:15,assignment_group_id:5,submission_types:['online_upload'],allowed_extensions:['pdf'],due_at:'2026-11-27T19:00:00Z',submission:{workflow_state:'unsubmitted'}}];
+  else if (path.endsWith('/assignments?include%5B%5D=submission') || path.includes('/assignments?')) data=[{id:10,name:'Test work',points_possible:100,assignment_group_id:5,submission_types:['online_text_entry','online_url'],due_at:'2026-10-31T19:00:00Z',submission:{workflow_state:'graded',score:90,grade:'A-',submitted_at:'2026-10-30T17:00:00Z',graded_at:'2026-10-31T10:00:00Z'}},{id:11,name:'Awaiting feedback',points_possible:20,assignment_group_id:5,submission_types:['online_text_entry'],due_at:'2026-11-20T19:00:00Z',submission:{workflow_state:'submitted',submitted_at:new Date(Date.now()-36*60*60*1000).toISOString(),score:null}},{id:12,name:'Canvas Quiz',points_possible:10,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-25T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:13,name:'New Canvas Quiz',points_possible:5,assignment_group_id:5,submission_types:['online_quiz'],due_at:'2026-11-26T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:14,name:'PDF Upload Test',points_possible:15,assignment_group_id:5,submission_types:['online_upload'],allowed_extensions:['pdf'],due_at:'2026-11-27T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:15,name:'Great Gatsby External Assignment',points_possible:20,assignment_group_id:5,submission_types:['external_tool'],external_tool_tag_attributes:{resource_link_title:'Google Assignments',resource_link_id:'resource-15'},html_url:'https://school.instructure.com/courses/1/assignments/15',due_at:'2026-11-28T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:16,name:'Assignment Metadata Test',points_possible:10,assignment_group_id:5,submission_types:[],html_url:'https://school.instructure.com/courses/1/assignments/16',due_at:'2026-11-29T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:17,name:'Valence Electrons Review',points_possible:10,assignment_group_id:5,submission_types:['online_text_entry'],html_url:'https://school.instructure.com/courses/1/assignments/17',due_at:'2026-11-30T19:00:00Z',submission:{workflow_state:'unsubmitted'}},{id:18,name:'Assignment Detail Failure',points_possible:10,assignment_group_id:5,html_url:'https://school.instructure.com/courses/1/assignments/18',due_at:'2026-12-01T19:00:00Z',submission:{workflow_state:'unsubmitted'}}];
+  else if(path.startsWith('/api/v1/courses/1/external_tools/sessionless_launch')) {status=externalLaunchStatus;data=externalLaunchStatus===200?{id:77,name:'Google Assignments',url:'https://assignments.google.com/lti/launch?state=one-time-state'}:{errors:['External tool launch forbidden']};}
   else if(path.startsWith('/api/v1/courses/1/quizzes?')) data=[{id:22,assignment_id:12,title:'Canvas Quiz',question_count:1,points_possible:10,html_url:'https://school.instructure.com/courses/1/quizzes/22'}];
   else if(path==='/api/quiz/v1/courses/1/quizzes/12'){status=404;data={errors:['Not a New Quiz']};}
   else if(path==='/api/quiz/v1/courses/1/quizzes/13') data={id:13,title:'New Canvas Quiz',instructions:'<p>Read the passage before answering.</p>',points_possible:5,workflow_state:'published',has_time_limit:false};
@@ -196,7 +198,11 @@ window.fetch = async (url, opts={}) => {
   else if (path==='/api/v1/users/self') data={id:7,name:'Test Student'};
   else if (path.startsWith('/api/v1/courses/1/assignments/10?')) data={id:10,name:'Test work',description:'Write your answer.',submission_types:['online_text_entry','online_url'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:[]};
   else if (path.startsWith('/api/v1/courses/1/assignments/11?')) data={id:11,name:'Awaiting feedback',description:'Write a short response.',submission_types:['online_text_entry'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:[],submission:{workflow_state:'submitted',attempt:1,submitted_at:new Date(Date.now()-36*60*60*1000).toISOString()}};
-  else if (path.startsWith('/api/v1/courses/1/assignments/14?')) data={id:14,name:'PDF Upload Test',description:'Upload the annotated PDF.',submission_types:['online_upload'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:['pdf'],submission:pdfAssignmentSubmission};
+  else if (path.startsWith('/api/v1/courses/1/assignments/14?')) data={id:14,name:'PDF Upload Test',description:'Upload the annotated PDF.',submission_types:['online_upload'],can_submit:true,locked_for_user:false,published:true,allowed_extensions:['pdf'],attachments:[],submission:pdfAssignmentSubmission};
+  else if (path.startsWith('/api/v1/courses/1/assignments/15?')) data={id:15,name:'Great Gatsby External Assignment',description:'Complete the assignment in Google Assignments.',submission_types:['external_tool'],external_tool_tag_attributes:{resource_link_title:'Google Assignments',resource_link_id:'resource-15'},can_submit:true,locked_for_user:false,published:true,html_url:'https://school.instructure.com/courses/1/assignments/15',submission:{workflow_state:'unsubmitted'}};
+  else if (path.startsWith('/api/v1/courses/1/assignments/16?')) data={id:16,name:'Assignment Metadata Test',description:'This assignment has no submission type metadata.',submission_types:[],can_submit:false,published:true,html_url:'https://school.instructure.com/courses/1/assignments/16'};
+  else if (path.startsWith('/api/v1/courses/1/assignments/17?')) data={id:17,name:'Valence Electrons Review',description:'Review the attached Word worksheet.',submission_types:['online_text_entry'],can_submit:true,published:true,html_url:'https://school.instructure.com/courses/1/assignments/17',attachments:[{id:171,display_name:'Valence_Electrons_Dot_Diagrams_Review student version.doc',filename:'Valence_Electrons_Dot_Diagrams_Review student version.doc','content-type':'application/msword',content_type:'application/msword',url:'https://school.instructure.com/files/171',size:2048}]};
+  else if (path.startsWith('/api/v1/courses/1/assignments/18?')) {status=503;data={errors:['Canvas assignment detail unavailable']};}
   else if (path.startsWith('/api/v1/courses/1/assignments/14/submissions/7?')) data={submission_history:[],submission_comments:[],rubric_assessment:{}};
   else if (path.startsWith('/api/v1/courses/1/assignments/11/submissions/7?')) data={submission_history:[{attempt:1,workflow_state:'submitted',submitted_at:'2026-11-16T17:00:00Z',score:null}],submission_comments:[{author_name:'Instructor',comment:'Good start. Add one more example.',created_at:'2026-11-17T12:00:00Z'}],rubric_assessment:{}};
   else if (path.endsWith('/assignment_groups')) data=[{id:5,name:'Tests',group_weight:100,rules:{}}];
@@ -248,48 +254,97 @@ window.toggleIgnoredCourse('canvas_1', false);
 window.renderLedger();
 assert.ok(window.document.getElementById('ledgerList').textContent.includes('Awaiting feedback'), 're-included course returns to the ledger');
 
+// Provider-owned Classic and New Quizzes use fresh Canvas sessions and top-level navigation.
+const topLevelNavigations=[];
+window.NorthstarExternalNavigation.navigateTopLevel=url=>{
+ const safe=window.NorthstarExternalNavigation.validate(url);
+ topLevelNavigations.push(safe);
+ return safe;
+};
 await window.openWorkspace('canvas_12_1');
 await new Promise(r=>setTimeout(r,30));
-assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas quiz'),'Classic Quiz assignments use the Canvas-owned execution control room');
-assert.ok(window.document.getElementById('workspace').textContent.includes('Take Quiz in Canvas'),'Classic Quiz offers the official Canvas launch action');
-assert.equal(window.document.getElementById('phase4StartQuiz'),null,'the legacy custom quiz engine is not the default live execution path');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas quiz'),'Classic Quiz uses the Canvas-owned control room');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Take Quiz in Canvas'),'Classic Quiz has the official Canvas action');
+assert.equal(window.document.getElementById('phase4StartQuiz'),null,'legacy custom quiz UI is not the default live route');
 const classicQuizLaunch=[...window.document.getElementById('workspace').querySelectorAll('button')].find(button=>button.textContent.includes('Take Quiz in Canvas'));
-assert.ok(classicQuizLaunch,'Classic Quiz has a dedicated Canvas launch control');
+assert.ok(classicQuizLaunch);
 classicQuizLaunch.click();
 await new Promise(r=>setTimeout(r,30));
-assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F12')),'Classic Quiz launches through a Canvas-authenticated assignment session');
-assert.ok(window.document.getElementById('viewerOverlay').classList.contains('open'),'Classic Quiz opens the official Canvas experience inside NORTHSTAR');
+assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F12')),'Classic Quiz requests the correct authenticated Canvas session');
+assert.ok(topLevelNavigations.at(-1)?.includes('boot-session-token'),'Classic Quiz navigates top-level using the Canvas-issued session URL');
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'Canvas quiz does not use the generic iframe');
 assert.ok(!canvasCalls.some(x=>x.path.includes('/quizzes/22/submissions')&&x.method==='POST'),'NORTHSTAR does not create a competing Classic Quiz attempt');
-window.closeViewer();
-await new Promise(r=>setTimeout(r,40));
 
 await window.openWorkspace('canvas_13_1');
 await new Promise(r=>setTimeout(r,30));
-assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas quiz'),'New Quizzes assignments use the same Canvas-owned execution boundary');
-assert.ok(!window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'NORTHSTAR does not preview or recreate New Quiz questions');
-assert.ok(window.document.getElementById('workspace').textContent.includes('Take Quiz in Canvas'),'New Quizzes offers the official Canvas launch action');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas quiz'),'New Quizzes use the Canvas-owned execution boundary');
+assert.ok(!window.document.getElementById('workspace').textContent.includes('What is the main idea?'),'NORTHSTAR does not render provider quiz questions');
 const newQuizLaunch=[...window.document.getElementById('workspace').querySelectorAll('button')].find(button=>button.textContent.includes('Take Quiz in Canvas'));
-assert.ok(newQuizLaunch,'New Quiz has a dedicated Canvas launch control');
+assert.ok(newQuizLaunch);
 newQuizLaunch.click();
 await new Promise(r=>setTimeout(r,30));
-assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F13')),'New Quiz launch requests a Canvas browser session for the correct assignment');
-assert.ok(window.document.getElementById('viewerOverlay').classList.contains('open'),'authenticated New Quiz player opens inside NORTHSTAR');
-assert.ok(window.document.getElementById('viewerFrame').src.includes('boot-session-token'),'the Canvas-issued session URL is opened without exposing the API token in the URL');
-window.closeViewer();
-await new Promise(r=>setTimeout(r,40));
+assert.ok(canvasCalls.some(x=>x.path.startsWith('/login/session_token?return_to=%2Fcourses%2F1%2Fassignments%2F13')),'New Quiz requests the correct Canvas session');
+assert.ok(topLevelNavigations.at(-1)?.includes('boot-session-token'),'New Quiz navigates top-level');
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'New Quiz does not use the preview iframe');
 
-// Exercise the native iOS host path as well as the PWA iframe fallback.
-const nativeMessages=[];
-window.webkit={messageHandlers:{northstarSecureContent:{postMessage(message){nativeMessages.push(message);}}}};
-const nativeQuizLaunch=[...window.document.getElementById('workspace').querySelectorAll('button')].find(button=>button.textContent.includes('Take Quiz in Canvas'));
-assert.ok(nativeQuizLaunch,'Native host retains the Canvas quiz launch control');
-nativeQuizLaunch.click();
+// Google Assignments-style LTI assignments get a provider-specific control room.
+await window.openWorkspace('canvas_15_1');
 await new Promise(r=>setTimeout(r,30));
-assert.equal(nativeMessages.length,1,'authenticated Canvas content uses the native message handler when the host is installed');
-assert.equal(nativeMessages[0].action,'open');
-assert.ok(nativeMessages[0].url.includes('boot-session-token'),'native handoff uses the Canvas-issued temporary session URL');
-assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'native handoff does not also open the PWA iframe');
-delete window.webkit;
+const externalWorkspace=window.document.getElementById('workspace');
+assert.ok(externalWorkspace.textContent.includes('Google Assignments'),'Canvas resource_link_title identifies Google Assignments');
+assert.ok(externalWorkspace.textContent.includes('Open in Google Assignments'),'external assignment has an explicit provider action');
+assert.ok(!externalWorkspace.textContent.includes('DOCUMENT STUDIO'),'external tool has no generic Document Studio');
+assert.ok(!externalWorkspace.textContent.includes('Your draft'),'external tool has no generic writing draft');
+assert.ok(!externalWorkspace.textContent.includes('Your workspace is ready'),'external tool has no empty preview placeholder');
+const providerButton=externalWorkspace.querySelector('#nsControlProviderLaunch');
+assert.ok(providerButton);
+providerButton.click();
+await new Promise(r=>setTimeout(r,35));
+assert.ok(canvasCalls.some(x=>x.path==='/api/v1/courses/1/external_tools/sessionless_launch?launch_type=assessment&assignment_id=15'),'launch uses Canvas assignment sessionless_launch with exact course/assignment IDs');
+assert.equal(topLevelNavigations.at(-1),'https://assignments.google.com/lti/launch?state=one-time-state','Canvas-issued Google launch is top-level');
+assert.equal(window.document.getElementById('viewerOverlay').classList.contains('open'),false,'Google assignment does not use the generic iframe');
+const returnContextKey=Object.keys(window.localStorage).find(key=>key.includes('external_return_v2'));
+assert.ok(returnContextKey,'external launch stores a return-context record');
+const returnContext=JSON.parse(window.localStorage.getItem(returnContextKey));
+assert.equal(returnContext.courseId,1);assert.equal(returnContext.assignmentId,15);
+assert.ok(!JSON.stringify(returnContext).includes('one-time-state'),'one-time LTI launch URL is not persisted');
+const launchesBeforeDenied=topLevelNavigations.length;
+externalLaunchStatus=403;
+providerButton.click();
+await new Promise(r=>setTimeout(r,35));
+assert.ok(externalWorkspace.querySelector('#nsControlLaunchStatus').textContent.includes('Canvas denied this external-tool launch (HTTP 403)'),'Canvas launch 403 is reported explicitly');
+assert.equal(topLevelNavigations.length,launchesBeforeDenied,'failed Canvas launch does not navigate');
+externalLaunchStatus=200;
+
+// Missing metadata and a failed detail request are not interpreted as offline.
+await window.openWorkspace('canvas_16_1');
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('workspace').textContent.includes('Submission method unavailable'),'empty submission_types is unavailable, not offline');
+assert.ok(!window.document.getElementById('workspace').textContent.includes('No online submission'),'unknown metadata is not mislabeled as offline');
+assert.ok(window.document.getElementById('nsControlCanvasLaunch'),'unknown assignment has an official Canvas fallback');
+await window.openWorkspace('canvas_18_1');
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('workspace').textContent.includes('Submission method unavailable'),'failed detail lookup does not fabricate offline status');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Open Canvas assignment'),'canonical Canvas link remains available');
+
+// .DOC resources use a specific Canvas Office fallback, never PDF.js.
+await window.openWorkspace('canvas_17_1');
+await new Promise(r=>setTimeout(r,30));
+const wordAttachment=[...window.document.querySelectorAll('[data-ns-file]')].find(button=>button.textContent.includes('.doc'));
+assert.ok(wordAttachment,'Word file appears in the real resource list');
+assert.ok(wordAttachment.textContent.includes('WordLegacy'),'legacy DOC has a distinct resource type');
+wordAttachment.click();
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('nsDocumentStage').textContent.includes('Legacy Word document (.doc)'),'legacy DOC opens a clear Canvas Office access panel');
+assert.ok(!window.document.getElementById('nsDocumentStage').querySelector('.ns-pdf-native-preview'),'legacy DOC is never sent to PDF.js');
+
+// Ordinary Canvas file uploads retain submit controls and their event-binding elements.
+await window.openWorkspace('canvas_14_1');
+await new Promise(r=>setTimeout(r,30));
+assert.ok(window.document.getElementById('submitWork'),'standard upload keeps the Canvas submit control');
+assert.ok(window.document.getElementById('submissionFile'),'standard upload keeps the file picker');
+assert.equal(window.document.querySelector('[data-ns-room-panel="work"]').hidden,true,'irrelevant writing panel is hidden but not destroyed');
+assert.ok(!window.document.getElementById('nsDocumentStage'),'no blank document viewer remains without real resources');
 
 // Ordinary HTTPS resources are previewed inside NORTHSTAR before an external escape.
 let externalTabs=0;window.open=()=>{externalTabs++;return {};};

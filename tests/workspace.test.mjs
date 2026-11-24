@@ -34,7 +34,11 @@ await assert.rejects(W.getCanvasSessionUrl({credentials,returnTo:'https://evil.e
 const tool=await W.getExternalToolLaunch({credentials,courseId:11,assignmentId:33,fetchImpl});
 assert.equal(tool.name,'Publisher Assessment');
 assert.equal(new URL(tool.url).origin,'https://publisher.example','Canvas-issued LTI launch may use the registered provider origin');
+const launchRequest=calls.find(call=>new URL(call.url).searchParams.get('path')==='/api/v1/courses/11/external_tools/sessionless_launch?launch_type=assessment&assignment_id=33');
+assert.ok(launchRequest,'official assignment sessionless_launch includes launch_type=assessment and the Canvas assignment ID');
+assert.equal(launchRequest.opts.headers.Authorization,'Bearer secret-token');
 await assert.rejects(W.getExternalToolLaunch({credentials,courseId:11,assignmentId:33,fetchImpl:async()=>({ok:true,status:200,json:async()=>({url:'http://insecure.example/launch'})})}),/security validation/,'non-HTTPS provider launch URLs are rejected');
+await assert.rejects(W.getExternalToolLaunch({credentials,courseId:11,assignmentId:33,fetchImpl:async()=>({ok:false,status:403,json:async()=>({errors:['forbidden']})})}),/403|forbidden/i,'Canvas launch permission errors remain explicit');
 const started=await W.startQuiz({credentials,courseId:11,quizId:22,fetchImpl});
 assert.equal(started.submission.id,77);
 assert.equal(started.questions.length,1);
