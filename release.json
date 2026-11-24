@@ -32,7 +32,7 @@
         "Automatic read-only Canvas refresh",
         "Architecture research and regression tests"
       ],
-      "status": "Implementation candidate. Automated qualification and preview deployment are pending exact-head Phase 4 CI. Real Canvas, Google Workspace LTI and physical iPad Safari acceptance are not verified. Canvas Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
+      "status": "Development candidate. Preview is pending the exact-head Phase 4 freshness gate. Real Canvas and Google Workspace LTI acceptance are not verified. Physical iPad Safari acceptance has not yet been performed. Canvas Worker 0.4.22 is unchanged; production remains 4.4.7.5 / package 0.4.19.",
       "commits": []
     },
     {

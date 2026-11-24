@@ -801,7 +801,7 @@ No Canvas Worker source or private Cloudflare deployment is included.
 ## NORTHSTAR 4.4.8.3 — Canvas-aligned assignment architecture pivot
 
 **Date:** 2026-11-24  
-**Status:** Implementation candidate; automated and external qualification pending  
+**Status:** Development candidate; exact-head Phase 4 freshness gate and external qualification pending  
 **Branch:** `northstar-4.4.8.3-assignment-routing`  
 **Base:** `313b903a365910eb3a1753299119b30b0c40cc8c`  
 **Target:** NORTHSTAR 4.4.8.3 / package 0.4.31 / Canvas Worker 0.4.22 (unchanged)
