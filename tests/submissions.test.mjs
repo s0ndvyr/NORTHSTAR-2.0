@@ -17,6 +17,7 @@ assert.equal(S.verifyReceipt({submission:{...receiptBase,attempt:1},expectedAtte
 assert.equal(S.verifyReceipt({submission:{...receiptBase,submission_type:'online_url'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'a different submission type cannot confirm the request');
 assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'not-a-date'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'an invalid Canvas timestamp cannot produce a receipt');
 assert.equal(S.verifyReceipt({submission:{...receiptBase,attachments:[]},expectedAttempt:2,submissionType:'online_upload',fileIds:[501]}).confirmed,false,'missing finalized file IDs cannot produce a receipt');
+assert.equal(S.verifyReceipt({submission:receiptBase,expectedAttempt:2,submissionType:'online_upload',fileIds:['not-a-file-id']}).confirmed,false,'invalid expected file IDs cannot be silently discarded');
 assert.equal(S.verifyReceipt({submission:{workflow_state:'pending_review',attempt:1,submission_type:'online_text_entry',submitted_at:'2026-11-24T18:00:00.000Z'},expectedAttempt:1,submissionType:'online_text_entry'}).confirmed,true,'a matching text-entry attempt in pending review is accepted');
 assert.equal(S.verifyReceipt({submission:{...receiptBase,submitted_at:'2026-11-22T18:00:00.000Z'},expectedAttempt:2,submissionType:'online_upload',fileIds:[501],baselineSubmittedAt:'2026-11-23T18:00:00.000Z'}).confirmed,false,'a timestamp older than the previous attempt is rejected');
 
