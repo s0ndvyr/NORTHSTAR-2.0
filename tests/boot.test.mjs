@@ -335,6 +335,8 @@ assert.ok(window.document.getElementById('nsControlCanvasLaunch'),'unknown assig
 await window.openWorkspace('canvas_18_1');
 await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submission method unavailable'),'failed detail lookup does not fabricate offline status');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas did not return submission type metadata.'),'missing metadata is not misreported as an explicitly empty Canvas list');
+assert.ok(!window.document.getElementById('workspace').textContent.includes('Canvas returned an empty submission type list.'),'a failed detail lookup cannot be presented as an empty submission_types array');
 assert.ok(window.document.getElementById('workspace').textContent.includes('Open Canvas assignment'),'canonical Canvas link remains available');
 
 // A mixed `none` + online-upload response is not an offline assignment and must still respect Canvas can_submit=false.
