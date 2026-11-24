@@ -44,7 +44,7 @@ function classifyResource(input){
  const file=input&&typeof input==='object'?input:{};
  const name=str(file.name||file.filename||file.display_name).toLowerCase();
  const mime=str(file.contentType||file.content_type||file['content-type']||file.mime_type).split(';')[0].toLowerCase();
- const ext=(name.match(/\\.([a-z0-9]{1,12})$/)||[])[1]||'';
+ const ext=(name.match(/\.([a-z0-9]{1,12})$/)||[])[1]||'';
  let kind='unknown',label='File',preview='canvas';
  if(ext==='pdf'||mime==='application/pdf'){kind='pdf';label='PDF';preview='northstar_pdf';}
  else if(['docx','dotx'].includes(ext)||mime==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){kind='word';label='Word document · DOCX';preview='northstar_office';}
