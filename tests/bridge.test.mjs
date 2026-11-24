@@ -156,9 +156,9 @@ globalThis.fetch=async(url,opts)=>{
   if(target.origin==='https://school.instructure.com'&&target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files'){
     assert.equal(opts.method,'POST');assert.equal(opts.headers.Authorization,'Bearer test-secret');
     const body=JSON.parse(opts.body);assert.equal(body.name,'annotated.pdf');assert.equal(body.size,12);assert.equal(body.content_type,'application/pdf');
-    return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'opaque-key',policy:'opaque-policy'}}),{status:200,headers:{'Content-Type':'application/json'}});
+    return new Response(JSON.stringify({upload_url:'https://northstar-test-bucket.s3.us-east-1.amazonaws.com/signed',upload_params:{key:'opaque-key',policy:'opaque-policy'}}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(target.origin==='https://storage.example'){
+  if(target.origin==='https://northstar-test-bucket.s3.us-east-1.amazonaws.com'){
     assert.equal(opts.method,'POST');assert.equal(opts.redirect,'manual');assert.equal(opts.headers?.Authorization,undefined,'Canvas token is never sent to signed storage');
     assert.deepEqual([...opts.body.keys()],['key','policy','file']);assert.equal(opts.body.get('file').name,'annotated.pdf');
     return new Response(null,{status:302,headers:{Location:'https://school.instructure.com/api/v1/files/501/create_success?uuid=opaque-finalize-token'}});
@@ -182,9 +182,9 @@ globalThis.fetch=async(url,opts)=>{
   const target=new URL(url);quizSequence.push({url:target.href,opts});
   if(target.pathname==='/api/v1/courses/1/quizzes/3/submissions/self/files'){
     assert.equal(opts.headers.Authorization,'Bearer test-secret');assert.deepEqual(JSON.parse(opts.body),{name:'quiz-answer.pdf'});
-    return new Response(JSON.stringify({upload_url:'https://storage.example/quiz',upload_params:{key:'quiz-key'}}),{status:200,headers:{'Content-Type':'application/json'}});
+    return new Response(JSON.stringify({upload_url:'https://northstar-test-bucket.s3.us-east-1.amazonaws.com/quiz',upload_params:{key:'quiz-key'}}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(target.origin==='https://storage.example'){
+  if(target.origin==='https://northstar-test-bucket.s3.us-east-1.amazonaws.com'){
     assert.equal(opts.headers?.Authorization,undefined);assert.deepEqual([...opts.body.keys()],['key','file']);
     return new Response(null,{status:201,headers:{Location:'https://school.instructure.com/api/v1/files/502/create_success?uuid=opaque'}});
   }
@@ -198,19 +198,32 @@ const quizUploadFile=new File(['quiz-answer'],'quiz-answer.pdf',{type:'applicati
 finalized=await worker.fetch(uploadActionRequest('quiz',3,quizUploadFile));
 assert.equal(finalized.status,200);assert.equal((await finalized.json()).id,502);assert.equal(quizSequence.length,3);
 
+// A Canvas response cannot redirect uploaded document bytes to an arbitrary HTTPS host.
+let untrustedStorageFetches=0;
+globalThis.fetch=async(url,opts)=>{
+  untrustedStorageFetches++;
+  const target=new URL(url);
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')
+    return new Response(JSON.stringify({upload_url:'https://evil.example/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  throw Error('Untrusted signed storage hosts must not receive file bytes');
+};
+const untrustedStorage=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
+assert.equal(untrustedStorage.status,502,'arbitrary HTTPS storage hosts are rejected');
+assert.equal(untrustedStorageFetches,1,'the Worker rejects the host before transferring any file bytes');
+
 // Unsafe and missing finalization locations must never be followed.
 globalThis.fetch=async(url,opts)=>{
   const target=new URL(url);
-  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.origin==='https://storage.example')return new Response(null,{status:302,headers:{Location:'https://evil.example/api/v1/files/503/create_success'}});
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://northstar-test-bucket.s3.us-east-1.amazonaws.com/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.origin==='https://northstar-test-bucket.s3.us-east-1.amazonaws.com')return new Response(null,{status:302,headers:{Location:'https://evil.example/api/v1/files/503/create_success'}});
   throw Error('Unsafe finalization destination must never be fetched: '+target.href);
 };
 const unsafe=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
 assert.equal(unsafe.status,502);const unsafeBody=await unsafe.text();assert(!unsafeBody.includes('test-secret'));assert(!unsafeBody.includes('evil.example'));
 globalThis.fetch=async(url,opts)=>{
   const target=new URL(url);
-  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://storage.example/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
-  if(target.origin==='https://storage.example')return new Response(null,{status:302});
+  if(target.pathname==='/api/v1/courses/1/assignments/2/submissions/self/files')return new Response(JSON.stringify({upload_url:'https://northstar-test-bucket.s3.us-east-1.amazonaws.com/signed',upload_params:{key:'k'}}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(target.origin==='https://northstar-test-bucket.s3.us-east-1.amazonaws.com')return new Response(null,{status:302});
   throw Error('Missing finalization Location must not be fetched');
 };
 const missingLocation=await worker.fetch(uploadActionRequest('assignment',2,annotatedFile));
