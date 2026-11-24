@@ -84,4 +84,5 @@ jobs:
             --header 'Origin: https://s0ndvyr.github.io' \
             https://northstar-bridge.s0ndvyr.workers.dev/)"
           printf '%s\\n' "$headers"
-          printf '%s\\n' "$headers" | grep -Eiq '^x-northstar-worker-version:[[:space:]]*0\\.4\\.22 \\(4\\.4\\.8\\.2\\)[[:space:]]*
+          echo "$headers"
+          echo "$headers" | grep -Fqi 'x-northstar-worker-version: 0.4.22 (4.4.8.2)'
