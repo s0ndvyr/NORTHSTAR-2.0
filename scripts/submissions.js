@@ -31,6 +31,12 @@ async function send({credentials,courseId,assignmentId,data,fetchImpl=global.fet
   if(!result || !['submitted','graded','pending_review'].includes(result.workflow_state)) throw Error('Submission not confirmed. Check Canvas before retrying.');
   return result;
 }
+function isDefinitivelyUnsubmitted({submission,baselineAttempt=0}){
+  if(!submission||typeof submission!=='object')return false;
+  if(String(submission.workflow_state||'').toLowerCase()!=='unsubmitted'||submission.submitted_at)return false;
+  const current=Number(submission.attempt)||0,baseline=Number(baselineAttempt)||0;
+  return Number.isSafeInteger(current)&&Number.isSafeInteger(baseline)&&current<=baseline;
+}
 function verifyReceipt({submission,expectedAttempt,submissionType,fileIds=[],baselineSubmittedAt=null}){
   const workflow=String(submission?.workflow_state||'').toLowerCase();
   const stateMatches=['submitted','graded','pending_review'].includes(workflow);
@@ -83,6 +89,6 @@ function richTextPayload(html){
   if(size>16000)throw Error('Your formatted response is '+size.toLocaleString()+' bytes. Canvas accepts up to 16 KB here; shorten it before submitting.');
   return {submission:{submission_type:'online_text_entry',body}};
 }
-const api={payload,send,verifyReceipt,sanitizeRichTextHtml,richTextPayload};global.NorthstarSubmissions=api;
+const api={payload,send,verifyReceipt,isDefinitivelyUnsubmitted,sanitizeRichTextHtml,richTextPayload};global.NorthstarSubmissions=api;
 if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
