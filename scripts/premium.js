@@ -2082,7 +2082,7 @@ async function launchCanvasAssignmentExperience(kind){
   try{
     const returnTo='/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId);
     const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo});
-    phase44StoreExternalReturnContext(kind);
+    window.NorthstarExternalNavigation.requireSavedReturnContext(phase44StoreExternalReturnContext(kind));
     if(status)status.textContent='Canvas issued a short-lived session. Opening its official experience in this tab; use browser Back to return to NORTHSTAR.';
     window.NorthstarExternalNavigation.navigateTopLevel(session.sessionUrl);
   }catch(error){if(status)status.textContent='Canvas session could not be opened: '+error.message;toast('Canvas session could not be opened.');}
@@ -2096,7 +2096,7 @@ async function launchCanvasExternalTool(){
     const launch=await window.NorthstarWorkspace.getExternalToolLaunch({credentials:getCredentials(),courseId:c.canvasId,assignmentId:a.canvasId});
     const provider=String(launch.name||a.providerName||'External tool').slice(0,160);
     a.providerName=provider;a.executionClassification=phase441Execution({...a,external_tool:{name:provider}});
-    phase44StoreExternalReturnContext(provider);
+    window.NorthstarExternalNavigation.requireSavedReturnContext(phase44StoreExternalReturnContext(provider));
     if(status)status.textContent='Canvas issued a fresh '+provider+' launch. Opening it as a top-level page; use browser Back to return to NORTHSTAR.';
     window.NorthstarExternalNavigation.navigateTopLevel(launch.url);
   }catch(error){
@@ -2110,7 +2110,7 @@ async function launchCanvasFileInApp(file,a,c){
   const status=$('#nsControlLaunchStatus');
   try{
     const session=await window.NorthstarWorkspace.getCanvasSessionUrl({credentials:getCredentials(),returnTo:'/courses/'+Number(c.canvasId)+'/files/'+Number(file.id)});
-    phase44StoreExternalReturnContext('Canvas file: '+file.name);
+    window.NorthstarExternalNavigation.requireSavedReturnContext(phase44StoreExternalReturnContext('Canvas file: '+file.name));
     if(status)status.textContent='Opening the original Canvas file resource in this tab.';
     window.NorthstarExternalNavigation.navigateTopLevel(session.sessionUrl);
   }catch(error){if(status)status.textContent='Canvas file session could not be opened: '+error.message;else toast('Canvas document preview failed: '+error.message);}
@@ -2223,7 +2223,7 @@ async function phase44RefreshExternalReturnContext(){
  const x=phase44ReadExternalReturnContext();if(!x||phase44ReturnRefreshInFlight||mode!=='live'||!getCredentials())return false;
  if(Date.now()-phase44LastReturnRefreshAt<15000)return true;
  phase44LastReturnRefreshAt=Date.now();phase44ReturnRefreshInFlight=true;
- try{const result=await syncCanvas({quiet:true});if(!result)return true;try{localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY);}catch{}refreshAll();const a=ASSIGNMENTS.find(v=>Number(v.canvasId)===Number(x.assignmentId)&&Number(courseById(v.course)?.canvasId)===Number(x.courseId));if(a)await openWorkspace(a.id,{fromHistory:true});return true;}catch{return true;}finally{phase44ReturnRefreshInFlight=false;}
+ try{const result=await syncCanvas({quiet:true});if(!result)return true;const a=ASSIGNMENTS.find(v=>Number(v.canvasId)===Number(x.assignmentId)&&Number(courseById(v.course)?.canvasId)===Number(x.courseId));if(!a)return true;await openWorkspace(a.id,{fromHistory:true});try{localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY);}catch{}return true;}catch{return true;}finally{phase44ReturnRefreshInFlight=false;}
 }
 // Event-driven resume only; this does not poll and never repeats a submission write.
 function maybeRefreshCanvas(force=false){
