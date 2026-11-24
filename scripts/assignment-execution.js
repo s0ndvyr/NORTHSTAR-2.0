@@ -16,7 +16,7 @@ function getTypes(a){
 }
 function providerKind(a){
  const tool=a?.external_tool||a?.externalTool||a?.tool||{},attrs=a?.external_tool_tag_attributes||a?.externalToolTagAttributes||{};
- const names=[tool.name,tool.vendor,tool.product,tool.description,a?.external_tool_name,a?.externalToolName,a?.lti_tool_name,a?.provider_name,attrs.tool_name,attrs.provider_name].map(str).filter(Boolean).join(' ').toLowerCase();
+ const names=[tool.name,tool.vendor,tool.product,tool.description,a?.external_tool_name,a?.externalToolName,a?.lti_tool_name,a?.provider_name,attrs.tool_name,attrs.provider_name,attrs.resource_link_title,a?.resource_link_title].map(str).filter(Boolean).join(' ').toLowerCase();
  if(/google\s*(assignments|workspace\s*lti)|assignments\s*lti/.test(names))return 'google_assignments';
  if(/google\s*drive\s*lti|drive\s*lti/.test(names))return 'google_drive_lti';
  return 'external_tool';

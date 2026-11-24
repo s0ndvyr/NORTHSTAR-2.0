@@ -5,6 +5,7 @@ const classify=E.classify,resource=E.classifyResource;
 const cases=[
  [{submission_types:['online_upload']},'file_upload'],[{submission_types:['online_text_entry']},'text_entry'],[{submission_types:['online_url']},'url'],
  [{submission_types:['external_tool']},'external_tool'],[{submission_types:['external_tool'],external_tool:{name:'Google Assignments LTI'}},'google_assignments'],
+ [{submission_types:['external_tool'],external_tool_tag_attributes:{resource_link_title:'Google Assignments'}},'google_assignments'],
  [{submission_types:['external_tool'],external_tool:{name:'Google Drive LTI'}},'google_drive_lti'],[{submission_types:['student_annotation'],annotatable_attachment_id:441},'student_annotation'],
  [{submission_types:['online_quiz']},'quiz'],[{submission_types:['discussion_topic']},'discussion'],[{submission_types:['media_recording']},'media_recording'],
  [{submission_types:['on_paper']},'offline_paper'],[{submission_types:['none']},'offline'],
@@ -13,6 +14,7 @@ const cases=[
 for(const [input,expected] of cases)assert.equal(classify(input).kind,expected);
 assert.deepEqual(classify({submission_types:['online_upload','online_text_entry']}).submissionTypes,['online_upload','online_text_entry']);
 assert.equal(classify({name:'Google Docs essay',submission_types:['online_upload']}).kind,'file_upload');
+assert.equal(classify({name:'Google Assignments Essay',submission_types:['external_tool']}).kind,'external_tool','assignment title alone must not guess the provider');
 assert.equal(classify({submission_types:['online_upload'],external_tool_tag_attributes:{url:'https://assignments.google.com'}}).kind,'file_upload');
 assert.equal(classify({}).kind,'unknown');assert.equal(classify({}).submissionTypeState,'missing');assert.equal(classify({}).confirmedOffline,false);
 assert.equal(classify({submission_types:[]}).kind,'unknown');assert.equal(classify({submission_types:[]}).submissionTypeState,'empty');

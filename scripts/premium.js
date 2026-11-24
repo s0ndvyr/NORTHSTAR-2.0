@@ -1370,7 +1370,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   const normalized={...a,...(details||{}),submission_types:Array.isArray(a.submissionTypes)?a.submissionTypes:(Array.isArray(details?.submission_types)?details.submission_types:undefined)};
   const execution=phase441Execution(normalized);
   const providerOwned=!!execution.requiresProvider;
-  if(providerOwned||['offline','offline_paper','unknown','file_upload'].includes(execution.kind)){
+  if(providerOwned||['offline','offline_paper','unknown'].includes(execution.kind)){
     phase441RenderExecutionControlRoom(a,c,details,files,submissionDetails,execution);
     return;
   }
@@ -1400,7 +1400,12 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   document.querySelectorAll('[data-ns-format]').forEach(button=>{button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{input.focus();const action=button.dataset.nsFormat;if(action==='blockquote')document.execCommand('formatBlock',false,'blockquote');else document.execCommand(action,false,null);updateDraft();});});
   updateDraft();
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
-  if(providerOwned||execution.kind==='file_upload'){const studio=document.querySelector('#workspace .ns-room-document');if(studio)studio.hidden=true;phase441ShowTab('submit');}
+  if(execution.kind==='file_upload'){
+    document.querySelector('#workspace .ns-room-document')?.remove();
+    document.querySelector('[data-ns-room-tab="work"]')?.remove();
+    document.querySelector('[data-ns-room-panel="work"]')?.remove();
+    phase441ShowTab('submit');
+  }
   if(details?.submission)phase441RenderSubmissionReceipt(a,c,details.submission,details.submission.submission_type);
   if(phase441ReadUnknownSubmission(a)){
     phase441UnknownSubmissionChecks.add(String(a.id));
@@ -1447,7 +1452,7 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
     event.preventDefault();if(typeof previewResourceInDashboard==='function')previewResourceInDashboard(target.href,link.textContent.trim()||'Assignment resource');
   });
   const filesNode=$('#nsAssignmentFiles');
-  if(providerOwned||execution.kind==='file_upload'){filesNode.innerHTML='<span class="small muted">'+(providerOwned?'This assignment is completed in its official Canvas or provider environment.':'Choose files directly below, or use Canvas’s official file picker for Google Drive when enabled.')+'</span>';}
+  if(providerOwned){filesNode.innerHTML='<span class="small muted">This assignment is completed in its official Canvas or provider environment.</span>';}
   else if(!files.length){document.querySelector('#workspace .ns-room-document')?.remove();}
   else{
     filesNode.innerHTML=files.map(file=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span class="ns-room-file-icon">'+(phase441ResourceKind(file)==='Image'?'▧':phase441ResourceKind(file)==='Video'?'▷':phase441ResourceKind(file)==='Audio'?'♫':phase441ResourceKind(file)==='Text'?'≡':'▤')+'</span><strong>'+esc(file.name)+'</strong><span class="ns-room-file-kind">'+phase441ResourceKind(file)+'</span></button>').join('');
