@@ -818,7 +818,8 @@ No Canvas Worker source or private Cloudflare deployment is included.
 
 ### Qualification boundaries
 
-- Local tests/build: not run in this environment; exact-head CI qualification is required.
+- Local tests/build: not run in this environment. Exact-head Phase 4 CI passed for preview source `b844132bd49975743b291e8c5edd9a361c907081` in run `45396767776`; the same workflow passed for the Pages production-source head `881eeca59c81b0cb6546c5b29bd5ecdaee4afd24` in run `45396981486`.
+- Preview deployment: Pages run `45397062468` succeeded. Freshness gate verified both exact source heads; the preview branch source was `b844132bd49975743b291e8c5edd9a361c907081`. Preview URL: https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/.
 - Real Canvas / Google Workspace LTI: not verified; authorized school test course and Google Workspace identity are unavailable in this session.
 - Physical iPad Safari: not verified in this session.
 - Worker 0.4.22 retained unchanged. Production remains 4.4.7.5 / package 0.4.19.
