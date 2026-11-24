@@ -126,7 +126,15 @@ async function uploadCanvasFile(request,requestUrl,authorization){
   const upload=Array.isArray(init.attachments)?init.attachments[0]:init;
   if(!upload||typeof upload.upload_url!=='string'||!upload.upload_url||!isObject(upload.upload_params))return reply('Canvas did not return a valid signed upload request',502);
   let uploadUrl;try{uploadUrl=new URL(upload.upload_url);}catch{return reply('Canvas returned an invalid signed upload destination',502);}
-  if(uploadUrl.protocol!=='https:'||uploadUrl.username||uploadUrl.password||uploadUrl.searchParams.has('access_token'))return reply('Canvas signed upload destination failed security validation',502);
+  const uploadHost=uploadUrl.hostname.toLowerCase();
+  const trustedStorageHost=uploadHost===new URL(CANVAS_ORIGIN).hostname||
+    uploadHost.endsWith('.instructure.com')||
+    uploadHost==='s3.amazonaws.com'||
+    uploadHost.endsWith('.s3.amazonaws.com')||
+    /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(uploadHost)||
+    /^[a-z0-9.-]+\.s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(uploadHost)||
+    uploadHost.endsWith('.canvas-user-content.com');
+  if(uploadUrl.protocol!=='https:'||uploadUrl.username||uploadUrl.password||uploadUrl.port||uploadUrl.searchParams.has('access_token')||!trustedStorageHost)return reply('Canvas signed upload destination failed security validation',502);
   const signedForm=new FormData();
   for(const [key,value] of Object.entries(upload.upload_params)){if(!key||!['string','number','boolean'].includes(typeof value))return reply('Canvas returned unsupported signed upload parameters',502);signedForm.append(key,String(value));}
   signedForm.append('file',file,file.name);
