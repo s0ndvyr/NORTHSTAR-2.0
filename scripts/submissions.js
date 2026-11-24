@@ -34,8 +34,10 @@ async function send({credentials,courseId,assignmentId,data,fetchImpl=global.fet
 function isDefinitivelyUnsubmitted({submission,baselineAttempt=0}){
   if(!submission||typeof submission!=='object')return false;
   if(String(submission.workflow_state||'').toLowerCase()!=='unsubmitted'||submission.submitted_at)return false;
-  const current=Number(submission.attempt)||0,baseline=Number(baselineAttempt)||0;
-  return Number.isSafeInteger(current)&&Number.isSafeInteger(baseline)&&current<=baseline;
+  const baseline=Number(baselineAttempt)||0;
+  const hasAttempt=submission.attempt!==undefined&&submission.attempt!==null&&String(submission.attempt).trim()!=='';
+  const current=hasAttempt?Number(submission.attempt):(baseline===0?0:NaN);
+  return Number.isSafeInteger(current)&&Number.isSafeInteger(baseline)&&current===baseline;
 }
 function verifyReceipt({submission,expectedAttempt,submissionType,fileIds=[],baselineSubmittedAt=null}){
   const workflow=String(submission?.workflow_state||'').toLowerCase();
