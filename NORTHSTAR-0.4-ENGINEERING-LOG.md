@@ -389,6 +389,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - **Ambiguous submission reconciliation:** the uncertain-submission recovery path now uses the same exact receipt verifier. A higher unrelated attempt no longer clears the reconciliation lock merely because its attempt number is greater than expected.
 - **Upload ID validation:** malformed expected file IDs cannot be silently filtered out and treated as an empty, successful attachment check.
 - **Duplicate staged IDs:** receipt verification now normalizes duplicate file references consistently with the submission payload while still rejecting malformed identifiers.
+- **Timestamp integrity:** if a previous submission timestamp was supplied but is malformed, the new receipt cannot pass by treating that baseline as absent.
 - **Ambiguous no-record recovery:** a missing Canvas submission object no longer clears an uncertain-submission lock. A retry is permitted only when Canvas explicitly returns an `unsubmitted` record with the exact previously known baseline attempt; missing attempt numbers after prior submissions, stale lower attempts, and nonterminal states remain unknown and block duplicate submission.
 - **Assignment card qualification:** the live Ledger now identifies the actual submission method, resource/attachment type when Canvas detail data is available, and the execution boundary (NORTHSTAR workspace, official Canvas/provider workflow, in-person/paper, or unverified). Opening an assignment updates its resource summary from the authoritative detail response.
 
@@ -416,12 +417,14 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - `d5435e7a08f52cfd0aeed169933dc25bf74b9924` — Word-resource and external-provider card regression coverage.
 - `27f97032f13e775af5945f890117a8c73f5ea5b5` — normalize duplicate staged file IDs during receipt verification.
 - `fb43117a71768fddfe739cfc696ef04612882b5f` — duplicate-ID receipt regression coverage.
+- `717b1a6b32f19fb92d0dca95a3dc2ec52b4e5cba` — reject unverifiable previous-attempt timestamps.
+- `30fa42823906be14359eee0a999b786d36d4777f` — invalid-baseline timestamp regression coverage.
 
 ### Qualification state at this checkpoint
 
 - Source-level isolated JavaScript parsing: `scripts/submissions.js` and `scripts/premium.js` passed.
 - Targeted repository test files `tests/submissions.test.mjs` and `tests/assignment-execution.test.mjs` passed when executed in an isolated V8 harness with compatibility shims. This is not a native Node/npm run.
-- The submission test file passed all 10 receipt assertions and 6 definitive-unsubmitted assertions in that harness; the full npm suite has not yet been run in this environment.
+- The submission test file passed all 11 receipt assertions and 6 definitive-unsubmitted assertions in that harness; the full npm suite has not yet been run in this environment.
 - GitHub combined commit-status lookup: no status entries returned for the inspected commits; this is not evidence of a passing workflow.
 - Full `npm test`, Worker dry-run, full browser regression and Pages freshness/deployment: pending verification.
 - Real Canvas submission verification: blocked until an authorized test assignment/account and compatible deployed Worker are available.
