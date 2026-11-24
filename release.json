@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app or Worker changes are authorized by Phase 3 development.",
-    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 preview deployed at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ from Phase 3 source SHA bb639d5840ed1152bcee89162eda7b1c8113f2ea via GitHub Pages workflow run 45303048867. The build verified preview release 4.4.8.2.1 / package 0.4.29. The production artifact was built from main SHA 46a1b8a6938891c66864cd6fc6f9847a4cf2d0af; production application source remains NORTHSTAR 4.4.7.5 / package 0.4.19 and is unchanged."
+    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 is published at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ only after the exact current Phase 3 branch head passes the Phase 4 workflow. The Pages build checks out the exact verified source SHA and validates the release manifest/package. The production artifact is built from main and remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -32,7 +32,7 @@
         "Worker deployment version smoke verification",
         "Exact-source automated regression qualification"
       ],
-      "status": "Development candidate. Preview is deployed from the exact current source SHA bb639d5840ed1152bcee89162eda7b1c8113f2ea after successful Phase 4 qualification, via GitHub Pages workflow run 45303048867. Real Canvas account/course verification is BLOCKED until authorized test access is available. Physical iPad Safari and Apple Pencil acceptance has not yet been performed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+      "status": "Development candidate. The preview is published at https://s0ndvyr.github.io/NORTHSTAR-2.0/preview/ through the exact-head Phase 4 freshness gate; the Pages workflow records the tested source SHA and validates the release manifest/package before deployment. Real Canvas account/course verification is BLOCKED until authorized test access is available. Physical iPad Safari and Apple Pencil acceptance has not yet been performed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
       "historical": false,
       "commits": []
     },
