@@ -6,6 +6,10 @@
 **Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.9 / package 0.4.23.
 
 
+## 4.4.8.3 strategy pivot — current execution policy
+
+The 4.4.8.2.1 native-workspace capability matrix below is retained as historical implementation evidence, not as the default execution policy for every assignment. NORTHSTAR 4.4.8.3 moves provider-owned work to the official Canvas/provider environment. Live quizzes and discussions use Canvas; Student Annotation remains Canvas-owned; external LTI tools use Canvas's sessionless assignment launch; Google Assignments LTI is not recreated in NORTHSTAR. Standard Canvas text, URL and file submissions remain native where the Canvas metadata permits them. Ordinary file-upload assignments can bypass Document Studio, and the student can open Canvas's own file picker (including Google Drive when enabled). See [PHASE3-CANVAS-ALIGNED-ASSIGNMENT-ARCHITECTURE.md](PHASE3-CANVAS-ALIGNED-ASSIGNMENT-ARCHITECTURE.md) for the authoritative classifier, routing and integration research. The custom quiz/discussion code remains legacy source and is not the default live execution path.
+
 ## Current Phase 3 qualification sub-release — NORTHSTAR 4.4.8.2.1
 
 - **Standard assignment submission:** written/URL/file workflows retain the native assignment workspace and require an authoritative Canvas submission read-back before displaying success.

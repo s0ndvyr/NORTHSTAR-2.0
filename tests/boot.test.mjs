@@ -7,7 +7,7 @@ const root = new URL('../', import.meta.url).pathname;
 const releaseManifest = JSON.parse(readFileSync(root + 'release.json', 'utf8'));
 let html = readFileSync(root + 'index.html', 'utf8');
 html = html.replace(/<script[^>]*src="scripts\/[^"]+"[^>]*><\/script>/g, '');
-const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'document-storage.js', 'assignment-room.js', 'document-editor.js', 'release.js', 'premium.js']
+const scripts = ['app.js', 'canvas-debug.js', 'grades.js', 'ai.js', 'submissions.js', 'document-export.js', 'canvas-sync.js', 'studentvue.js', 'workspace.js', 'assignment-execution.js', 'document-storage.js', 'assignment-room.js', 'document-editor.js', 'release.js', 'premium.js']
   .map(f => readFileSync(root + 'scripts/' + f, 'utf8'));
 
 const errors = [];
