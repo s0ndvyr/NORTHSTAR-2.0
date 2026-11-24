@@ -62,7 +62,7 @@ const parentRelease=manifest.releases.find(entry=>entry.version==='4.4.8.1');
 assert.ok(String(parentRelease.status||'').includes('45212530217')&&String(parentRelease.status||'').includes('45212652910'),'the parent release records its exact source test and preview deployment provenance');
 assert.ok(parentRelease.commits.some(commit=>commit.sha==='917c3a5e3f2862dba263fab4ee7ff0ab620b2566'),'the parent changelog records its verified preview source SHA');
 const candidateRelease=manifest.releases.find(entry=>entry.version===manifest.northstarVersion);
-assert.ok(String(candidateRelease.status||'').includes('Development candidate')&&String(candidateRelease.status||'').includes('has not yet been deployed'),'the Phase 3 candidate is not represented as deployed before its own release gate');
+assert.ok(String(candidateRelease.status||'').includes('Development candidate')&&String(candidateRelease.status||'').includes('exact current source SHA'),'the Phase 3 candidate remains gated on exact-head qualification rather than being represented as a completed release');
 assert.equal(candidateRelease.commits.length,0,'the candidate records no deployment provenance before exact-head qualification');
 
 assert.ok(String(manifest.releases.find(entry=>entry.version==='4.4.7.8').status||'').includes('45104758113'),'the previous signed-preview release retains its successful Worker deployment record');
