@@ -31,6 +31,27 @@ async function send({credentials,courseId,assignmentId,data,fetchImpl=global.fet
   if(!result || !['submitted','graded','pending_review'].includes(result.workflow_state)) throw Error('Submission not confirmed. Check Canvas before retrying.');
   return result;
 }
+function verifyReceipt({submission,expectedAttempt,submissionType,fileIds=[],baselineSubmittedAt=null}){
+  const workflow=String(submission?.workflow_state||'').toLowerCase();
+  const stateMatches=['submitted','graded','pending_review'].includes(workflow);
+  const expected=Number(expectedAttempt),actual=Number(submission?.attempt);
+  const attemptMatches=Number.isSafeInteger(expected)&&expected>0&&actual===expected;
+  const typeMatches=!!submissionType&&String(submission?.submission_type||'')===String(submissionType);
+  const submittedAt=String(submission?.submitted_at||'');
+  const submittedAtMs=Date.parse(submittedAt);
+  const baselineMs=baselineSubmittedAt?Date.parse(baselineSubmittedAt):NaN;
+  const timestampMatches=Number.isFinite(submittedAtMs)&&(!Number.isFinite(baselineMs)||submittedAtMs>=baselineMs);
+  const attachments=Array.isArray(submission?.attachments)?submission.attachments:Array.isArray(submission?.submitted_files)?submission.submitted_files:null;
+  const expectedFiles=[...new Set((Array.isArray(fileIds)?fileIds:[]).map(Number).filter(value=>Number.isSafeInteger(value)&&value>0))];
+  const filesMatch=expectedFiles.length===0||(!!attachments&&expectedFiles.every(fileId=>attachments.some(file=>Number(file?.id)===fileId)));
+  const failures=[];
+  if(!stateMatches)failures.push('Canvas has not reported a submitted, graded, or pending-review state');
+  if(!attemptMatches)failures.push('the official attempt does not exactly match the expected attempt '+(Number.isSafeInteger(expected)&&expected>0?expected:'unknown'));
+  if(!typeMatches)failures.push('the official submission type does not match '+(submissionType||'the requested type'));
+  if(!timestampMatches)failures.push('Canvas did not return a valid submission timestamp at or after the previous attempt');
+  if(!filesMatch)failures.push('the official submission does not contain every expected finalized Canvas file ID');
+  return {confirmed:failures.length===0,failures,workflow,attempt:Number.isSafeInteger(actual)?actual:null,submittedAt:submittedAt||null,attachments:attachments||[],expectedFileIds:expectedFiles};
+}
 function sanitizeRichTextHtml(value){
   const html=String(value??'');
   if(typeof DOMParser==='undefined')return '<p>'+html.replace(/<[^>]*>/g,'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'</p>';
@@ -60,6 +81,6 @@ function richTextPayload(html){
   if(size>16000)throw Error('Your formatted response is '+size.toLocaleString()+' bytes. Canvas accepts up to 16 KB here; shorten it before submitting.');
   return {submission:{submission_type:'online_text_entry',body}};
 }
-const api={payload,send,sanitizeRichTextHtml,richTextPayload};global.NorthstarSubmissions=api;
+const api={payload,send,verifyReceipt,sanitizeRichTextHtml,richTextPayload};global.NorthstarSubmissions=api;
 if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
