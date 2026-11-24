@@ -366,11 +366,13 @@ matchesStatus = function(a){
 filterAndGo = function(f){statusFilter=f;showView('ledger');initLedger();};
 const oldRenderLedger=renderLedger;
 function ledgerRow(a){
-  const c=courseById(a.course); const st=statusOf(a);
+  const c=courseById(a.course); const st=statusOf(a),execution=phase441Execution(a);
+  const resource=phase441ResourceSummary(a)||a.attachmentSummary||'Resource details unavailable';
+  const route=execution.requiresProvider?'Official Canvas/provider workflow':execution.confirmedOffline?'In-person / paper':execution.kind==='unknown'?'Method unverified':'NORTHSTAR workspace';
   const stColor = st==="Overdue"||st==="Missing"?"badge-rose":st==="Due Today"?"badge-amber":st==="Completed"||st==="Submitted"?"badge-green":st==="In Progress"||st==="Awaiting Grading"?"badge-cyan":"badge-violet";
   const barCls = st==="Overdue"||st==="Missing"?"rose":st==="Completed"||st==="Submitted"?"green":"";
   return `<div class="ledger-row" style="--lc:${c.color}" onclick="openWorkspace('${a.id}')">
-    <div><h4>${esc(a.title)}</h4><div class="meta">${typeIcon(a.type)} ${a.type} · ${a.points} pts · ${a.priority} priority ${a.score!=null?`· <b style="color:#6ee7b7">${a.score}/${a.points}</b>`:""}</div></div>
+    <div><h4>${esc(a.title)}</h4><div class="meta">${typeIcon(a.type)} ${esc(phase441ExecutionLabel(a,execution))} · ${esc(resource)} · ${esc(route)} · ${a.points} pts · ${a.priority} priority ${a.score!=null?`· <b style="color:#6ee7b7">${a.score}/${a.points}</b>`:""}</div></div>
     <div class="hide-ipad"><span class="course-chip" style="background:${c.color}22;color:${c.color}"><span class="dotc" style="background:${c.color}"></span>${c.code}</span><div class="meta">${c.name}</div></div>
     <div><b class="mono small">${fmtDate(a.due)}</b><div class="meta">${relDue(a.due)}</div></div>
     <div><div class="progress ${barCls}"><i style="width:${a.progress}%"></i></div><div class="meta mono">${a.progress}%</div></div>
@@ -1545,6 +1547,7 @@ async function openWorkspace(id,options){
       if(details.submission){const sub=CANVAS_SYNC.submission(details.submission);Object.assign(a,{status:sub.status,subState:sub.workflowState,progress:sub.submitted?100:null,score:sub.score,grade:sub.grade,missing:sub.missing,late:sub.late,submittedAt:sub.submittedAt,gradedAt:sub.gradedAt,attempt:sub.attempt});}
       files=window.NorthstarAssignmentRoom.collectFiles(details,creds.base);
       a.attachments=files;
+      a.attachmentSummary=phase441ResourceSummary({attachments:files});
       a.executionClassification=phase441Execution({...a,...details,submission_types:a.submissionTypes||undefined});
       try{
         const me=await api.get('/api/v1/users/self'),userId=Number(me?.id);
