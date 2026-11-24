@@ -51,8 +51,9 @@ function verifyReceipt({submission,expectedAttempt,submissionType,fileIds=[],bas
   const timestampMatches=Number.isFinite(submittedAtMs)&&(!Number.isFinite(baselineMs)||submittedAtMs>=baselineMs);
   const attachments=Array.isArray(submission?.attachments)?submission.attachments:Array.isArray(submission?.submitted_files)?submission.submitted_files:null;
   const rawFileIds=Array.isArray(fileIds)?fileIds:[];
-  const expectedFiles=[...new Set(rawFileIds.map(Number).filter(value=>Number.isSafeInteger(value)&&value>0))];
-  const fileIdsValid=expectedFiles.length===rawFileIds.length;
+  const normalizedFileIds=rawFileIds.map(Number);
+  const fileIdsValid=normalizedFileIds.every(value=>Number.isSafeInteger(value)&&value>0);
+  const expectedFiles=[...new Set(normalizedFileIds.filter(value=>Number.isSafeInteger(value)&&value>0))];
   const filesMatch=fileIdsValid&&(submissionType!=='online_upload'||expectedFiles.length>0)&&(expectedFiles.length===0||(!!attachments&&expectedFiles.every(fileId=>attachments.some(file=>Number(file?.id)===fileId))));
   const failures=[];
   if(!stateMatches)failures.push('Canvas has not reported a submitted, graded, or pending-review state');
