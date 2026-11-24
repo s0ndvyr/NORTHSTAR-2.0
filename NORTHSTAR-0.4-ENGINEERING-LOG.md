@@ -388,6 +388,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - **Exact submission receipt verification:** added a shared `verifyReceipt` helper. It requires a terminal Canvas submission state, the exact expected attempt number, the expected submission type, a valid submission timestamp that is not older than the previous attempt, and every expected finalized Canvas file ID for upload submissions.
 - **Ambiguous submission reconciliation:** the uncertain-submission recovery path now uses the same exact receipt verifier. A higher unrelated attempt no longer clears the reconciliation lock merely because its attempt number is greater than expected.
 - **Upload ID validation:** malformed expected file IDs cannot be silently filtered out and treated as an empty, successful attachment check.
+- **Ambiguous no-record recovery:** a missing Canvas submission object no longer clears an uncertain-submission lock. A retry is permitted only when Canvas explicitly returns an `unsubmitted` record at or before the baseline attempt; missing, unexpected, or nonterminal states remain unknown and block duplicate submission.
 
 ### Regression coverage added
 
@@ -404,11 +405,14 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - `2a4c62eea16fd3fb929e29eaa6b23986b4a58b8f` — reject malformed expected upload IDs.
 - `ed4209ead866f4990d849f34b91963cf28f674a4` — malformed-ID regression coverage.
 - `ceb21459ae28d3eb76bcf30268f5bda0f37a12e6` — final upload receipt expression syntax correction.
+- `7b5d0c482753259f3ac55bbdd4fcb601391967f1` — explicit definitive-unsubmitted state helper.
+- `acb9a389bbf4c034eb408d9211e2729c9fb00132` — keep ambiguous missing Canvas receipts locked.
+- `b4b7bbd4ddbf9d591dfc90e58f41ac8fe64e4414` — regression coverage for missing and non-definitive records.
 
 ### Qualification state at this checkpoint
 
 - Source-level isolated JavaScript parsing: `scripts/submissions.js` and `scripts/premium.js` passed.
-- Isolated receipt-verification harness: 7/7 targeted cases passed after the exact-attempt and timestamp checks were added; repository regression tests were also added but the full npm suite has not yet been run in this environment.
+- Isolated receipt-verification harness: 7/7 receipt cases and 4/4 definitive-unsubmitted cases passed; repository regression tests were also added but the full npm suite has not yet been run in this environment.
 - GitHub combined commit-status lookup: no status entries returned for the inspected commits; this is not evidence of a passing workflow.
 - Full `npm test`, Worker dry-run, full browser regression and Pages freshness/deployment: pending verification.
 - Real Canvas submission verification: blocked until an authorized test assignment/account and compatible deployed Worker are available.
