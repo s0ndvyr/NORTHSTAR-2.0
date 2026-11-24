@@ -371,7 +371,7 @@ assert.ok(window.document.getElementById('nsAnnotatedPdfStatus').textContent.inc
 assert.equal(window.document.getElementById('submissionType').value,'online_upload');
 window.confirm=()=>true;
 await window.submitAssignment();
-assert.equal(uploadedFromStudio.length,1,'one annotated PDF is uploaded for this assignment');
+assert.equal(uploadedFromStudio.length,1,'one annotated PDF is uploaded for this assignment; status='+window.document.getElementById('submissionStatus').textContent+'; annotated='+window.document.getElementById('nsAnnotatedPdfStatus').textContent+'; sent='+JSON.stringify(sentFromStudio));
 assert.equal(uploadedFromStudio[0].file.name,'annotated-homework.pdf','the file exported from Document Studio is the one sent to Canvas');
 assert.equal(uploadedFromStudio[0].courseId,1);
 assert.equal(uploadedFromStudio[0].assignmentId,14);
