@@ -1716,7 +1716,7 @@ function submissionPanel(a){
     return '<div class="ns-room-submission"><h3>'+provider+'</h3><p class="small">Canvas generates the assignment-specific LTI launch. The configured provider owns authentication, document editing, attachments, submission and provider-specific resubmission. Opening the provider is not a submission receipt.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasExternalTool()">'+action+'</button><p id="nsExternalToolStatus" class="ns-room-help mt" role="status">No provider launch has been requested.</p></div>';
   }
   if(execution.kind==='media_recording')return '<div class="ns-room-submission"><h3>Canvas media recording</h3><p class="small">Canvas owns the recorder, media processing and submission confirmation.</p><button class="btn btn-primary mt" type="button" onclick="launchCanvasAssignmentExperience(\'media-recording\')">Open Canvas Recorder</button><p id="nsMediaRecordingStatus" class="ns-room-help mt" role="status">No recording session has been requested.</p></div>';
-  const hasNoOnlineSubmission=allTypes.includes('none')||allTypes.includes('on_paper');
+  const hasNoOnlineSubmission=execution.confirmedOffline===true;
   const availabilityBlocked=a.lockedForUser===true||a.published===false||a.groupAssignment===true||(!hasNoOnlineSubmission&&a.canSubmit!==true);
   const unknown=phase441UnknownSubmissionChecks.has(String(a.id))||!!phase441ReadUnknownSubmission(a);
   const blocked=availabilityBlocked||unknown;
