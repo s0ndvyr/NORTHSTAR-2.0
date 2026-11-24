@@ -89,6 +89,21 @@ assert.deepEqual(assignmentReads,[
  '/api/v1/users/self',
  '/api/v1/courses/11/assignments/33/submissions/700?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment'
 ]);
+
+async function readAvailability(includeCanSubmit,value){
+ return W.getAssignmentSubmission({credentials,courseId:11,assignmentId:34,fetchImpl:async(url,opts)=>{
+  const path=new URL(url).searchParams.get('path')||'';
+  if(path.startsWith('/api/v1/courses/11/assignments/34?'))return {ok:true,status:200,json:async()=>({id:34,submission:{workflow_state:'unsubmitted'},...(includeCanSubmit?{can_submit:value}:{})})};
+  if(path==='/api/v1/users/self')return {ok:true,status:200,json:async()=>({id:700})};
+  if(path.startsWith('/api/v1/courses/11/assignments/34/submissions/700?'))return {ok:true,status:200,json:async()=>({attempt:0,submission_history:[]})};
+  throw Error('Unexpected availability lookup '+path);
+ }});
+}
+const unknownAvailability=await readAvailability(false,false);
+assert.equal(unknownAvailability.canSubmit,null,'missing Canvas can_submit metadata remains unknown rather than becoming a denial');
+const deniedAvailability=await readAvailability(true,false);
+assert.equal(deniedAvailability.canSubmit,false,'an explicit Canvas can_submit=false remains an authoritative denial');
+
 await assert.rejects(W.getAssignmentSubmission({credentials,courseId:11,assignmentId:33,fetchImpl:async()=>({ok:true,status:200,json:async()=>({id:33})})}),/current student submission record/,'an assignment response without its submission property is not treated as verification');
 
 const quizReceipt={id:77,attempt:1,finished_at:'2026-11-23T16:20:00Z',workflow_state:'complete'};
