@@ -2365,12 +2365,13 @@ function phase3RenderLedgerRow(a) {
   const score=a.score!=null?'<b style="color:#6ee7b7">'+esc(String(a.score))+'/'+esc(String(a.points))+'</b>':'';
   const canvasUrl=phase441CanvasAssignmentUrl(a,c);
   const canvasLink=canvasUrl?'<a class="ns-ledger-canvas-link" href="'+esc(canvasUrl)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Canvas ↗</a>':'<span class="ns-ledger-canvas-link muted">Canvas link unavailable</span>';
-  return '<div class="ledger-row" style="--lc:'+c.color+'" onclick="openWorkspace(\\''+esc(a.id)+'\\')">'+
-    '<div><h4>'+esc(a.title)+'</h4><div class="meta"><span class="ns-assignment-work-type">'+esc(workType)+'</span> · '+esc(String(a.points))+' pts '+(score?'· '+score:'')+'</div><div class="meta">'+(resource?esc(resource)+' · ':'')+canvasLink+'</div></div>'+
-    '<div class="hide-ipad"><span class="course-chip" style="background:'+c.color+'22;color:'+c.color+'"><span class="dotc" style="background:'+c.color+'"></span>'+esc(c.code)+'</span><div class="meta">'+esc(c.name)+'</div></div>'+
-    '<div><b class="mono small">'+fmtDate(a.due)+'</b><div class="meta">'+esc(phase3DateMeta(a))+'</div></div>'+
-    '<div class="ns-ledger-progress-placeholder"><span class="meta">'+(a.progress===100?'100%':'')+'</span></div>'+
-    '<div><span class="badge '+color+'">'+esc(st)+'</span></div><button class="btn btn-ghost btn-sm">Open →</button></div>';
+  return `<div class="ledger-row" style="--lc:${c.color}" onclick="openWorkspace('${esc(a.id)}')">
+    <div><h4>${esc(a.title)}</h4><div class="meta"><span class="ns-assignment-work-type">${esc(workType)}</span> · ${esc(String(a.points))} pts ${score?'· '+score:''}</div><div class="meta">${resource?esc(resource)+' · ':''}${canvasLink}</div></div>
+    <div class="hide-ipad"><span class="course-chip" style="background:${c.color}22;color:${c.color}"><span class="dotc" style="background:${c.color}"></span>${esc(c.code)}</span><div class="meta">${esc(c.name)}</div></div>
+    <div><b class="mono small">${fmtDate(a.due)}</b><div class="meta">${esc(phase3DateMeta(a))}</div></div>
+    <div class="ns-ledger-progress-placeholder"><span class="meta">${a.progress===100?'100%':''}</span></div>
+    <div><span class="badge ${color}">${esc(st)}</span></div><button class="btn btn-ghost btn-sm">Open →</button>
+  </div>`;
 }
 function phase3QueueSort(a,b) {
   const rank = x => {const s=statusOf(x);if(s==='Missing'||s==='Overdue')return 0;if(s==='Due Today')return 1;if(x.priority==='High')return 2;if(s==='In Progress')return 3;return 4;};
