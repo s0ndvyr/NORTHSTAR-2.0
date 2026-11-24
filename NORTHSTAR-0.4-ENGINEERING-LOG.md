@@ -438,6 +438,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - Source-level isolated JavaScript parsing: `scripts/submissions.js` and `scripts/premium.js` passed.
 - PDF stylesheet structural check: balanced braces and the new compact-workbench override present; no physical visual or Apple Pencil acceptance has been performed.
 - Isolated `submissionPanel` rendering harness: explicit missing metadata and explicit empty `submission_types: []` produce distinct, correct explanations.
+- Isolated mixed-method submission-panel harness: `none` + `online_upload` keeps the online method visible, respects explicit `can_submit: false`, and does not show the offline-only message.
 - Targeted repository test files `tests/submissions.test.mjs` and `tests/assignment-execution.test.mjs` passed when executed in an isolated V8 harness with compatibility shims. This is not a native Node/npm run.
 - The submission test file passed all 11 receipt assertions and 6 definitive-unsubmitted assertions in that harness. A separate Workspace transport harness confirmed missing/false/true `can_submit` values remain `null`/`false`/`true`; the full npm suite has not yet been run in this environment.
 - GitHub combined commit-status lookup: no status entries returned for the inspected commits; this is not evidence of a passing workflow.
