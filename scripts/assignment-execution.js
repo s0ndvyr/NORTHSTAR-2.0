@@ -41,16 +41,18 @@ function classify(input){
  return {kind,owner,provider:kind,launchMethod,primaryAction,submissionTypes:types,knownSubmissionTypes:meta.supported||[],unknownSubmissionTypes,submissionTypeState:meta.state,submissionMethodState:meta.state==='known'||meta.state==='mixed'?'configured':meta.state,confirmedOffline:kind==='offline'||kind==='offline_paper',requiresProvider:['external_tool','google_assignments','google_drive_lti','student_annotation','quiz','discussion','media_recording'].includes(kind),assignmentId:Number.isSafeInteger(assignmentId)&&assignmentId>0?assignmentId:null,courseId:Number.isSafeInteger(courseId)&&courseId>0?courseId:null,annotatableAttachmentId:Number.isSafeInteger(Number(a.annotatable_attachment_id||a.annotatableAttachmentId))&&Number(a.annotatable_attachment_id||a.annotatableAttachmentId)>0?Number(a.annotatable_attachment_id||a.annotatableAttachmentId):null,published,locked,canSubmit,groupAssignment:group,availability,resubmissionAllowed:typeof a.can_resubmit==='boolean'?a.can_resubmit:null,allowedAttempts:Number.isSafeInteger(Number(a.allowed_attempts))?Number(a.allowed_attempts):null,submissionState:workflow,submissionOwner:owner,safeFallback:kind==='unknown'||['missing','empty','unsupported'].includes(meta.state)};
 }
 function classifyResource(input){
- const file=input&&typeof input==='object'?input:{},name=str(file.name||file.filename||file.display_name).toLowerCase();
- const mime=str(file.contentType||file.content_type||file['content-type']||file.mime_type).split(';')[0].toLowerCase(),ext=(name.match(/\.([a-z0-9]{1,12})$/)||[])[1]||'';
+ const file=input&&typeof input==='object'?input:{};
+ const name=str(file.name||file.filename||file.display_name).toLowerCase();
+ const mime=str(file.contentType||file.content_type||file['content-type']||file.mime_type).split(';')[0].toLowerCase();
+ const ext=(name.match(/\\.([a-z0-9]{1,12})$/)||[])[1]||'';
  let kind='unknown',label='File',preview='canvas';
  if(ext==='pdf'||mime==='application/pdf'){kind='pdf';label='PDF';preview='northstar_pdf';}
- else if(['doc','dot'].includes(ext)||mime==='application/msword'||mime==='application/vnd.ms-word'){kind='word_legacy';label='Word document · DOC';preview='canvas';}
  else if(['docx','dotx'].includes(ext)||mime==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){kind='word';label='Word document · DOCX';preview='northstar_office';}
- else if(['xls','xlt'].includes(ext)||mime==='application/vnd.ms-excel'){kind='spreadsheet_legacy';label='Excel workbook · XLS';preview='canvas';}
+ else if(['doc','dot'].includes(ext)||(!ext&&(mime==='application/msword'||mime==='application/vnd.ms-word'))){kind='word_legacy';label='Word document · DOC';preview='canvas';}
  else if(ext==='xlsx'||mime==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'){kind='spreadsheet';label='Excel workbook · XLSX';preview='northstar_office';}
- else if(['ppt','pps'].includes(ext)||mime==='application/vnd.ms-powerpoint'){kind='presentation_legacy';label='PowerPoint · PPT';preview='canvas';}
+ else if(['xls','xlt'].includes(ext)||(!ext&&mime==='application/vnd.ms-excel')){kind='spreadsheet_legacy';label='Excel workbook · XLS';preview='canvas';}
  else if(['pptx','ppsx'].includes(ext)||mime==='application/vnd.openxmlformats-officedocument.presentationml.presentation'){kind='presentation';label='PowerPoint · PPTX';preview='northstar_office';}
+ else if(['ppt','pps'].includes(ext)||(!ext&&mime==='application/vnd.ms-powerpoint')){kind='presentation_legacy';label='PowerPoint · PPT';preview='canvas';}
  else if(mime.startsWith('image/')||['png','jpg','jpeg','gif','webp','svg','heic'].includes(ext)){kind='image';label='Image';preview='native_image';}
  else if(mime.startsWith('video/')||['mp4','m4v','webm','mov'].includes(ext)){kind='video';label='Video';preview='native_media';}
  else if(mime.startsWith('audio/')||['mp3','m4a','wav','ogg','aac'].includes(ext)){kind='audio';label='Audio';preview='native_media';}
