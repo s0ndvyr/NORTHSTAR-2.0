@@ -318,11 +318,11 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 
 await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
-let writes=0;const assignmentFetchCalls=[];let assignmentSendError='',assignmentReadError='';
+let writes=0;const assignmentFetchCalls=[];let assignmentSendError='',assignmentReadError='',assignmentSendResult='',assignmentReadCalls=0;
 const originalAssignmentSend=window.NorthstarSubmissions.send;
-window.NorthstarSubmissions.send=async args=>{try{return await originalAssignmentSend(args);}catch(error){assignmentSendError=String(error?.message||error);throw error;}};
+window.NorthstarSubmissions.send=async args=>{try{const result=await originalAssignmentSend(args);assignmentSendResult=JSON.stringify(result);return result;}catch(error){assignmentSendError=String(error?.message||error);throw error;}};
 const originalAssignmentRead=window.NorthstarWorkspace.getAssignmentSubmission;
-window.NorthstarWorkspace.getAssignmentSubmission=async args=>{try{return await originalAssignmentRead(args);}catch(error){assignmentReadError=String(error?.message||error);throw error;}};
+window.NorthstarWorkspace.getAssignmentSubmission=async args=>{assignmentReadCalls++;try{return await originalAssignmentRead(args);}catch(error){assignmentReadError=String(error?.message||error);throw error;}};
 window.fetch=async(url,opts)=>{
   const target=new URL(url),path=target.searchParams.get('path')||target.pathname;assignmentFetchCalls.push({method:opts.method||'GET',path});
   if(opts.method==='POST'){
