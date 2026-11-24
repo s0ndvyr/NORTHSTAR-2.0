@@ -6,7 +6,7 @@ Production branch: `main`
 Release identifier: `NORTHSTAR / 4.4.8.2.1`
 Package version: `0.4.29`
 Phase 3 qualification branch: `northstar-4.4.8.2-canvas-submission`
-Phase 3/main reconciliation merge: `1adfa3109595864eec67fea089bd3c118d573bb8`
+Phase 3/main reconciliation merge: `1adfa3109595864eec67fea089bd3c118d573bb8`; follow-up main-only CI commits `c30a9ccc8b8bd4f61151b86b5a9bab3371cb4956` (Pages exact-head pagination) and `46a1b8a6938891c66864cd6fc6f9847a4cf2d0af` (pagination regression test) are reconciled by a second two-parent merge. The Phase 3 Pages workflow is byte-identical to main; the Phase 3 release test retains the broader 0.4.29 qualification coverage and includes the same pagination assertion.
 Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 
