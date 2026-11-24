@@ -318,9 +318,9 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 
 await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
-let writes=0;
+let writes=0;const assignmentFetchCalls=[];
 window.fetch=async(url,opts)=>{
-  const target=new URL(url),path=target.searchParams.get('path')||target.pathname;
+  const target=new URL(url),path=target.searchParams.get('path')||target.pathname;assignmentFetchCalls.push({method:opts.method||'GET',path});
   if(opts.method==='POST'){
     writes++;
     return {ok:true,status:200,json:async()=>({workflow_state:'submitted',attempt:2})};
@@ -341,7 +341,7 @@ window.confirm=msg=>{confirmation=msg;return true;};
 await window.submitAssignment();
 assert.equal(writes,1,'one confirmed write; status: '+window.document.getElementById('submissionStatus').textContent+'; type: '+window.document.getElementById('submissionType').value+'; confirmation: '+confirmation);
 assert.ok(confirmation.includes('My own work')&&confirmation.includes('Math')&&confirmation.includes('Test work'));
-assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back');
+assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back; status='+window.document.getElementById('submissionStatus').textContent+'; calls='+JSON.stringify(assignmentFetchCalls));
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
