@@ -943,3 +943,19 @@ All prior release entries, including 4.4.8.2.1, remain intact.
 - GitHub Pages: run `45410896624` passed freshness, build and deploy. The freshness log explicitly verified the stabilization branch at `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`; the build checked out that exact SHA for `/preview/` and verified package `0.4.32`.
 - This is a preview deployment only. Production remains `4.4.7.5 / 0.4.19`; Worker `0.4.22` remains unchanged.
 - Real Canvas assignment/provider acceptance, authorized Google Assignments LTI acceptance (including the previously reported Google-origin 403), and physical iPad Safari acceptance remain unverified.
+
+
+## NORTHSTAR 4.4.8.3.2 — External return-context hardening (qualification follow-up)
+
+**Date:** 2026-11-24  
+**Branch:** `northstar-4.4.8.3.1-stabilization`  
+**Status:** Source change committed; exact-head CI and browser qualification pending. This is not a release promotion.
+
+- Code inspection found that provider and Canvas-session handoffs ignored the boolean result from storing the assignment return-context record. If browser storage was unavailable or quota-blocked, NORTHSTAR could still navigate away, losing the assignment identity needed to refresh and reopen the correct workspace on return.
+- Added `NorthstarExternalNavigation.requireSavedReturnContext`. Quiz/discussion/Student Annotation/Canvas session, LTI provider and original Canvas file handoffs now fail closed before top-level navigation unless the safe return context was stored successfully. The temporary launch/session URL remains memory-only.
+- Return reconciliation now retains its context marker when Canvas refresh fails or when the exact course/assignment is absent from the refreshed snapshot. It clears the marker only after the matching assignment workspace has been reopened. This avoids losing the recovery pointer during partial synchronization or an incomplete snapshot.
+- Added unit coverage for successful and failed return-context persistence and release-source assertions for the fail-closed launch and restore-before-clear ordering.
+- Commits: `fd0abb8c1d60949ac2673be7d8d1d4acc44e8969` (guard helper), `0d8ca9bb5a1d8701ba3099a011370c2c44e6cdf5` (handoff/return integration), `ea14f0d5e43e66f72f1b529f4fdc3f95f5368bf6` (unit tests), `a234a766119c3ad9b617deaa058978f518f1a6cc` (release regression guard).
+- Automated exact-head CI for the final commit is pending. The previous exact-head Phase 4 run `45410603140` passed for the prior preview SHA `89cac751db41ac523bf3bd0bd8973bb3d1ba0540`; that result does not qualify these new changes.
+- Real Canvas/Google provider authentication, provider return in a real school account, browser testing, and physical iPad Safari/Apple Pencil acceptance remain unverified. NORTHSTAR cannot inspect the provider-origin 403 after top-level cross-origin navigation; only an authorized real-account reproduction can identify whether Google authorization or institutional LTI configuration is responsible.
+- Package/release metadata remains `0.4.32` / `4.4.8.3.1`. Do not promote to `4.4.8.3.2` until exact-head regression and preview qualification are complete. Worker `0.4.22` remains unchanged; production remains `4.4.7.5 / 0.4.19`.
