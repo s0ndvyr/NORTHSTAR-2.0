@@ -330,6 +330,7 @@ await new Promise(r=>setTimeout(r,30));
 assert.ok(window.document.getElementById('workspace').textContent.includes('Submission method unavailable'),'empty submission_types is unavailable, not offline');
 assert.ok(!window.document.getElementById('workspace').textContent.includes('No online submission configured')&&!window.document.getElementById('workspace').textContent.includes('OFFLINE ASSIGNMENT'),'unknown metadata is not presented as a confirmed offline assignment');
 assert.ok(window.document.getElementById('workspace').textContent.includes('No online submission capability has been inferred'),'the unavailable state explicitly explains that the method is unknown');
+assert.ok(window.document.getElementById('workspace').textContent.includes('Canvas returned an empty submission type list.'),'an explicit empty Canvas list is distinguished from missing submission metadata');
 assert.ok(window.document.getElementById('nsControlCanvasLaunch'),'unknown assignment has an official Canvas fallback');
 await window.openWorkspace('canvas_18_1');
 await new Promise(r=>setTimeout(r,30));
