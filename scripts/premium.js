@@ -1638,7 +1638,7 @@ window.submitAssignment=async function(){
     const responseAttempt=Number(result?.attempt)||0;
     expectedAttempt=Math.max(expectedAttempt,responseAttempt);
     status.textContent='Canvas accepted the submission request. Reading the official student submission record…';
-    const verified=await window.NorthstarWorkspace.getAssignmentSubmission({credentials,courseId:c.canvasId,assignmentId:a.canvasId});
+    const verified=await window.NorthstarWorkspace.getAssignmentSubmission({credentials:creds,courseId:c.canvasId,assignmentId:a.canvasId});
     const official=verified.submission;
     if(!official)throw Object.assign(Error('Canvas has not returned a submitted student record yet. The request may still be processing; refresh status before retrying.'),{outcomeUnknown:true});
     const workflow=String(official.workflow_state||'').toLowerCase();
