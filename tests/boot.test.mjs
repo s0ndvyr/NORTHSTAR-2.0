@@ -345,7 +345,7 @@ window.confirm=msg=>{confirmation=msg;return true;};
 await window.submitAssignment();
 assert.equal(writes,1,'one confirmed write; status: '+window.document.getElementById('submissionStatus').textContent+'; type: '+window.document.getElementById('submissionType').value+'; confirmation: '+confirmation);
 assert.ok(confirmation.includes('My own work')&&confirmation.includes('Math')&&confirmation.includes('Test work'));
-assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back; status='+window.document.getElementById('submissionStatus').textContent+'; sendError='+assignmentSendError+'; readError='+assignmentReadError+'; calls='+JSON.stringify(assignmentFetchCalls));
+assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back; status='+window.document.getElementById('submissionStatus').textContent+'; sendResult='+assignmentSendResult+'; sendError='+assignmentSendError+'; readCalls='+assignmentReadCalls+'; readError='+assignmentReadError+'; calls='+JSON.stringify(assignmentFetchCalls));
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
