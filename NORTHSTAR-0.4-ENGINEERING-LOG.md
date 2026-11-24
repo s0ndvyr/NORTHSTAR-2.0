@@ -417,7 +417,8 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 ### Qualification state at this checkpoint
 
 - Source-level isolated JavaScript parsing: `scripts/submissions.js` and `scripts/premium.js` passed.
-- Isolated receipt-verification harness: 7/7 receipt cases and 6/6 definitive-unsubmitted cases passed; repository regression tests were also added but the full npm suite has not yet been run in this environment.
+- Targeted repository test files `tests/submissions.test.mjs` and `tests/assignment-execution.test.mjs` passed when executed in an isolated V8 harness with compatibility shims. This is not a native Node/npm run.
+- Isolated receipt-verification harness: 7/7 receipt cases and 6/6 definitive-unsubmitted cases passed; the full npm suite has not yet been run in this environment.
 - GitHub combined commit-status lookup: no status entries returned for the inspected commits; this is not evidence of a passing workflow.
 - Full `npm test`, Worker dry-run, full browser regression and Pages freshness/deployment: pending verification.
 - Real Canvas submission verification: blocked until an authorized test assignment/account and compatible deployed Worker are available.
