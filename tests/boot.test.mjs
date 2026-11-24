@@ -158,6 +158,7 @@ window.openInDashboard('https://school.instructure.com/courses/1/assignments/2')
 
 // Exercise real sync wiring with deterministic Canvas-shaped responses.
 const canvasCalls=[];
+let currentQuizAttempt=null;
 window.fetch = async (url, opts={}) => {
   const u = new URL(url);
   const path = u.searchParams.get('path') || u.pathname;
@@ -171,7 +172,9 @@ window.fetch = async (url, opts={}) => {
   else if(path==='/api/quiz/v1/courses/1/quizzes/13/items') data=[{id:301,position:1,points_possible:5,entry_type:'Item',entry:{title:'Question One',item_body:'<p>What is the main idea?</p>',interaction_type_slug:'essay',interaction_data:{correct_answer:'DO NOT SHOW THIS'}}}];
   else if(path==='/api/v1/courses/1/discussion_topics') data=[];
   else if(path==='/api/v1/courses/1/quizzes/22'&&opts?.method!=='POST') data={id:22,title:'Canvas Quiz',question_count:1,points_possible:10,workflow_state:'available',html_url:'https://school.instructure.com/courses/1/quizzes/22'};
-  else if(path==='/api/v1/courses/1/quizzes/22/submissions'&&opts?.method==='POST') data={quiz_submissions:[{id:77,attempt:1,validation_token:'quiz-validation',started_at:new Date().toISOString()}]};
+  else if(path==='/api/v1/courses/1/quizzes/22/submissions'&&opts?.method==='POST') { currentQuizAttempt={id:77,attempt:1,validation_token:'quiz-validation',started_at:new Date().toISOString(),workflow_state:'untaken',finished_at:null}; data={quiz_submissions:[currentQuizAttempt]}; }
+  else if(path==='/api/v1/courses/1/quizzes/22/submissions/77/complete'&&opts?.method==='POST') { currentQuizAttempt={...currentQuizAttempt,workflow_state:'complete',finished_at:'2026-11-23T22:00:00.000Z'}; data={quiz_submission:{id:77,attempt:1,workflow_state:'complete'}}; }
+  else if(path==='/api/v1/courses/1/quizzes/22/submission'&&opts?.method!=='POST') data={quiz_submissions:currentQuizAttempt?[currentQuizAttempt]:[]};
   else if(path.startsWith('/api/v1/quiz_submissions/77/questions')) data={quiz_submission_questions:[{id:9,answer:null,quiz_question:{id:9,question_type:'multiple_choice_question',question_text:'Choose A',answers:[{id:1,text:'A'},{id:2,text:'B'}]}}]};
   else if (path.startsWith('/login/session_token')) data={session_url:'https://school.instructure.com/login?session_token=boot-session-token'};
   else if (path==='/api/v1/users/self') data={id:7,name:'Test Student'};
