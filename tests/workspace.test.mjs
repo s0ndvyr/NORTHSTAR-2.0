@@ -113,6 +113,50 @@ await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submissio
  throw Error('Canvas read timed out');
 }}),error=>error.completionOutcomeUnknown===true&&/before retrying/.test(error.message),'a lost reconciliation read blocks another completion request');
 
+// A lost completion POST response is ambiguous: always read Canvas before
+// deciding whether the attempt completed or whether the owner may retry.
+const lostPostCalls=[];
+const lostPostResult=await W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');lostPostCalls.push({path,method:opts.method});
+ if(path.endsWith('/complete'))throw Error('socket closed after request write');
+ if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,workflow_state:'complete',finished_at:'2026-11-23T17:00:00Z'}]})};
+ throw Error('Unexpected lost-response path '+path);
+}});
+assert.equal(lostPostResult.confirmed,true,'Canvas read-back can confirm completion after the POST response is lost');
+assert.equal(lostPostResult.completionResponseLost,true,'the receipt records that the completion response was lost');
+assert.deepEqual(lostPostCalls.map(call=>call.path),[
+ '/api/v1/courses/11/quizzes/22/submissions/77/complete',
+ '/api/v1/courses/11/quizzes/22/submission'
+],'a lost POST is reconciled with one read and is never automatically repeated');
+
+const uncertainPostCalls=[];
+await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');uncertainPostCalls.push({path,method:opts.method});
+ if(path.endsWith('/complete'))throw Error('connection reset');
+ if(path.endsWith('/submission'))return {ok:true,status:200,json:async()=>({quiz_submissions:[{id:77,attempt:1,workflow_state:'untaken',finished_at:null}]})};
+ throw Error('Unexpected uncertain path '+path);
+}}),error=>error.completionOutcomeUnknown===true&&error.currentSubmission?.workflow_state==='untaken','a lost POST with an active attempt remains uncertain and requires explicit reconciliation');
+assert.equal(uncertainPostCalls.filter(call=>call.path.endsWith('/complete')).length,1,'uncertain completion is never automatically posted twice');
+
+for(const wrongReceipt of [
+ {id:78,attempt:1,workflow_state:'complete',finished_at:'2026-11-23T17:00:00Z'},
+ {id:77,attempt:2,workflow_state:'complete',finished_at:'2026-11-23T17:00:00Z'}
+]){
+ await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+  const path=new URL(url).searchParams.get('path');
+  if(path.endsWith('/complete'))return {ok:true,status:200,json:async()=>({})};
+  return {ok:true,status:200,json:async()=>({quiz_submissions:[wrongReceipt]})};
+ }}),error=>error.completionOutcomeUnknown===true,'a different Canvas attempt ID or attempt number cannot produce a completion receipt');
+}
+
+let rejectedCompletionReads=0;
+await assert.rejects(W.completeQuiz({credentials,courseId:11,quizId:22,submission:started.submission,fetchImpl:async(url,opts)=>{
+ const path=new URL(url).searchParams.get('path');
+ if(path.endsWith('/complete'))return {ok:false,status:400,json:async()=>({message:'Quiz attempt is not available'})};
+ rejectedCompletionReads++;return {ok:true,status:200,json:async()=>({quiz_submissions:[]})};
+}}),error=>error.status===400,'an explicit Canvas rejection remains a definitive failed completion');
+assert.equal(rejectedCompletionReads,0,'definitive Canvas 4xx rejection is not misclassified as a lost response');
+
 const uploadCalls=[];
 const file=new File(['hello'],'homework.txt',{type:'text/plain'});
 const uploaded=await W.uploadAssignmentFile({credentials,courseId:11,assignmentId:33,file,fetchImpl:async(url,opts)=>{
