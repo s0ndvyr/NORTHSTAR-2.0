@@ -42,7 +42,7 @@ Phase 3 merge: PR #4 · `334514ba92668a12b4982c27f3b6647f4a6ec2a7`
 
 ### Qualification boundaries
 
-- Phase 4 automated runs 516, 517, 519, 520, 521 and 522 passed on their respective candidate SHAs. The final 4.4.8.2.1 release commit must still receive its own exact-head Phase 4 success before preview publication.
+- Phase 4 automated runs 516, 517, 519, 520, 521 and 522 passed on their respective candidate SHAs. The exact current 4.4.8.2.1 branch head must receive its own Phase 4 success before preview publication.
 - Pages freshness gate correctly holds publication when the Phase 3 branch head does not yet have a passing exact-head Phase 4 run. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.
 - **Real Canvas verification: BLOCKED.** No authorized test course/credentials were available to verify actual written, URL, PDF/multiple-file, Classic Quiz, Quiz file upload, discussion or New Quiz records.
 - **Physical iPad Safari: UNVERIFIED.** No physical iPad/Files/Apple Pencil acceptance is claimed.

@@ -2,7 +2,7 @@
 
 **Development version:** 0.4.29 / NORTHSTAR 4.4.8.2.1  
 **Development branch:** `northstar-4.4.8.2-canvas-submission`  
-**Status:** NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification sub-release. Automated qualification is gated on the exact release SHA; Pages preview publishes only after that SHA passes the Phase 4 workflow. Canvas Worker 0.4.22 is deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED pending authorized test access. Physical iPad Safari and Apple Pencil acceptance remains unverified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.  
+**Status:** NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification sub-release. Automated qualification is gated on the exact release SHA; Pages preview publishes only after the exact current branch head passes the Phase 4 workflow. Canvas Worker 0.4.22 is deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED pending authorized test access. Physical iPad Safari and Apple Pencil acceptance remains unverified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.  
 **Production:** NORTHSTAR 4.4.7.5 / package 0.4.19. Last verified preview: NORTHSTAR 4.4.7.9 / package 0.4.23.
 
 

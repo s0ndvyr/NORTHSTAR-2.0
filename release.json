@@ -11,7 +11,7 @@
   },
   "deployment": {
     "production": "Production remains NORTHSTAR 4.4.7.5 / package 0.4.19. No production app or Worker changes are authorized by Phase 3 development.",
-    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification release candidate. GitHub Pages publishes the preview only after the exact current source SHA passes the Phase 4 workflow. Canvas Worker 0.4.22 is deployed and its live version header is verified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
+    "preview": "NORTHSTAR 4.4.8.2.1 / package 0.4.29 is the Phase 3 qualification preview candidate. GitHub Pages publishes it only after a successful Phase 4 push run for the exact current source SHA; the freshness gate paginates workflow history to avoid missing older valid runs. Canvas Worker 0.4.22 is deployed and its live version header is verified. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19."
   },
   "versionPolicy": "Every independently reviewable implementation, bridge, infrastructure, or deployment-configuration change receives a new NORTHSTAR micro-version and its own changelog entry.",
   "releases": [
@@ -32,7 +32,7 @@
         "Worker deployment version smoke verification",
         "Exact-source automated regression qualification"
       ],
-      "status": "Development candidate. The NORTHSTAR 4.4.8.2.1 frontend release has not yet been deployed; Pages preview publication is gated on exact-head Phase 4 success. Canvas Worker 0.4.22 is separately deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED until authorized test access is available. Physical iPad Safari and Apple Pencil acceptance has not yet been performed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
+      "status": "Development candidate. Preview publication is gated on a successful Phase 4 push run for the exact current source SHA. Canvas Worker 0.4.22 is separately deployed and its live version header is verified. Real Canvas account/course verification is BLOCKED until authorized test access is available. Physical iPad Safari and Apple Pencil acceptance has not yet been performed. Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.",
       "historical": false,
       "commits": []
     },
