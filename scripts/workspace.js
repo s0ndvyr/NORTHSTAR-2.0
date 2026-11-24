@@ -171,18 +171,32 @@ async function updateQuizQuestionFlag({credentials,submission,questionId,flagged
 async function completeQuiz({credentials,courseId,quizId,submission,accessCode='',fetchImpl}){
   if(!submission?.id||!submission?.attempt||!submission?.validation_token)throw Error('The Canvas quiz session is incomplete. Reopen the quiz.');
   const c=id(courseId),q=id(quizId),attempt=Number(submission.attempt),api=transport(credentials,fetchImpl);
-  const response=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(submission.id)+'/complete',{
-    attempt,validation_token:String(submission.validation_token),access_code:accessCode||null
-  });
+  let response=null,completionRequestError=null;
+  try{
+    response=await api.post('/api/v1/courses/'+c+'/quizzes/'+q+'/submissions/'+id(submission.id)+'/complete',{
+      attempt,validation_token:String(submission.validation_token),access_code:accessCode||null
+    });
+  }catch(error){
+    // A definite Canvas 4xx rejection is not an accepted completion. Network
+    // failures and 5xx responses are ambiguous: Canvas may have committed the
+    // attempt before the response was lost, so reconcile before allowing retry.
+    if(Number(error?.status)>=400&&Number(error?.status)<500)throw error;
+    completionRequestError=error;
+  }
   let verified;
   try{verified=await getCurrentQuizSubmission({credentials,courseId:c,quizId:q,fetchImpl});}
-  catch(error){const uncertain=Error('Canvas accepted the completion request or its response was lost, but NORTHSTAR could not independently read the current attempt. Check Canvas status before retrying; no completion request was repeated.');uncertain.completionOutcomeUnknown=true;uncertain.cause=error;throw uncertain;}
-  const state=String(verified?.workflow_state||'').toLowerCase();
-  const finished=!!verified?.finished_at&&['complete','pending_review'].includes(state);
-  if(!finished||Number(verified?.attempt)!==attempt||Number(verified?.id)!==Number(submission.id)){
-    const uncertain=Error('Canvas has not independently confirmed that this quiz attempt is complete. Its current state is '+(state||'unknown')+'. Do not submit again; refresh the attempt status first.');uncertain.completionOutcomeUnknown=true;uncertain.currentSubmission=verified||null;uncertain.completionResponse=response;throw uncertain;
+  catch(error){
+    const uncertain=Error('The Canvas completion response was '+(completionRequestError?'lost or unavailable':'received')+', but NORTHSTAR could not independently read the current attempt. Check Canvas status before retrying; no completion request was repeated.');
+    uncertain.completionOutcomeUnknown=true;uncertain.cause=error;uncertain.completionRequestError=completionRequestError;throw uncertain;
   }
-  return {response,submission:verified,confirmed:true};
+  const state=String(verified?.workflow_state||'').toLowerCase();
+  const sameAttempt=Number(verified?.attempt)===attempt&&Number(verified?.id)===Number(submission.id);
+  const finished=!!verified?.finished_at&&['complete','pending_review'].includes(state);
+  if(!sameAttempt||!finished){
+    const uncertain=Error('Canvas has not independently confirmed that this exact quiz attempt is complete. Its current state is '+(state||'unknown')+'. Do not submit again; refresh the attempt status first.');
+    uncertain.completionOutcomeUnknown=true;uncertain.currentSubmission=verified||null;uncertain.completionResponse=response;uncertain.completionRequestError=completionRequestError;throw uncertain;
+  }
+  return {response,submission:verified,confirmed:true,completionResponseLost:!!completionRequestError};
 }
 function trustedCanvasPreviewUrl(value,base){
   try{
