@@ -1240,17 +1240,35 @@ async function phase441RenderOfficeResource(kind,result,file,stage){
 window.addEventListener('northstar:assignment-room-exit',()=>{if(phase4QuizTimer)clearInterval(phase4QuizTimer);if(phase4QuizResyncTimer)clearInterval(phase4QuizResyncTimer);if(phase4QuizSaveTimer)clearTimeout(phase4QuizSaveTimer);});
 async function phase441OpenResource(file,a,c){
   if(!file)return;
-  if(phase441ResourceKind(file)==='PDF')return phase441OpenPdf(file,a,c);
-  const stage=$('#nsDocumentStage');if(!stage)return;
+  const kind=phase441ResourceKind(file),stage=$('#nsDocumentStage');
+  if(kind==='PDF')return phase441OpenPdf(file,a,c);
+  if(!stage)return;
   phase441ReleaseResourceUrl();
-  if(file.size&&file.size>30000000){stage.innerHTML='<div class="ns-room-loading-error"><h3>This file is too large to preview here</h3><p>Files over 30 MB are not downloaded into the workspace. You can continue with the assignment and use the secure source link when available.</p></div>';return;}
+  if(['WordLegacy','SpreadsheetLegacy','PresentationLegacy'].includes(kind)){
+    const labels={WordLegacy:'Legacy Word document (.doc)',SpreadsheetLegacy:'Legacy Excel workbook (.xls)',PresentationLegacy:'Legacy PowerPoint file (.ppt)'};
+    stage.innerHTML='<div class="ns-office-access"><span class="eyebrow">ORIGINAL CANVAS RESOURCE</span><h2>'+esc(labels[kind])+'</h2><p>'+esc(file.name)+'</p><p class="ns-room-help">This older Office format is not passed through PDF.js or the DOCX text converter. Open the original resource through Canvas to preserve its actual file format and school permissions.</p><button class="btn btn-primary" type="button" id="nsOpenLegacyOffice">Open original file in Canvas</button></div>';
+    const button=$('#nsOpenLegacyOffice');if(button)button.onclick=()=>launchCanvasFileInApp(file,a,c);
+    return;
+  }
+  if(file.size&&file.size>30000000){
+    stage.innerHTML='<div class="ns-room-loading-error"><h3>This file is too large to preview here</h3><p>Files over 30 MB are not loaded into the workspace. Use the secure Canvas file action to open or download the original.</p><button class="btn btn-primary mt" type="button" id="nsOpenLargeCanvasFile">Open in Canvas</button></div>';
+    const button=$('#nsOpenLargeCanvasFile');if(button)button.onclick=()=>launchCanvasFileInApp(file,a,c);return;
+  }
   stage.innerHTML='<div class="ns-room-loading"><div class="ns-loading-brand"><span class="ns-loading-orb"></span><span>NORTHSTAR <i>/ RESOURCE CENTER</i></span></div><div class="ns-loading-title"><h1>'+esc(file.name)+'</h1><p>Retrieving this resource through your private Canvas bridge…</p></div><div class="ns-loading-main"><span></span><span></span></div></div>';
   try{
     const result=await window.NorthstarWorkspace.downloadCanvasFile({credentials:getCredentials(),courseId:c.canvasId,fileId:file.id});
     const ext=String(file.name||'').split('.').pop().toLowerCase(),known={txt:'text/plain',csv:'text/csv',md:'text/markdown',json:'application/json',xml:'application/xml',log:'text/plain',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',aac:'audio/aac',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation'};
     const mime=(result.contentType&&result.contentType!=='application/octet-stream'?result.contentType:(known[ext]||'application/octet-stream')).split(';')[0].toLowerCase();
     if(mime==='application/pdf'||String.fromCharCode(...result.bytes.slice(0,5))==='%PDF-')return phase441OpenPdf(file,a,c);
-    const officeKind=phase441ResourceKind(file);if(['Word','Spreadsheet','Presentation'].includes(officeKind)){await phase441RenderOfficeResource(officeKind,result,file,stage);return;}
+    const officeKind=phase441ResourceKind(file);
+    if(['Word','Spreadsheet','Presentation'].includes(officeKind)){
+      await phase441RenderOfficeResource(officeKind,result,file,stage);
+      const toolbar=stage.querySelector('.ns-office-toolbar');
+      if(toolbar&&!toolbar.querySelector('#nsOfficeOpenCanvas')){
+        const open=document.createElement('button');open.id='nsOfficeOpenCanvas';open.type='button';open.className='btn btn-ghost btn-sm';open.textContent='Open original in Canvas';open.onclick=()=>launchCanvasFileInApp(file,a,c);toolbar.append(open);
+      }
+      return;
+    }
     if(mime.startsWith('text/')||mime==='application/json'||mime==='application/xml'||mime==='application/rtf'){
       const pre=document.createElement('pre');pre.className='ns-resource-text';pre.textContent=new TextDecoder('utf-8',{fatal:false}).decode(result.bytes);stage.replaceChildren(pre);return;
     }
@@ -1259,9 +1277,12 @@ async function phase441OpenResource(file,a,c){
     if(mime.startsWith('video/')){const video=document.createElement('video');video.className='ns-resource-player';video.controls=true;video.playsInline=true;video.preload='metadata';video.src=phase441ResourceObjectUrl;stage.replaceChildren(video);return;}
     if(mime.startsWith('audio/')){const audio=document.createElement('audio');audio.className='ns-resource-player';audio.controls=true;audio.preload='metadata';audio.src=phase441ResourceObjectUrl;stage.replaceChildren(audio);return;}
     phase441ReleaseResourceUrl();
-    stage.innerHTML='<div class="ns-room-loading-error"><h3>Open with the original document provider</h3><p>'+esc(file.name)+'</p><p class="ns-room-help">NORTHSTAR has not found a safe native renderer for this format. Open the Canvas-hosted document preview through an authenticated Canvas session; your assignment and draft remain open.</p><button class="btn btn-primary mt" type="button" id="nsOpenCanvasDocument">Open Canvas document viewer inside NORTHSTAR</button>'+(file.url?'<p class="ns-room-help mt"><a href="'+esc(file.url)+'" target="_blank" rel="noopener noreferrer">Open the signed source resource separately ↗</a></p>':'')+'</div>';
+    stage.innerHTML='<div class="ns-room-loading-error"><h3>Open with the original document provider</h3><p>'+esc(file.name)+'</p><p class="ns-room-help">NORTHSTAR has not found a safe native renderer for this format. Open the original Canvas-hosted resource instead of forcing it into a document editor.</p><button class="btn btn-primary mt" type="button" id="nsOpenCanvasDocument">Open original in Canvas</button></div>';
     const openCanvasDoc=$('#nsOpenCanvasDocument');if(openCanvasDoc)openCanvasDoc.onclick=()=>launchCanvasFileInApp(file,a,c);
-  }catch(error){stage.innerHTML='<div class="ns-room-loading-error"><h3>Resource could not be opened</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">The assignment page and your saved draft are still available.</p></div>';}
+  }catch(error){
+    stage.innerHTML='<div class="ns-room-loading-error"><h3>Resource could not be opened</h3><p>'+esc(error.message)+'</p><p class="ns-room-help">The assignment page and your saved draft are still available.</p><button class="btn btn-ghost mt" type="button" id="nsRetryCanvasResource">Open original in Canvas</button></div>';
+    const fallback=$('#nsRetryCanvasResource');if(fallback)fallback.onclick=()=>launchCanvasFileInApp(file,a,c);
+  }
 }
 function phase441SubmissionDetailsMarkup(data,assignmentDetails){
   if(!data)return '<p class="ns-room-help">Submission history and instructor feedback were not available from Canvas for this assignment.</p>';
@@ -1427,11 +1448,13 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   });
   const filesNode=$('#nsAssignmentFiles');
   if(providerOwned||execution.kind==='file_upload'){filesNode.innerHTML='<span class="small muted">'+(providerOwned?'This assignment is completed in its official Canvas or provider environment.':'Choose files directly below, or use Canvas’s official file picker for Google Drive when enabled.')+'</span>';}
-  else if(!files.length){filesNode.innerHTML='<span class="small muted">No attached files were returned by Canvas.</span>';}
+  else if(!files.length){document.querySelector('#workspace .ns-room-document')?.remove();}
   else{
     filesNode.innerHTML=files.map(file=>'<button class="ns-room-file" type="button" data-ns-file="'+file.id+'" aria-pressed="false"><span class="ns-room-file-icon">'+(phase441ResourceKind(file)==='Image'?'▧':phase441ResourceKind(file)==='Video'?'▷':phase441ResourceKind(file)==='Audio'?'♫':phase441ResourceKind(file)==='Text'?'≡':'▤')+'</span><strong>'+esc(file.name)+'</strong><span class="ns-room-file-kind">'+phase441ResourceKind(file)+'</span></button>').join('');
     filesNode.querySelectorAll('[data-ns-file]').forEach(button=>button.onclick=()=>phase441OpenResource(files.find(f=>String(f.id)===button.dataset.nsFile),a,c));
-    const firstPdf=files.find(f=>phase441ResourceKind(f)==='PDF');
+    const resourceCard=document.querySelector('#workspace .ns-room-document');
+    if(resourceCard){const eyebrow=resourceCard.querySelector('.eyebrow');if(eyebrow)eyebrow.textContent='ASSIGNMENT RESOURCES';const heading=resourceCard.querySelector('h2');if(heading)heading.textContent='Attached documents';const intro=resourceCard.querySelector('.ns-room-card-head p');if(intro)intro.textContent='Preview supported files or open the original resource in Canvas.';const pencilNote=resourceCard.querySelector('.ns-room-resource-note');if(pencilNote)pencilNote.hidden=!files.some(file=>phase441ResourceKind(file)==='PDF');}
+      const firstPdf=files.find(f=>phase441ResourceKind(f)==='PDF');
     const firstPreview=files.find(f=>phase441ResourceKind(f)!=='File');
     if(firstPdf)phase441OpenPdf(firstPdf,a,c);else if(firstPreview)phase441OpenResource(firstPreview,a,c);
   }
