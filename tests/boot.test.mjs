@@ -25,6 +25,16 @@ const dom = new JSDOM(html, {
         getRandomValues: array => webcrypto.getRandomValues(array)
       }, configurable:true});
     } catch {}
+    if (window.File && !window.File.prototype.arrayBuffer) {
+      Object.defineProperty(window.File.prototype, 'arrayBuffer', {configurable:true, value:function(){
+        return new Promise((resolve,reject)=>{
+          const reader=new window.FileReader();
+          reader.onload=()=>resolve(reader.result);
+          reader.onerror=()=>reject(reader.error||new Error('File read failed'));
+          reader.readAsArrayBuffer(this);
+        });
+      }});
+    }
     window.fetch = async () => { throw new Error('network disabled in test'); };
     const vault = new Map();
     window.NorthstarVault = {get: async (k, fallback) => vault.has(k) ? vault.get(k) : fallback, set: async (k, v) => { vault.set(k, v); return true; }, remove: async k => vault.delete(k)};
