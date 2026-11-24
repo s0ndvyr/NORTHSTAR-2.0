@@ -1528,10 +1528,11 @@ async function openWorkspace(id,options){
       details=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'?include%5B%5D=submission&include%5B%5D=can_submit&all_dates=true');
       a.detailLoadState='loaded';a.detailLoadError=null;
       if(phase441ReadUnknownSubmission(a))phase441UnknownSubmissionChecks.add(String(a.id));
-      const summaryTypes=Array.isArray(a.submissionTypes)?a.submissionTypes:[];
-      const detailTypes=Array.isArray(details.submission_types)?details.submission_types:[];
+      const hasSummaryTypes=Array.isArray(a.submissionTypes),hasDetailTypes=Array.isArray(details.submission_types);
+      const summaryTypes=hasSummaryTypes?a.submissionTypes:[];
+      const detailTypes=hasDetailTypes?details.submission_types:[];
       const mergedTypes=[...new Set([...summaryTypes,...detailTypes])];
-      a.submissionTypes=mergedTypes.length?mergedTypes:null;
+      a.submissionTypes=mergedTypes.length?mergedTypes:(hasSummaryTypes||hasDetailTypes?[]:null);
       a.allowedExtensions=Array.isArray(details.allowed_extensions)?details.allowed_extensions:(a.allowedExtensions||[]);
       a.canSubmit=typeof details.can_submit==='boolean'?details.can_submit:null;
       a.lockedForUser=typeof details.locked_for_user==='boolean'?details.locked_for_user:a.lockedForUser;
@@ -1548,7 +1549,9 @@ async function openWorkspace(id,options){
       files=window.NorthstarAssignmentRoom.collectFiles(details,creds.base);
       a.attachments=files;
       a.attachmentSummary=phase441ResourceSummary({attachments:files});
-      a.executionClassification=phase441Execution({...a,...details,submission_types:a.submissionTypes||undefined});
+      const executionInput={...a,...details};
+      if(Array.isArray(a.submissionTypes))executionInput.submission_types=a.submissionTypes;else delete executionInput.submission_types;
+      a.executionClassification=phase441Execution(executionInput);
       try{
         const me=await api.get('/api/v1/users/self'),userId=Number(me?.id);
         if(Number.isSafeInteger(userId)&&userId>0)submissionDetails=await api.get('/api/v1/courses/'+Number(c.canvasId)+'/assignments/'+Number(a.canvasId)+'/submissions/'+userId+'?include%5B%5D=submission_history&include%5B%5D=submission_comments&include%5B%5D=full_rubric_assessment');
