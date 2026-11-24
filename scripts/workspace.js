@@ -59,7 +59,8 @@ async function getExternalToolLaunch({credentials,courseId,assignmentId,fetchImp
   const path='/api/v1/courses/'+c+'/external_tools/sessionless_launch?launch_type=assessment&assignment_id='+a;
   const result=await transport(credentials,fetchImpl).get(path);
   if(typeof result?.url!=='string'||!result.url)throw Error('Canvas did not return an authenticated external-tool launch URL for this assignment.');
-  let launch;try{launch=new URL(result.url);}catch{throw Error('Canvas returned an invalid external-tool launch URL.');}
+  const checked=root.NorthstarExternalNavigation?.validate?root.NorthstarExternalNavigation.validate(result.url):(()=>{let u;try{u=new URL(result.url);}catch{throw Error('Canvas returned an invalid external-tool launch URL.');}if(u.protocol!=='https:'||u.username||u.password||u.href.length>12000)throw Error('External-tool launch URL did not pass security validation.');return u.href;})();
+  let launch;try{launch=new URL(checked);}catch{throw Error('Canvas returned an invalid external-tool launch URL.');}
   if(launch.protocol!=='https:'||launch.username||launch.password||launch.href.length>12000)throw Error('External-tool launch URL did not pass security validation.');
   return {url:launch.href,name:String(result.name||'External course tool').slice(0,160),id:result.id??null};
 }

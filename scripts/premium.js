@@ -283,8 +283,35 @@ async function allPages(creds, path) {
 }
 const typeOf = a => {
   const execution=window.NorthstarAssignmentExecution?.classify(a)||{kind:'unknown'};
-  return ({discussion:'Discussion',quiz:'Quiz',external_tool:'External Tool',google_assignments:'External Tool',google_drive_lti:'External Tool',student_annotation:'Student Annotation',media_recording:'Media Recording',file_upload:'File Upload',text_entry:'Writing',url:'Website',offline:'No Submission',offline_paper:'No Submission'})[execution.kind]||'Assignment';
+  return ({discussion:'Discussion',quiz:'Quiz',external_tool:'External Tool',google_assignments:'External Tool',google_drive_lti:'External Tool',student_annotation:'Student Annotation',media_recording:'Media Recording',file_upload:'File Upload',text_entry:'Writing',url:'Website',offline:'No Submission',offline_paper:'No Submission'})[execution.kind]||'Submission method unavailable';
 };
+function phase441Execution(a){
+  const input={...a};
+  if(!Array.isArray(input.submission_types)&&Array.isArray(a?.submissionTypes))input.submission_types=a.submissionTypes;
+  if(input.course_id==null&&input.courseId==null&&a?.canvasCourseId!=null)input.course_id=a.canvasCourseId;
+  return window.NorthstarAssignmentExecution?.classify(input)||{kind:'unknown',submissionTypes:[],submissionTypeState:'missing',safeFallback:true,availability:'unknown'};
+}
+function phase441ExecutionLabel(a,execution){
+  const x=execution||phase441Execution(a);
+  const labels={external_tool:'External tool',google_assignments:'Google Assignments',google_drive_lti:'Google Drive LTI',student_annotation:'Canvas Student Annotation',quiz:'Canvas Quiz',discussion:'Canvas Discussion',media_recording:'Canvas Media Recording',file_upload:'Online file upload',text_entry:'Text entry',url:'URL submission',offline:'Offline · no online submission',offline_paper:'Offline · on paper',unknown:'Submission method unavailable'};
+  const parts=(x.submissionTypes||[]).filter(t=>['online_upload','online_text_entry','online_url'].includes(t));
+  return parts.length>1?(labels[x.kind]||labels.unknown)+' · '+parts.map(t=>t==='online_upload'?'File upload':t==='online_text_entry'?'Text entry':'URL').join(' + '):(labels[x.kind]||labels.unknown);
+}
+function phase441ResourceSummary(a){
+  const rows=Array.isArray(a?.attachments)?a.attachments:Array.isArray(a?.resources)?a.resources:[];
+  return [...new Set(rows.map(file=>window.NorthstarAssignmentExecution?.classifyResource(file)?.label).filter(Boolean))].join(' · ');
+}
+function phase441CanvasAssignmentUrl(a,c,details){
+  const base=getCredentials()?.base||'';
+  for(const value of [details?.html_url,a?.canvasUrl]){
+    try{const u=new URL(value);if(u.protocol==='https:'&&u.origin===base&&!u.username&&!u.password)return u.href;}catch{}
+  }
+  const courseId=Number(c?.canvasId),assignmentId=Number(a?.canvasId);
+  if(base&&Number.isSafeInteger(courseId)&&courseId>0&&Number.isSafeInteger(assignmentId)&&assignmentId>0){
+    try{const u=new URL('/courses/'+courseId+'/assignments/'+assignmentId,base);if(u.origin===base)return u.href;}catch{}
+  }
+  return '';
+}
 function numberOrNull(value) { return CANVAS_SYNC.numberOrNull(value); }
 function courseEnrollmentGrade(course) { return CANVAS_SYNC.courseGrade(course); }
 function convertCourses(rows) {
@@ -1071,16 +1098,8 @@ function phase441ShowTab(tab){
 }
 let phase441ResourceObjectUrl=null;
 function phase441ResourceKind(file){
-  const type=String(file.contentType||'').toLowerCase(),name=String(file.name||'').toLowerCase();
-  if(type.includes('pdf')||name.endsWith('.pdf'))return 'PDF';
-  if(type.startsWith('image/')||/\.(png|jpe?g|gif|webp|svg|heic)$/i.test(name))return 'Image';
-  if(type.startsWith('video/')||/\.(mp4|m4v|webm|mov)$/i.test(name))return 'Video';
-  if(type.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|aac)$/i.test(name))return 'Audio';
-  if(type.startsWith('text/')||/\.(txt|csv|md|json|xml|log)$/i.test(name))return 'Text';
-  if(name.endsWith('.docx')||type.includes('wordprocessingml'))return 'Word';
-  if(name.endsWith('.xlsx')||type.includes('spreadsheetml'))return 'Spreadsheet';
-  if(name.endsWith('.pptx')||type.includes('presentationml'))return 'Presentation';
-  return 'File';
+  const result=window.NorthstarAssignmentExecution?.classifyResource(file)||{kind:'unknown'};
+  return ({pdf:'PDF',word:'Word',word_legacy:'WordLegacy',spreadsheet:'Spreadsheet',spreadsheet_legacy:'SpreadsheetLegacy',presentation:'Presentation',presentation_legacy:'PresentationLegacy',image:'Image',video:'Video',audio:'Audio',text:'Text'})[result.kind]||'File';
 }
 function phase441ReleaseResourceUrl(){if(phase441ResourceObjectUrl){URL.revokeObjectURL(phase441ResourceObjectUrl);phase441ResourceObjectUrl=null;}}
 window.addEventListener('northstar:assignment-room-exit',phase441ReleaseResourceUrl);

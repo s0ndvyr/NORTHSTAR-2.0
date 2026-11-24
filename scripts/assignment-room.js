@@ -64,11 +64,12 @@ function sanitizeHtml(markup,base){
 }
 function collectFiles(details,base){
  const files=[],seen=new Set();
- const add=(id,name,contentType,url,size)=>{
+ const add=(id,name,contentType,url,size,modifiedAt)=>{
   const n=Number(id);if(!Number.isSafeInteger(n)||n<1||seen.has(n))return;
-  seen.add(n);files.push({id:n,name:String(name||('Canvas file '+n)),contentType:String(contentType||''),url:safeLink(url||'',base)||'',size:Number(size)||null});
+  const filename=String(name||('Canvas file '+n));
+  seen.add(n);files.push({id:n,name:filename,originalName:filename,contentType:String(contentType||''),mimeType:String(contentType||''),url:safeLink(url||'',base)||'',size:Number(size)||null,modifiedAt:modifiedAt||null});
  };
- (Array.isArray(details.attachments)?details.attachments:[]).forEach(f=>add(f.id,f.display_name||f.filename,f['content-type']||f.content_type,f.url,f.size));
+ (Array.isArray(details.attachments)?details.attachments:[]).forEach(f=>add(f.id,f.display_name||f.filename||f.name,f['content-type']||f.content_type||f.mime_type,f.url||f.html_url,f.size,f.updated_at||f.modified_at));
  const parser=new DOMParser(),doc=parser.parseFromString(String(details.description||''),'text/html');
  doc.querySelectorAll('a').forEach(a=>{
   const candidate=a.getAttribute('data-api-endpoint')||a.getAttribute('href')||'';
