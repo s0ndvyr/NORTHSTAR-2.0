@@ -74,3 +74,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify the deployed Worker build marker
+        if: steps.credentials.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          headers="$(curl --silent --show-error --max-time 20 --dump-header - --output /dev/null \
+            --header 'Origin: https://s0ndvyr.github.io' \
+            https://northstar-bridge.s0ndvyr.workers.dev/)"
+          printf '%s\\n' "$headers"
+          printf '%s\\n' "$headers" | grep -Eiq '^x-northstar-worker-version:[[:space:]]*0\\.4\\.22 \\(4\\.4\\.8\\.2\\)[[:space:]]*
