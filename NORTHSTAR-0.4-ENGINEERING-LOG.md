@@ -425,6 +425,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - `17e8b40b6094278ab1d15aba3bda7b9aedf6c173` — keep assignment UI fail-closed without mislabeling unknown availability.
 - `1a92549eb3a470aaac62b8e301de22e952e2b18c` — missing/false availability regression coverage.
 - `c1f31567993b1a7469f29ce033227ccc5f8b3a2f` — compact Document Studio/PDF controls and spacing.
+- `21f3c3c8446b19a80f40175e94307d42c5df4304` — preserve annotation color/text input touch targets.
 
 ### Qualification state at this checkpoint
 
