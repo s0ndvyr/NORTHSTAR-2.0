@@ -334,16 +334,10 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 
 await window.openWorkspace('canvas_10_1');
 window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
-let writes=0;const assignmentFetchCalls=[];let assignmentSendError='',assignmentReadError='',assignmentSendResult='',assignmentReadCalls=0,workspaceAfterPost=null;const assignmentWorkspaceRef=window.NorthstarWorkspace;
-const originalAssignmentSend=window.NorthstarSubmissions.send;
-window.NorthstarSubmissions.send=async args=>{try{const result=await originalAssignmentSend(args);assignmentSendResult=JSON.stringify(result);return result;}catch(error){assignmentSendError=String(error?.message||error);throw error;}};
-const originalAssignmentRead=window.NorthstarWorkspace.getAssignmentSubmission;
-const originalAssignmentReadWrapper=async args=>{assignmentReadCalls++;try{return await originalAssignmentRead(args);}catch(error){assignmentReadError=String(error?.message||error);throw error;}};
-window.NorthstarWorkspace.getAssignmentSubmission=originalAssignmentReadWrapper;
+let writes=0;
 window.fetch=async(url,opts)=>{
-  const target=new URL(url),path=target.searchParams.get('path')||target.pathname;assignmentFetchCalls.push({method:opts.method||'GET',path});
+  const target=new URL(url),path=target.searchParams.get('path')||target.pathname;
   if(opts.method==='POST'){
-    workspaceAfterPost={same:window.NorthstarWorkspace===assignmentWorkspaceRef,readType:typeof window.NorthstarWorkspace?.getAssignmentSubmission,wrapped:window.NorthstarWorkspace?.getAssignmentSubmission===originalAssignmentReadWrapper};
     writes++;
     return {ok:true,status:200,json:async()=>({workflow_state:'submitted',attempt:2})};
   }
@@ -363,7 +357,7 @@ window.confirm=msg=>{confirmation=msg;return true;};
 await window.submitAssignment();
 assert.equal(writes,1,'one confirmed write; status: '+window.document.getElementById('submissionStatus').textContent+'; type: '+window.document.getElementById('submissionType').value+'; confirmation: '+confirmation);
 assert.ok(confirmation.includes('My own work')&&confirmation.includes('Math')&&confirmation.includes('Test work'));
-assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back; status='+window.document.getElementById('submissionStatus').textContent+'; submitSourceHasRead='+window.submitAssignment.toString().includes('getAssignmentSubmission')+'; sendResult='+assignmentSendResult+'; sendError='+assignmentSendError+'; readCalls='+assignmentReadCalls+'; readError='+assignmentReadError+'; workspaceAfterPost='+JSON.stringify(workspaceAfterPost)+'; submitCode='+window.submitAssignment.toString().slice(window.submitAssignment.toString().indexOf('NorthstarSubmissions.send'),window.submitAssignment.toString().indexOf('getAssignmentSubmission')+80)+'; calls='+JSON.stringify(assignmentFetchCalls));
+assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Canvas independently verified'),'assignment receipt is shown only after authoritative Canvas read-back');
 assert.ok(window.document.getElementById('submissionStatus').textContent.includes('Offline coursework snapshot updated'));
 assert.equal(window.__testVault.get('canvas-snapshot').assignments.find(a=>a.canvasId===11).status,'Submitted','confirmed submission state is persisted into the offline snapshot');
 const savedSnapshot=window.__testVault.get('canvas-snapshot');
@@ -387,7 +381,7 @@ assert.ok(window.document.getElementById('nsAnnotatedPdfStatus').textContent.inc
 assert.equal(window.document.getElementById('submissionType').value,'online_upload');
 window.confirm=()=>true;
 await window.submitAssignment();
-assert.equal(uploadedFromStudio.length,1,'one annotated PDF is uploaded for this assignment; status='+window.document.getElementById('submissionStatus').textContent+'; annotated='+window.document.getElementById('nsAnnotatedPdfStatus').textContent+'; sent='+JSON.stringify(sentFromStudio));
+assert.equal(uploadedFromStudio.length,1,'one annotated PDF is uploaded for this assignment');
 assert.equal(uploadedFromStudio[0].file.name,'annotated-homework.pdf','the file exported from Document Studio is the one sent to Canvas');
 assert.equal(uploadedFromStudio[0].courseId,1);
 assert.equal(uploadedFromStudio[0].assignmentId,14);
