@@ -484,9 +484,9 @@ body.assignment-room-open>.app{visibility:hidden;pointer-events:none}
 .ns-pdf-actions button{min-height:38px;padding:6px 8px}
 .ns-pdf-stylebar{gap:9px;padding:6px 10px}
 .ns-pdf-stylebar label{gap:6px}
-.ns-pdf-stylebar input[type=color]{width:28px;height:24px}
+.ns-pdf-stylebar input[type=color]{width:32px;height:28px}
 .ns-pdf-stylebar input[type=range]{width:90px}
-.ns-pdf-text-entry textarea{min-height:34px}
+.ns-pdf-text-entry textarea{min-height:38px}
 .ns-pdf-foot{min-height:30px;padding:6px 10px}
 .ns-pdf-stage-scroll{min-height:300px;padding:16px 10px 28px}
 @media(max-width:760px){
