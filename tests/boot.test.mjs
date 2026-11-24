@@ -311,6 +311,7 @@ assert.ok(returnContextKey,'external launch stores a return-context record');
 const returnContext=JSON.parse(window.localStorage.getItem(returnContextKey));
 assert.equal(returnContext.courseId,1);assert.equal(returnContext.assignmentId,15);
 assert.ok(!JSON.stringify(returnContext).includes('one-time-state'),'one-time LTI launch URL is not persisted');
+window.localStorage.removeItem(returnContextKey); // End the mocked top-level trip before the remainder of this in-page boot test.
 const launchesBeforeDenied=topLevelNavigations.length;
 externalLaunchStatus=403;
 providerButton.click();
@@ -378,6 +379,8 @@ assert.ok(!JSON.parse(window.localStorage.getItem('northstar_hidden_assignments_
 
 
 await window.openWorkspace('canvas_10_1');
+assert.ok(window.document.getElementById('submissionStatus'),'text-entry assignment renders its submission receipt/status node');
+assert.ok(window.document.getElementById('submitWork'),'text-entry assignment renders its native Canvas submit button');
 window.document.getElementById('assignmentDraft').innerHTML='<p><strong>My own work</strong></p>';
 let writes=0;
 window.fetch=async(url,opts)=>{
