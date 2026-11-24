@@ -46,7 +46,7 @@ assert.ok(!premiumJs.includes("NORTHSTAR / .4.4.5")&&!premiumJs.includes('versio
 assert.ok(roomJs.includes('justifyGap')&&roomJs.includes('completedParagraphs'),'PDF export handles justified text and paragraph spacing');
 assert.ok(roomJs.includes("'•':'•'")&&roomJs.includes("'–':'–'"),'PDF export maps common punctuation and list markers');
 assert.ok(pagesWorkflow.includes("async function hasPassingRun")&&pagesWorkflow.includes("page=' + page"),'Pages freshness gate paginates exact-head Phase 4 workflow runs');
-assert.ok(pagesWorkflow.includes("run.head_sha === sha && run.event === 'push' && run.conclusion === 'success'"),'Pages only accepts a successful Phase 4 push run for the exact current branch SHA');
+assert.ok(pagesWorkflow.includes("run.path === '.github/workflows/northstar-phase4.yml'")&&pagesWorkflow.includes('run.head_sha === sha')&&pagesWorkflow.includes("run.event === 'push'")&&pagesWorkflow.includes("run.conclusion === 'success'"),'Pages only accepts a successful Phase 4 push run for the exact current branch SHA');
 assert.ok(pagesWorkflow.includes('needs: freshness'),'Pages build depends on the freshness gate');
 assert.ok(pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.main_sha }}')&&pagesWorkflow.includes('ref: ${{ needs.freshness.outputs.preview_sha }}'),'Pages checks out the exact tested SHAs');
 assert.ok(pagesWorkflow.includes('needs: [freshness, build]'),'Pages deployment depends on both freshness and build');
