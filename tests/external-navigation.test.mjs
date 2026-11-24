@@ -7,4 +7,6 @@ let navigated='';const fakeLocation={assign(value){navigated=value;}};
 const target=nav.navigateTopLevel('https://provider.example/lti/start?x=1',fakeLocation);
 assert.equal(navigated,target,'top-level location.assign navigates without a popup or iframe');
 assert.throws(()=>nav.navigateTopLevel('https://provider.example',{}),/Top-level navigation is unavailable/);
+assert.equal(nav.requireSavedReturnContext(true),true,'provider handoff proceeds only after return context is stored');
+assert.throws(()=>nav.requireSavedReturnContext(false),/could not save the assignment return context/,'provider handoff is blocked if browser storage cannot preserve the return context');
 console.log('external-navigation: secure URL validation and same-tab navigation fixtures passed');
