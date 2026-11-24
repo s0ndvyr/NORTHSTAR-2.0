@@ -4,7 +4,7 @@
 'use strict';
 const fallback={
  product:'NORTHSTAR',phase:'4.4.8',northstarVersion:'4.4.8.3',packageVersion:'0.4.31',
- bridge:{version:'1.3',status:'Worker 0.4.22 (4.4.8.2) is deployed and its live X-Northstar-Worker-Version header is verified. Cloudflare Version ID: f06f5377-632b-44c9-b647-dcfca3166f54.'},releaseDate:'2026-11-23',
+ bridge:{version:'1.3',status:'Worker 0.4.22 (4.4.8.2) is deployed and its live X-Northstar-Worker-Version header is verified. Cloudflare Version ID: f06f5377-632b-44c9-b647-dcfca3166f54.'},releaseDate:'2026-11-24',
  deployment:{preview:'NORTHSTAR 4.4.8.3 / package 0.4.31 is an implementation candidate; preview deployment is pending exact-head Phase 4 qualification. Canvas Worker 0.4.22 is unchanged. Production remains 4.4.7.5 / package 0.4.19.',production:'Production remains NORTHSTAR 4.4.7.5 / package 0.4.19.'},
  releases:[
   {version:'4.4.8.3',date:'2026-11-24',title:'Canvas-aligned assignment architecture and provider routing',description:'Dedicated strategy pivot: centralized metadata-driven classification, official Canvas quiz/discussion/Student Annotation routing, sessionless external-tool launches and read-only return synchronization. Preserves supported Canvas-native submissions and specialized Document Studio workflows.',category:'Assignment architecture and provider integration',areas:['Metadata classifier','Google Assignments LTI handoff','Student Annotation','Quiz routing','External return synchronization'],status:'Implementation candidate. Exact-head CI, preview deployment, real Canvas, Google Workspace LTI and physical iPad Safari acceptance are pending. Worker 0.4.22 unchanged; production remains 4.4.7.5 / package 0.4.19.',commits:[]},

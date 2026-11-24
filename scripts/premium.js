@@ -2097,7 +2097,7 @@ async function phase44RefreshExternalReturnContext(){
  const x=phase44ReadExternalReturnContext();if(!x||phase44ReturnRefreshInFlight||mode!=='live'||!getCredentials())return false;
  if(Date.now()-phase44LastReturnRefreshAt<15000)return true;
  phase44LastReturnRefreshAt=Date.now();phase44ReturnRefreshInFlight=true;
- try{const result=await syncCanvas({quiet:true});if(!result)return true;try{localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY);}catch{}refreshAll();const a=ASSIGNMENTS.find(v=>Number(v.canvasId)===Number(x.assignmentId)&&Number(courseById(v.course)?.canvasId)===Number(x.courseId));if(a&&activeAssignment?.id===a.id)await openWorkspace(a.id,{fromHistory:true});return true;}catch{return true;}finally{phase44ReturnRefreshInFlight=false;}
+ try{const result=await syncCanvas({quiet:true});if(!result)return true;try{localStorage.removeItem(PHASE44_EXTERNAL_RETURN_KEY);}catch{}refreshAll();const a=ASSIGNMENTS.find(v=>Number(v.canvasId)===Number(x.assignmentId)&&Number(courseById(v.course)?.canvasId)===Number(x.courseId));if(a)await openWorkspace(a.id,{fromHistory:true});return true;}catch{return true;}finally{phase44ReturnRefreshInFlight=false;}
 }
 // Event-driven resume only; this does not poll and never repeats a submission write.
 function maybeRefreshCanvas(force=false){
