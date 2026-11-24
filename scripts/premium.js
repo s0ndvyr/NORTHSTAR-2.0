@@ -1627,7 +1627,7 @@ window.submitAssignment=async function(){
     submissionBusy=true;if(button)button.disabled=true;
     if(type==='online_upload'){
       status.textContent='Preparing '+selectedFiles.length+' file(s) for Canvas… do not close this workspace.';
-      const uploaded=await phase441UploadSelectedFiles(selectedFiles,a,c,creds);
+      const uploaded=await phase441UploadSelectedFiles(selectedFiles,a,c,creds,status);
       fileIds=uploaded.map(item=>Number(item.id));
       data=window.NorthstarSubmissions.payload('online_upload',fileIds);
       status.textContent='All '+uploaded.length+' file(s) uploaded and finalized. Submitting the assignment to Canvas now…';
