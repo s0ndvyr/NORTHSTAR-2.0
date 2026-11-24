@@ -391,6 +391,7 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - **Duplicate staged IDs:** receipt verification now normalizes duplicate file references consistently with the submission payload while still rejecting malformed identifiers.
 - **Timestamp integrity:** if a previous submission timestamp was supplied but is malformed, the new receipt cannot pass by treating that baseline as absent.
 - **Submission availability tri-state:** missing Canvas `can_submit` metadata now remains `null`/unknown through the Workspace transport and assignment room. The UI still fails closed unless Canvas explicitly returns `true`, but only an explicit `false` is described as a Canvas denial.
+- **Submission-type metadata fidelity:** the assignment detail merge now preserves an explicit empty `submission_types: []` separately from missing metadata, so the cached assignment classification does not silently downgrade an empty Canvas response to missing.
 - **Ambiguous no-record recovery:** a missing Canvas submission object no longer clears an uncertain-submission lock. A retry is permitted only when Canvas explicitly returns an `unsubmitted` record with the exact previously known baseline attempt; missing attempt numbers after prior submissions, stale lower attempts, and nonterminal states remain unknown and block duplicate submission.
 - **Assignment card qualification:** the live Ledger now identifies the actual submission method, resource/attachment type when Canvas detail data is available, and the execution boundary (NORTHSTAR workspace, official Canvas/provider workflow, in-person/paper, or unverified). Opening an assignment updates its resource summary from the authoritative detail response.
 - **PDF workbench density:** compacted the mode bar, action toolbar, annotation style controls, stage spacing and footer while preserving 38–40 px touch targets. This is a CSS-level refinement; visual acceptance on a physical iPad remains pending.
@@ -424,6 +425,8 @@ Development continues on `northstar-4.4.8.3.1-stabilization`. The 4.4.8.3.1 pack
 - `f1a6cb7dbc78222a2eac4fa6cf282eadda42fd41` — preserve unknown Canvas `can_submit` state in Workspace transport.
 - `17e8b40b6094278ab1d15aba3bda7b9aedf6c173` — keep assignment UI fail-closed without mislabeling unknown availability.
 - `1a92549eb3a470aaac62b8e301de22e952e2b18c` — missing/false availability regression coverage.
+- `47a083425a822e12661c1ea16b23807dc9b2eaf2` — preserve explicit empty submission-type metadata during detail merge.
+- `99530b5ca8b9012105fc76a250e434c7f9c38368` — boot regression for empty versus missing submission metadata.
 - `c1f31567993b1a7469f29ce033227ccc5f8b3a2f` — compact Document Studio/PDF controls and spacing.
 - `21f3c3c8446b19a80f40175e94307d42c5df4304` — preserve annotation color/text input touch targets.
 
