@@ -1401,9 +1401,8 @@ function phase441RenderRoom(a,c,details,files,submissionDetails){
   updateDraft();
   $('#nsRoomSubmission').innerHTML=submissionPanel(a);
   if(execution.kind==='file_upload'){
-    document.querySelector('#workspace .ns-room-document')?.remove();
-    document.querySelector('[data-ns-room-tab="work"]')?.remove();
-    document.querySelector('[data-ns-room-panel="work"]')?.remove();
+    const workTab=document.querySelector('[data-ns-room-tab="work"]');if(workTab)workTab.hidden=true;
+    const workPanel=document.querySelector('[data-ns-room-panel="work"]');if(workPanel)workPanel.hidden=true;
     phase441ShowTab('submit');
   }
   if(details?.submission)phase441RenderSubmissionReceipt(a,c,details.submission,details.submission.submission_type);
