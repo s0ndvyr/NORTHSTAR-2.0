@@ -130,3 +130,20 @@ The user submitted **A / A / A / A / A** through the five-question source invent
 The user authorized continued comprehensive source analysis and documentation, GitHub documentation updates and phase-tracker maintenance only. Application code, migrations, dependency changes, provider access, legacy deletion, deployment and runtime qualification remain unauthorized.
 
 The expanded [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md) records the observed repository tree, script/style/test paths, two IndexedDB databases and three object stores, known local/session storage families, initial preservation findings and remaining evidence passes. It is explicitly a checkpoint, not a complete inventory or verification report.
+
+
+## Comprehensive Legacy and Integration Evidence Module 1 — 2026-11-25
+
+The user approved **A / A / A / A / A**. Record these as approved planning decisions:
+
+| Decision ID | Approved selection | Planning consequence |
+|---|---|---|
+| EFP-DEC-16 | A — Complete legacy source inventory | Account for every tracked source, configuration, test, deployment and native artifact, including purpose, dependencies/imports, consumers, execution role, workflow relationships and preservation disposition. |
+| EFP-DEC-17 | A — Full persistence trace | Enumerate every browser persistence mechanism, key, database/store/schema, reader, writer, migration, fallback, cleanup, retention, export, backup and recovery path. |
+| EFP-DEC-18 | A — Route-level Canvas and external integration evidence | Catalogue every Worker route, method, validation, permission, upstream endpoint, error behavior, security boundary, source/test relationship and dated official Canvas documentation evidence. |
+| EFP-DEC-19 | A — Complete workspace integration contracts | Define contracts for Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace, including entities, ownership, commands, events, permissions, offline behavior, conflicts, freshness, migration and acceptance. |
+| EFP-DEC-20 | A — Evidence before sign-off | Reconcile source findings with requirements, architecture, migration, risk, preservation, parity, backup/restore and rollback gates before sign-off. |
+
+The comprehensive grouped specification is [Module 1 — Legacy and Integration Evidence Plan](MODULE-1-LEGACY-AND-INTEGRATION-EVIDENCE-PLAN.md).
+
+**Disposition:** Planning scope approved; evidence collection remains in progress. Existing source-tree and persistence findings are provisional until reconciled against the exact migration-source branch and commit. No implementation, migration, dependency installation, live provider/tenant access, Worker deployment, legacy deletion, production change, build/test execution or runtime qualification is authorized.
