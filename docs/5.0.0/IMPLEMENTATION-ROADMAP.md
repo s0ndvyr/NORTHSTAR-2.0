@@ -321,3 +321,10 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Assignment workflow: dedicated detail route, direct editing, local status and writing-draft actions, global-search deep links, and due/priority/recent sorting.
 - Course study guides: structured local guide from course questions/concepts, flashcards, resources and open assignments, with plain-text export.
 - Qualification checkpoint: latest assignment sort UI commit passed strict typecheck, dependency audits, domain tests and production build in workflow run 45680510214. Earlier failed iterations are retained as history; the corrected development head is the current source of truth.
+
+
+### Review Center structural-risk signal — 2026-11-25
+
+- Added an explicit Draft-structure risk indicator to the Review Center, with unchecked, low, moderate and high states derived only from local structural checks (length, long sentences, repeated terms and common citation-marker presence).
+- The label is deliberately scoped to draft structure. It is not plagiarism detection, source verification, AI feedback, grade prediction or an assessment of academic misconduct.
+- The signal remains inactive until the user runs the local review.
