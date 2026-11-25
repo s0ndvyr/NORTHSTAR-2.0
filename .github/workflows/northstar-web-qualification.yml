@@ -41,7 +41,7 @@ jobs:
       - name: Report development dependency advisories
         run: |
           npm audit --json > audit-report.json || true
-          node -e 'const report=require("./audit-report.json"); for (const [name,item] of Object.entries(report.vulnerabilities || {})) console.log(name + ": " + item.severity + " — " + item.range)'
+          node -e 'const report=require("./audit-report.json"); for (const [name,item] of Object.entries(report.vulnerabilities || {})) console.log(name + ": " + item.severity + " range=" + item.range + " fix=" + JSON.stringify(item.fixAvailable) + " via=" + JSON.stringify(item.via))'
       - name: Domain tests
         run: npm run test
       - name: Build
