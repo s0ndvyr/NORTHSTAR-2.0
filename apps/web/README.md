@@ -1,3 +1,5 @@
+- Global command palette for keyboard shortcut `⌘/Ctrl + K`, case-insensitive search across workspaces, courses, assignments, calendar events, resources and saved writing, arrow-key selection, Enter-to-open and Escape-to-close.
+- Academic notification center derived from the shared snapshot: missing/overdue work, due-today assignments, upcoming seven-day events, due flashcards and pending grades. The bell count and displayed list use the same selector.
 # NORTHSTAR Web Application
 
 The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root application and Canvas Worker.
@@ -59,3 +61,10 @@ The academic repository unit tests cover snapshot validation, assignment create/
 - Do not treat illustrative dashboard values as real academic records.
 - Practice results are local learning feedback only. They do not create Gradebook scores or alter official course results.
 - Do not change root production publishing or the Canvas Worker as part of this app foundation.
+
+
+### Global workspace shell — 2026-11-25
+
+- Top-bar search is an actionable command palette. It supports the keyboard shortcut, cross-workspace lookup, keyboard result navigation and semantic combobox/listbox roles.
+- The notification center and badge share tested domain selectors. Items navigate to the corresponding workspace; reminders are derived from local academic records and are not push notifications.
+- Tests verify case-insensitive search, result limits, assignments/courses/resources/drafts and alert routing/priority/terminal-state suppression.
