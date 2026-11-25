@@ -388,3 +388,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added Playwright browser workflow coverage for dashboard/skip navigation/command palette, assignment creation and status changes, calendar create/edit, and course creation/course-hub navigation.
 - CI provisions the pinned Playwright runner ephemerally so the app's runtime dependency graph and committed lockfile remain unchanged.
 - Automated browser results are pending the current GitHub Actions run; keyboard/screen-reader and physical iPad review remain separate manual qualification gates.
+
+
+### Browser qualification findings and Calendar default correction — 2026-11-25
+
+- Expanded the Playwright suite to ten browser journeys: dashboard/skip navigation/command palette, assignment create/status, calendar create/edit, course create/course hub, resource create, explicit grade entry, writing draft/review, timed Study Lab practice, theme persistence, and AI/Canvas unconnected boundaries.
+- Scoped navigation locators to the primary navigation region to distinguish sidebar links from dashboard shortcuts and the second Settings link.
+- Corrected a real Calendar editor default bug: a new event began tomorrow but its default end time was only one hour from now, so the initial time range was invalid. The end now defaults to one hour after the next-day start.
+- Updated the browser tests to assert the intended command palette result and disambiguate duplicated grade-summary text.
+- Latest browser qualification is pending; do not treat these journeys as passed until the current CI run reports success.
