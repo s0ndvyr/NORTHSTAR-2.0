@@ -144,3 +144,30 @@ test("keeps AI and Canvas clearly in their unconnected demo boundaries", async (
   await expect(page.getByText("NOT CONNECTED")).toBeVisible();
   await expect(page.getByText(/No Canvas URL, credentials/)).toBeVisible();
 });
+
+test("keeps the dashboard and assignments usable at an iPad Pro portrait viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 1366 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Make today/ })).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport + 1);
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Assignments/ }).click();
+  await expect(page.getByRole("heading", { name: /Assignments/ })).toBeVisible();
+});
+
+test("loads the cached application shell after network loss", async ({ page, context }) => {
+  await page.goto("/");
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: /Make today/ })).toBeVisible();
+  const controlled = await page.evaluate(() => Boolean(navigator.serviceWorker.controller));
+  expect(controlled).toBe(true);
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: /Make today/ })).toBeVisible();
+  await context.setOffline(false);
+});
