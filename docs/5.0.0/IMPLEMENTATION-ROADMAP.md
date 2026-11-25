@@ -181,3 +181,11 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - Added explicit on/off state, standing-by/off status, simulated request preparation, notification feed, and a local academic-context summary.
 - Every screen state clearly says that no model call, provider, credential, or external data transfer is connected. This does not claim AI-generated content or live assistance.
 - Future provider integration remains behind the approved secure server-side boundary and requires separate integration authorization.
+
+
+### Assignment turn-in simulation — 2026-11-25
+
+- Added a confirmation-gated “Turn in locally” action for open assignments.
+- The action updates the shared assignment status to submitted, so Dashboard, Calendar, Gradebook projections and course views stay consistent.
+- Added animated local confirmation feedback that explicitly states no Canvas or institution submission occurred.
+- This is a local workflow simulation, not a submission transport or proof of delivery.
