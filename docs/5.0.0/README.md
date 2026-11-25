@@ -27,6 +27,11 @@ The audited source includes later external return-context hardening changes that
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
 - [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
 - [Cross-Application data contracts and state machines](CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md)
+- [Canonical academic data model](CANONICAL-ACADEMIC-DATA-MODEL.md)
+- [Canvas capability and authority matrix](CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md)
+- [Offline cache, retention, backup and recovery policy](OFFLINE-CACHE-RETENTION-AND-RECOVERY-POLICY.md)
+- [Legacy capability and data migration map](LEGACY-CAPABILITY-AND-DATA-MIGRATION-MAP.md)
+- [Data architecture verification blueprint](DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md)
 
 ## Phase tracker
 
@@ -40,7 +45,7 @@ The audited source includes later external return-context hardening changes that
 | 5.0.5 | AI & Intelligent Academic Assistance | Approved |
 | 5.0.6 | Visual Refinement, Qualification & Release | Approved |
 | Phase 0 | Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
-| Cross-Application Intelligence | Shared data and cross-workspace coordination | **Five decisions approved; specifications drafted; planning review pending** |
+| Cross-Application Intelligence | Shared data and cross-workspace coordination | **Five decisions approved; detailed specifications drafted; planning review pending** |
 | Application implementation | NORTHSTAR 5.0 coding | **Not authorized** |
 
 ## Phase 0 approval record
@@ -68,7 +73,25 @@ On 2026-11-25 the user approved **A / A / A / A / A**:
 4. Preserve competing versions and require user review where safe deterministic resolution is unavailable.
 5. Offline cached reads and queued permitted local edits with idempotent reconciliation and visible recovery/conflict status.
 
-Supporting specifications are drafted in [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md). New requirements NS-CAI-001 through NS-CAI-010 have been added to the traceability register. This workstream is not yet signed off: detailed schema, provider capability mapping, state machines, cache/retention policy, legacy mapping, and risk review remain.
+Supporting specifications are indexed above. Requirements NS-CAI-001 through NS-CAI-010 remain planned. The subsequent Data Architecture Planning checkpoint was approved **A / A / A / A / A** on 2026-11-25: comprehensive field-level model; comprehensive Canvas capability matrix; explicit data-class cache/retention/backup/restore policy; full legacy capability/data mapping; and complete verification blueprint. New supporting specifications and traceability requirements have been added. The workstream is still not signed off: provider endpoint evidence, exact retention parameters, source-level legacy mapping, final risk review and acceptance review remain.
+
+## Data Architecture Planning checkpoint — 2026-11-25
+
+The user approved **A / A / A / A / A**:
+1. Comprehensive field-level canonical model with entities, fields, relationships, ownership, provenance and lifecycle.
+2. Comprehensive Canvas capability matrix covering records, operations, fields, limitations, permissions and verification.
+3. Explicit data-class policies for cache eligibility, freshness, quotas, retention, eviction protection, backup, restore and disconnect.
+4. Full legacy capability/data mapping covering workflows, records, persistence, integrations, dependencies, preservation and replacement criteria.
+5. Complete verification blueprint covering dependencies, acceptance criteria, tests, failure cases, recovery and evidence.
+
+Supporting planning documents:
+- [Canonical Academic Data Model](CANONICAL-ACADEMIC-DATA-MODEL.md)
+- [Canvas Capability and Authority Matrix](CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md)
+- [Offline Cache, Retention, Backup and Recovery Policy](OFFLINE-CACHE-RETENTION-AND-RECOVERY-POLICY.md)
+- [Legacy Capability and Data Migration Map](LEGACY-CAPABILITY-AND-DATA-MIGRATION-MAP.md)
+- [Data Architecture Verification Blueprint](DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md)
+
+These are planning specifications. Canvas endpoint support is not yet verified in the target tenant; quantitative retention/cache parameters and actual legacy source mapping remain open. No application code or tests were changed or run.
 
 ## Version semantics
 
