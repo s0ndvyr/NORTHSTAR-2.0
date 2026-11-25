@@ -19,6 +19,7 @@ import {
   loadAcademicSnapshot,
   parseAcademicBackup,
   updatePracticeAttempt,
+  updateAcademicEvent,
   updateAssignment,
   updateAssignmentStatus,
   updateResource,
@@ -303,6 +304,18 @@ describe("Calendar event records", () => {
     const snapshot = loadAcademicSnapshot();
     expect(createAcademicEvent(snapshot, { ...event, endsAt: event.startsAt })).toBe(snapshot);
     expect(createAcademicEvent(snapshot, { ...event, courseId: "unknown" })).toBe(snapshot);
+  });
+
+  it("updates a personal event while preserving its identity and rejecting broken links", () => {
+    const snapshot = loadAcademicSnapshot();
+    const created = createAcademicEvent(snapshot, event);
+    const personal = created.events?.find(item => item.source === "northstar");
+    expect(personal).toBeDefined();
+    const updated = updateAcademicEvent(created, personal!.id, { title: "Revised study block", notes: "Focus on active recall." });
+    expect(updated.revision).toBe(created.revision + 1);
+    expect(updated.events?.find(item => item.id === personal!.id)).toMatchObject({ title: "Revised study block", notes: "Focus on active recall." });
+    expect(updateAcademicEvent(updated, personal!.id, { endsAt: personal!.startsAt })).toBe(updated);
+    expect(isAcademicSnapshot(updated)).toBe(true);
   });
 
   it("deletes a personal event but keeps seeded demo events protected", () => {
