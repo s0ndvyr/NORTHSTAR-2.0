@@ -346,7 +346,9 @@ export function saveAcademicSnapshot(snapshot: AcademicSnapshot, force = false):
           const localJson = JSON.stringify(snapshot);
           const persistedJson = JSON.stringify(persisted);
           if (localJson === persistedJson) return true;
-          if (persisted.revision >= snapshot.revision) return preserveSnapshotConflict(snapshot, persisted);
+          if (loadAcademicConflicts().length > 0 || persisted.revision >= snapshot.revision) {
+            return preserveSnapshotConflict(snapshot, persisted);
+          }
         }
       }
     }
