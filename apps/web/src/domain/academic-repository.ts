@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus, AcademicResourceKind } from "./academic";
+import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus } from "./academic";
 import { demoAssignments, demoCourses, demoResources, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
