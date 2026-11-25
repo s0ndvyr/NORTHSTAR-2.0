@@ -40,7 +40,7 @@ The audited source includes later external return-context hardening changes that
 
 | Phase | Name | Status |
 |---|---|---|
-| 5.0.0 | Product & Architecture Foundation | Approved baseline; consolidated implementation-readiness review in progress |
+| 5.0.0 | Product & Architecture Foundation | Initial application foundation implemented; iterative development in progress |
 | 5.0.1 | Academic Data & Canvas Intelligence | **Planning complete and approved — closed; implementation not authorized** |
 | 5.0.2 | Assignment & Coursework Experience | Planning decisions complete |
 | 5.0.3 | Courses, Calendar & Resources | Planning decisions complete |
@@ -49,7 +49,7 @@ The audited source includes later external return-context hardening changes that
 | 5.0.6 | Visual Refinement, Qualification & Release | Approved |
 | Phase 0 | Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
 | Cross-Application Intelligence | Shared data and cross-workspace coordination | **10 architecture/data decisions approved; integrated master and five supporting specs drafted; final review pending** |
-| Application implementation | NORTHSTAR 5.0 coding | **Not authorized** |
+| Application implementation | NORTHSTAR 5.0 coding | **Authorized for initial foundation on `northstar-5.0.0-development`; production/integrations/migration remain excluded** |
 
 ## Phase 0 approval record
 
@@ -218,3 +218,10 @@ The initial application foundation should not be blocked by every future integra
 Complete legacy mapping is required before porting or retiring each affected capability; official Canvas endpoint and tenant evidence is required before real provider operations; measured offline parameters are required before final offline-retention behavior; and production controls are required before release. These later gates do not prevent a separately authorized local application foundation from being built.
 
 The planning process is now consolidated and evidence-led: no repetitive five-question modules, no reopening approved decisions without material new evidence, and no additional planning modules solely to expand documentation. The transition plan is a readiness proposal, not implementation authorization.
+
+
+## Implementation transition — 2026-11-25
+
+The user confirmed `apps/web/` as the official NORTHSTAR 5.0 application location and authorized beginning implementation of the first foundation slice. Work is isolated on `northstar-5.0.0-development`.
+
+The initial React + TypeScript + Vite shell is now present, with responsive Midnight styling, workspace navigation, route placeholders and illustrative dashboard content. No legacy application files were removed or replaced. No production workflow, Canvas Worker, real provider connection, user-data migration or deployment was changed. Build and test qualification remain pending.
