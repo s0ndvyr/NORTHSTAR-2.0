@@ -1,5 +1,5 @@
-import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus } from "./academic";
-import { demoAssignments, demoCourses, demoResources, demoTerm } from "./demo-data";
+import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus, StudyCard, StudyRating } from "./academic";
+import { demoAssignments, demoCourses, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
@@ -8,6 +8,7 @@ const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export type AssignmentInput = Pick<AcademicAssignment, "courseId" | "title" | "description" | "dueAt" | "pointsPossible" | "priority" | "estimatedMinutes" | "personalNotes">;
 export type AssignmentPatch = Partial<AssignmentInput> & { status?: AssignmentStatus };
 export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind" | "description" | "url" | "content">;
+export type StudyCardInput = Pick<StudyCard, "courseId" | "prompt" | "answer">;
 
 function initialSnapshot(): AcademicSnapshot {
   return {
@@ -17,6 +18,7 @@ function initialSnapshot(): AcademicSnapshot {
     courses: demoCourses.map(course => ({ ...course })),
     assignments: demoAssignments.map(assignment => ({ ...assignment })),
     resources: demoResources.map(resource => ({ ...resource })),
+    studyCards: demoStudyCards.map(card => ({ ...card })),
   };
 }
 
@@ -55,6 +57,21 @@ function isValidResource(value: unknown, courseIds: Set<string>): value is Acade
     && (value.source === "demo" || value.source === "northstar");
 }
 
+function isValidStudyCard(value: unknown, courseIds: Set<string>): value is StudyCard {
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.courseId === "string" && courseIds.has(value.courseId)
+    && typeof value.prompt === "string" && value.prompt.trim().length > 0
+    && typeof value.answer === "string" && value.answer.trim().length > 0
+    && typeof value.nextReviewAt === "string" && Number.isFinite(Date.parse(value.nextReviewAt))
+    && typeof value.intervalDays === "number" && Number.isFinite(value.intervalDays) && value.intervalDays >= 0
+    && typeof value.easeFactor === "number" && Number.isFinite(value.easeFactor) && value.easeFactor >= 1.3
+    && typeof value.repetitions === "number" && Number.isInteger(value.repetitions) && value.repetitions >= 0
+    && typeof value.createdAt === "string" && Number.isFinite(Date.parse(value.createdAt))
+    && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt))
+    && (value.source === "demo" || value.source === "northstar");
+}
+
 export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isInteger(value.revision) || (value.revision as number) < 0) return false;
   if (!isRecord(value.term) || typeof value.term.id !== "string" || typeof value.term.name !== "string"
@@ -62,6 +79,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     || typeof value.term.endsAt !== "string" || !Number.isFinite(Date.parse(value.term.endsAt))) return false;
   if (!Array.isArray(value.courses) || !Array.isArray(value.assignments)) return false;
   if (value.resources !== undefined && !Array.isArray(value.resources)) return false;
+  if (value.studyCards !== undefined && !Array.isArray(value.studyCards)) return false;
   const courseIds = new Set<string>();
   for (const course of value.courses) {
     if (!isRecord(course) || typeof course.id !== "string" || !course.id
@@ -82,6 +100,11 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (!isValidResource(resource, courseIds) || resourceIds.has(resource.id)) return false;
     resourceIds.add(resource.id);
   }
+  const studyCardIds = new Set<string>();
+  for (const card of (value.studyCards ?? [])) {
+    if (!isValidStudyCard(card, courseIds) || studyCardIds.has(card.id)) return false;
+    studyCardIds.add(card.id);
+  }
   return true;
 }
 
@@ -91,7 +114,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -187,4 +210,43 @@ export function deleteResource(snapshot: AcademicSnapshot, id: string): Academic
   const resources = snapshot.resources ?? [];
   if (!resources.some(resource => resource.id === id)) return snapshot;
   return { ...snapshot, revision: snapshot.revision + 1, resources: resources.filter(resource => resource.id !== id) };
+}
+
+export function createStudyCard(snapshot: AcademicSnapshot, input: StudyCardInput): AcademicSnapshot {
+  if (!snapshot.courses.some(course => course.id === input.courseId) || !input.prompt.trim() || !input.answer.trim()) return snapshot;
+  const now = new Date().toISOString();
+  const card: StudyCard = { ...input, id: "study-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(36).slice(2)), prompt: input.prompt.trim(), answer: input.answer.trim(), nextReviewAt: now, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: now, updatedAt: now, source: "northstar" };
+  return { ...snapshot, revision: snapshot.revision + 1, studyCards: [...(snapshot.studyCards ?? []), card] };
+}
+
+export function updateStudyCard(snapshot: AcademicSnapshot, id: string, patch: Partial<StudyCardInput>): AcademicSnapshot {
+  const cards = snapshot.studyCards ?? [];
+  const current = cards.find(card => card.id === id);
+  if (!current) return snapshot;
+  const next = { ...current, ...patch, prompt: (patch.prompt ?? current.prompt).trim(), answer: (patch.answer ?? current.answer).trim(), updatedAt: new Date().toISOString() };
+  if (!next.prompt || !next.answer || !snapshot.courses.some(course => course.id === next.courseId)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, studyCards: cards.map(card => card.id === id ? next : card) };
+}
+
+export function deleteStudyCard(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const cards = snapshot.studyCards ?? [];
+  if (!cards.some(card => card.id === id)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, studyCards: cards.filter(card => card.id !== id) };
+}
+
+export function rateStudyCard(snapshot: AcademicSnapshot, id: string, rating: StudyRating): AcademicSnapshot {
+  const cards = snapshot.studyCards ?? [];
+  const current = cards.find(card => card.id === id);
+  if (!current || !["again", "hard", "good", "easy"].includes(rating)) return snapshot;
+  let interval = current.intervalDays;
+  let ease = current.easeFactor;
+  let repetitions = current.repetitions;
+  if (rating === "again") { interval = 1 / 24; repetitions = 0; ease = Math.max(1.3, ease - 0.2); }
+  else if (rating === "hard") { interval = Math.max(1, Math.round(Math.max(1, interval) * 1.2)); repetitions += 1; ease = Math.max(1.3, ease - 0.15); }
+  else if (rating === "good") { interval = repetitions === 0 ? 1 : repetitions === 1 ? 3 : Math.max(1, Math.round(interval * ease)); repetitions += 1; }
+  else { interval = repetitions === 0 ? 3 : repetitions === 1 ? 5 : Math.max(1, Math.round(interval * (ease + 0.3))); repetitions += 1; ease += 0.15; }
+  const now = new Date();
+  const nextReviewAt = new Date(now.getTime() + interval * 86400000).toISOString();
+  const updated = { ...current, intervalDays: interval, easeFactor: ease, repetitions, nextReviewAt, updatedAt: now.toISOString() };
+  return { ...snapshot, revision: snapshot.revision + 1, studyCards: cards.map(card => card.id === id ? updated : card) };
 }
