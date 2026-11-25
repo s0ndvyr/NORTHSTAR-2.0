@@ -102,3 +102,39 @@ test("saves a writing draft and runs the local structural review", async ({ page
   await page.getByRole("button", { name: "Review", exact: true }).click();
   await expect(page.getByText("Moderate", { exact: true })).toBeVisible();
 });
+
+test("runs a timed Study Lab practice attempt and records local results", async ({ page }) => {
+  await page.getByRole("link", { name: "Study Lab" }).click();
+  await page.getByRole("button", { name: "Start timed practice" }).click();
+  await expect(page.getByText(/QUESTION 1 OF/)).toBeVisible();
+  await page.locator(".practice-option").first().click();
+  await page.getByRole("button", { name: "Flag for review" }).click();
+  await page.getByRole("button", { name: /Next/ }).click();
+  await expect(page.getByText(/QUESTION 2 OF/)).toBeVisible();
+  page.on("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: /Finish practice/ }).click();
+  await expect(page.getByText(/PRACTICE RESULTS/)).toBeVisible();
+});
+
+test("persists the selected theme across reloads", async ({ page }) => {
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("button", { name: /Light/ }).click();
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: /Midnight/ }).click();
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", "midnight");
+});
+
+test("keeps AI and Canvas clearly in their unconnected demo boundaries", async ({ page }) => {
+  await page.getByRole("link", { name: "AI Workspace" }).click();
+  await expect(page.getByText("SIMULATION ONLY")).toBeVisible();
+  await page.getByRole("button", { name: "Turn on" }).click();
+  await page.getByRole("button", { name: /Prepare a study plan/ }).click();
+  await expect(page.getByText("SIMULATION OUTPUT")).toBeVisible();
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: /View Canvas status/ }).click();
+  await expect(page.getByText("NOT CONNECTED")).toBeVisible();
+  await expect(page.getByText(/No Canvas URL, credentials/)).toBeVisible();
+});
