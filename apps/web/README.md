@@ -14,6 +14,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
+- Validated academic backup export/import for the complete local snapshot, including resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
 
 ## Requirements
