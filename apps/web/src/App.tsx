@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
@@ -62,7 +62,7 @@ function CommandPalette({ snapshot, onClose, onNavigate }: { snapshot:AcademicSn
   const results=useMemo(()=>searchWorkspaceResults(snapshot,query),[snapshot,query]);
   useEffect(()=>setActiveIndex(0),[query]);
   const openResult=(index:number)=>{const result=results[index];if(!result)return;onNavigate(result.to);onClose();};
-  const onSearchKeyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
+  const onSearchKeyDown=(event:ReactKeyboardEvent<HTMLInputElement>)=>{
     if(event.key==="ArrowDown"){event.preventDefault();setActiveIndex(index=>Math.min(index+1,Math.max(0,results.length-1)));}
     else if(event.key==="ArrowUp"){event.preventDefault();setActiveIndex(index=>Math.max(0,index-1));}
     else if(event.key==="Enter"){event.preventDefault();openResult(activeIndex);}
@@ -482,7 +482,7 @@ function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCr
   const [notificationsOpen,setNotificationsOpen] = useState(false);
   const notificationCount = selectAcademicNotifications(snapshot).length;
   useEffect(()=>{
-    const onKeyDown=(event:KeyboardEvent)=>{
+    const onKeyDown=(event:WindowEventMap["keydown"])=>{
       if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();setPaletteOpen(true);setNotificationsOpen(false);}
       if(event.key==="Escape"){setPaletteOpen(false);setNotificationsOpen(false);}
     };
