@@ -3,8 +3,9 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Last verified development commit:** `4733bfd62daf3a657acbcae7c506652c0528c1fd`  
-**Latest successful qualification run:** [GitHub Actions #45682840835](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45682840835)
+**Latest implementation checkpoint:** `2f1f2849e6465673a34c8fa1fb1f6f79c3699125`  
+**Latest completed full qualification run:** [GitHub Actions #45688973347](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45688973347)  
+**Current browser qualification run:** [GitHub Actions #45690022072](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45690022072) — in progress at last check
 
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
@@ -25,13 +26,14 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 | AI Workspace | Implemented as simulation | No model provider, API key, remote request or external data transfer |
 | Canvas integration | Adapter boundary / not connected | No institution URL, credentials, Canvas reads or submissions |
 | Navigation and notifications | Implemented locally | Command palette and academic alerts derived from local snapshot; not push notifications |
+| Keyboard accessibility foundation | Implemented; manual qualification open | Skip link, main landmark, visible focus, forced-colors styling and modal focus containment/restoration |
 | Themes and motion | Implemented | Midnight/Light, responsive shell, transitions and reduced-motion handling |
 | PWA install/offline shell | Implemented foundation | Manifest, icon, production service worker and static-shell caching; not offline data synchronization |
 | Backup and recovery | Implemented locally | Validated JSON snapshot backup; binary attachments excluded and separately downloadable |
 
 ## Qualification evidence
 
-The latest successful workflow completed these steps on the development branch:
+The latest completed workflow (#45688973347) completed these steps on the development branch:
 
 - Install dependencies from the committed lockfile.
 - TypeScript typecheck.
@@ -39,7 +41,10 @@ The latest successful workflow completed these steps on the development branch:
 - Domain test suite.
 - Production Vite build.
 
-See [workflow run #45682840835](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45682840835). The automated suite currently emphasizes domain/repository behavior; it is not a substitute for full browser end-to-end, assistive-technology, or physical iPad testing.
+See [workflow run #45688973347](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45688973347). The automated suite includes domain/repository tests; it is not a substitute for full browser end-to-end, assistive-technology, or physical iPad testing.
+
+A 10-scenario Playwright browser suite is now wired into CI, covering navigation/focus, assignments, calendar, courses, resources, Gradebook, Review Center, timed Study Lab, theme persistence, and the AI/Canvas safety boundaries. In the current run, typecheck, production dependency audit, all 49 domain tests and production build have passed; the Playwright browser step is still running. Do not mark browser qualification complete until that step succeeds.
+
 
 ## Remaining phase gates
 
