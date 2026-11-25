@@ -173,3 +173,11 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - Gradebook now supports personal grade record create/edit/delete, course-level points summaries, feedback, and excludes pending/missing records from earned-point calculations.
 - Assignment deletion detaches linked drafts, events and grade records rather than silently deleting independent work.
 - Backup/restore tests now include calendar events and grade items.
+
+
+### AI Workspace simulation increment — 2026-11-25
+
+- Replaced the AI Workspace placeholder with a provider-free co-pilot simulation.
+- Added explicit on/off state, standing-by/off status, simulated request preparation, notification feed, and a local academic-context summary.
+- Every screen state clearly says that no model call, provider, credential, or external data transfer is connected. This does not claim AI-generated content or live assistance.
+- Future provider integration remains behind the approved secure server-side boundary and requires separate integration authorization.
