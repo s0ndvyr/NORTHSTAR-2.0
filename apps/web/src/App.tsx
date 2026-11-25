@@ -230,7 +230,7 @@ function ReviewCenter({ snapshot, onSaveDraft, onDeleteDraft }: { snapshot: Acad
   const [assignmentId,setAssignmentId] = useState(activeDraft?.assignmentId ?? "");
   const [reviewed,setReviewed] = useState(false);
   const [saveMessage,setSaveMessage] = useState("");
-  useEffect(()=>{if(requestedAssignmentId&&snapshot.assignments.some(item=>item.id===requestedAssignmentId)){setActiveDraftId(undefined);setDraftTitle("Assignment draft");setDraft("");setAssignmentId(requestedAssignmentId);setReviewed(false);setSaveMessage("New coursework draft · not saved yet");}},[requestedAssignmentId,snapshot.assignments]);
+  useEffect(()=>{if(requestedAssignmentId&&snapshot.assignments.some(item=>item.id===requestedAssignmentId)){setActiveDraftId(undefined);setDraftTitle("Assignment draft");setDraft("");setAssignmentId(requestedAssignmentId);setReviewed(false);setSaveMessage("New coursework draft · not saved yet");}},[requestedAssignmentId]);
   const analysis=useMemo(()=>{
     const words=draft.trim().split(/\s+/).filter(Boolean);
     const sentences=draft.split(/[.!?]+/).map(sentence=>sentence.trim()).filter(Boolean);
