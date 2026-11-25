@@ -206,3 +206,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-STATE-001: attempts are revisioned local snapshot records; duration, answers, flags, elapsed time and completion result persist in browser storage. Practice data remains separate from official Gradebook score records.
 - NS-QUAL-001: repository tests cover attempt creation/resume, selected duration validation, answer/flag persistence, completion scoring, invalid/cross-course answers and three-question-per-course demo content.
 - Acceptance remains limited to the seeded demo question bank and local browser behavior; instructor-authored quiz/test imports, comprehensive learning-content coverage, browser/iPad end-to-end behavior and accessibility review remain open.
+
+
+### Global workspace shell and notification intelligence — 2026-11-25
+
+- NS-UX-002: the shared top bar now provides a global command palette. The `⌘/Ctrl + K` shortcut opens it; search spans workspaces, courses, assignments, calendar events, resources and saved writing. Arrow keys change the selected result, Enter opens it and Escape closes the overlay. Input and results use combobox/listbox semantics.
+- NS-STATE-001 / NS-ACAD-001: a global notification center derives missing/overdue and due-today assignments, upcoming seven-day events, due study cards and pending grades from the canonical local snapshot. The badge and list share the same selector; actions navigate to their destination workspace.
+- NS-QUAL-001: deterministic selector tests cover search matching, result limiting, cross-record categories, alert categories, destination paths, terminal assignment suppression and empty/capped states.
+- Boundary: reminders are local in-app signals. No operating-system push channel, server notification, email or external service is connected.
