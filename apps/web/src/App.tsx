@@ -58,12 +58,20 @@ function Topbar({ pathname, onOpenPalette, onToggleNotifications, notificationCo
 
 function CommandPalette({ snapshot, onClose, onNavigate }: { snapshot:AcademicSnapshot; onClose:()=>void; onNavigate:(path:string)=>void }) {
   const [query,setQuery]=useState("");
+  const [activeIndex,setActiveIndex]=useState(0);
   const results=useMemo(()=>searchWorkspaceResults(snapshot,query),[snapshot,query]);
+  useEffect(()=>setActiveIndex(0),[query]);
+  const openResult=(index:number)=>{const result=results[index];if(!result)return;onNavigate(result.to);onClose();};
+  const onSearchKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
+    if(event.key==="ArrowDown"){event.preventDefault();setActiveIndex(index=>Math.min(index+1,Math.max(0,results.length-1)));}
+    else if(event.key==="ArrowUp"){event.preventDefault();setActiveIndex(index=>Math.max(0,index-1));}
+    else if(event.key==="Enter"){event.preventDefault();openResult(activeIndex);}
+  };
   return <div className="palette-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
     <section className="command-palette" role="dialog" aria-modal="true" aria-label="NORTHSTAR command palette">
-      <div className="palette-search"><Search size={17}/><input autoFocus value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search courses, assignments, events, resources…" aria-label="Search NORTHSTAR"/><kbd>ESC</kbd></div>
-      <div className="palette-results">{results.length?results.map(result=>{const Icon=result.type==="WORKSPACE"?(links.find(item=>item.to===result.to)?.icon??Search):result.type==="COURSE"?GraduationCap:result.type==="ASSIGNMENT"?CheckCircle2:result.type==="EVENT"?CalendarDays:result.type==="RESOURCE"?Library:FileText;return <button type="button" key={result.id} onClick={()=>{onNavigate(result.to);onClose();}}><i><Icon size={15}/></i><span><b>{result.title}</b><small>{result.detail}</small></span><em>{result.type}</em></button>}):<div className="palette-empty">No matching items. Try a course code, assignment title or workspace name.</div>}</div>
-      <footer><span><kbd>↵</kbd> Open result</span><span><kbd>ESC</kbd> Close</span></footer>
+      <div className="palette-search"><Search size={17}/><input autoFocus role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="northstar-palette-results" aria-activedescendant={results[activeIndex]?"palette-"+results[activeIndex].id:undefined} value={query} onChange={event=>setQuery(event.target.value)} onKeyDown={onSearchKeyDown} placeholder="Search courses, assignments, events, resources…" aria-label="Search NORTHSTAR"/><kbd>ESC</kbd></div>
+      <div className="palette-results" id="northstar-palette-results" role="listbox">{results.length?results.map((result,index)=>{const Icon=result.type==="WORKSPACE"?(links.find(item=>item.to===result.to)?.icon??Search):result.type==="COURSE"?GraduationCap:result.type==="ASSIGNMENT"?CheckCircle2:result.type==="EVENT"?CalendarDays:result.type==="RESOURCE"?Library:FileText;return <button type="button" role="option" aria-selected={index===activeIndex} id={"palette-"+result.id} className={index===activeIndex?"selected":""} key={result.id} onMouseEnter={()=>setActiveIndex(index)} onClick={()=>openResult(index)}><i><Icon size={15}/></i><span><b>{result.title}</b><small>{result.detail}</small></span><em>{result.type}</em></button>}):<div className="palette-empty">No matching items. Try a course code, assignment title or workspace name.</div>}</div>
+      <footer><span><kbd>↑↓</kbd> Navigate</span><span><kbd>↵</kbd> Open result</span><span><kbd>ESC</kbd> Close</span></footer>
     </section>
   </div>;
 }
