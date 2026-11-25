@@ -115,3 +115,13 @@ Do not mark a requirement accepted until its defined verification evidence exist
 - Added the install manifest, NORTHSTAR SVG icon, production service-worker registration, and conservative app-shell/static-asset caching. This is a PWA foundation, not a claim of full offline synchronization or iPad qualification.
 
 The complete latest workflow run is the qualification source for these changes; any earlier failed run is retained as history and must not be described as the current result.
+
+
+### Writing review increment — 2026-11-25
+
+- Added Review Center to the primary navigation.
+- Implemented a local draft preflight with word and sentence counts, average sentence length, long-sentence flags, repeated-term signals, and a check for common citation markers.
+- Draft text is processed in the browser component only; no provider or external upload is invoked.
+- The interface explicitly states that this is not AI feedback, plagiarism detection, source verification, or a grade prediction. Provider-backed review remains a separate future integration.
+
+This is a useful first-pass tool, not completion of the planned AI-assisted Review Center or co-pilot workflows.
