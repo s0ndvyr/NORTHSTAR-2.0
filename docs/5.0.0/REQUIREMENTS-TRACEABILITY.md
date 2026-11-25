@@ -152,3 +152,11 @@ Acceptance remains pending for the latest code commit until the corresponding wo
 - NS-QUAL-001: repository tests cover draft creation, revision, preservation after assignment deletion, and deletion. The corresponding GitHub Actions qualification run is pending.
 
 This remains a local/demo capability; no cloud document service, AI review, plagiarism service or official assignment submission is connected.
+
+
+### Writing, study, course, and qualification evidence extension — 2026-11-25
+
+- NS-ACAD-002: assignments link directly to a saved writing-draft workspace; draft association is optional and draft content survives deletion of its linked assignment as an independent local draft.
+- NS-ACAD-003: course detail hubs project assignments, resources and study cards from the shared snapshot; Study Lab supports authoring and spaced-repetition ratings; Resources supports local notes/references/HTTPS links.
+- NS-STATE-001: writing drafts use the same revisioned local academic snapshot and are explicitly saved/resumed from Review Center.
+- NS-QUAL-001: Vitest 4.1.11 is in use; npm 11.6.2 CI install, production audit, full dependency advisory report, repository tests, typecheck and build gates are configured. A successful run on the writing-draft model/test commits reported all gates passing and zero dependency advisories. The latest assignment-to-draft navigation addition remains pending its own run.
