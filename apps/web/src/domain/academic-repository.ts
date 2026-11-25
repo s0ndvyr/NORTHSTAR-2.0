@@ -477,11 +477,12 @@ export function deleteWritingDraft(snapshot: AcademicSnapshot, id: string): Acad
 
 export function createAcademicBackup(snapshot: AcademicSnapshot): string {
   if (!isAcademicSnapshot(snapshot)) throw new Error("Cannot export an invalid academic snapshot.");
+  // Binary files live in IndexedDB and are not embedded in JSON backups.
   return JSON.stringify({
     format: "northstar-academic-backup",
     version: 1,
     exportedAt: new Date().toISOString(),
-    snapshot,
+    snapshot: { ...snapshot, artifacts: [] },
   }, null, 2);
 }
 
