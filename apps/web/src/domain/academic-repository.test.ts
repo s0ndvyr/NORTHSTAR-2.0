@@ -132,10 +132,17 @@ describe("academic repository", () => {
     expect(isAcademicSnapshot(next)).toBe(true);
   });
 
-  it("rejects malformed snapshots and duplicate assignment identities", () => {
+  it("rejects malformed snapshots and broken cross-record relationships", () => {
     const snapshot = loadAcademicSnapshot();
     expect(isAcademicSnapshot({ ...snapshot, schemaVersion: 99 })).toBe(false);
     expect(isAcademicSnapshot({ ...snapshot, assignments: [...snapshot.assignments, snapshot.assignments[0]] })).toBe(false);
+    expect(isAcademicSnapshot({ ...snapshot, courses: snapshot.courses.map((course,index) => index===0 ? { ...course, termId: "foreign-term" } : course) })).toBe(false);
+    const assignment = snapshot.assignments[0];
+    const otherCourse = snapshot.courses.find(course => course.id !== assignment.courseId)!;
+    const event = { id: "mismatched-event", title: "Invalid relation", kind: "study" as const, startsAt: "2026-11-25T12:00:00.000Z", endsAt: "2026-11-25T13:00:00.000Z", courseId: otherCourse.id, assignmentId: assignment.id, notes: "", source: "northstar" as const, updatedAt: "2026-11-25T12:00:00.000Z" };
+    expect(isAcademicSnapshot({ ...snapshot, events: [...(snapshot.events ?? []), event] })).toBe(false);
+    const emptyAttempt = { id: "empty-attempt", courseId: snapshot.courses[0].id, questionIds: [], answers: {}, flaggedIds: [], startedAt: "2026-11-25T12:00:00.000Z", elapsedSeconds: 0, status: "in_progress" as const };
+    expect(isAcademicSnapshot({ ...snapshot, practiceAttempts: [...(snapshot.practiceAttempts ?? []), emptyAttempt] })).toBe(false);
   });
 });
 
