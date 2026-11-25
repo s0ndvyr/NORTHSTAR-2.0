@@ -189,3 +189,10 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - The action updates the shared assignment status to submitted, so Dashboard, Calendar, Gradebook projections and course views stay consistent.
 - Added animated local confirmation feedback that explicitly states no Canvas or institution submission occurred.
 - This is a local workflow simulation, not a submission transport or proof of delivery.
+
+
+### Theme and installability increment — 2026-11-25
+
+- Settings now exposes persistent Midnight and Light theme selection, with Midnight as the default.
+- Theme state is stored under `northstar-theme` and applied at the application root so shared surfaces follow the selected theme.
+- The PWA foundation is documented as installable app metadata plus conservative app-shell/static-asset caching. Full offline academic write queues and conflict reconciliation remain future qualification work.
