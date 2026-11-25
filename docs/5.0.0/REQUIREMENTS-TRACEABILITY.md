@@ -160,3 +160,10 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 - NS-ACAD-003: course detail hubs project assignments, resources and study cards from the shared snapshot; Study Lab supports authoring and spaced-repetition ratings; Resources supports local notes/references/HTTPS links.
 - NS-STATE-001: writing drafts use the same revisioned local academic snapshot and are explicitly saved/resumed from Review Center.
 - NS-QUAL-001: Vitest 4.1.11 is in use; npm 11.6.2 CI install, production audit, full dependency advisory report, repository tests, typecheck and build gates are configured. A successful run on the writing-draft model/test commits reported all gates passing and zero dependency advisories. The latest assignment-to-draft navigation addition remains pending its own run.
+
+
+### Backup and recovery progress — 2026-11-25
+
+- NS-DATA-003 / NS-DATA-005: a versioned local backup envelope now exports the full academic snapshot and validates it on restore; malformed and unsupported versions are rejected.
+- NS-STATE-001: Settings supports explicit backup export and confirmation-gated restore, preserving resources, study cards and writing drafts in the same canonical snapshot.
+- Verification: unit tests cover complete snapshot round-trip and invalid backup rejection. Full recovery qualification, interrupted writes, browser quota failure, encryption, cloud backup and offline conflict recovery remain open.
