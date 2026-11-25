@@ -363,9 +363,10 @@ describe("Study Lab practice attempts", () => {
     expect(attempt).toBeTruthy();
     expect(attempt?.questionIds).toContain("practice-bio-osmosis");
     expect(attempt?.durationSeconds).toBe(600);
-    const saved = updatePracticeAttempt(started, attempt!.id, { "practice-bio-osmosis": "a" }, ["practice-bio-osmosis"], 42);
+    const correctAnswers = Object.fromEntries(attempt!.questionIds.map(id => [id, initial.practiceQuestions?.find(question => question.id === id)?.correctOptionId ?? ""]));
+    const saved = updatePracticeAttempt(started, attempt!.id, correctAnswers, ["practice-bio-osmosis"], 42);
     expect(saved.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
-      answers: { "practice-bio-osmosis": "a" },
+      answers: correctAnswers,
       flaggedIds: ["practice-bio-osmosis"],
       elapsedSeconds: 42,
     });
