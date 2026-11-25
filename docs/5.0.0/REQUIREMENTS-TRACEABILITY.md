@@ -218,8 +218,8 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 
 ### Assignment detail and record-integrity evidence — 2026-11-25
 
-- NS-ACAD-002: assignment list rows and global search open a dedicated detail workspace. The detail view reads the canonical assignment, course, local grade item, calendar events and saved writing draft; workflow status changes use the same canonical mutation handler.
+- NS-ACAD-002: assignment list rows and global search open a dedicated detail workspace. The detail view reads the canonical assignment, course, local grade item, calendar events and saved writing draft; workflow status changes use the same canonical mutation handler. Assignment deletion preserves linked drafts, calendar events and grade records while detaching only the assignment association; a dedicated repository test verifies preservation and snapshot validity.
 - NS-ACAD-002 / NS-STATE-001: editing can be opened directly from the detail surface. Assignment create/update reject invalid course references, empty titles, invalid dates, non-finite/negative numeric fields, invalid priorities and invalid workflow statuses before changing snapshot revision.
 - NS-STATE-001: deleting an assignment preserves linked independent writing drafts, calendar events and grade records while removing only their assignment association. Tests verify retained records and snapshot validity.
-- Qualification evidence: latest completed run for the assignment detail route passed typecheck, dependency audit, domain tests and production build. A subsequent cross-record deletion test is awaiting its own workflow run.
+- Qualification evidence: latest completed run for the assignment detail route passed typecheck, dependency audit, domain tests and production build. The cross-record deletion test passed in workflow run 45678434370 together with strict typecheck, dependency audits and production build.
 - Boundary: all records and status actions remain local browser workflow data; no Canvas read/write, official grade update, or submission transport is claimed.
