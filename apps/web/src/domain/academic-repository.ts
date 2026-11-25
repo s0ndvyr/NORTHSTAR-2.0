@@ -2,7 +2,7 @@ import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtif
 import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 export const ACADEMIC_STORAGE_KEY = "northstar-5-academic-demo-v1";
-const CONFLICT_STORAGE_KEY = "northstar-5-academic-conflicts-v1";
+export const ACADEMIC_CONFLICTS_KEY = "northstar-5-academic-conflicts-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
 const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
@@ -289,7 +289,7 @@ function isAcademicSnapshotConflict(value: unknown): value is AcademicSnapshotCo
 export function loadAcademicConflicts(): AcademicSnapshotConflict[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(CONFLICT_STORAGE_KEY);
+    const raw = window.localStorage.getItem(ACADEMIC_CONFLICTS_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter(isAcademicSnapshotConflict) : [];
@@ -302,8 +302,8 @@ export function clearAcademicConflict(id: string): boolean {
   if (typeof window === "undefined") return false;
   try {
     const remaining = loadAcademicConflicts().filter(conflict => conflict.id !== id);
-    if (remaining.length) window.localStorage.setItem(CONFLICT_STORAGE_KEY, JSON.stringify(remaining));
-    else window.localStorage.removeItem(CONFLICT_STORAGE_KEY);
+    if (remaining.length) window.localStorage.setItem(ACADEMIC_CONFLICTS_KEY, JSON.stringify(remaining));
+    else window.localStorage.removeItem(ACADEMIC_CONFLICTS_KEY);
     return true;
   } catch {
     return false;
@@ -323,7 +323,7 @@ function preserveSnapshotConflict(localSnapshot: AcademicSnapshot, persistedSnap
       localSnapshot,
       persistedSnapshot,
     };
-    window.localStorage.setItem(CONFLICT_STORAGE_KEY, JSON.stringify([...conflicts, conflict]));
+    window.localStorage.setItem(ACADEMIC_CONFLICTS_KEY, JSON.stringify([...conflicts, conflict]));
     return true;
   } catch {
     return false;
