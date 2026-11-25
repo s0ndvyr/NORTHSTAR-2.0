@@ -236,3 +236,13 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Hardened assignment create/update validation: course association, title, due date, finite/nonnegative points and effort, priority, and status are checked before snapshot mutation. Invalid input returns the original snapshot without incrementing its revision.
 - Added repository tests for invalid numeric, priority and status mutations.
 - This is still a local personal workflow. It does not read or update official Canvas assignment records.
+
+
+### Canonical snapshot relationship hardening — 2026-11-25
+
+- Snapshot validation now requires each course to reference the active term.
+- Calendar events linked to assignments must use the same course as the linked assignment; orphaned or cross-course event links are rejected.
+- Practice attempts must reference an existing course and contain at least one valid question from that course.
+- Term date ranges are checked for valid ordering.
+- Added malformed-snapshot tests for wrong-term courses, cross-course event links and empty practice attempts.
+- These checks apply to browser persistence and imported backups before the data is accepted. No external provider records are involved.
