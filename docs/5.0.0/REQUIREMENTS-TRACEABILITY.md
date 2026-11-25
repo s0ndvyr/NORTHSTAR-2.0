@@ -282,3 +282,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-STATE-001 / NS-ACAD-003: Review Center now debounces edits and persists title, body and assignment association to the shared local writing-draft collection after 900 ms of inactivity. Manual Save remains available; switching drafts resets dirty state.
 - NS-QUAL-001: autosave UI passed strict typecheck, dependency audits, domain tests and production build in workflow run 45681625462.
 - Boundary: this is browser-local persistence, not cloud synchronization or AI/provider review.
+
+
+### Assignment local artifact evidence — 2026-11-25
+
+- NS-ACAD-002 / NS-STATE-001: assignment detail supports local file attach/download/remove. Binary bytes are stored in a dedicated IndexedDB object store; validated artifact metadata and assignment relationship are persisted in the canonical snapshot.
+- Assignment deletion and reset remove associated file bytes. JSON backup export and restore intentionally omit attachment metadata and binary bytes to avoid false recovery claims; Settings explains the separate download requirement.
+- NS-QUAL-001: artifact metadata, deletion cleanup and backup-exclusion tests passed with strict typecheck, dependency audits and production build in workflow run 45682291959.
+- Boundary: no Canvas upload or institution submission is performed. IndexedDB file bytes are local and are not encrypted by this feature.
