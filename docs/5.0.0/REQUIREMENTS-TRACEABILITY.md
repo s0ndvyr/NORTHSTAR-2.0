@@ -36,6 +36,13 @@ Status values: **Planned**, **Audit required**, **Not implemented**, **Not verif
 | NS-CAI-009 | Permission-aware adapter and domain-service boundaries for provider writes | P0 | NS-SEC-001, NS-CAN-001 | Authorization, secret isolation, revocation and approval-flow tests | Planned |
 | NS-CAI-010 | Cross-workspace consistency and recovery verification | P0 | NS-CAI-001 through NS-CAI-009 | End-to-end workflow, offline/reconnect, conflict and regression evidence | Planned |
 
+
+| NS-DATA-004 | Field-level canonical entity catalogue with explicit relationships, ownership, lifecycle and field provenance | P0 | NS-DATA-001, NS-DATA-002, NS-CAI-001, NS-CAI-004 | Reviewed logical model, field ownership catalogue, relationship/integrity and lifecycle test specifications | Planned |
+| NS-CAN-003 | Canvas capability matrix for each required object and operation, including permissions, limitations, versioning and evidence class | P0 | NS-CAN-001, NS-CAI-003, NS-CAI-004, NS-SEC-001 | Dated official-documentation matrix, endpoint/scope inventory, target-tenant verification record only when separately authorized | Audit required |
+| NS-DATA-005 | Data-class cache, freshness, quota, retention, backup, restore, disconnect and eviction policy | P0 | NS-DATA-003, NS-CAI-006, NS-CAI-007, NS-SEC-001 | Approved lifecycle policy, quota/eviction tests, integrity and restore rehearsal, disconnect/revocation tests | Planned |
+| NS-MIG-001 | Capability-led legacy workflow and data mapping with preservation, replacement, parity and rollback criteria | P0 | ADR-5-002, ADR-5-007, NS-DATA-003, NS-CAI-010 | Storage/call-site inventory, source-to-target mapping, reconciliation fixtures, parity and rollback evidence | Audit required |
+| NS-QUAL-003 | Requirement-linked data architecture verification blueprint including failure, recovery, security and iPad evidence | P0 | NS-QUAL-001, NS-QUAL-002, NS-CAI-001 through NS-CAI-010, NS-DATA-003 | Traceable test matrix, repeatable reports, recovery evidence and environment/device metadata | Planned |
+
 ## Traceability rule
 
 Every new implementation requirement must include a unique ID, decision/source, priority, dependencies, implementation criteria, verification method, and acceptance status. Status changes require evidence. A plan, mock, or simulated integration is not proof of live behavior.
@@ -43,3 +50,8 @@ Every new implementation requirement must include a unique ID, decision/source, 
 ## Cross-Application Intelligence decision source
 
 NS-CAI-001 through NS-CAI-010 derive from the user's five approved decisions dated 2026-11-25 (CAI-DEC-01 through CAI-DEC-05) and the supporting specification in CROSS-APPLICATION-INTELLIGENCE-PLANNING.md. These requirements remain planned; none is represented as implemented or verified.
+
+
+## Data Architecture Planning checkpoint source
+
+NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-QUAL-003 derive from the user's approved A/A/A/A/A Data Architecture Planning checkpoint dated 2026-11-25 (DAP-DEC-01 through DAP-DEC-05). These requirements are planning/audit items. Their addition does not represent implementation or verification.
