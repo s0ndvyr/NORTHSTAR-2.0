@@ -290,7 +290,11 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
   const current = snapshot.assignments.find(assignment => assignment.id === id);
   if (!current) return snapshot;
   const next = { ...current, ...patch, title: (patch.title ?? current.title).trim(), updatedAt: new Date().toISOString() };
-  const { id: _id, status: _status, source: _source, updatedAt: _updatedAt, ...input } = next;
+  const input: AssignmentInput = {
+    courseId: next.courseId, title: next.title, description: next.description, dueAt: next.dueAt,
+    pointsPossible: next.pointsPossible, priority: next.priority, estimatedMinutes: next.estimatedMinutes,
+    personalNotes: next.personalNotes,
+  };
   if (!isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment => assignment.id === id ? next : assignment));
 }
