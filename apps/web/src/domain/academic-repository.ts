@@ -11,6 +11,8 @@ export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind"
 export type StudyCardInput = Pick<StudyCard, "courseId" | "prompt" | "answer">;
 export type WritingDraftInput = Pick<WritingDraft, "title" | "body"> & { id?: string; assignmentId?: string };
 export type AcademicEventInput = Pick<AcademicEvent, "title" | "kind" | "startsAt" | "endsAt" | "notes"> & { courseId?: string; assignmentId?: string };
+export type GradeItemInput = Pick<GradeItem, "courseId" | "title" | "score" | "pointsPossible" | "status"> & { assignmentId?: string; feedback?: string; gradedAt?: string };
+export type AcademicEventInput = Pick<AcademicEvent, "title" | "kind" | "startsAt" | "endsAt" | "notes"> & { courseId?: string; assignmentId?: string };
 export type GradeItemInput = Pick<GradeItem, "courseId" | "title" | "score" | "pointsPossible" | "status"> & { assignmentId?: string; feedback?: string };
 
 function initialSnapshot(): AcademicSnapshot {
@@ -23,6 +25,8 @@ function initialSnapshot(): AcademicSnapshot {
     resources: demoResources.map(resource => ({ ...resource })),
     studyCards: demoStudyCards.map(card => ({ ...card })),
     writingDrafts: [],
+    events: demoEvents.map(event => ({ ...event })),
+    gradeItems: demoGradeItems.map(item => ({ ...item })),
     events: demoEvents.map(event => ({ ...event })),
     gradeItems: demoGradeItems.map(item => ({ ...item })),
   };
@@ -121,6 +125,36 @@ function isValidStudyCard(value: unknown, courseIds: Set<string>): value is Stud
     && (value.source === "demo" || value.source === "northstar");
 }
 
+function isValidAcademicEvent(value: unknown, courseIds: Set<string>, assignmentIds: Set<string>): value is AcademicEvent {
+  if (!isRecord(value)) return false;
+  const validKind = value.kind === "class" || value.kind === "study" || value.kind === "reminder" || value.kind === "personal";
+  const validCourse = value.courseId === undefined || (typeof value.courseId === "string" && courseIds.has(value.courseId));
+  const validAssignment = value.assignmentId === undefined || (typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId));
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.title === "string" && value.title.trim().length > 0
+    && validKind && typeof value.startsAt === "string" && Number.isFinite(Date.parse(value.startsAt))
+    && typeof value.endsAt === "string" && Number.isFinite(Date.parse(value.endsAt)) && Date.parse(value.endsAt) > Date.parse(value.startsAt)
+    && validCourse && validAssignment && typeof value.notes === "string"
+    && (value.source === "demo" || value.source === "northstar")
+    && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt));
+}
+
+function isValidGradeItem(value: unknown, courseIds: Set<string>, assignmentIds: Set<string>): value is GradeItem {
+  if (!isRecord(value)) return false;
+  const validStatus = value.status === "graded" || value.status === "pending" || value.status === "missing" || value.status === "excused";
+  const validScore = value.score === null || (typeof value.score === "number" && Number.isFinite(value.score) && value.score >= 0);
+  const validAssignment = value.assignmentId === undefined || (typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId));
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.courseId === "string" && courseIds.has(value.courseId)
+    && typeof value.title === "string" && value.title.trim().length > 0
+    && validScore && typeof value.pointsPossible === "number" && Number.isFinite(value.pointsPossible) && value.pointsPossible > 0
+    && validStatus && validAssignment
+    && (value.feedback === undefined || typeof value.feedback === "string")
+    && (value.gradedAt === undefined || (typeof value.gradedAt === "string" && Number.isFinite(Date.parse(value.gradedAt))))
+    && (value.source === "demo" || value.source === "northstar")
+    && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt));
+}
+
 export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isInteger(value.revision) || (value.revision as number) < 0) return false;
   if (!isRecord(value.term) || typeof value.term.id !== "string" || typeof value.term.name !== "string"
@@ -130,6 +164,8 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (value.resources !== undefined && !Array.isArray(value.resources)) return false;
   if (value.studyCards !== undefined && !Array.isArray(value.studyCards)) return false;
   if (value.writingDrafts !== undefined && !Array.isArray(value.writingDrafts)) return false;
+  if (value.events !== undefined && !Array.isArray(value.events)) return false;
+  if (value.gradeItems !== undefined && !Array.isArray(value.gradeItems)) return false;
   if (value.events !== undefined && !Array.isArray(value.events)) return false;
   if (value.gradeItems !== undefined && !Array.isArray(value.gradeItems)) return false;
   const courseIds = new Set<string>();
@@ -169,6 +205,16 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (linkedAssignment && isRecord(linkedAssignment) && linkedAssignment.courseId !== item.courseId) return false;
     gradeItemIds.add(item.id);
   }
+  const eventIds = new Set<string>();
+  for (const event of (value.events ?? [])) {
+    if (!isValidAcademicEvent(event, courseIds, assignmentIds) || eventIds.has(event.id)) return false;
+    eventIds.add(event.id);
+  }
+  const gradeIds = new Set<string>();
+  for (const item of (value.gradeItems ?? [])) {
+    if (!isValidGradeItem(item, courseIds, assignmentIds) || gradeIds.has(item.id)) return false;
+    gradeIds.add(item.id);
+  }
   const draftIds = new Set<string>();
   for (const draft of (value.writingDrafts ?? [])) {
     if (!isValidWritingDraft(draft, assignmentIds) || draftIds.has(draft.id)) return false;
@@ -183,7 +229,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -370,6 +416,8 @@ export function parseAcademicBackup(raw: string): AcademicSnapshot | null {
       writingDrafts: parsed.snapshot.writingDrafts ?? [],
       events: parsed.snapshot.events ?? [],
       gradeItems: parsed.snapshot.gradeItems ?? [],
+      events: parsed.snapshot.events ?? [],
+      gradeItems: parsed.snapshot.gradeItems ?? [],
     };
   } catch {
     return null;
@@ -446,4 +494,50 @@ export function selectGradeSummary(snapshot: AcademicSnapshot, courseId?: string
   const earned = items.reduce((sum, item) => sum + (item.score ?? 0), 0);
   const possible = items.reduce((sum, item) => sum + item.pointsPossible, 0);
   return { items: items.length, earned, possible, percentage: possible > 0 ? Math.round((earned / possible) * 1000) / 10 : null };
+}
+
+export function createAcademicEvent(snapshot: AcademicSnapshot, input: AcademicEventInput): AcademicSnapshot {
+  if (!input.title.trim() || !Number.isFinite(Date.parse(input.startsAt)) || !Number.isFinite(Date.parse(input.endsAt)) || Date.parse(input.endsAt) <= Date.parse(input.startsAt)) return snapshot;
+  if (input.courseId && !snapshot.courses.some(course => course.id === input.courseId)) return snapshot;
+  if (input.assignmentId && !snapshot.assignments.some(item => item.id === input.assignmentId)) return snapshot;
+  const now = new Date().toISOString();
+  const event: AcademicEvent = { ...input, id: "event-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(36).slice(2)), title: input.title.trim(), notes: input.notes.trim(), source: "northstar", updatedAt: now };
+  return { ...snapshot, revision: snapshot.revision + 1, events: [...(snapshot.events ?? []), event] };
+}
+
+export function updateAcademicEvent(snapshot: AcademicSnapshot, id: string, patch: Partial<AcademicEventInput>): AcademicSnapshot {
+  const events = snapshot.events ?? []; const current = events.find(event => event.id === id); if (!current) return snapshot;
+  const next = { ...current, ...patch, title: (patch.title ?? current.title).trim(), notes: (patch.notes ?? current.notes).trim(), updatedAt: new Date().toISOString() };
+  if (!next.title || !Number.isFinite(Date.parse(next.startsAt)) || !Number.isFinite(Date.parse(next.endsAt)) || Date.parse(next.endsAt) <= Date.parse(next.startsAt)) return snapshot;
+  if (next.courseId && !snapshot.courses.some(course => course.id === next.courseId)) return snapshot;
+  if (next.assignmentId && !snapshot.assignments.some(item => item.id === next.assignmentId)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, events: events.map(event => event.id === id ? next : event) };
+}
+
+export function deleteAcademicEvent(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const events = snapshot.events ?? []; if (!events.some(event => event.id === id)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, events: events.filter(event => event.id !== id) };
+}
+
+export function createGradeItem(snapshot: AcademicSnapshot, input: GradeItemInput): AcademicSnapshot {
+  if (!input.title.trim() || !snapshot.courses.some(course => course.id === input.courseId) || !Number.isFinite(input.pointsPossible) || input.pointsPossible <= 0) return snapshot;
+  if (input.score !== null && (!Number.isFinite(input.score) || input.score < 0)) return snapshot;
+  if (input.assignmentId) { const linked = snapshot.assignments.find(item => item.id === input.assignmentId); if (!linked || linked.courseId !== input.courseId) return snapshot; }
+  const now = new Date().toISOString();
+  const item: GradeItem = { ...input, id: "grade-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(36).slice(2)), title: input.title.trim(), source: "northstar", updatedAt: now };
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: [...(snapshot.gradeItems ?? []), item] };
+}
+
+export function updateGradeItem(snapshot: AcademicSnapshot, id: string, patch: Partial<GradeItemInput>): AcademicSnapshot {
+  const items = snapshot.gradeItems ?? []; const current = items.find(item => item.id === id); if (!current) return snapshot;
+  const next = { ...current, ...patch, title: (patch.title ?? current.title).trim(), updatedAt: new Date().toISOString() };
+  if (!next.title || !snapshot.courses.some(course => course.id === next.courseId) || !Number.isFinite(next.pointsPossible) || next.pointsPossible <= 0) return snapshot;
+  if (next.score !== null && (!Number.isFinite(next.score) || next.score < 0)) return snapshot;
+  if (next.assignmentId) { const linked = snapshot.assignments.find(item => item.id === next.assignmentId); if (!linked || linked.courseId !== next.courseId) return snapshot; }
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: items.map(item => item.id === id ? next : item) };
+}
+
+export function deleteGradeItem(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const items = snapshot.gradeItems ?? []; if (!items.some(item => item.id === id)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: items.filter(item => item.id !== id) };
 }
