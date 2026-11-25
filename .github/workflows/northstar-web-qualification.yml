@@ -56,3 +56,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser workflow qualification
         run: npx playwright test
+      - name: Upload browser qualification traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: northstar-browser-qualification
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
