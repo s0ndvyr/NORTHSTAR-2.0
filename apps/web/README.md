@@ -8,7 +8,8 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - React Router workspace navigation and Framer Motion route transitions.
 - Midnight visual foundation, responsive iPad-first shell, and reduced-motion handling.
 - Canonical local academic snapshot with runtime validation, revision tracking, and browser persistence.
-- Connected Overview, Assignments, Courses, Calendar, Study Lab review cards, and Gradebook progress views.
+- Connected Overview, Assignments, Courses, Calendar, Study Lab review cards, Gradebook progress views, and a course-linked Resources library.
+- Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
@@ -36,7 +37,7 @@ npm run build
 npm run preview
 ```
 
-The initial academic repository unit tests cover snapshot validation and assignment create/update/status/delete behavior. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
+The initial academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, and resource lifecycle/HTTPS validation. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
 
 ## Data and integration boundaries
 
