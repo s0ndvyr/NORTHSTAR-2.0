@@ -119,7 +119,7 @@ test("runs a timed Study Lab practice attempt and records local results", async 
 });
 
 test("persists the selected theme across reloads", async ({ page }) => {
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Settings/ }).click();
+  await page.locator(".sidebar").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: /Light/ }).click();
   await expect(page.locator(".app")).toHaveAttribute("data-theme", "light");
   await page.reload();
@@ -135,7 +135,7 @@ test("keeps AI and Canvas clearly in their unconnected demo boundaries", async (
   await page.getByRole("button", { name: /Prepare a study plan/ }).click();
   await expect(page.getByText("SIMULATION OUTPUT")).toBeVisible();
 
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Settings/ }).click();
+  await page.locator(".sidebar").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("link", { name: /View Canvas status/ }).click();
   await expect(page.getByText("NOT CONNECTED")).toBeVisible();
   await expect(page.getByText(/No Canvas URL, credentials/)).toBeVisible();
