@@ -44,7 +44,7 @@ function isValidResource(value: unknown, courseIds: Set<string>): value is Acade
   if (!isRecord(value)) return false;
   const validKind = value.kind === "note" || value.kind === "link" || value.kind === "reference";
   let validUrl = typeof value.url === "string";
-  if (validUrl && value.url) { try { validUrl = new URL(value.url).protocol === "https:"; } catch { validUrl = false; } }
+  if (typeof value.url === "string" && value.url) { try { validUrl = new URL(value.url).protocol === "https:"; } catch { validUrl = false; } }
   return typeof value.id === "string" && value.id.length > 0
     && typeof value.courseId === "string" && courseIds.has(value.courseId)
     && typeof value.title === "string" && value.title.trim().length > 0
