@@ -288,3 +288,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Dashboard course pulse, course cards and course detail now use the same projection rather than mixing dynamic and static percentages.
 - Added selector tests for completion, no-assignment fallback and unknown course behavior.
 - The selector implementation passed strict typecheck, dependency audits, domain tests and production build in workflow run 45679641805; the dedicated projection test passed the domain-test step in workflow run 45679664246, with its production build still running at documentation time.
+
+
+### Course study guide builder — 2026-11-25
+
+- Added a deterministic, course-scoped study guide projection in Study Lab's Learn workspace.
+- Guides compile practice concepts/questions, flashcard prompts and answers, course resources, and open coursework from the canonical snapshot. Course progress uses the shared progress selector.
+- Added plain-text guide export for offline review/printing. The guide is explicitly described as locally assembled, not AI-generated instruction.
+- Added domain tests for course scoping, section content and unknown-course handling.
+- Domain selector tests passed in workflow run 45679912100; the Study Lab UI typecheck, dependency audits and tests passed in workflow run 45679946938, with production build still running at documentation time.
