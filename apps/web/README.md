@@ -14,7 +14,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Explicit grade records with graded/pending/missing/excused states, optional assignment links, feedback, points-based summaries, and no inferred numeric scores from assignment status.
 - Study Lab flashcard create/delete, course association, prompt/answer reveal, Again/Hard/Good/Easy recall ratings, and next-review scheduling using an ease/interval model.
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
-- Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
+- Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, linked writing drafts, and a confirmation-gated local turn-in simulation with explicit no-Canvas messaging.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Validated academic backup export/import for the complete local snapshot, including resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
 - Provider-free AI Workspace simulation with co-pilot on/off, standing-by state, simulated request queue and local context preview; no provider call is made.
