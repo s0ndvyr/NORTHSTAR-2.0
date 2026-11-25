@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
-import type { AcademicAssignment, AcademicSnapshot, AssignmentPriority, AssignmentStatus } from "./domain/academic";
+import type { AcademicAssignment, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
 import { createAssignment, createResource, deleteAssignment, deleteResource, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, type AssignmentInput, type ResourceInput } from "./domain/academic-repository";
 
