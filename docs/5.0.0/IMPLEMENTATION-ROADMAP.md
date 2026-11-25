@@ -336,3 +336,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - New and edited courses are explicitly marked as NORTHSTAR-owned records with update timestamps; snapshot validation checks supported origin values and timestamp validity.
 - Added tests for origin and update metadata.
 - This is a local record-origin foundation only. Canvas/provider source IDs, field-level authority, and conflict reconciliation remain separate integration work.
+
+
+### Provider-neutral AI service boundary — 2026-11-25
+
+- Added a typed AcademicAssistantService contract and a provider-free simulation implementation.
+- The AI Workspace now routes its co-pilot actions through that service instead of building simulated results directly inside the component.
+- Context summary is derived from the canonical local snapshot (courses, assignments, open/overdue work, resources and study cards); the service explicitly reports simulation mode and providerConnected=false.
+- Added service-contract tests proving no model call or external transfer is claimed. Live provider integration, consent, course-boundary controls and secure server-side execution remain separately gated.
