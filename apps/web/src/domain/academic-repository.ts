@@ -152,6 +152,7 @@ function isValidPracticeAttempt(value: unknown, questions: unknown[]): value is 
     && typeof value.startedAt === "string" && Number.isFinite(Date.parse(value.startedAt))
     && (value.completedAt === undefined || (typeof value.completedAt === "string" && Number.isFinite(Date.parse(value.completedAt))))
     && typeof value.elapsedSeconds === "number" && Number.isFinite(value.elapsedSeconds) && value.elapsedSeconds >= 0
+    && (value.durationSeconds === undefined || (typeof value.durationSeconds === "number" && Number.isInteger(value.durationSeconds) && value.durationSeconds >= 60 && value.durationSeconds <= 7200))
     && (value.score === undefined || (typeof value.score === "number" && Number.isFinite(value.score) && value.score >= 0 && value.score <= 100))
     && (value.status === "in_progress" || value.status === "completed");
 }
@@ -490,13 +491,13 @@ export function selectGradeSummary(snapshot: AcademicSnapshot, courseId?: string
   return { items: items.length, earned, possible, percentage: possible > 0 ? Math.round((earned / possible) * 1000) / 10 : null };
 }
 
-export function createPracticeAttempt(snapshot: AcademicSnapshot, courseId: string): AcademicSnapshot {
+export function createPracticeAttempt(snapshot: AcademicSnapshot, courseId: string, durationSeconds = 600): AcademicSnapshot {
   const existing = (snapshot.practiceAttempts ?? []).find(attempt => attempt.courseId === courseId && attempt.status === "in_progress");
   if (existing) return snapshot;
   const questions = (snapshot.practiceQuestions ?? []).filter(question => question.courseId === courseId);
-  if (!questions.length || !snapshot.courses.some(course => course.id === courseId)) return snapshot;
+  if (!questions.length || !snapshot.courses.some(course => course.id === courseId) || !Number.isInteger(durationSeconds) || durationSeconds < 60 || durationSeconds > 7200) return snapshot;
   const now = new Date().toISOString();
-  const attempt: PracticeAttempt = { id: "practice-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now())), courseId, questionIds: questions.map(question => question.id), answers: {}, flaggedIds: [], startedAt: now, elapsedSeconds: 0, status: "in_progress" };
+  const attempt: PracticeAttempt = { id: "practice-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now())), courseId, questionIds: questions.map(question => question.id), answers: {}, flaggedIds: [], startedAt: now, elapsedSeconds: 0, durationSeconds, status: "in_progress" };
   return { ...snapshot, revision: snapshot.revision + 1, practiceAttempts: [...(snapshot.practiceAttempts ?? []), attempt] };
 }
 
