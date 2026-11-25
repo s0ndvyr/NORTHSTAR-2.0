@@ -123,3 +123,14 @@ The migration-source identity is now confirmed. Once the user confirms the recom
 ## 9. Planning-process rule
 
 Planning should be proportional to risk and should accelerate delivery. Use one consolidated review when a coherent set of decisions is ready. Ask for user input only where a real product choice or risk trade-off cannot be resolved through approved decisions, conventional defaults or evidence. Carry settled decisions forward and keep free-text additions available. Do not create new modules or sign-off cycles solely to document additional detail.
+
+
+## 10. User transition approval — 2026-11-25
+
+The user confirmed that `apps/web/` is the official NORTHSTAR 5.0 application location and directed the project to begin actual implementation after this decision. This supersedes the earlier request for a separate approval to start the first application foundation.
+
+**Implementation authorization granted:** the initial 5.0 application foundation may be implemented on the dedicated `northstar-5.0.0-development` branch. The approved first slice is the isolated React/TypeScript/Vite app shell, route/navigation foundation, Midnight visual foundation, responsive layout, synthetic demo presentation and basic project documentation.
+
+**Authorization exclusions remain in force:** this does not authorize changes to production or the production publishing workflow; real Canvas or AI provider connections; privileged credentials; user-data migration; destructive schema/data changes; legacy source deletion; live service deployment; or claims of runtime, build, test, security, accessibility or physical iPad qualification. Those require their own evidence and, where consequential, separate approval.
+
+The implementation will proceed in small, reviewable increments. Later planning should be performed alongside implementation only when a real decision or risk requires it.
