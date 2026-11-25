@@ -166,3 +166,12 @@ Additional user requirement: future planning modules must be substantial and cov
 Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md.
 
 **Disposition:** Module 2 decision set approved; detailed policy planning and evidence alignment remain in progress. This is not repository restructuring, dependency installation, CI configuration, branch-protection configuration, implementation, build/test execution, device qualification or deployment authorization.
+
+
+## Implementation transition decision — 2026-11-25
+
+- **Decision:** Official NORTHSTAR 5.0 client application directory is `apps/web/`.
+- **Authorization:** User confirmed the directory and directed that actual implementation begin. The first foundation slice is authorized on `northstar-5.0.0-development`.
+- **Scope:** React/TypeScript/Vite app shell, routing/navigation, Midnight design foundation, responsive layout and illustrative demo dashboard.
+- **Exclusions:** Production publishing, Canvas Worker changes, live Canvas/AI providers, secrets, data migration, destructive changes, legacy deletion and deployment are not included.
+- **Preservation:** The legacy root application and production branch remain untouched.
