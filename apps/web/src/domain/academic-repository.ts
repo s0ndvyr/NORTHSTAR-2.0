@@ -1,10 +1,11 @@
-import type { AcademicAssignment, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
 import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
 const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
+export type CourseInput = Pick<AcademicCourse, "code" | "name" | "instructor" | "color" | "progress">;
 export type AssignmentInput = Pick<AcademicAssignment, "courseId" | "title" | "description" | "dueAt" | "pointsPossible" | "priority" | "estimatedMinutes" | "personalNotes">;
 export type AssignmentPatch = Partial<AssignmentInput> & { status?: AssignmentStatus };
 export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind" | "description" | "url" | "content">;
@@ -272,6 +273,32 @@ export function updateAssignmentStatus(snapshot: AcademicSnapshot, id: string, s
   return revise(snapshot, snapshot.assignments.map(assignment =>
     assignment.id === id ? { ...assignment, status, updatedAt: new Date().toISOString() } : assignment,
   ));
+}
+
+function isValidCourseInput(input: CourseInput): boolean {
+  return typeof input.code === "string" && input.code.trim().length > 0
+    && typeof input.name === "string" && input.name.trim().length > 0
+    && typeof input.instructor === "string" && input.instructor.trim().length > 0
+    && typeof input.color === "string" && input.color.trim().length > 0
+    && typeof input.progress === "number" && Number.isFinite(input.progress) && input.progress >= 0 && input.progress <= 100;
+}
+
+export function createCourse(snapshot: AcademicSnapshot, input: CourseInput): AcademicSnapshot {
+  if (!isValidCourseInput(input) || snapshot.courses.some(course => course.code.trim().toLocaleLowerCase() === input.code.trim().toLocaleLowerCase())) return snapshot;
+  const course: AcademicCourse = {
+    ...input, id: "course-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2)),
+    code: input.code.trim().toUpperCase(), name: input.name.trim(), instructor: input.instructor.trim(),
+    color: input.color.trim(), termId: snapshot.term.id,
+  };
+  return { ...snapshot, revision: snapshot.revision + 1, courses: [...snapshot.courses, course] };
+}
+
+export function updateCourse(snapshot: AcademicSnapshot, id: string, input: CourseInput): AcademicSnapshot {
+  if (!snapshot.courses.some(course => course.id === id) || !isValidCourseInput(input)
+    || snapshot.courses.some(course => course.id !== id && course.code.trim().toLocaleLowerCase() === input.code.trim().toLocaleLowerCase())) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, courses: snapshot.courses.map(course => course.id === id ? {
+    ...course, ...input, code: input.code.trim().toUpperCase(), name: input.name.trim(), instructor: input.instructor.trim(), color: input.color.trim(),
+  } : course) };
 }
 
 export function createAssignment(snapshot: AcademicSnapshot, input: AssignmentInput): AcademicSnapshot {
