@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchWorkspaceResults, selectAcademicNotifications } from "./workspace-intelligence";
+import { searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress } from "./workspace-intelligence";
 import {
   createAcademicBackup,
   createPracticeAttempt,
@@ -482,6 +482,20 @@ describe("Study Lab practice attempts", () => {
     const foreignQuestion = updatePracticeAttempt(started, attempt.id, { "practice-eng-thesis": "b" }, [], 10);
     expect(rejected).toBe(started);
     expect(foreignQuestion).toBe(started);
+  });
+});
+
+describe("shared course projections", () => {
+  it("derives the same course progress from canonical assignment statuses", () => {
+    const snapshot = loadAcademicSnapshot();
+    const course = snapshot.courses[0];
+    const courseAssignments = snapshot.assignments.filter(item => item.courseId === course.id);
+    expect(selectCourseProgress(snapshot, course.id)).toBe(Math.round(courseAssignments.filter(item => item.status === "submitted" || item.status === "graded").length / courseAssignments.length * 100));
+    const completed = { ...snapshot, assignments: snapshot.assignments.map(item => item.courseId === course.id ? { ...item, status: "submitted" as const } : item) };
+    expect(selectCourseProgress(completed, course.id)).toBe(100);
+    const noAssignments = { ...snapshot, assignments: snapshot.assignments.filter(item => item.courseId !== course.id) };
+    expect(selectCourseProgress(noAssignments, course.id)).toBe(course.progress);
+    expect(selectCourseProgress(snapshot, "unknown-course")).toBe(0);
   });
 });
 
