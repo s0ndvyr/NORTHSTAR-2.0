@@ -2,7 +2,7 @@
 
 **Parent stage:** NORTHSTAR 5.0.0 — Architecture & Product Foundation  
 **Workstream:** Cross-Application Intelligence  
-**Status:** **Five decisions recorded; supporting specifications drafted; planning review pending**  
+**Status:** **Ten architecture/data decisions recorded; integrated master and five supporting specifications drafted; final planning review pending**  
 **Authorization:** Planning only; no application implementation authorized  
 **Opened:** 2026-11-25  
 **Decision record date:** 2026-11-25
@@ -319,3 +319,17 @@ The new specifications are proposals for review, not accepted physical schemas o
 **Specification status:** Architecture, ownership, event, sync, conflict, offline, security, and verification specifications drafted.  
 **Planning status:** Continue detailed planning; final phase sign-off has not occurred.  
 **Authorization:** Planning only. No application code, schema migrations, dependency installation, runtime integration, legacy deletion, production change, or deployment is authorized by this decision record.
+
+
+## 13. Integrated architecture planning decisions
+
+On 2026-11-25 the user approved **C / B / A / A / A**:
+- C: one integrated master architecture specification plus five detailed supporting specifications;
+- B: select conventional, maintainable technical defaults for unresolved engineering decisions;
+- A: complete legacy capability, data, dependency and workflow mapping;
+- A: require specifications, traceability, risk review, open-decision disposition and acceptance criteria for planning sign-off;
+- A: continue cross-system planning and integration readiness after this workstream, without coding.
+
+See [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md) for the integrated system boundaries, recommended technical defaults, consistency model, offline policy, migration controls, verification gates and outstanding evidence.
+
+The integrated technical recommendations are planning defaults only. Library installation, physical schema design, source migration and runtime qualification remain unauthorized. The full source-level legacy inventory and dated Canvas endpoint capability research are still outstanding; this workstream is not signed off.
