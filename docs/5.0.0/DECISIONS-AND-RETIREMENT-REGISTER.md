@@ -80,3 +80,22 @@ The user submitted **A / A / A / A / A** through the five-question Data Architec
 ## Planning-only implementation boundary reaffirmed
 
 No application code, schema migration, dependency installation, live provider access, legacy deletion, production change, deployment, or runtime qualification is authorized. Legacy capabilities remain protected until mapping, replacement parity, regression evidence, backup/restore and rollback are established and separately approved.
+
+
+## Integrated architecture planning decisions — 2026-11-25
+
+The user submitted **C / B / A / A / A** through the integrated architecture planning checkpoint. Record the following as approved planning decisions:
+
+| Decision ID | Approved selection | Planning consequence |
+|---|---|---|
+| EFP-DEC-01 | C — One integrated master architecture specification plus five detailed supporting specifications. | The master document governs the integrated design; supporting documents retain domain-specific detail. |
+| EFP-DEC-02 | B — Select the most conventional and maintainable technical approach for unresolved decisions. | The integrated specification records recommended defaults and rationale; deviations require an ADR. |
+| EFP-DEC-03 | A — Full legacy capability/data/dependency/workflow mapping. | Inventory all discovered source behavior and data before migration or retirement; unknowns remain explicitly open. |
+| EFP-DEC-04 | A — Complete evidence-based planning sign-off. | Require specifications, traceability, risk review, open-decision disposition and acceptance criteria before workstream closure. |
+| EFP-DEC-05 | A — Continue cross-system planning and integration readiness after this workstream; no coding yet. | Implementation remains outside current authorization and requires a separate explicit approval. |
+
+**Disposition:** Five planning decisions approved. The integrated master architecture and five detailed supporting specifications are drafted. The Cross-Application Intelligence workstream remains open pending source-level legacy inventory, dated Canvas capability research, quantitative offline policy, security/risk review and final acceptance review.
+
+## Authorization boundary reaffirmed
+
+These decisions do not authorize application code, dependency installation, a physical database schema or migration, live Canvas access, legacy deletion, production changes, deployment or runtime qualification.
