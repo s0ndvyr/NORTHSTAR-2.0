@@ -231,3 +231,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - Term date ranges are validated for correct ordering.
 - Tests for the added relationship constraints passed the domain-test step in workflow run 45678635747; the production build step was still running at the time this traceability note was written.
 - The validation is local snapshot integrity only; it is not external source reconciliation or Canvas provenance verification.
+
+
+### Course management implementation evidence — 2026-11-25
+
+- NS-ACAD-003: Courses workspace supports local course creation and metadata editing. Course records are assigned to the active term; code uniqueness, required metadata and 0–100 progress are validated.
+- NS-DATA-001 / NS-STATE-001: course metadata edits preserve course identity, so linked assignments, resources, study cards, events and grade records continue to resolve to the same course.
+- NS-QUAL-001: course create/update tests, strict TypeScript, dependency audits, domain tests and production build passed in workflow run 45679429881.
+- Remaining: course archive/retirement policy, institution course import, and device/browser acceptance remain open.
