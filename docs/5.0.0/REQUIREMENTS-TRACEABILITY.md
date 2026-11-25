@@ -253,3 +253,10 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-ACAD-002: assignment queue supports due-date, priority and recently-updated ordering in addition to query, status and course filtering.
 - NS-STATE-001: the ordering selector returns a sorted projection without mutating canonical assignment order.
 - NS-QUAL-001: strict typecheck, production dependency audit, domain tests and production build passed in workflow run 45680510214, including the sort-mode ordering/immutability test.
+
+
+### Course record provenance evidence — 2026-11-25
+
+- NS-DATA-001 / NS-DATA-002: course records now carry optional origin and update timestamp metadata. Seeded course records are marked demo-origin; new and edited courses are marked NORTHSTAR-origin. Older version-1 snapshots remain valid when the optional metadata is absent.
+- Snapshot validation rejects unsupported origin values and invalid update timestamps. Tests verify local create/update origin transitions.
+- Canvas source IDs, per-field authority and external conflict resolution are not implemented by this local metadata foundation.
