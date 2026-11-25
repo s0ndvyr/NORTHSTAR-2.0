@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
 import type { AcademicAssignment, AcademicEvent, AcademicEventKind, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus, GradeItem, GradeItemStatus, StudyRating } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
-import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress } from "./domain/workspace-intelligence";
+import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./domain/workspace-intelligence";
 import { createAcademicBackup, parseAcademicBackup, createCourse, updateCourse, createAcademicEvent, updateAcademicEvent, createGradeItem, createPracticeAttempt, completePracticeAttempt, updatePracticeAttempt, createAssignment, createResource, createStudyCard, deleteAcademicEvent, deleteGradeItem, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, updateGradeItem, rateStudyCard, saveWritingDraft, selectGradeSummary, deleteWritingDraft, type AcademicEventInput, type CourseInput, type AssignmentInput, type GradeItemInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
 
 const links = [
@@ -199,10 +199,10 @@ function Assignments({ snapshot, onStatus, onCreate, onUpdate, onDelete }: { sna
   const requestedEdit=searchParams.get("edit");
   const [editor, setEditor] = useState<"new" | string | null>(()=>requestedEdit&&snapshot.assignments.some(item=>item.id===requestedEdit)?requestedEdit:null);
   const [submitNotice,setSubmitNotice] = useState("");
-  const filtered = useMemo(() => snapshot.assignments.filter(a => {
-    const matchesQuery = `${a.title} ${a.description} ${a.personalNotes}`.toLowerCase().includes(query.toLowerCase());
+  const filtered = useMemo(() => sortAssignments(snapshot.assignments.filter(a => {
+    const matchesQuery = [a.title, a.description, a.personalNotes].join(" ").toLowerCase().includes(query.toLowerCase());
     return matchesQuery && (status === "all" || a.status === status) && (course === "all" || a.courseId === course);
-  }).sort((a,b) => sort==="priority" ? ({urgent:0,high:1,normal:2,low:3}[a.priority]-{urgent:0,high:1,normal:2,low:3}[b.priority] || Date.parse(a.dueAt)-Date.parse(b.dueAt)) : sort==="updated" ? Date.parse(b.updatedAt)-Date.parse(a.updatedAt) : Date.parse(a.dueAt)-Date.parse(b.dueAt)), [snapshot.assignments, query, status, course, sort]);
+  }), sort), [snapshot.assignments, query, status, course, sort]);
   const editing = typeof editor === "string" ? snapshot.assignments.find(a=>a.id===editor) : undefined;
   const submitLocally = (assignment:AcademicAssignment) => { if(window.confirm("Mark this assignment as submitted in the NORTHSTAR local demo only? Nothing will be sent to Canvas or your institution.")){onStatus(assignment.id,"submitted");setSubmitNotice(`${assignment.title} marked submitted locally. No external submission was made.`);} };
   const handleSave = (input: AssignmentInput) => {
