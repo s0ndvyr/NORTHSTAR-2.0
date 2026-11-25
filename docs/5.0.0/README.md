@@ -27,6 +27,7 @@ The audited source includes later external return-context hardening changes that
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
 - [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
 - [Cross-Application data contracts and state machines](CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md)
+- [Integrated Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)
 - [Canonical academic data model](CANONICAL-ACADEMIC-DATA-MODEL.md)
 - [Canvas capability and authority matrix](CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md)
 - [Offline cache, retention, backup and recovery policy](OFFLINE-CACHE-RETENTION-AND-RECOVERY-POLICY.md)
@@ -45,7 +46,7 @@ The audited source includes later external return-context hardening changes that
 | 5.0.5 | AI & Intelligent Academic Assistance | Approved |
 | 5.0.6 | Visual Refinement, Qualification & Release | Approved |
 | Phase 0 | Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
-| Cross-Application Intelligence | Shared data and cross-workspace coordination | **Five decisions approved; detailed specifications drafted; planning review pending** |
+| Cross-Application Intelligence | Shared data and cross-workspace coordination | **10 architecture/data decisions approved; integrated master and five supporting specs drafted; final review pending** |
 | Application implementation | NORTHSTAR 5.0 coding | **Not authorized** |
 
 ## Phase 0 approval record
@@ -73,7 +74,7 @@ On 2026-11-25 the user approved **A / A / A / A / A**:
 4. Preserve competing versions and require user review where safe deterministic resolution is unavailable.
 5. Offline cached reads and queued permitted local edits with idempotent reconciliation and visible recovery/conflict status.
 
-Supporting specifications are indexed above. Requirements NS-CAI-001 through NS-CAI-010 remain planned. The subsequent Data Architecture Planning checkpoint was approved **A / A / A / A / A** on 2026-11-25: comprehensive field-level model; comprehensive Canvas capability matrix; explicit data-class cache/retention/backup/restore policy; full legacy capability/data mapping; and complete verification blueprint. New supporting specifications and traceability requirements have been added. The workstream is still not signed off: provider endpoint evidence, exact retention parameters, source-level legacy mapping, final risk review and acceptance review remain.
+Supporting specifications are indexed above. Requirements NS-CAI-001 through NS-CAI-010 remain planned. The subsequent Data Architecture Planning checkpoint was approved **A / A / A / A / A** on 2026-11-25: comprehensive field-level model; comprehensive Canvas capability matrix; explicit data-class cache/retention/backup/restore policy; full legacy capability/data mapping; and complete verification blueprint. New supporting specifications and traceability requirements have been added. The workstream is still not signed off: dated provider endpoint evidence, exact retention parameters, complete source-level legacy inventory/mapping, final risk review and acceptance review remain.
 
 ## Data Architecture Planning checkpoint — 2026-11-25
 
@@ -92,6 +93,19 @@ Supporting planning documents:
 - [Data Architecture Verification Blueprint](DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md)
 
 These are planning specifications. Canvas endpoint support is not yet verified in the target tenant; quantitative retention/cache parameters and actual legacy source mapping remain open. No application code or tests were changed or run.
+
+## Integrated architecture planning checkpoint — 2026-11-25
+
+The user approved **C / B / A / A / A**:
+1. **C — Integrated specification structure:** one master architecture specification plus five detailed supporting specifications.
+2. **B — Conventional technical decisions:** select the most conventional, maintainable technical approach for unresolved engineering choices.
+3. **A — Full legacy mapping:** map every discovered feature, data source, dependency, workflow and replacement requirement.
+4. **A — Complete planning sign-off evidence:** require all specifications, traceability, risks, open-decision review and acceptance criteria.
+5. **A — Continue planning only:** after this workstream, continue cross-system planning and integration readiness; do not begin application coding.
+
+The integrated master specification is [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md). It recommends conventional defaults for the React/TypeScript/Vite PWA, local persistence, routing, state, validation, testing and secure provider boundaries. These are planning recommendations, not installed dependencies or implementation authorization.
+
+The five detailed specifications are linked above. Their planning content is drafted, but source-level legacy inventory, dated Canvas endpoint research, measured retention/cache parameters, final security review and evidence-based acceptance remain open. Cross-Application Intelligence remains in planning review and is not signed off.
 
 ## Version semantics
 
