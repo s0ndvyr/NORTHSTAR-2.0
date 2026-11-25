@@ -152,3 +152,19 @@ The user approved C/B/A/A/A for the next engineering-foundation planning checkpo
 The integrated specification is [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md). It recommends React/TypeScript/Vite, npm with lockfile, React Router, TanStack Query for server-backed data, React state/context first with Zustand only where justified, Zod at trust boundaries, IndexedDB for local durable records, a narrowly scoped server-side provider boundary, PostgreSQL only if server persistence is required, Vitest/Testing Library, Playwright, and explicit PWA caching rules.
 
 These choices are planning recommendations and have not been installed, built, or tested. The five detailed specifications remain subject to evidence closure. Full legacy source inventory, dated Canvas endpoint research, quantitative cache/retention parameters, hosting topology, and security/privacy review remain open.
+
+
+## 11. Source analysis and integration planning checkpoint — 2026-11-25
+
+The user approved A/A/A/A/A:
+- complete the legacy source inventory and data mapping before other architecture closure;
+- research Canvas against current official documentation with endpoint evidence, keeping tenant verification separate;
+- derive offline limits from measured platform constraints and sensitivity;
+- define a secure BFF requirement before selecting hosting or database technology;
+- plan integration readiness across Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace.
+
+The initial selected-file evidence review is documented in LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md. It identifies credential-vault and encrypted snapshot behavior, assignment deep-link routing, submission transport guardrails, Canvas Worker boundary, provider-owned quiz/assessment state, document/PDF artifact lineage, native iOS secure-content handoff, and existing boot-test assets.
+
+This review is partial. Complete source tree, all browser storage keys and IndexedDB stores, all read/write call sites, Worker route inventory, dependency/CDN inventory, exact source branch reconciliation and full data migration mapping remain outstanding. The BFF is a required security boundary for privileged provider operations; hosting/runtime and database remain deferred until evidence supports a choice. Integration contracts across all major workspaces remain to be authored.
+
+No source implementation was changed and no tests/builds were executed. Planning only.
