@@ -8,6 +8,19 @@ export interface WorkspaceSearchResult {
   type: WorkspaceResultKind;
   to: string;
 }
+export interface StudyGuideSection {
+  title: string;
+  items: string[];
+}
+export interface CourseStudyGuide {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  instructor: string;
+  progress: number;
+  sections: StudyGuideSection[];
+}
+
 export type NotificationTone = "urgent" | "today" | "info";
 export interface AcademicNotification {
   id: string;
@@ -37,6 +50,26 @@ export function selectCourseProgress(snapshot: AcademicSnapshot, courseId: strin
   if (!assignments.length) return course.progress;
   const completed = assignments.filter(item => item.status === "submitted" || item.status === "graded").length;
   return Math.round(completed / assignments.length * 100);
+}
+
+export function buildCourseStudyGuide(snapshot: AcademicSnapshot, courseId: string): CourseStudyGuide | null {
+  const course = snapshot.courses.find(item => item.id === courseId);
+  if (!course) return null;
+  const resources = (snapshot.resources ?? []).filter(item => item.courseId === courseId);
+  const cards = (snapshot.studyCards ?? []).filter(item => item.courseId === courseId);
+  const questions = (snapshot.practiceQuestions ?? []).filter(item => item.courseId === courseId);
+  const assignments = snapshot.assignments.filter(item => item.courseId === courseId && !["graded", "submitted"].includes(item.status))
+    .slice().sort((a,b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
+  const sections: StudyGuideSection[] = [
+    { title: "Concepts to understand", items: [...new Set(questions.map(item => item.concept + " — " + item.prompt))] },
+    { title: "Flashcard recall", items: cards.map(item => item.prompt + " — " + item.answer) },
+    { title: "Course materials", items: resources.map(item => item.title + (item.description ? " — " + item.description : "")) },
+    { title: "Open coursework", items: assignments.map(item => item.title + " — " + item.status.replaceAll("_", " ") + " — due " + new Date(item.dueAt).toLocaleString()) },
+  ].filter(section => section.items.length > 0);
+  return {
+    courseId, courseCode: course.code, courseName: course.name, instructor: course.instructor,
+    progress: selectCourseProgress(snapshot, courseId), sections,
+  };
 }
 
 export function searchWorkspaceResults(snapshot: AcademicSnapshot, query: string, limit = 14): WorkspaceSearchResult[] {
