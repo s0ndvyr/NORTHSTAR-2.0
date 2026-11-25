@@ -154,7 +154,9 @@ function isValidPracticeAttempt(value: unknown, questions: unknown[]): value is 
     && typeof value.elapsedSeconds === "number" && Number.isFinite(value.elapsedSeconds) && value.elapsedSeconds >= 0
     && (value.durationSeconds === undefined || (typeof value.durationSeconds === "number" && Number.isInteger(value.durationSeconds) && value.durationSeconds >= 60 && value.durationSeconds <= 7200))
     && (value.score === undefined || (typeof value.score === "number" && Number.isFinite(value.score) && value.score >= 0 && value.score <= 100))
-    && (value.status === "in_progress" || value.status === "completed");
+    && (value.status === "in_progress" || value.status === "completed")
+    && (value.status !== "completed" || (typeof value.completedAt === "string" && typeof value.score === "number"))
+    && (value.status !== "in_progress" || (value.completedAt === undefined && value.score === undefined));
 }
 export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isInteger(value.revision) || (value.revision as number) < 0) return false;
@@ -504,7 +506,7 @@ export function createPracticeAttempt(snapshot: AcademicSnapshot, courseId: stri
 export function updatePracticeAttempt(snapshot: AcademicSnapshot, id: string, answers: Record<string,string>, flaggedIds: string[], elapsedSeconds: number): AcademicSnapshot {
   const attempts = snapshot.practiceAttempts ?? []; const current = attempts.find(attempt => attempt.id === id); if (!current || current.status !== "in_progress") return snapshot;
   const questions = new Map((snapshot.practiceQuestions ?? []).map(question => [question.id, question]));
-  for (const [questionId, optionId] of Object.entries(answers)) { const question = questions.get(questionId); if (!question || !question.options.some(option => option.id === optionId)) return snapshot; }
+  for (const [questionId, optionId] of Object.entries(answers)) { const question = questions.get(questionId); if (!current.questionIds.includes(questionId) || !question || !question.options.some(option => option.id === optionId)) return snapshot; }
   if (flaggedIds.some(questionId => !current.questionIds.includes(questionId)) || !Number.isFinite(elapsedSeconds) || elapsedSeconds < 0) return snapshot;
   const updated = { ...current, answers: { ...answers }, flaggedIds: [...new Set(flaggedIds)], elapsedSeconds: Math.floor(elapsedSeconds) };
   return { ...snapshot, revision: snapshot.revision + 1, practiceAttempts: attempts.map(attempt => attempt.id === id ? updated : attempt) };
