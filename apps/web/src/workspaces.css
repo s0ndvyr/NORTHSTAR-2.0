@@ -152,3 +152,17 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .import-backup input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .settings-message{max-width:900px;margin-top:13px;padding:11px 13px;border:1px solid #8eafd93b;border-radius:7px;background:#8eafd910;color:#b7ccec;font-size:10px}
 @media(max-width:740px){.settings-grid .settings-panel{align-items:flex-start}.settings-grid .settings-panel>button,.settings-grid .settings-panel>.import-backup{align-self:flex-start}}
+
+
+/* Calendar events and explicit gradebook records */
+.calendar-item>i.event-dot{background:#9ebce3}
+.calendar-item>span:nth-child(2)>small+small{margin-top:3px;line-height:1.5}
+.grade-record-list{padding:0 17px}
+.grade-record{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid #a9bedc15}
+.grade-record:last-child{border-bottom:0}
+.grade-record>span{display:grid;gap:4px;flex:1;min-width:0}
+.grade-record>span b{font-size:10px;font-weight:500;color:#dce5f2}
+.grade-record>span small{font-size:8px;color:#8292a8;line-height:1.5}
+.grade-record>strong{font:10px var(--mono);color:#b9cce7;text-transform:capitalize}
+.grade-record .row-actions{display:flex;gap:5px}
+@media(max-width:740px){.grade-record{align-items:flex-start;flex-wrap:wrap}.grade-record>strong{margin-left:auto}}
