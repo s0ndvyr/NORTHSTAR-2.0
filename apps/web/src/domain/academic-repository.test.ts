@@ -316,6 +316,18 @@ describe("academic backup and restore", () => {
     expect(restored?.writingDrafts).toEqual(snapshot.writingDrafts);
     expect(restored?.events).toEqual(snapshot.events);
     expect(restored?.gradeItems).toEqual(snapshot.gradeItems);
+    expect(restored?.artifacts).toEqual(snapshot.artifacts);
+  });
+
+  it("excludes IndexedDB binary attachment metadata from portable JSON backups", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignment = snapshot.assignments[0];
+    const withAttachment = addAssignmentArtifact(snapshot, { id: "backup-artifact", assignmentId: assignment.id, fileName: "private-draft.pdf", mimeType: "application/pdf", sizeBytes: 2048 });
+    const raw = createAcademicBackup(withAttachment);
+    const envelope = JSON.parse(raw) as { snapshot: { artifacts?: unknown[] } };
+    expect(envelope.snapshot.artifacts).toEqual([]);
+    expect(raw).not.toContain("private-draft.pdf");
+    expect(parseAcademicBackup(raw)?.artifacts).toEqual([]);
   });
 
   it("rejects malformed, unknown-version, and invalid academic backups", () => {
