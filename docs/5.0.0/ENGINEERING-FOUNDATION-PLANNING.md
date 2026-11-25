@@ -121,3 +121,25 @@ No option is considered selected merely because it appears in this list.
 ## 8. Current status
 
 **Planning opened.** No application implementation has started. The next work should complete the planning decisions and specifications above, then present the phase sign-off module. A separate explicit implementation authorization is required after planning approval.
+
+
+## 9. Cross-Application Intelligence — detailed planning additions
+
+The user approved the comprehensive Data Architecture Planning checkpoint on 2026-11-25 (A/A/A/A/A). The following planning artifacts now supplement this brief:
+
+- Canonical Academic Data Model and Relationship Catalogue.
+- Canvas Capability and Authority Matrix.
+- Offline Cache, Retention, Backup and Recovery Policy.
+- Legacy Capability and Data Migration Map.
+- Data Architecture Verification Blueprint.
+
+Traceability additions: NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-QUAL-003.
+
+### Engineering dependencies and unresolved risks
+- Do not choose a physical storage technology until entity lifecycle, offline durability, file handling, backup/restore and security requirements are reviewed together.
+- Do not design provider sync against assumed Canvas endpoints; require current official documentation and explicit capability evidence.
+- Do not set cache quotas or retention durations without iPad/PWA constraints, data sensitivity, expected file sizes and recovery objectives.
+- Do not plan destructive legacy retirement until storage/call-site inventory, data mapping, parity fixtures and rollback evidence exist.
+- Do not mark any verification gate passed from planning documents alone.
+
+The Engineering Foundation planning stage remains open. The artifacts above do not authorize implementation, dependency installation, schema migration, live Canvas testing, legacy deletion, deployment or release.
