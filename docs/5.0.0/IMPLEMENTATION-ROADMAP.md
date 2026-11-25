@@ -297,3 +297,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added plain-text guide export for offline review/printing. The guide is explicitly described as locally assembled, not AI-generated instruction.
 - Added domain tests for course scoping, section content and unknown-course handling.
 - Domain selector tests passed in workflow run 45679912100; the Study Lab UI typecheck, dependency audits and tests passed in workflow run 45679946938, with production build still running at documentation time.
+
+
+### Assignment queue sorting — 2026-11-25
+
+- Added three assignment ordering modes: due date, priority (urgent → high → normal → low, then due date), and most recently updated.
+- Extracted sorting into a pure domain selector so the UI uses one deterministic comparator and source arrays are not mutated.
+- Added tests for all three modes and immutability.
+- The shared sort-selector implementation passed typecheck, dependency audits, domain tests and build in workflow run 45680271312. The first UI wiring run identified a narrow state-union typing issue; it is corrected in the current development head and is awaiting its latest workflow run.
