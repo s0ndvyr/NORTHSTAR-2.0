@@ -58,4 +58,4 @@ Application implementation, legacy-source deletion, production changes, deployme
 - Baseline source commit: `df0427304e0f03aa822a1c8fe99547355e9c0bfc`
 - Initial setup commit: `ff2f6f63605f95b6e78234c04b14935bcb1919a4`
 - Decision register commit: `c3625b972fd17b9d52cf10eae55e0959b647426c`
-- Checklist finalization commit: recorded in GitHub after this update.
+- Checklist finalization commit: `c7b65c84cfe7ff5ba8cc26d6d4c82628d64b9627`
