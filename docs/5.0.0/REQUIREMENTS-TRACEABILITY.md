@@ -55,3 +55,14 @@ NS-CAI-001 through NS-CAI-010 derive from the user's five approved decisions dat
 ## Data Architecture Planning checkpoint source
 
 NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-QUAL-003 derive from the user's approved A/A/A/A/A Data Architecture Planning checkpoint dated 2026-11-25 (DAP-DEC-01 through DAP-DEC-05). These requirements are planning/audit items. Their addition does not represent implementation or verification.
+
+
+| NS-ARCH-003 | Integrated architecture specification governs client, domain, provider, persistence and workspace boundaries | P0 | NS-ARCH-001, NS-ARCH-002, NS-DATA-001, NS-CAI-001 | Reviewed master specification and domain-boundary ADRs | Planned |
+| NS-ARCH-004 | Conventional, maintainable toolchain and library choices are documented with rationale and deviation control | P1 | NS-ARCH-001, NS-QUAL-001 | Approved toolchain matrix, lockfile and ADR review after separate implementation authorization | Planned |
+| NS-MIG-002 | Complete source-level legacy inventory covers routes, workflows, storage, files, call sites, integrations, dependencies and preservation requirements | P0 | NS-MIG-001, NS-CAI-010 | Reconciled source inventory, source-to-target map, parity fixtures and rollback plan | Audit required |
+| NS-GOV-001 | Cross-Application Intelligence planning sign-off requires complete specifications, traceability, risk/open-decision review and acceptance criteria | P0 | NS-CAI-001 through NS-CAI-010, NS-DATA-004/005, NS-CAN-003, NS-MIG-001/002, NS-QUAL-003 | Completed design-gate checklist and user sign-off record | Planned |
+| NS-GOV-002 | Cross-system planning and integration readiness continue without implementation until separately authorized | P0 | NS-GOV-001, all approved 5.0 workstream decisions | Updated phase tracker and explicit authorization record before any implementation | Planned |
+
+## Integrated architecture planning decision source
+
+NS-ARCH-003, NS-ARCH-004, NS-MIG-002, NS-GOV-001 and NS-GOV-002 derive from the user's C/B/A/A/A integrated architecture planning checkpoint dated 2026-11-25 (EFP-DEC-01 through EFP-DEC-05). Recommended library/tool choices remain planning defaults; no dependency is installed and no requirement is marked implemented or verified.
