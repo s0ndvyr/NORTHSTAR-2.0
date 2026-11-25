@@ -19,17 +19,17 @@ test("dashboard, skip navigation, command palette and workspace navigation", asy
   const dialog = page.getByRole("dialog", { name: "NORTHSTAR command palette" });
   await expect(dialog).toBeVisible();
   await page.getByRole("combobox", { name: "Search NORTHSTAR" }).fill("calendar");
-  await expect(page.getByRole("option", { name: "Calendar Open workspace", exact: true })).toBeVisible();
+  await expect(page.locator("#palette-calendar")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(paletteButton).toBeFocused();
 
-  await page.getByRole("link", { name: "Assignments", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Assignments/ }).click();
   await expect(page.getByRole("heading", { name: /Assignments/ })).toBeVisible();
 });
 
 test("creates an assignment and updates its local workflow status", async ({ page }) => {
-  await page.getByRole("link", { name: "Assignments", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Assignments/ }).click();
   await page.getByRole("button", { name: "New assignment" }).click();
   const title = "Browser qualification assignment";
   await page.getByLabel("Assignment title").fill(title);
@@ -43,7 +43,7 @@ test("creates an assignment and updates its local workflow status", async ({ pag
 });
 
 test("creates and edits the connected calendar agenda", async ({ page }) => {
-  await page.getByRole("link", { name: "Calendar", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Calendar/ }).click();
   await page.getByRole("button", { name: "Add event" }).click();
   const title = "Browser qualification study block";
   await page.getByLabel("Event title").fill(title);
@@ -58,7 +58,7 @@ test("creates and edits the connected calendar agenda", async ({ page }) => {
 });
 
 test("creates a course and exposes its course hub", async ({ page }) => {
-  await page.getByRole("link", { name: "Courses", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Courses/ }).click();
   await page.getByRole("button", { name: "Add course" }).click();
   await page.getByLabel("Course code").fill("QA 205");
   await page.getByLabel("Course name").fill("Browser Qualification");
@@ -71,7 +71,7 @@ test("creates a course and exposes its course hub", async ({ page }) => {
 });
 
 test("creates a course-linked resource in the personal library", async ({ page }) => {
-  await page.getByRole("link", { name: "Resources", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Resources/ }).click();
   await page.getByRole("button", { name: "Add resource" }).click();
   await page.getByLabel("Resource title").fill("Browser qualification reference");
   await page.getByLabel("Description").fill("A resource created by the browser qualification suite.");
@@ -81,7 +81,7 @@ test("creates a course-linked resource in the personal library", async ({ page }
 });
 
 test("records an explicit grade without inferring it from assignment status", async ({ page }) => {
-  await page.getByRole("link", { name: "Gradebook", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Gradebook/ }).click();
   await page.getByRole("button", { name: "Add grade record" }).click();
   await page.getByLabel("Grade item title").fill("Browser qualification quiz");
   await page.getByLabel("Status").selectOption("graded");
@@ -89,11 +89,11 @@ test("records an explicit grade without inferring it from assignment status", as
   await page.getByLabel("Score earned").fill("17");
   await page.getByRole("button", { name: "Save grade" }).click();
   await expect(page.getByText("Browser qualification quiz")).toBeVisible();
-  await expect(page.getByText("17 / 20")).toBeVisible();
+  await expect(page.getByText("17 / 20").first()).toBeVisible();
 });
 
 test("saves a writing draft and runs the local structural review", async ({ page }) => {
-  await page.getByRole("link", { name: "Review Center", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Review Center/ }).click();
   await page.getByRole("button", { name: "New draft" }).click();
   await page.getByLabel("Draft title").fill("Browser qualification essay");
   await page.getByLabel("Your writing").fill("This is a short sample draft. It is saved locally for a workflow check.");
@@ -104,7 +104,7 @@ test("saves a writing draft and runs the local structural review", async ({ page
 });
 
 test("runs a timed Study Lab practice attempt and records local results", async ({ page }) => {
-  await page.getByRole("link", { name: "Study Lab", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Study Lab/ }).click();
   await page.getByRole("button", { name: "Start timed practice" }).click();
   await expect(page.getByText(/QUESTION 1 OF/)).toBeVisible();
   await page.locator(".practice-option").first().click();
@@ -117,7 +117,7 @@ test("runs a timed Study Lab practice attempt and records local results", async 
 });
 
 test("persists the selected theme across reloads", async ({ page }) => {
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Settings/ }).click();
   await page.getByRole("button", { name: /Light/ }).click();
   await expect(page.locator(".app")).toHaveAttribute("data-theme", "light");
   await page.reload();
@@ -127,13 +127,13 @@ test("persists the selected theme across reloads", async ({ page }) => {
 });
 
 test("keeps AI and Canvas clearly in their unconnected demo boundaries", async ({ page }) => {
-  await page.getByRole("link", { name: "AI Workspace", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^AI Workspace/ }).click();
   await expect(page.getByText("SIMULATION ONLY")).toBeVisible();
   await page.getByRole("button", { name: "Turn on" }).click();
   await page.getByRole("button", { name: /Prepare a study plan/ }).click();
   await expect(page.getByText("SIMULATION OUTPUT")).toBeVisible();
 
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Settings/ }).click();
   await page.getByRole("link", { name: /View Canvas status/ }).click();
   await expect(page.getByText("NOT CONNECTED")).toBeVisible();
   await expect(page.getByText(/No Canvas URL, credentials/)).toBeVisible();
