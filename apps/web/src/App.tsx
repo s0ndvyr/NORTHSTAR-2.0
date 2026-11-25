@@ -16,6 +16,7 @@ const links = [
   { label: "Review Center", to: "/review", icon: ClipboardCheck },
   { label: "Resources", to: "/resources", icon: Library },
   { label: "AI Workspace", to: "/ai", icon: Sparkles },
+  { label: "Settings", to: "/settings", icon: Settings2 },
 ];
 const pages: Record<string, { eyebrow: string; title: string; copy: string }> = {
   "/ai": { eyebrow: "INTELLIGENT ASSISTANCE", title: "AI Workspace", copy: "A future-ready workspace. AI providers are not connected." },
