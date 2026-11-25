@@ -105,6 +105,35 @@ export interface GradeItem {
   updatedAt: string;
 }
 
+export interface PracticeOption {
+  id: string;
+  text: string;
+}
+
+export interface PracticeQuestion {
+  id: string;
+  courseId: string;
+  prompt: string;
+  options: PracticeOption[];
+  correctOptionId: string;
+  explanation: string;
+  concept: string;
+  source: "demo";
+}
+
+export interface PracticeAttempt {
+  id: string;
+  courseId: string;
+  questionIds: string[];
+  answers: Record<string, string>;
+  flaggedIds: string[];
+  startedAt: string;
+  completedAt?: string;
+  elapsedSeconds: number;
+  score?: number;
+  status: "in_progress" | "completed";
+}
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
@@ -121,6 +150,8 @@ export interface AcademicSnapshot {
   events?: AcademicEvent[];
   /** Scores are explicit records; assignment status alone never implies a numeric grade. */
   gradeItems?: GradeItem[];
+  practiceQuestions?: PracticeQuestion[];
+  practiceAttempts?: PracticeAttempt[];
 }
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
