@@ -422,3 +422,15 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Corrected the Calendar projection to carry the source of each assignment deadline rather than hard-coding it as personal.
 - Added Playwright assertions for personal-origin labels on newly created assignments, courses, calendar events and grade records.
 - Qualification for the new assertions is pending in [GitHub Actions #45692975729](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692975729).
+
+
+### Local concurrent-edit protection and recovery — 2026-11-25
+
+- Exported a canonical academic storage key and added a separate conflict log for preserved snapshots.
+- Normal saves compare the candidate revision/content with the current persisted snapshot. A stale or competing same-revision write is retained as a two-sided conflict instead of replacing the saved copy.
+- While conflicts remain unresolved, later local edits are also preserved as conflict records; they cannot silently overwrite the primary snapshot.
+- Added cross-tab storage-event notices, a conflict alert, a bundle export containing both valid academic backups, and a guarded reload of the saved copy after export.
+- Explicit backup restore/reset can intentionally replace the primary snapshot; existing conflict copies remain available for export.
+- Added repository tests for same-revision conflict preservation, subsequent-write lockout and explicit restore, plus a two-tab Playwright journey that downloads both versions and verifies the saved copy after reload.
+- Passed in [GitHub Actions #45694384485](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45694384485): 51 domain tests and 13 browser journeys.
+- Scope boundary: this is local multi-tab conflict protection only. It does not implement Canvas sync, remote provider conflict resolution, offline mutation queues or distributed event reconciliation.
