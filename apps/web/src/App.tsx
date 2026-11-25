@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent } from "react";
 import { NavLink, Route, Routes, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Command, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
 import type { AcademicAssignment, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus, StudyRating } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
-import { createAssignment, createResource, createStudyCard, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, rateStudyCard, saveWritingDraft, deleteWritingDraft, type AssignmentInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
+import { createAcademicBackup, parseAcademicBackup, createAssignment, createResource, createStudyCard, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, rateStudyCard, saveWritingDraft, deleteWritingDraft, type AssignmentInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
 
 const links = [
   { label: "Overview", to: "/", icon: LayoutDashboard },
@@ -271,13 +271,43 @@ function ReviewCenter({ snapshot, onSaveDraft, onDeleteDraft }: { snapshot: Acad
   </div>;
 }
 
+function Settings({ snapshot, onReset, onImport }: { snapshot:AcademicSnapshot; onReset:()=>void; onImport:(snapshot:AcademicSnapshot)=>void }) {
+  const [message,setMessage]=useState("");
+  const exportBackup=()=>{
+    const blob=new Blob([createAcademicBackup(snapshot)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const anchor=document.createElement("a");
+    anchor.href=url;
+    anchor.download=`northstar-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+    setMessage("Backup exported. Store the file somewhere safe.");
+  };
+  const importBackup=async(event:ChangeEvent<HTMLInputElement>)=>{
+    const file=event.target.files?.[0];
+    if(!file)return;
+    try{
+      const restored=parseAcademicBackup(await file.text());
+      if(!restored){setMessage("That file is not a valid NORTHSTAR academic backup.");return;}
+      if(window.confirm("Restore this backup and replace the current local academic workspace?")){
+        onImport(restored);setMessage("Backup restored in this browser.");
+      }
+    }catch{setMessage("The selected file could not be read.");}
+    finally{event.target.value="";}
+  };
+  return <div className="content workspace-page"><div className="page-intro"><div className="eyebrow"><i/> PERSONALIZE & PROTECT</div><h1>Settings<em>.</em></h1><p>Manage this browser’s academic workspace and protect your local work.</p></div><div className="settings-grid">
+    <section className="panel settings-panel"><div><span className="eyebrow">BACKUP & RECOVERY</span><b>Export your academic workspace</b><small>Download courses, assignments, resources, flashcards and saved writing drafts as a validated JSON backup.</small></div><button className="primary-action" onClick={exportBackup}><Download size={14}/> Export backup</button></section>
+    <section className="panel settings-panel"><div><span className="eyebrow">RESTORE</span><b>Restore from a NORTHSTAR backup</b><small>Import a previously exported backup. This replaces the current local workspace after confirmation.</small></div><label className="primary-action import-backup"><Upload size={14}/> Choose backup<input type="file" accept="application/json,.json" onChange={importBackup}/></label></section>
+    <section className="panel settings-panel"><div><span className="eyebrow">DEMO DATA</span><b>Reset local demo data</b><small>Restore the original illustrative courses, assignments, resources and study cards. Saved writing drafts are cleared.</small></div><button className="quiet-action" onClick={()=>{if(window.confirm("Reset this browser’s NORTHSTAR demo workspace? This replaces current local changes.")){onReset();setMessage("Demo workspace reset.");}}}><RotateCcw size={14}/> Reset demo workspace</button></section>
+  </div>{message&&<div className="settings-message" role="status">{message}</div>}<div className="footnote">Local browser storage only · No cloud backup or synchronization is connected. Keep exported backup files private.</div></div>;
+}
+
 function Placeholder({ path, onReset }: { path: string; onReset: () => void }) {
   const page = pages[path] ?? { eyebrow: "PERSONALIZE", title: "Workspace", copy: "This workspace will be built on the shared NORTHSTAR academic foundation." };
   return <div className="content placeholder"><div className="eyebrow"><i/> {page.eyebrow}</div><h1>{page.title}<em>.</em></h1><p>{page.copy}</p><section className="panel coming"><Sparkles size={22}/><span><b>{path==="/ai"?"Provider connection is intentionally disabled.":"This workspace is taking shape."}</b><small>{path==="/ai"?"The UI is a safe placeholder. No AI provider, API key, or external service is connected.":"This area will be implemented incrementally using the approved NORTHSTAR architecture."}</small></span><em>IN DEVELOPMENT</em></section>{path==="/settings" && <section className="panel settings-panel"><div><b>Reset local demo data</b><small>Restore the original illustrative courses and assignment statuses in this browser.</small></div><button onClick={onReset}><RotateCcw size={14}/> Reset demo workspace</button></section>}</div>;
 }
-function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCreate, onResourceUpdate, onResourceDelete, onStudyCreate, onStudyRate, onStudyDelete, onDraftSave, onDraftDelete, onReset }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onResourceCreate:(input:ResourceInput)=>void; onResourceUpdate:(id:string,input:ResourceInput)=>void; onResourceDelete:(id:string)=>void; onStudyCreate:(input:StudyCardInput)=>void; onStudyRate:(id:string,rating:StudyRating)=>void; onStudyDelete:(id:string)=>void; onDraftSave:(input:WritingDraftInput)=>void; onDraftDelete:(id:string)=>void; onReset:()=>void }) {
+function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCreate, onResourceUpdate, onResourceDelete, onStudyCreate, onStudyRate, onStudyDelete, onDraftSave, onDraftDelete, onImport, onReset }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onResourceCreate:(input:ResourceInput)=>void; onResourceUpdate:(id:string,input:ResourceInput)=>void; onResourceDelete:(id:string)=>void; onStudyCreate:(input:StudyCardInput)=>void; onStudyRate:(id:string,rating:StudyRating)=>void; onStudyDelete:(id:string)=>void; onDraftSave:(input:WritingDraftInput)=>void; onDraftDelete:(id:string)=>void; onImport:(snapshot:AcademicSnapshot)=>void; onReset:()=>void }) {
   const location = useLocation();
-  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
+  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="/settings" element={<Settings snapshot={snapshot} onReset={onReset} onImport={onImport}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<AcademicSnapshot>(() => loadAcademicSnapshot());
@@ -295,6 +325,7 @@ export default function App() {
   const handleStudyDelete = (id: string) => setSnapshot(current => deleteStudyCard(current,id));
   const handleDraftSave = (input: WritingDraftInput) => setSnapshot(current => saveWritingDraft(current,input));
   const handleDraftDelete = (id: string) => setSnapshot(current => deleteWritingDraft(current,id));
+  const handleImport = (restored:AcademicSnapshot) => setSnapshot(restored);
   const handleReset = () => setSnapshot(resetAcademicSnapshot());
-  return <div className="app"><Sidebar snapshot={snapshot}/><div className="main"><Routed snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onStudyCreate={handleStudyCreate} onStudyRate={handleStudyRate} onStudyDelete={handleStudyDelete} onDraftSave={handleDraftSave} onDraftDelete={handleDraftDelete} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
+  return <div className="app"><Sidebar snapshot={snapshot}/><div className="main"><Routed snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onStudyCreate={handleStudyCreate} onStudyRate={handleStudyRate} onStudyDelete={handleStudyDelete} onDraftSave={handleDraftSave} onDraftDelete={handleDraftDelete} onImport={handleImport} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
 }
