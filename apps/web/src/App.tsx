@@ -237,7 +237,7 @@ function PracticeMode({ snapshot, onStart, onSave, onComplete }: { snapshot:Acad
       <p>{active?"Resume your saved attempt.":"Choose a time limit. Your answers and flags autosave in this browser, and you can return to an unfinished attempt."}</p>
       <label className="practice-duration">Time limit<select value={durationMinutes} onChange={event=>setDurationMinutes(Number(event.target.value))}><option value={5}>5 minutes</option><option value={10}>10 minutes</option><option value={15}>15 minutes</option></select></label>
       <button className="primary-action" disabled={!courseQuestionCount} onClick={()=>onStart(courseId,durationMinutes*60)}>{attempts.some(item=>item.courseId===courseId&&item.status==="in_progress")?"Resume practice":"Start timed practice"} <ArrowRight size={14}/></button>
-      {completedCount>0&&<small>{completedCount} completed attempt{completedCount===1?"":"s"} · latest score {completed?.score??0}%</small>}
+      {completedCount>0&&<small>{completedCount} completed attempt{completedCount===1?"":"s"} · review your results in the Answer tab</small>}
     </section>}
   </div>;
 }
