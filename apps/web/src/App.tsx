@@ -581,13 +581,43 @@ export default function App() {
   const [theme,setTheme] = useState<"midnight"|"light">(()=>{try{return window.localStorage.getItem("northstar-theme")==="light"?"light":"midnight";}catch{return "midnight";}});
   useEffect(()=>{document.documentElement.dataset.theme=theme;try{window.localStorage.setItem("northstar-theme",theme);}catch{/* Theme remains active for this session. */}},[theme]);
   const [storageAvailable,setStorageAvailable] = useState(true);
+  const [artifactMessage,setArtifactMessage] = useState("");
   useEffect(() => { setStorageAvailable(saveAcademicSnapshot(snapshot)); }, [snapshot]);
   const handleStatus = (id: string, status: AssignmentStatus) => setSnapshot(current => updateAssignmentStatus(current,id,status));
   const handleCourseCreate = (input:CourseInput) => setSnapshot(current => createCourse(current,input));
   const handleCourseUpdate = (id:string,input:CourseInput) => setSnapshot(current => updateCourse(current,id,input));
   const handleCreate = (input: AssignmentInput) => setSnapshot(current => createAssignment(current,input));
   const handleUpdate = (id: string, input: AssignmentInput) => setSnapshot(current => updateAssignment(current,id,input));
-  const handleDelete = (id: string) => setSnapshot(current => deleteAssignment(current,id));
+  const handleDelete = async (id: string) => {
+    const attached=(snapshot.artifacts??[]).filter(item=>item.assignmentId===id);
+    const cleanup=await Promise.allSettled(attached.map(item=>deleteAssignmentArtifactFile(item.id)));
+    setSnapshot(current=>deleteAssignment(current,id));
+    if(cleanup.some(result=>result.status==="rejected"))setArtifactMessage("Assignment deleted. One or more local file bytes could not be cleared from IndexedDB.");
+  };
+  const handleArtifactAttach = async (assignmentId:string,file:File) => {
+    try{
+      if(!snapshot.assignments.some(item=>item.id===assignmentId))throw new Error("This assignment is no longer available.");
+      const stored=await saveAssignmentArtifactFile(file);
+      setSnapshot(current=>addAssignmentArtifact(current,{...stored,assignmentId}));
+      setArtifactMessage(file.name+" saved in this browser. It was not uploaded to Canvas.");
+    }catch(error){setArtifactMessage(error instanceof Error?error.message:"The file could not be saved locally.");}
+  };
+  const handleArtifactDownload = async (id:string) => {
+    try{
+      const stored=await readAssignmentArtifactFile(id);
+      if(!stored)throw new Error("The local file could not be found. It may have been cleared from browser storage.");
+      const url=URL.createObjectURL(stored.blob);
+      const anchor=document.createElement("a");anchor.href=url;anchor.download=stored.fileName;document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+      setArtifactMessage("Downloaded "+stored.fileName+" from local browser storage.");
+    }catch(error){setArtifactMessage(error instanceof Error?error.message:"The file could not be downloaded.");}
+  };
+  const handleArtifactDelete = async (id:string) => {
+    try{
+      await deleteAssignmentArtifactFile(id);
+      setSnapshot(current=>deleteAssignmentArtifact(current,id));
+      setArtifactMessage("Local attachment removed.");
+    }catch(error){setArtifactMessage(error instanceof Error?error.message:"The local file could not be removed.");}
+  };
   const handleResourceCreate = (input: ResourceInput) => setSnapshot(current => createResource(current,input));
   const handleResourceUpdate = (id: string,input: ResourceInput) => setSnapshot(current => updateResource(current,id,input));
   const handleResourceDelete = (id: string) => setSnapshot(current => deleteResource(current,id));
@@ -606,6 +636,6 @@ export default function App() {
   const handleGradeUpdate = (id:string,input:GradeItemInput) => setSnapshot(current => updateGradeItem(current,id,input));
   const handleGradeDelete = (id:string) => setSnapshot(current => deleteGradeItem(current,id));
   const handleImport = (restored:AcademicSnapshot) => setSnapshot(restored);
-  const handleReset = () => setSnapshot(resetAcademicSnapshot());
+  const handleReset = async () => { await Promise.allSettled((snapshot.artifacts??[]).map(item=>deleteAssignmentArtifactFile(item.id))); setSnapshot(resetAcademicSnapshot()); setArtifactMessage("Demo workspace reset."); };
   return <div className="app" data-theme={theme}><Sidebar snapshot={snapshot}/><div className="main"><Routed theme={theme} onThemeChange={setTheme} snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onArtifactAttach={handleArtifactAttach} onArtifactDownload={handleArtifactDownload} onArtifactDelete={handleArtifactDelete} artifactMessage={artifactMessage} onCourseCreate={handleCourseCreate} onCourseUpdate={handleCourseUpdate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onStudyCreate={handleStudyCreate} onStudyRate={handleStudyRate} onStudyDelete={handleStudyDelete} onPracticeStart={handlePracticeStart} onPracticeSave={handlePracticeSave} onPracticeComplete={handlePracticeComplete} onDraftSave={handleDraftSave} onDraftDelete={handleDraftDelete} onEventCreate={handleEventCreate} onEventUpdate={handleEventUpdate} onEventDelete={handleEventDelete} onGradeCreate={handleGradeCreate} onGradeUpdate={handleGradeUpdate} onGradeDelete={handleGradeDelete} onImport={handleImport} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
 }
