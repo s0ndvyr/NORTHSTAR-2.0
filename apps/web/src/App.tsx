@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
 import type { AcademicAssignment, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
 import { createAssignment, createResource, deleteAssignment, deleteResource, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, type AssignmentInput, type ResourceInput } from "./domain/academic-repository";
@@ -13,6 +13,7 @@ const links = [
   { label: "Calendar", to: "/calendar", icon: CalendarDays },
   { label: "Study Lab", to: "/study", icon: BookOpen },
   { label: "Gradebook", to: "/gradebook", icon: Target },
+  { label: "Review Center", to: "/review", icon: ClipboardCheck },
   { label: "Resources", to: "/resources", icon: Library },
   { label: "AI Workspace", to: "/ai", icon: Sparkles },
 ];
@@ -194,13 +195,46 @@ function Resources({ snapshot, onCreate, onUpdate, onDelete }: { snapshot: Acade
   </div>;
 }
 
+
+function ReviewCenter() {
+  const [draft,setDraft]=useState("");
+  const [reviewed,setReviewed]=useState(false);
+  const analysis=useMemo(()=>{
+    const words=draft.trim().split(/\\s+/).filter(Boolean);
+    const sentences=draft.split(/[.!?]+/).map(sentence=>sentence.trim()).filter(Boolean);
+    const longSentences=sentences.filter(sentence=>sentence.split(/\\s+/).length>32);
+    const ignored=new Set(["about","after","again","also","been","being","could","does","each","from","have","into","just","more","most","other","over","same","should","some","such","than","that","their","there","these","they","this","those","through","under","very","what","when","where","which","while","with","would","your"]);
+    const counts=new Map<string,number>();
+    for(const word of words){const normalized=word.toLowerCase().replace(/[^a-z']/g,"");if(normalized.length>4&&!ignored.has(normalized))counts.set(normalized,(counts.get(normalized)??0)+1)}
+    const repeated=[...counts.entries()].filter(([,count])=>count>=4).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const citations=(draft.match(/\\([A-Z][^)]*,\\s*\\d{4}\\)|\\[\\d+\\]/g)??[]).length;
+    const flags:string[]=[];
+    if(words.length<250)flags.push("Short draft: expand the reasoning and evidence where the assignment requires it.");
+    if(longSentences.length)flags.push(`${longSentences.length} sentence(s) exceed 32 words. Consider splitting complex ideas.`);
+    if(repeated.length)flags.push(`Repeated terms: ${repeated.map(([word])=>word).join(", ")}. Check for unnecessary repetition.`);
+    if(citations===0)flags.push("No common author-date or numbered citation markers detected. Verify the required citation style manually.");
+    return {wordCount:words.length,sentenceCount:sentences.length,averageSentence:sentences.length?Math.round(words.length/sentences.length):0,longSentences:longSentences.length,repeated,citations,flags};
+  },[draft]);
+  const signal=analysis.flags.length>=3?"Review recommended":analysis.flags.length?"A few checks":"Clear initial pass";
+  return <div className="content workspace-page">
+    <div className="page-intro"><div className="eyebrow"><i/> WRITING & QUALITY</div><h1>Review Center<em>.</em></h1><p>A private first-pass writing check for clarity signals before you submit or share a draft.</p></div>
+    <div className="review-disclaimer">LOCAL TEXT CHECK ONLY · No AI provider, plagiarism detector, source verification, or external upload is used.</div>
+    <div className="review-layout"><form className="panel review-editor" onSubmit={event=>{event.preventDefault();setReviewed(true)}}>
+      <div className="panel-head"><div><span className="eyebrow">DRAFT WORKSPACE</span><h3>Bring your writing into focus</h3></div><span className="draft-count">{analysis.wordCount} words</span></div>
+      <label className="review-label" htmlFor="northstar-draft">Your draft</label><textarea id="northstar-draft" rows={14} value={draft} onChange={event=>{setDraft(event.target.value);setReviewed(false)}} placeholder="Paste or write a draft here. Your text stays in this browser session and is not sent to a provider."/>
+      <div className="review-actions"><span>Text is analyzed locally in this page.</span><button className="primary-action" type="submit" disabled={!draft.trim()}><ClipboardCheck size={14}/> Review draft</button></div>
+    </form>
+    <aside className="panel review-summary"><span className="eyebrow">REVIEW SIGNAL</span><h3>{reviewed?signal:"Ready when you are"}</h3><p>{reviewed?"Use these checks as prompts for your own revision. They do not grade the draft.":"Run a local review to see structural signals and revision prompts."}</p>{reviewed&&<><div className="review-metrics"><div><strong>{analysis.wordCount}</strong><small>Words</small></div><div><strong>{analysis.sentenceCount}</strong><small>Sentences</small></div><div><strong>{analysis.averageSentence}</strong><small>Avg. words / sentence</small></div></div><div className="review-flags">{analysis.flags.length?analysis.flags.map((flag,index)=><div key={index}><i/>{flag}</div>):<div><i/>No basic structure flags found. Continue with a substantive human review.</div>}</div></>}</aside></div>
+  </div>;
+}
+
 function Placeholder({ path, onReset }: { path: string; onReset: () => void }) {
   const page = pages[path] ?? { eyebrow: "PERSONALIZE", title: "Workspace", copy: "This workspace will be built on the shared NORTHSTAR academic foundation." };
   return <div className="content placeholder"><div className="eyebrow"><i/> {page.eyebrow}</div><h1>{page.title}<em>.</em></h1><p>{page.copy}</p><section className="panel coming"><Sparkles size={22}/><span><b>{path==="/ai"?"Provider connection is intentionally disabled.":"This workspace is taking shape."}</b><small>{path==="/ai"?"The UI is a safe placeholder. No AI provider, API key, or external service is connected.":"This area will be implemented incrementally using the approved NORTHSTAR architecture."}</small></span><em>IN DEVELOPMENT</em></section>{path==="/settings" && <section className="panel settings-panel"><div><b>Reset local demo data</b><small>Restore the original illustrative courses and assignment statuses in this browser.</small></div><button onClick={onReset}><RotateCcw size={14}/> Reset demo workspace</button></section>}</div>;
 }
 function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCreate, onResourceUpdate, onResourceDelete, onReset }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onResourceCreate:(input:ResourceInput)=>void; onResourceUpdate:(id:string,input:ResourceInput)=>void; onResourceDelete:(id:string)=>void; onReset:()=>void }) {
   const location = useLocation();
-  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
+  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<AcademicSnapshot>(() => loadAcademicSnapshot());
