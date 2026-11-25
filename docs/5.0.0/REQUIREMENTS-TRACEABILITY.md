@@ -246,3 +246,10 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-ACAD-001 / NS-ACAD-003: Dashboard course pulse, Courses cards and Course Detail now use one shared selector. Completion is derived from submitted/graded assignments; the course baseline is used only when no assignments are tracked.
 - NS-STATE-001: one deterministic projection prevents different workspaces from showing conflicting course completion values.
 - NS-QUAL-001: selector implementation and its dedicated completion/fallback tests passed strict typecheck, dependency audits, domain tests and production build in workflow runs 45679641805 and 45679696914.
+
+
+### Assignment queue sorting evidence — 2026-11-25
+
+- NS-ACAD-002: assignment queue supports due-date, priority and recently-updated ordering in addition to query, status and course filtering.
+- NS-STATE-001: the ordering selector returns a sorted projection without mutating canonical assignment order.
+- NS-QUAL-001: strict typecheck, production dependency audit, domain tests and production build passed in workflow run 45680510214, including the sort-mode ordering/immutability test.
