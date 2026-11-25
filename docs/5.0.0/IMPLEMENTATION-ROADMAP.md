@@ -216,3 +216,12 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - Tests cover attempt create/resume, duration persistence/range validation, answer autosave, flags, completion scoring, cross-course answer rejection and the seeded question bank.
 
 The question set is illustrative demo content. Instructor-authored assessment imports, richer test formats, accessibility and browser/iPad end-to-end qualification remain open.
+
+
+### Global navigation and notification intelligence — 2026-11-25
+
+- Replaced the static top-bar shortcut/bell affordances with a command palette and academic notification center.
+- Search spans navigation, courses, assignments, calendar events, resources and saved writing. Keyboard shortcut, arrow selection, Enter, Escape and accessible combobox/listbox state are implemented.
+- Notification selectors cover overdue/missing work, due-today assignments, seven-day calendar events, due flashcards and pending grades. Badge and panel share the same data selection and routes.
+- Domain tests cover search and notification selectors. These are local in-app reminders, not push notifications.
+
