@@ -194,7 +194,7 @@ function AssignmentDetail({ snapshot, onStatus }: { snapshot:AcademicSnapshot; o
 }
 
 function Assignments({ snapshot, onStatus, onCreate, onUpdate, onDelete }: { snapshot: AcademicSnapshot; onStatus: (id: string, status: AssignmentStatus) => void; onCreate: (input: AssignmentInput) => void; onUpdate: (id: string, input: AssignmentInput) => void; onDelete: (id: string) => void }) {
-  const [query, setQuery] = useState(""); const [status, setStatus] = useState("all"); const [course, setCourse] = useState("all"); const [sort,setSort]=useState("due");
+  const [query, setQuery] = useState(""); const [status, setStatus] = useState("all"); const [course, setCourse] = useState("all"); const [sort,setSort]=useState<"due"|"priority"|"updated">("due");
   const [searchParams,setSearchParams]=useSearchParams();
   const requestedEdit=searchParams.get("edit");
   const [editor, setEditor] = useState<"new" | string | null>(()=>requestedEdit&&snapshot.assignments.some(item=>item.id===requestedEdit)?requestedEdit:null);
