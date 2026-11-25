@@ -30,6 +30,15 @@ const workspaces = [
   { id: "settings", title: "Settings", detail: "Open workspace", type: "WORKSPACE" as const, to: "/settings" },
 ];
 
+export function selectCourseProgress(snapshot: AcademicSnapshot, courseId: string): number {
+  const course = snapshot.courses.find(item => item.id === courseId);
+  if (!course) return 0;
+  const assignments = snapshot.assignments.filter(item => item.courseId === courseId);
+  if (!assignments.length) return course.progress;
+  const completed = assignments.filter(item => item.status === "submitted" || item.status === "graded").length;
+  return Math.round(completed / assignments.length * 100);
+}
+
 export function searchWorkspaceResults(snapshot: AcademicSnapshot, query: string, limit = 14): WorkspaceSearchResult[] {
   const normalized = query.trim().toLocaleLowerCase();
   const rows: WorkspaceSearchResult[] = [
