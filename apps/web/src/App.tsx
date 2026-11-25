@@ -54,9 +54,15 @@ function Sidebar({ snapshot }: { snapshot: AcademicSnapshot }) {
     </div>
   </aside>;
 }
+function ConnectivityIndicator() {
+  const [online,setOnline]=useState(()=>typeof navigator==="undefined"?true:navigator.onLine);
+  useEffect(()=>{const update=()=>setOnline(navigator.onLine);window.addEventListener("online",update);window.addEventListener("offline",update);return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);};},[]);
+  return <span className={"connectivity-state "+(online?"online":"offline")}><i/>{online?"ONLINE":"OFFLINE · LOCAL"}</span>;
+}
+
 function Topbar({ pathname, onOpenPalette, onToggleNotifications, notificationCount }: { pathname: string; onOpenPalette:()=>void; onToggleNotifications:()=>void; notificationCount:number }) {
-  const title = pathname === "/" ? "Overview" : pathname.slice(1).replace(/^./, c => c.toUpperCase());
-  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>{title}</b></div><div className="top-actions"><span className="demo-state"><i/> LOCAL DEMO DATA</span><button type="button" className="quick command-trigger" onClick={onOpenPalette} aria-label="Open command palette"><Search size={13}/> Search / Go <kbd>⌘ K</kbd></button><button type="button" className="notification-trigger" onClick={onToggleNotifications} aria-label={notificationCount?(`Open notifications, ${notificationCount} items`):"Open notifications"}><Bell size={15}/>{notificationCount>0&&<i>{notificationCount>9?"9+":notificationCount}</i>}</button></div></header>;
+  const title = pathname.startsWith("/assignments/") ? "Assignment" : pathname.startsWith("/courses/") ? "Course" : pathname === "/" ? "Overview" : pathname.slice(1).replace(/^./, c => c.toUpperCase());
+  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>{title}</b></div><div className="top-actions"><ConnectivityIndicator/><span className="demo-state"><i/> LOCAL DEMO DATA</span><button type="button" className="quick command-trigger" onClick={onOpenPalette} aria-label="Open command palette"><Search size={13}/> Search / Go <kbd>⌘ K</kbd></button><button type="button" className="notification-trigger" onClick={onToggleNotifications} aria-label={notificationCount?(`Open notifications, ${notificationCount} items`):"Open notifications"}><Bell size={15}/>{notificationCount>0&&<i>{notificationCount>9?"9+":notificationCount}</i>}</button></div></header>;
 }
 
 function CommandPalette({ snapshot, onClose, onNavigate }: { snapshot:AcademicSnapshot; onClose:()=>void; onNavigate:(path:string)=>void }) {
