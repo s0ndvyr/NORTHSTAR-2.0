@@ -204,3 +204,13 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - The lockfile uses npm lockfile version 3 and was validated with a clean `npm ci`.
 - Simplified qualification to use only `npm ci`; removed CI write permission and all automatic repository mutation. The workflow now uses read-only contents permission.
 - Local setup documentation now uses `npm ci` for reproducible installation.
+
+
+### Study Lab practice engine increment — 2026-11-25
+
+- Added course-grounded multiple-choice practice questions with validated option sets and explanations.
+- Added revisioned practice attempts to the canonical snapshot. Attempts resume after reload and autosave answers, flags and elapsed time.
+- Practice mode includes course selection, previous/next navigation, question navigator, flag-for-review, elapsed timer, finish confirmation, score calculation and per-question explanations.
+- Added tests for attempt creation/resume, answer autosave, flagging, completion scoring and rejection of invalid/cross-course answers.
+
+This is the initial demo question bank and practice engine. Full instructor-content-derived quiz generation, configurable tests, timer limits and advanced attempt analytics remain ahead.
