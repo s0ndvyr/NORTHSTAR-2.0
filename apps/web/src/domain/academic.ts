@@ -74,6 +74,37 @@ export interface WritingDraft {
   source: "northstar";
 }
 
+export type AcademicEventKind = "class" | "study" | "reminder" | "personal";
+
+export interface AcademicEvent {
+  id: string;
+  title: string;
+  kind: AcademicEventKind;
+  startsAt: string;
+  endsAt: string;
+  courseId?: string;
+  assignmentId?: string;
+  notes: string;
+  source: "demo" | "northstar";
+  updatedAt: string;
+}
+
+export type GradeItemStatus = "graded" | "pending" | "missing" | "excused";
+
+export interface GradeItem {
+  id: string;
+  courseId: string;
+  assignmentId?: string;
+  title: string;
+  score: number | null;
+  pointsPossible: number;
+  status: GradeItemStatus;
+  feedback?: string;
+  gradedAt?: string;
+  source: "demo" | "northstar";
+  updatedAt: string;
+}
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
@@ -86,6 +117,10 @@ export interface AcademicSnapshot {
   studyCards?: StudyCard[];
   /** Local writing drafts remain on this device and can optionally link to coursework. */
   writingDrafts?: WritingDraft[];
+  /** Agenda items are separate from assignment due dates. */
+  events?: AcademicEvent[];
+  /** Scores are explicit records; assignment status alone never implies a numeric grade. */
+  gradeItems?: GradeItem[];
 }
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
