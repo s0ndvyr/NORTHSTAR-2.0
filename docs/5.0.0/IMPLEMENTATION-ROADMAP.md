@@ -104,3 +104,14 @@ Implementation is active on `northstar-5.0.0-development`. This checkpoint recor
 - Canvas and AI remain disconnected; no live integration claim is made.
 
 Do not mark a requirement accepted until its defined verification evidence exists.
+
+
+### Follow-on implementation checkpoint — 2026-11-25
+
+- Added a course-linked resource record to the same academic snapshot used by assignments and other workspaces. Existing version-1 browser snapshots without a `resources` collection remain readable and are normalized in memory.
+- Added local resource create/update/delete commands with revision increments, course relationship checks, runtime validation, and HTTPS-only external URL policy.
+- Implemented Resources library UI for notes, references, and external links, including search, course filtering, editor, and delete flow.
+- Added resource lifecycle and URL-scheme tests.
+- Added the install manifest, NORTHSTAR SVG icon, production service-worker registration, and conservative app-shell/static-asset caching. This is a PWA foundation, not a claim of full offline synchronization or iPad qualification.
+
+The complete latest workflow run is the qualification source for these changes; any earlier failed run is retained as history and must not be described as the current result.
