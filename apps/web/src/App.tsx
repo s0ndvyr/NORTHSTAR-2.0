@@ -65,7 +65,7 @@ function Dashboard({ snapshot }: { snapshot: AcademicSnapshot }) {
   const overdue = open.filter(a => a.status === "missing" || new Date(a.dueAt) < now).length;
   const upcoming = open.filter(a => a.status !== "missing" && new Date(a.dueAt) >= now).length;
   const priorities = [...open].sort((a,b) => {
-    const rank = (a: AcademicAssignment) => a.status === "missing" ? 0 : new Date(a.dueAt) < now ? 1 : new Date(a.dueAt).toDateString()===now.toDateString()?2:a.priority === "urgent" ? 3 : a.priority === "high" ? 4 : a.status==="in_progress"||a.status==="draft"?5:6;
+    const rank = (a: AcademicAssignment) => a.status === "missing" ? 0 : new Date(a.dueAt) < now ? 1 : new Date(a.dueAt).toDateString()===now.toDateString()?2:a.priority === "urgent" ? 3 : a.priority === "high" ? 4 : a.status==="in_progress"?5:6;
     return rank(a)-rank(b) || new Date(a.dueAt).getTime()-new Date(b.dueAt).getTime();
   }).slice(0,5);
   const courseName = (id: string) => snapshot.courses.find(c => c.id === id)?.code ?? "COURSE";
