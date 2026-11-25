@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicCourse, AcademicResource, AcademicTerm } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicResource, AcademicTerm, StudyCard } from "./academic";
 
 export const demoTerm: AcademicTerm = {
   id: "term-fall-2026", name: "Fall 2026",
@@ -49,4 +49,12 @@ export const demoResources: AcademicResource[] = [
     url: "https://www.loc.gov/", content: "",
     createdAt: resourceNow, updatedAt: resourceNow, source: "demo",
   },
+];
+
+
+export const demoStudyCards: StudyCard[] = [
+  { id: "study-eng-thesis", courseId: "eng-204", prompt: "What makes a thesis statement effective?", answer: "An effective thesis is specific, arguable, focused, and gives the reader a clear sense of the reasoning the paper will develop.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
+  { id: "study-bio-osmosis", courseId: "bio-112", prompt: "What is osmosis?", answer: "Osmosis is the net movement of water across a selectively permeable membrane toward the side with the higher concentration of solutes.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
+  { id: "study-his-primary", courseId: "his-210", prompt: "What questions help evaluate a primary source?", answer: "Ask who created it, when and where it was created, its intended audience, its purpose, what it reveals, and whose perspective may be missing.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
+  { id: "study-mat-function", courseId: "mat-151", prompt: "What is a function in algebra?", answer: "A function is a relation that assigns exactly one output to each permitted input. A vertical-line test can help identify whether a graph represents a function.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
 ];
