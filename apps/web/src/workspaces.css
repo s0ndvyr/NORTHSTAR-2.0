@@ -106,3 +106,17 @@
 .study-rating .rating-easy{color:#8bc8a8;border-color:#86c8a52e}
 .study-schedule{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font:8px var(--mono);color:#7f90a8}
 @media(max-width:740px){.study-rating>div{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Connected course detail hubs */
+a.course-card{text-decoration:none;color:inherit;display:block;transition:transform .18s,border-color .18s}
+a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
+.course-open{display:flex;align-items:center;gap:5px;margin-top:14px;color:#a9c6ed;font-size:9px}
+.course-detail-progress{margin-bottom:13px;padding:16px 18px}
+.course-detail-progress>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.course-detail-progress strong{font:600 20px var(--display);color:#c6d9f5}
+.course-detail-progress .bar{width:100%;height:5px}
+.course-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.course-detail-grid>.panel{min-width:0}
+.empty-inline{font-size:9px;color:#7f90a8;padding:10px 0}
+@media(max-width:740px){.course-detail-grid{grid-template-columns:1fr}}
