@@ -83,3 +83,18 @@ These requirements derive from EFP-DEC-06 through EFP-DEC-10 (user checkpoint A/
 | NS-GOV-003 | Inventory findings are reconciled to requirements, migration strategy, risk register and preservation/rollback gates before planning sign-off | P0 | NS-MIG-002, NS-MIG-003, NS-MIG-004, NS-SEC-003, NS-INT-002 | Traceability reconciliation and completed preservation/retirement gate review | Planned |
 
 These requirements derive from EFP-DEC-11 through EFP-DEC-15 (user checkpoint A/A/A/A/A dated 2026-11-25). The initial evidence checkpoint is documented in SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md. No requirement is represented as implemented or verified.
+
+
+## Module 1 — Comprehensive Legacy and Integration Evidence requirements
+
+The following requirements derive from the user's A/A/A/A/A decisions EFP-DEC-16 through EFP-DEC-20 dated 2026-11-25. They are planning/audit requirements; none is implemented or verified.
+
+| ID | Requirement | Priority | Dependencies | Implementation / verification evidence | Status |
+|---|---|---|---|---|---|
+| NS-MIG-005 | Every tracked legacy source, configuration, test, deployment and native artifact is accounted for with purpose, imports/dependencies, consumers, execution role, workflow relationships and preservation disposition | P0 | NS-MIG-002, NS-MIG-003 | Exact-source path inventory, dependency/consumer graph and source-to-workflow map | Audit required |
+| NS-DATA-006 | Every persistence mechanism, key, store, schema and file lifecycle is traced to all read/write/delete/migration/fallback/cleanup/backup/recovery call sites | P0 | NS-MIG-004, NS-DATA-005 | Reconciled persistence matrix and lifecycle/recovery evidence | Audit required |
+| NS-CAN-005 | Every Canvas Worker route and external provider operation is mapped to source, method, validation, permission, upstream endpoint, error behavior, security boundary and official evidence | P0 | NS-SEC-003, NS-CAN-004, NS-SEC-002 | Complete route/source/test/provider evidence catalogue and separate tenant verification gate | Audit required |
+| NS-INT-003 | Seven workspace contracts define entities, ownership, projections, commands, events, permissions, offline/conflict/freshness behavior, migration and acceptance | P0 | NS-INT-002, NS-ARCH-003, NS-CAI-001 | Reviewed contracts for Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace | Planned |
+| NS-GOV-004 | Module sign-off requires exact-source reconciliation and evidence-backed preservation, parity, backup/restore, rollback and risk gates | P0 | NS-GOV-003, NS-MIG-005, NS-DATA-006, NS-CAN-005, NS-INT-003 | Completed reconciliation report, open-risk disposition and explicit user sign-off | Planned |
+
+Supporting specification: MODULE-1-LEGACY-AND-INTEGRATION-EVIDENCE-PLAN.md. Approval of these requirements authorizes planning and static source analysis only. It does not authorize application implementation, migration, dependency installation, live provider/tenant access, Worker deployment, legacy deletion, production changes, build/test execution or runtime qualification.
