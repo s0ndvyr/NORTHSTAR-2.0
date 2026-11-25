@@ -153,3 +153,13 @@ This is the first spaced-repetition engine increment. Full study guides, practic
 - Latest successful dependency qualification before the assignment-to-draft route addition reported zero advisories, with typecheck, domain tests, and production build all passing.
 
 The assignment-to-draft route is awaiting its own latest workflow result. Browser/iPad acceptance and a committed package lockfile remain outstanding.
+
+
+### Academic backup and recovery increment — 2026-11-25
+
+- Added a versioned NORTHSTAR backup envelope containing the complete local academic snapshot.
+- Added strict parse/validation and safe normalization for older version-1 snapshots; malformed or unknown-version backups are rejected.
+- Settings now exports a JSON backup and restores one only after explicit confirmation. The backup includes courses, assignments, resources, study cards and writing drafts.
+- Added repository tests for complete snapshot round-trip and invalid backup rejection.
+
+This is local backup/restore only. It is not cloud backup, encryption, multi-device synchronization, or a substitute for the future offline conflict/reconciliation queue.
