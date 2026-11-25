@@ -203,3 +203,13 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .ai-notification:last-child{border-bottom:0}
 .ai-notification i{width:6px;height:6px;flex:0 0 6px;margin-top:4px;border-radius:50%;background:#8eafd9}
 @media(max-width:740px){.copilot-panel{align-items:flex-start;flex-direction:column}.copilot-toggle{justify-items:start}.ai-workspace-grid{grid-template-columns:1fr}.ai-notifications{grid-column:auto}}
+
+
+/* Local assignment turn-in simulation */
+.submit-action{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:28px;padding:0 9px;border:1px solid #85b89a4a;border-radius:6px;background:#85b89a12;color:#a9d2b4;font:9px 'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.submit-action:hover{background:#85b89a24;transform:translateY(-1px)}
+.submission-toast{display:flex;align-items:center;gap:10px;padding:11px 13px;margin-bottom:13px;border:1px solid #85b89a55;border-radius:7px;background:#85b89a13;color:#b4d8be;font-size:10px}
+.submission-toast>svg{flex:0 0 15px}
+.submission-toast>span{flex:1;line-height:1.5}
+.submission-toast button{display:grid;place-items:center;width:24px;height:24px;border:0;background:transparent;color:#b4d8be;cursor:pointer}
+@media(max-width:740px){.submit-action{font-size:8px;padding:0 7px}}
