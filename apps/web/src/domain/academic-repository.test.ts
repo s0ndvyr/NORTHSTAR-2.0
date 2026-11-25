@@ -86,7 +86,7 @@ describe("academic repository", () => {
     expect(updateAssignment(snapshot, assignment.id, { pointsPossible: Number.NaN })).toBe(snapshot);
     expect(updateAssignment(snapshot, assignment.id, { estimatedMinutes: -5 })).toBe(snapshot);
     expect(updateAssignment(snapshot, assignment.id, { priority: "critical" as AssignmentInput["priority"] })).toBe(snapshot);
-    expect(updateAssignment(snapshot, assignment.id, { status: "unknown" as AssignmentInput["priority"] as never })).toBe(snapshot);
+    expect(updateAssignment(snapshot, assignment.id, { status: "unknown" as never })).toBe(snapshot);
     expect(isAcademicSnapshot(snapshot)).toBe(true);
   });
 
