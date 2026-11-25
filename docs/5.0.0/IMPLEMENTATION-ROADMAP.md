@@ -413,3 +413,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added an offline-shell check that waits for service-worker readiness, reloads once under control, disables network access, and verifies the cached dashboard still renders.
 - These are Chromium-based viewport/service-worker checks, not a substitute for physical iPad Safari or prolonged offline/data-recovery qualification.
 - Passed in GitHub Actions [#45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998): all twelve Playwright browser scenarios succeeded, including the iPad portrait and offline-shell checks.
+
+
+### Academic record provenance visibility — 2026-11-25
+
+- Added a shared origin-label helper that treats legacy course records without explicit origin metadata as demo-originated and distinguishes newly created personal records.
+- Added DEMO/PERSONAL provenance labels to assignment rows, course cards, calendar deadlines/events, grade records and Study Lab flashcards; Resources already exposed an origin label.
+- Corrected the Calendar projection to carry the source of each assignment deadline rather than hard-coding it as personal.
+- Added Playwright assertions for personal-origin labels on newly created assignments, courses, calendar events and grade records.
+- Qualification for the new assertions is pending in [GitHub Actions #45692975729](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692975729).
