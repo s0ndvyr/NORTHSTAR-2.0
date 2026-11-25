@@ -295,7 +295,7 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
     pointsPossible: next.pointsPossible, priority: next.priority, estimatedMinutes: next.estimatedMinutes,
     personalNotes: next.personalNotes,
   };
-  if (!isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
+  if (!VALID_STATUSES.includes(next.status) || !isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment => assignment.id === id ? next : assignment));
 }
 
