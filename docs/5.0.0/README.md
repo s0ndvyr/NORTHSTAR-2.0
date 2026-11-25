@@ -129,3 +129,20 @@ An initial static source evidence review is available at [LEGACY-SOURCE-INVENTOR
 ## Change control and authorization boundary
 
 The current authorization covers setup completion and engineering-foundation **planning**. It does not authorize writing or replacing application code, schema migrations, dependency installation, deleting legacy source, changing production, deploying, or claiming runtime qualification. Those actions require separate explicit authorization.
+
+
+## Comprehensive source inventory checkpoint — 2026-11-25
+
+The user approved **A / A / A / A / A** (EFP-DEC-11 through EFP-DEC-15): inventory every source file and its dependencies/consumers; map every browser storage key, database, store, schema version, reader, writer and lifecycle; catalogue every Canvas Worker route and security rule; define complete integration contracts for all workspaces; and reconcile evidence against requirements, migration plans, risks and preservation gates before sign-off.
+
+The expanded [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md) records the observed root tree, all currently listed script/style/test paths, native iOS and Worker files, and initial storage findings. Static inspection identified IndexedDB databases `northstar-secure-vault` (version 1, store `secrets`) and `northstar-document-studio` (version 1, stores `documents` and `drafts`), plus PDF localStorage key families and sessionStorage quiz-attempt state described in the README/source. Exact key and call-site enumeration remains open.
+
+| Engineering Foundation item | Current status |
+|---|---|
+| Source-tree path inventory | Initial branch tree enumerated; source-by-source dependency/consumer audit in progress |
+| Browser persistence | Two IndexedDB databases / three stores identified; exhaustive key and call-site map pending |
+| Canvas Worker | Worker source identified; complete route/method/security matrix pending |
+| Workspace integration contracts | Seven-workspace scope approved; detailed contracts pending |
+| Evidence reconciliation | Pending comprehensive inventory, Canvas evidence, offline measurements and risk review |
+
+This remains a partial static review. No tests/builds were run and no application code was changed.
