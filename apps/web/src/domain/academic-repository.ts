@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus, StudyCard, StudyRating } from "./academic";
+import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus, StudyCard, StudyRating, WritingDraft } from "./academic";
 import { demoAssignments, demoCourses, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
@@ -9,6 +9,7 @@ export type AssignmentInput = Pick<AcademicAssignment, "courseId" | "title" | "d
 export type AssignmentPatch = Partial<AssignmentInput> & { status?: AssignmentStatus };
 export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind" | "description" | "url" | "content">;
 export type StudyCardInput = Pick<StudyCard, "courseId" | "prompt" | "answer">;
+export type WritingDraftInput = Pick<WritingDraft, "title" | "body"> & { id?: string; assignmentId?: string };
 
 function initialSnapshot(): AcademicSnapshot {
   return {
@@ -19,6 +20,7 @@ function initialSnapshot(): AcademicSnapshot {
     assignments: demoAssignments.map(assignment => ({ ...assignment })),
     resources: demoResources.map(resource => ({ ...resource })),
     studyCards: demoStudyCards.map(card => ({ ...card })),
+    writingDrafts: [],
   };
 }
 
@@ -57,6 +59,17 @@ function isValidResource(value: unknown, courseIds: Set<string>): value is Acade
     && (value.source === "demo" || value.source === "northstar");
 }
 
+function isValidWritingDraft(value: unknown, assignmentIds: Set<string>): value is WritingDraft {
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.title === "string" && value.title.trim().length > 0
+    && typeof value.body === "string"
+    && (value.assignmentId === undefined || (typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId)))
+    && typeof value.revision === "number" && Number.isInteger(value.revision) && value.revision >= 1
+    && typeof value.savedAt === "string" && Number.isFinite(Date.parse(value.savedAt))
+    && value.source === "northstar";
+}
+
 function isValidStudyCard(value: unknown, courseIds: Set<string>): value is StudyCard {
   if (!isRecord(value)) return false;
   return typeof value.id === "string" && value.id.length > 0
@@ -80,6 +93,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!Array.isArray(value.courses) || !Array.isArray(value.assignments)) return false;
   if (value.resources !== undefined && !Array.isArray(value.resources)) return false;
   if (value.studyCards !== undefined && !Array.isArray(value.studyCards)) return false;
+  if (value.writingDrafts !== undefined && !Array.isArray(value.writingDrafts)) return false;
   const courseIds = new Set<string>();
   for (const course of value.courses) {
     if (!isRecord(course) || typeof course.id !== "string" || !course.id
@@ -105,6 +119,11 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (!isValidStudyCard(card, courseIds) || studyCardIds.has(card.id)) return false;
     studyCardIds.add(card.id);
   }
+  const draftIds = new Set<string>();
+  for (const draft of (value.writingDrafts ?? [])) {
+    if (!isValidWritingDraft(draft, assignmentIds) || draftIds.has(draft.id)) return false;
+    draftIds.add(draft.id);
+  }
   return true;
 }
 
@@ -114,7 +133,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -174,7 +193,8 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
 
 export function deleteAssignment(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
   if (!snapshot.assignments.some(assignment => assignment.id === id)) return snapshot;
-  return revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id));
+  const writingDrafts = (snapshot.writingDrafts ?? []).map(draft => draft.assignmentId === id ? { ...draft, assignmentId: undefined } : draft);
+  return { ...revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id)), writingDrafts };
 }
 
 export function resetAcademicSnapshot(): AcademicSnapshot {
@@ -249,4 +269,29 @@ export function rateStudyCard(snapshot: AcademicSnapshot, id: string, rating: St
   const nextReviewAt = new Date(now.getTime() + interval * 86400000).toISOString();
   const updated = { ...current, intervalDays: interval, easeFactor: ease, repetitions, nextReviewAt, updatedAt: now.toISOString() };
   return { ...snapshot, revision: snapshot.revision + 1, studyCards: cards.map(card => card.id === id ? updated : card) };
+}
+
+
+export function saveWritingDraft(snapshot: AcademicSnapshot, input: WritingDraftInput): AcademicSnapshot {
+  const title = input.title.trim();
+  if (!title || !input.body.trim()) return snapshot;
+  if (input.assignmentId && !snapshot.assignments.some(item => item.id === input.assignmentId)) return snapshot;
+  const drafts = snapshot.writingDrafts ?? [];
+  const existing = input.id ? drafts.find(draft => draft.id === input.id) : undefined;
+  const id = input.id?.trim() || `draft-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  const now = new Date().toISOString();
+  const draft: WritingDraft = {
+    id, title, body: input.body, assignmentId: input.assignmentId,
+    revision: (existing?.revision ?? 0) + 1, savedAt: now, source: "northstar",
+  };
+  const nextDrafts = existing
+    ? drafts.map(item => item.id === existing.id ? draft : item)
+    : [...drafts, draft];
+  return { ...snapshot, revision: snapshot.revision + 1, writingDrafts: nextDrafts };
+}
+
+export function deleteWritingDraft(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const drafts = snapshot.writingDrafts ?? [];
+  if (!drafts.some(draft => draft.id === id)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, writingDrafts: drafts.filter(draft => draft.id !== id) };
 }
