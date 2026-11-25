@@ -346,6 +346,7 @@ describe("Study Lab practice attempts", () => {
     const attempt = started.practiceAttempts?.find(item => item.status === "in_progress");
     expect(attempt).toBeTruthy();
     expect(attempt?.questionIds).toContain("practice-bio-osmosis");
+    expect(attempt?.durationSeconds).toBe(600);
     const saved = updatePracticeAttempt(started, attempt!.id, { "practice-bio-osmosis": "a" }, ["practice-bio-osmosis"], 42);
     expect(saved.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
       answers: { "practice-bio-osmosis": "a" },
@@ -359,6 +360,15 @@ describe("Study Lab practice attempts", () => {
     });
     expect(completed.revision).toBe(saved.revision + 1);
     expect(isAcademicSnapshot(completed)).toBe(true);
+  });
+
+  it("persists a selected time limit and rejects unsafe duration values", () => {
+    const initial = loadAcademicSnapshot();
+    const started = createPracticeAttempt(initial, "bio-112", 300);
+    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress");
+    expect(attempt?.durationSeconds).toBe(300);
+    expect(createPracticeAttempt(initial, "bio-112", 30)).toBe(initial);
+    expect(isAcademicSnapshot(started)).toBe(true);
   });
 
   it("resumes an existing in-progress attempt instead of creating a duplicate", () => {
