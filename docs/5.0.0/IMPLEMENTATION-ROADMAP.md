@@ -196,3 +196,11 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 - Settings now exposes persistent Midnight and Light theme selection, with Midnight as the default.
 - Theme state is stored under `northstar-theme` and applied at the application root so shared surfaces follow the selected theme.
 - The PWA foundation is documented as installable app metadata plus conservative app-shell/static-asset caching. Full offline academic write queues and conflict reconciliation remain future qualification work.
+
+
+### Deterministic dependency lock completed — 2026-11-25
+
+- Generated and verified the npm lockfile in CI, then committed `apps/web/package-lock.json` to the development branch.
+- The lockfile uses npm lockfile version 3 and was validated with a clean `npm ci`.
+- Simplified qualification to use only `npm ci`; removed CI write permission and all automatic repository mutation. The workflow now uses read-only contents permission.
+- Local setup documentation now uses `npm ci` for reproducible installation.
