@@ -290,7 +290,30 @@ All are planning requirements; implementation status remains Not implemented or 
 6. Complete requirement dependencies and acceptance matrices.
 7. Update Engineering Foundation planning brief and risk register.
 
-## 16. Status and authorization
+## 16. Detailed Data Architecture Planning checkpoint — 2026-11-25
+
+The user approved A/A/A/A/A for the next planning scope: comprehensive field-level model; comprehensive Canvas capability matrix; explicit data-class lifecycle policy; full legacy capability/data mapping; and complete verification blueprint.
+
+Supporting specifications:
+- CANONICAL-ACADEMIC-DATA-MODEL.md — logical entities, field contracts, authority boundaries, relationships and projection rules.
+- CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md — capability domains, evidence classification, field authority and provider verification gate.
+- OFFLINE-CACHE-RETENTION-AND-RECOVERY-POLICY.md — cache classes, freshness, quota/eviction, backup, restore, disconnect and term archive.
+- LEGACY-CAPABILITY-AND-DATA-MIGRATION-MAP.md — capability-led preservation and migration stages.
+- DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md — requirement acceptance matrix, failure scenarios, evidence standard and release gates.
+
+New traceability requirements: NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-QUAL-003.
+
+Remaining planning work:
+1. Populate endpoint-by-endpoint Canvas evidence from current official documentation; target-tenant verification remains unperformed and separately gated.
+2. Decide exact freshness thresholds, quotas, retention periods, encryption and backup destination.
+3. Complete static source-level inventory of legacy storage keys, call sites, file relationships and hidden dependencies.
+4. Resolve exact field enums, timezone semantics, course/assignment identity and grade calculation assumptions.
+5. Complete the detailed event/sync/conflict state-machine diagrams and risk review.
+6. Conduct a cross-document consistency review and present the final workstream sign-off checkpoint.
+
+The new specifications are proposals for review, not accepted physical schemas or executed migration plans.
+
+## 17. Status and authorization
 
 **Decision status:** Five of five decisions approved.  
 **Specification status:** Architecture, ownership, event, sync, conflict, offline, security, and verification specifications drafted.  
