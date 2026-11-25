@@ -50,3 +50,9 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
+      - name: Install ephemeral browser test runner
+        run: npm install --no-save --package-lock=false @playwright/test@1.56.1
+      - name: Install Chromium for browser qualification
+        run: npx playwright install --with-deps chromium
+      - name: Browser workflow qualification
+        run: npx playwright test
