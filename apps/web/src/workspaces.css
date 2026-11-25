@@ -141,3 +141,14 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 @media(max-width:740px){.draft-metadata{grid-template-columns:1fr}.review-actions>div{justify-content:flex-start}}
 
 .assignment-draft-link{margin-top:6px;width:max-content;max-width:100%}
+
+
+/* Local backup and recovery settings */
+.settings-grid{display:grid;gap:12px;max-width:900px}
+.settings-grid .settings-panel{margin:0;align-items:center;padding:18px}
+.settings-grid .settings-panel>div{max-width:580px}
+.settings-grid .settings-panel .eyebrow{margin-bottom:4px}
+.import-backup{position:relative;overflow:hidden;white-space:nowrap}
+.import-backup input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.settings-message{max-width:900px;margin-top:13px;padding:11px 13px;border:1px solid #8eafd93b;border-radius:7px;background:#8eafd910;color:#b7ccec;font-size:10px}
+@media(max-width:740px){.settings-grid .settings-panel{align-items:flex-start}.settings-grid .settings-panel>button,.settings-grid .settings-panel>.import-backup{align-self:flex-start}}
