@@ -20,6 +20,7 @@ const links = [
   { label: "Review Center", to: "/review", icon: ClipboardCheck },
   { label: "Resources", to: "/resources", icon: Library },
   { label: "AI Workspace", to: "/ai", icon: Sparkles },
+  { label: "Settings", to: "/settings", icon: Settings2 },
 ];
 const pages: Record<string, { eyebrow: string; title: string; copy: string }> = {
   "/ai": { eyebrow: "INTELLIGENT ASSISTANCE", title: "AI Workspace", copy: "A future-ready workspace. AI providers are not connected." },
@@ -45,7 +46,7 @@ function Sidebar({ snapshot }: { snapshot: AcademicSnapshot }) {
   return <aside className="sidebar">
     <NavLink to="/" className="brand"><span className="brand-mark"><i /></span><b>NORTHSTAR</b><small>5.0</small></NavLink>
     <div className="side-label">WORKSPACE</div>
-    <nav aria-label="Primary navigation">{links.map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}><Icon size={17}/><span>{label}</span>{label === "Assignments" && <small className="count">{outstanding}</small>}</NavLink>)}</nav>
+    <nav aria-label="Primary navigation">{links.filter(({ to }) => to !== "/settings").map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}><Icon size={17}/><span>{label}</span>{label === "Assignments" && <small className="count">{outstanding}</small>}</NavLink>)}</nav>
     <div className="side-bottom">
       <div className="semester"><span className="side-label">CURRENT TERM</span><strong>{snapshot.term.name}</strong><div className="progress"><i style={{width:`${semesterProgress}%`}}/></div><small><span>Semester progress</span><b>{semesterProgress}%</b></small></div>
       <NavLink to="/settings" className="nav-link"><Settings2 size={17}/><span>Settings</span></NavLink>
