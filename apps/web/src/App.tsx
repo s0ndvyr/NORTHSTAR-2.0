@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
@@ -91,7 +91,7 @@ function AssignmentEditor({ courses, initial, onSave, onCancel }: { courses: Aca
   const [priority, setPriority] = useState<AssignmentPriority>(initial?.priority ?? "normal");
   const [estimatedMinutes, setEstimatedMinutes] = useState(String(initial?.estimatedMinutes ?? 30));
   const [personalNotes, setPersonalNotes] = useState(initial?.personalNotes ?? "");
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSave({ courseId, title, description, dueAt: new Date(dueAt).toISOString(), pointsPossible: Math.max(0, Number(pointsPossible)), priority, estimatedMinutes: Math.max(0, Number(estimatedMinutes)), personalNotes });
   };
