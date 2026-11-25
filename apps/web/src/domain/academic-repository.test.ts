@@ -315,6 +315,8 @@ describe("Calendar event records", () => {
     expect(updated.revision).toBe(created.revision + 1);
     expect(updated.events?.find(item => item.id === personal!.id)).toMatchObject({ title: "Revised study block", notes: "Focus on active recall." });
     expect(updateAcademicEvent(updated, personal!.id, { endsAt: personal!.startsAt })).toBe(updated);
+    const foreignAssignment = snapshot.assignments.find(item => item.courseId !== event.courseId)!;
+    expect(updateAcademicEvent(updated, personal!.id, { assignmentId: foreignAssignment.id })).toBe(updated);
     expect(isAcademicSnapshot(updated)).toBe(true);
   });
 
