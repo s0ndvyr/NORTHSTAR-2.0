@@ -190,7 +190,9 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
       || typeof course.code !== "string" || typeof course.name !== "string"
       || typeof course.instructor !== "string" || course.termId !== value.term.id
       || typeof course.color !== "string" || typeof course.progress !== "number"
-      || !Number.isFinite(course.progress) || course.progress < 0 || course.progress > 100) return false;
+      || !Number.isFinite(course.progress) || course.progress < 0 || course.progress > 100
+      || (course.source !== undefined && course.source !== "demo" && course.source !== "northstar")
+      || (course.updatedAt !== undefined && (typeof course.updatedAt !== "string" || !Number.isFinite(Date.parse(course.updatedAt))))) return false;
     if (courseIds.has(course.id)) return false;
     courseIds.add(course.id);
   }
@@ -288,7 +290,7 @@ export function createCourse(snapshot: AcademicSnapshot, input: CourseInput): Ac
   const course: AcademicCourse = {
     ...input, id: "course-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2)),
     code: input.code.trim().toUpperCase(), name: input.name.trim(), instructor: input.instructor.trim(),
-    color: input.color.trim(), termId: snapshot.term.id,
+    color: input.color.trim(), termId: snapshot.term.id, source: "northstar", updatedAt: new Date().toISOString(),
   };
   return { ...snapshot, revision: snapshot.revision + 1, courses: [...snapshot.courses, course] };
 }
@@ -297,7 +299,7 @@ export function updateCourse(snapshot: AcademicSnapshot, id: string, input: Cour
   if (!snapshot.courses.some(course => course.id === id) || !isValidCourseInput(input)
     || snapshot.courses.some(course => course.id !== id && course.code.trim().toLocaleLowerCase() === input.code.trim().toLocaleLowerCase())) return snapshot;
   return { ...snapshot, revision: snapshot.revision + 1, courses: snapshot.courses.map(course => course.id === id ? {
-    ...course, ...input, code: input.code.trim().toUpperCase(), name: input.name.trim(), instructor: input.instructor.trim(), color: input.color.trim(),
+    ...course, ...input, code: input.code.trim().toUpperCase(), name: input.name.trim(), instructor: input.instructor.trim(), color: input.color.trim(), source: "northstar" as const, updatedAt: new Date().toISOString(),
   } : course) };
 }
 
