@@ -17,6 +17,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Validated academic backup export/import for the complete local snapshot, including resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
+- Provider-free AI Workspace simulation with co-pilot on/off, standing-by state, simulated request queue and local context preview; no provider call is made.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
 
 ## Requirements
