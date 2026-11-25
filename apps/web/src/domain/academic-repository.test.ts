@@ -97,7 +97,20 @@ describe("academic repository", () => {
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].localSnapshot.assignments.find(item => item.id === assignment.id)?.title).toBe("Concurrent local edit");
     expect(conflicts[0].persistedSnapshot.assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
-    expect(clearAcademicConflict(conflicts[0].id)).toBe(true);
+    const continuedLocal = updateAssignment(local, assignment.id, {
+      courseId: assignment.courseId,
+      title: "Continued local edit",
+      description: assignment.description,
+      dueAt: assignment.dueAt,
+      pointsPossible: assignment.pointsPossible,
+      priority: assignment.priority,
+      estimatedMinutes: assignment.estimatedMinutes,
+      personalNotes: assignment.personalNotes,
+    });
+    expect(saveAcademicSnapshot(continuedLocal)).toBe(true);
+    expect(loadAcademicSnapshot().assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
+    expect(loadAcademicConflicts()).toHaveLength(2);
+    for (const conflict of loadAcademicConflicts()) expect(clearAcademicConflict(conflict.id)).toBe(true);
     expect(loadAcademicConflicts()).toHaveLength(0);
   });
 
