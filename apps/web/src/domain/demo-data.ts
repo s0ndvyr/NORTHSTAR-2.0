@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicCourse, AcademicTerm } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicResource, AcademicTerm } from "./academic";
 
 export const demoTerm: AcademicTerm = {
   id: "term-fall-2026", name: "Fall 2026",
@@ -26,4 +26,27 @@ export const demoAssignments: AcademicAssignment[] = [
   { id: "a-bio-05", courseId: "bio-112", title: "Lab preparation worksheet", description: "Prepare lab observations and pre-lab questions.", dueAt: day(-2), pointsPossible: 25, status: "submitted", priority: "normal", estimatedMinutes: 35, personalNotes: "", source: "demo", updatedAt: now.toISOString() },
   { id: "a-his-03", courseId: "his-210", title: "Primary source discussion", description: "Discuss the context and reliability of a primary source.", dueAt: day(-5), pointsPossible: 20, status: "missing", priority: "high", estimatedMinutes: 30, personalNotes: "Check whether late submission is still available.", source: "demo", updatedAt: now.toISOString() },
   { id: "a-mat-07", courseId: "mat-151", title: "Chapter 7 quiz", description: "Practice functions and graph transformations.", dueAt: day(-6), pointsPossible: 25, status: "graded", priority: "normal", estimatedMinutes: 30, personalNotes: "", source: "demo", updatedAt: now.toISOString() },
+];
+
+
+const resourceNow = new Date().toISOString();
+export const demoResources: AcademicResource[] = [
+  {
+    id: "resource-eng-writing-notes", courseId: "eng-204", title: "Research writing notes",
+    kind: "note", description: "A personal reference for building a focused claim and evaluating sources.",
+    url: "", content: "Start with a specific, arguable claim. Use each source to support a distinct part of the reasoning. Explain why the evidence is credible and relevant rather than dropping quotations into the draft.",
+    createdAt: resourceNow, updatedAt: resourceNow, source: "demo",
+  },
+  {
+    id: "resource-bio-cell-review", courseId: "bio-112", title: "Cell transport review",
+    kind: "reference", description: "Quick reminders for the membrane and transport unit.",
+    url: "", content: "Diffusion moves particles down a concentration gradient. Osmosis describes water movement across a selectively permeable membrane. Active transport requires energy to move substances against a gradient.",
+    createdAt: resourceNow, updatedAt: resourceNow, source: "demo",
+  },
+  {
+    id: "resource-his-primary-sources", courseId: "his-210", title: "Library of Congress collections",
+    kind: "link", description: "A starting point for locating primary-source material.",
+    url: "https://www.loc.gov/", content: "",
+    createdAt: resourceNow, updatedAt: resourceNow, source: "demo",
+  },
 ];
