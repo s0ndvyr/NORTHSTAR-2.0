@@ -75,3 +75,11 @@ NS-ARCH-003, NS-ARCH-004, NS-MIG-002, NS-GOV-001 and NS-GOV-002 derive from the 
 | NS-INT-001 | Workspace integration contracts cover Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace | P0 | NS-ARCH-003, NS-CAI-001, NS-CAI-002 | Per-workspace entity/command/event/offline/permission/acceptance matrix | Planned |
 
 These requirements derive from EFP-DEC-06 through EFP-DEC-10 (user checkpoint A/A/A/A/A dated 2026-11-25). Initial source evidence is documented in LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md. No item is considered implemented or verified.
+
+
+| NS-MIG-004 | Every browser persistence mechanism is inventoried by key/store/schema, data class, owner, reader, writer, migration, fallback, retention and deletion lifecycle | P0 | NS-MIG-001, NS-MIG-002, NS-DATA-005 | Reconciled localStorage/sessionStorage/IndexedDB matrix with all read/write/delete call sites and recovery evidence | Audit required |
+| NS-SEC-003 | Every Canvas Worker route is documented with method, path, query/body validation, permission, upstream mapping, error behavior and security boundary | P0 | NS-SEC-002, NS-CAN-003, NS-MIG-003 | Complete source-to-test route matrix and threat-reviewed route contract | Audit required |
+| NS-INT-002 | Each NORTHSTAR workspace has an explicit integration contract for entities, commands, events, permissions, offline behavior, conflict handling, freshness and acceptance | P0 | NS-INT-001, NS-CAI-001, NS-CAI-002, NS-SEC-002 | Reviewed contract set covering Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace | Planned |
+| NS-GOV-003 | Inventory findings are reconciled to requirements, migration strategy, risk register and preservation/rollback gates before planning sign-off | P0 | NS-MIG-002, NS-MIG-003, NS-MIG-004, NS-SEC-003, NS-INT-002 | Traceability reconciliation and completed preservation/retirement gate review | Planned |
+
+These requirements derive from EFP-DEC-11 through EFP-DEC-15 (user checkpoint A/A/A/A/A dated 2026-11-25). The initial evidence checkpoint is documented in SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md. No requirement is represented as implemented or verified.
