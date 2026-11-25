@@ -11,6 +11,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Connected Overview, Assignments, Courses with per-course detail hubs, Calendar, Study Lab flashcard authoring and spaced-repetition review, Gradebook progress views, course-linked Resources library, and a local Writing Review workspace.
 - Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
 - Study Lab flashcard create/delete, course association, prompt/answer reveal, Again/Hard/Good/Easy recall ratings, and next-review scheduling using an ease/interval model.
+- Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
@@ -38,13 +39,14 @@ npm run build
 npm run preview
 ```
 
-The initial academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, and resource lifecycle/HTTPS validation, and spaced-repetition scheduling. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
+The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, and saved writing-draft lifecycle. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
 
 ## Data and integration boundaries
 
 - The academic repository validates parsed browser data before use and rejects invalid records rather than trusting localStorage blindly.
 - All assignment mutations increment the snapshot revision and update the shared local snapshot used by workspace projections.
 - Local assignment status is a personal workflow overlay, not proof of an official submission or grade.
+- Writing drafts and other local records are stored in browser localStorage. They are not encrypted, synchronized, backed up to a server, or sent to an AI provider; users should avoid storing credentials or highly sensitive content.
 - Do not import legacy runtime scripts directly.
 - Never place Canvas credentials or AI provider secrets in client code.
 - Keep provider calls behind typed service interfaces and a future secure server-side boundary.
