@@ -25,7 +25,21 @@ Status values: **Planned**, **Audit required**, **Not implemented**, **Not verif
 | NS-QUAL-001 | Automated build, type, lint, unit, integration, and regression gates | P0 | NS-ARCH-001 | CI run evidence | Audit required |
 | NS-QUAL-002 | Performance, accessibility, and physical iPad qualification | P0 | NS-UX-001 | Recorded test evidence | Not verified |
 | NS-REL-001 | Controlled preview/production release, rollback, and monitoring | P0 | NS-QUAL-001 | Deployment and rollback evidence | Audit required |
+| NS-CAI-001 | One canonical academic data layer with domain ownership and workspace projections | P0 | NS-ARCH-002, NS-DATA-001 | Entity/schema review, duplicate-identity and cross-workspace consistency tests | Planned |
+| NS-CAI-002 | Typed, versioned, idempotent internal event propagation | P0 | NS-CAI-001, NS-STATE-001 | Event contract, ordering, duplicate delivery, retry and subscriber recovery tests | Planned |
+| NS-CAI-003 | Provider-aware external updates using supported webhooks/polling and manual refresh fallback | P0 | NS-CAN-001, NS-CAI-002 | Provider capability matrix, rate-limit, cursor, freshness and refresh tests | Audit required |
+| NS-CAI-004 | Field-level source authority and durable provenance | P0 | NS-DATA-002, NS-CAI-001 | Field authority matrix and source-precedence/conflict tests | Planned |
+| NS-CAI-005 | Conflict preservation, review and auditable resolution; no universal last-write-wins | P0 | NS-CAI-004, NS-CAI-002 | Concurrent edit, stale revision, deletion, ambiguous response and resolution tests | Planned |
+| NS-CAI-006 | Offline cached reads with freshness indicators and bounded cache policy | P1 | NS-DATA-003, NS-STATE-001 | Offline cache, stale labeling, quota and eviction tests | Planned |
+| NS-CAI-007 | Durable offline local writes and safe, idempotent reconnect reconciliation | P0 | NS-CAI-005, NS-CAI-006, NS-CAN-001 | Queue durability, permission revalidation, replay ordering, deduplication and recovery tests | Planned |
+| NS-CAI-008 | Visible synchronization lifecycle, error, retry and recovery status | P1 | NS-CAI-002, NS-CAI-003 | Sync state-machine and user-visible status acceptance tests | Planned |
+| NS-CAI-009 | Permission-aware adapter and domain-service boundaries for provider writes | P0 | NS-SEC-001, NS-CAN-001 | Authorization, secret isolation, revocation and approval-flow tests | Planned |
+| NS-CAI-010 | Cross-workspace consistency and recovery verification | P0 | NS-CAI-001 through NS-CAI-009 | End-to-end workflow, offline/reconnect, conflict and regression evidence | Planned |
 
 ## Traceability rule
 
 Every new implementation requirement must include a unique ID, decision/source, priority, dependencies, implementation criteria, verification method, and acceptance status. Status changes require evidence. A plan, mock, or simulated integration is not proof of live behavior.
+
+## Cross-Application Intelligence decision source
+
+NS-CAI-001 through NS-CAI-010 derive from the user's five approved decisions dated 2026-11-25 (CAI-DEC-01 through CAI-DEC-05) and the supporting specification in CROSS-APPLICATION-INTELLIGENCE-PLANNING.md. These requirements remain planned; none is represented as implemented or verified.
