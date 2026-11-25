@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent, type KeyboardEvent } from "react";
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
@@ -62,7 +62,7 @@ function CommandPalette({ snapshot, onClose, onNavigate }: { snapshot:AcademicSn
   const results=useMemo(()=>searchWorkspaceResults(snapshot,query),[snapshot,query]);
   useEffect(()=>setActiveIndex(0),[query]);
   const openResult=(index:number)=>{const result=results[index];if(!result)return;onNavigate(result.to);onClose();};
-  const onSearchKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
+  const onSearchKeyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
     if(event.key==="ArrowDown"){event.preventDefault();setActiveIndex(index=>Math.min(index+1,Math.max(0,results.length-1)));}
     else if(event.key==="ArrowUp"){event.preventDefault();setActiveIndex(index=>Math.max(0,index-1));}
     else if(event.key==="Enter"){event.preventDefault();openResult(activeIndex);}
