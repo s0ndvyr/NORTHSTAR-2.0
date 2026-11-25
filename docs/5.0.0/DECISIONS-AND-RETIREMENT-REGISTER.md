@@ -147,3 +147,22 @@ The user approved **A / A / A / A / A**. Record these as approved planning decis
 The comprehensive grouped specification is [Module 1 — Legacy and Integration Evidence Plan](MODULE-1-LEGACY-AND-INTEGRATION-EVIDENCE-PLAN.md).
 
 **Disposition:** Planning scope approved; evidence collection remains in progress. Existing source-tree and persistence findings are provisional until reconciled against the exact migration-source branch and commit. No implementation, migration, dependency installation, live provider/tenant access, Worker deployment, legacy deletion, production change, build/test execution or runtime qualification is authorized.
+
+
+## Repository, Engineering Standards and Qualification Module 2 — 2026-11-25
+
+The user approved **A / A / A / A / A** and supplied an additional planning-process requirement.
+
+| Decision ID | Approved selection | Planning consequence |
+|---|---|---|
+| EFP-DEC-21 | A — Dedicated 5.0 development branch | Preserve repository continuity and isolate 5.0 work from production and existing stabilization work. |
+| EFP-DEC-22 | A — Isolated application directory | Keep the future 5.0 application in a clearly defined directory, separate from planning documentation and legacy material. |
+| EFP-DEC-23 | A — Conventional pinned toolchain | Plan React, TypeScript, Vite, npm, committed lockfile, strict type checking, documented Node.js LTS and controlled dependency updates. |
+| EFP-DEC-24 | A — Full qualification framework | Plan unit, component, integration, end-to-end, regression, accessibility, security, performance, offline/recovery and physical iPad acceptance. |
+| EFP-DEC-25 | A — Controlled release pipeline | Plan protected branches, automated quality gates, isolated previews, explicit production approval, release evidence, rollback and version tracking. |
+
+Additional user requirement: future planning modules must be substantial and cover multiple varied, related topics; they must not repeat the same five-question pattern. Provide recommendations, meaningful alternatives/trade-offs and free-text input; carry decisions forward; resolve factual questions through research/source analysis where possible; avoid fragmented modules and repetitive sign-offs. This is a standing planning-process rule, recorded in Module 2 section 11.
+
+Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md.
+
+**Disposition:** Module 2 decision set approved; detailed policy planning and evidence alignment remain in progress. This is not repository restructuring, dependency installation, CI configuration, branch-protection configuration, implementation, build/test execution, device qualification or deployment authorization.
