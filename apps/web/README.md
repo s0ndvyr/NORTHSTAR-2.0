@@ -56,7 +56,16 @@ npm run build
 npm run preview
 ```
 
-The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, timed practice start/resume/autosave/flag/score/time-limit behavior and seeded question-bank integrity, saved writing-draft lifecycle, calendar-event/grade-record integrity, and full backup round-trip. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. The committed `package-lock.json` pins the dependency tree; the development-branch qualification workflow installs with `npm ci` and does not mutate the repository. Broader component/integration/end-to-end coverage remains qualification work.
+Run the browser qualification suite locally (the runner is installed temporarily and is not part of the application runtime dependency graph):
+
+```bash
+npm install --no-save --package-lock=false @playwright/test@1.56.1
+npx playwright install chromium
+npm run build
+npx playwright test
+```
+
+The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, timed practice start/resume/autosave/flag/score/time-limit behavior and seeded question-bank integrity, saved writing-draft lifecycle, calendar-event/grade-record integrity, and full backup round-trip. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. The committed `package-lock.json` pins the dependency tree; the development-branch qualification workflow installs with `npm ci` and does not mutate the repository. The CI workflow also runs ten Playwright browser journeys against the production preview. Manual screen-reader, assistive-technology, physical iPad Safari, and extended offline/recovery qualification remain open.
 
 ## Data and integration boundaries
 
