@@ -204,3 +204,14 @@ The user explicitly rejected repetitive five-question module cycles. Future modu
 ### Current status and boundaries
 
 Module 2's five governing decisions are approved, but the detailed engineering policy and evidence alignment remain in progress. The repository structure, toolchain versions, hosting compatibility, branch protection, CI, preview isolation, qualification commands and release controls still require evidence-backed planning. No directory changes, source changes, dependency installation, CI/branch configuration, build/test execution, live provider access, device testing or deployment has been performed or authorized.
+
+
+## 13. Consolidated transition plan — 2026-11-25
+
+The authoritative staged transition is documented in [IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md). It distinguishes safeguards required before the first app shell from evidence required later before legacy migration, real Canvas operations, final offline behavior, preview/release and production.
+
+The first implementation slice is intentionally narrow: isolated React/TypeScript/Vite shell, route structure, NORTHSTAR design foundation, typed boundaries, synthetic demo fixtures and basic smoke checks. It does not include real Canvas/AI credentials, data migration, legacy deletion or production deployment.
+
+The user has explicitly requested that planning remain important but not become a tiring, repetitive process. Future work must use this consolidated plan, carry forward approved decisions, resolve routine technical choices with conventional defaults, and ask for input only on material unresolved decisions. No further questionnaire is required by default.
+
+**Authorization remains planning only.** A separate explicit approval is required before the initial application foundation is implemented.
