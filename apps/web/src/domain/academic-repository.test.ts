@@ -404,3 +404,72 @@ describe("Study Lab practice attempts", () => {
     expect(foreignQuestion).toBe(started);
   });
 });
+
+describe("global workspace intelligence", () => {
+  it("searches across workspaces and academic records without case sensitivity", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignment = snapshot.assignments[0];
+    const byTitle = searchWorkspaceResults(snapshot, assignment.title.toUpperCase());
+    expect(byTitle.some(result => result.id === "assignment-" + assignment.id && result.type === "ASSIGNMENT")).toBe(true);
+    const byCode = searchWorkspaceResults(snapshot, snapshot.courses[0].code.toLowerCase());
+    expect(byCode.some(result => result.to === "/courses/" + snapshot.courses[0].id)).toBe(true);
+    expect(searchWorkspaceResults(snapshot, "does-not-exist")).toHaveLength(0);
+  });
+
+  it("respects search result limits and includes saved writing and resources", () => {
+    const snapshot = loadAcademicSnapshot();
+    const draft = {
+      id: "draft-search-test", title: "Searchable composition notes", body: "A saved writing draft.",
+      revision: 1, savedAt: "2026-11-20T12:00:00.000Z", source: "northstar" as const,
+    };
+    const withDraft = { ...snapshot, writingDrafts: [...(snapshot.writingDrafts ?? []), draft] };
+    expect(searchWorkspaceResults(withDraft, "composition").map(item => item.type)).toEqual(["DRAFT"]);
+    expect(searchWorkspaceResults(withDraft, "", 3)).toHaveLength(3);
+    expect(searchWorkspaceResults(snapshot, snapshot.resources?.[0]?.title ?? "missing").some(item => item.type === "RESOURCE")).toBe(true);
+  });
+
+  it("derives urgent, due-today, event, study-review and pending-grade notifications from the snapshot", () => {
+    const now = new Date("2026-11-25T12:00:00.000Z");
+    const yesterday = new Date(now.getTime() - 86400000).toISOString();
+    const todayLater = new Date(now.getTime() + 3600000).toISOString();
+    const inTwoDays = new Date(now.getTime() + 2 * 86400000).toISOString();
+    const base = loadAcademicSnapshot();
+    const overdue = { ...base.assignments[0], id: "test-overdue", title: "Overdue test item", status: "in_progress" as const, dueAt: yesterday };
+    const dueToday = { ...base.assignments[1], id: "test-due-today", title: "Due today test item", status: "not_started" as const, dueAt: todayLater };
+    const completed = { ...base.assignments[2], id: "test-completed", title: "Already completed", status: "submitted" as const, dueAt: yesterday };
+    const nextEvent = {
+      id: "test-event", title: "Upcoming review session", kind: "study" as const,
+      startsAt: inTwoDays, endsAt: new Date(new Date(inTwoDays).getTime() + 3600000).toISOString(),
+      notes: "", source: "northstar" as const, updatedAt: now.toISOString(),
+    };
+    const snapshot = {
+      ...base,
+      assignments: [overdue, dueToday, completed],
+      events: [nextEvent],
+      studyCards: (base.studyCards ?? []).map(card => ({ ...card, nextReviewAt: yesterday })),
+      gradeItems: (base.gradeItems ?? []).map(item => item.status === "pending" ? item : { ...item, status: "graded" as const, score: 1 }),
+    };
+    const notifications = selectAcademicNotifications(snapshot, now);
+    expect(notifications.some(item => item.id === "assignment-test-overdue" && item.tone === "urgent")).toBe(true);
+    expect(notifications.some(item => item.id === "today-test-due-today" && item.tone === "today")).toBe(true);
+    expect(notifications.some(item => item.id === "event-test-event" && item.to === "/calendar")).toBe(true);
+    expect(notifications.some(item => item.id.startsWith("study-") && item.to === "/study")).toBe(true);
+    expect(notifications.some(item => item.id.startsWith("grade-") && item.to === "/gradebook")).toBe(true);
+    expect(notifications.some(item => item.id === "assignment-test-completed")).toBe(false);
+  });
+
+  it("caps notification lists and returns an empty state when no records qualify", () => {
+    const now = new Date("2026-11-25T12:00:00.000Z");
+    const base = loadAcademicSnapshot();
+    const calm = {
+      ...base,
+      assignments: base.assignments.map(item => ({ ...item, status: "graded" as const })),
+      events: [],
+      studyCards: (base.studyCards ?? []).map(item => ({ ...item, nextReviewAt: "2027-12-01T00:00:00.000Z" })),
+      gradeItems: (base.gradeItems ?? []).map(item => ({ ...item, status: "graded" as const, score: 1 })),
+    };
+    expect(selectAcademicNotifications(calm, now)).toHaveLength(0);
+    expect(selectAcademicNotifications({ ...base, assignments: base.assignments.map(item => ({ ...item, status: "missing" as const })) }, now, 2)).toHaveLength(2);
+  });
+});
+
