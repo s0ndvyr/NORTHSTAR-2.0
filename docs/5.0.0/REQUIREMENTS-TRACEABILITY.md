@@ -275,3 +275,10 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - Current implementation is explicitly unconfigured: no endpoint, token, credential, network request, institution data or write capability exists. Every operation returns not_configured; the UI exposes no connect or submit action.
 - NS-SEC-001: the workspace documents the approved server-side Worker, authorization, capability and conflict safeguards required before a live adapter can be enabled.
 - NS-QUAL-001: adapter contract tests, strict typecheck, dependency audits, domain tests and build passed in workflow run 45681344308. The Canvas status UI qualification is tracked by workflow run 45681383834.
+
+
+### Review Center autosave evidence — 2026-11-25
+
+- NS-STATE-001 / NS-ACAD-003: Review Center now debounces edits and persists title, body and assignment association to the shared local writing-draft collection after 900 ms of inactivity. Manual Save remains available; switching drafts resets dirty state.
+- NS-QUAL-001: autosave UI passed strict typecheck, dependency audits, domain tests and production build in workflow run 45681625462.
+- Boundary: this is browser-local persistence, not cloud synchronization or AI/provider review.
