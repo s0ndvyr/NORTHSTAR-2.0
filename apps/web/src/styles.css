@@ -64,3 +64,7 @@
     box-shadow:none;
   }
 }
+
+.skip-link{position:fixed;z-index:1000;top:10px;left:10px;padding:11px 15px;border-radius:7px;background:#e6efff;color:#101b2d;font-size:12px;font-weight:700;transform:translateY(-160%);transition:transform .16s ease}
+.skip-link:focus{transform:translateY(0)}
+#main-content:focus{outline:none}
