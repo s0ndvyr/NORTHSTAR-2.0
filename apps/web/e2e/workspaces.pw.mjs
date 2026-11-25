@@ -18,7 +18,7 @@ test("dashboard, skip navigation, command palette and workspace navigation", asy
   await paletteButton.click();
   const dialog = page.getByRole("dialog", { name: "NORTHSTAR command palette" });
   await expect(dialog).toBeVisible();
-  await page.getByRole("textbox", { name: "Search NORTHSTAR" }).fill("calendar");
+  await page.getByRole("combobox", { name: "Search NORTHSTAR" }).fill("calendar");
   await expect(page.getByRole("option", { name: /Calendar/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
