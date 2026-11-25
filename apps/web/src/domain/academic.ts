@@ -22,7 +22,7 @@ export interface AcademicAssignment {
   priority: AssignmentPriority;
   estimatedMinutes: number;
   personalNotes: string;
-  source: "demo";
+  source: "demo" | "northstar";
   updatedAt: string;
 }
 
