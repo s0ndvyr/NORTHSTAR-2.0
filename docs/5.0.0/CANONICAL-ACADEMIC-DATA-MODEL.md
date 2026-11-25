@@ -1,7 +1,8 @@
 # NORTHSTAR 5.0 — Canonical Academic Data Model and Relationship Catalogue
 
+**Integrated master:** [Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)  
 **Workstream:** Cross-Application Intelligence  
-**Status:** Detailed planning specification — draft for review  
+**Status:** Detailed planning specification — integrated; review pending  
 **Decision sources:** CAI-DEC-01, CAI-DEC-03, CAI-DEC-04; NS-DATA-001/002; NS-CAI-001/004/005  
 **Authorization:** Planning only. This is a logical model, not a database schema or migration instruction.
 
