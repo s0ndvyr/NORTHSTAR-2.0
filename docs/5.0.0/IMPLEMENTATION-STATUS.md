@@ -8,6 +8,8 @@
 **Latest implementation checkpoint:** `daeff3c38f72a9f065b576f3e40f5791c95e3ab3`  
 **Latest successful full qualification run:** [GitHub Actions #45694384485](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45694384485) — 13 browser journeys, 51 domain tests and build passed
 
+Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
+
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
 ## Implemented foundations
