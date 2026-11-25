@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress } from "./workspace-intelligence";
+import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
   createAcademicBackup,
   createPracticeAttempt,
@@ -496,6 +496,22 @@ describe("shared course projections", () => {
     const noAssignments = { ...snapshot, assignments: snapshot.assignments.filter(item => item.courseId !== course.id) };
     expect(selectCourseProgress(noAssignments, course.id)).toBe(course.progress);
     expect(selectCourseProgress(snapshot, "unknown-course")).toBe(0);
+  });
+});
+
+describe("assignment queue sorting", () => {
+  it("sorts by due date, priority and most recently updated without mutating source data", () => {
+    const base = loadAcademicSnapshot().assignments.slice(0, 3);
+    const records = [
+      { ...base[0], id: "sort-low", priority: "low" as const, dueAt: "2026-12-05T12:00:00.000Z", updatedAt: "2026-11-20T12:00:00.000Z" },
+      { ...base[1], id: "sort-urgent", priority: "urgent" as const, dueAt: "2026-12-10T12:00:00.000Z", updatedAt: "2026-11-22T12:00:00.000Z" },
+      { ...base[2], id: "sort-high", priority: "high" as const, dueAt: "2026-12-01T12:00:00.000Z", updatedAt: "2026-11-24T12:00:00.000Z" },
+    ];
+    const original = records.map(item => item.id);
+    expect(sortAssignments(records, "priority").map(item => item.id)).toEqual(["sort-urgent", "sort-high", "sort-low"]);
+    expect(sortAssignments(records, "due").map(item => item.id)).toEqual(["sort-high", "sort-low", "sort-urgent"]);
+    expect(sortAssignments(records, "updated").map(item => item.id)).toEqual(["sort-high", "sort-urgent", "sort-low"]);
+    expect(records.map(item => item.id)).toEqual(original);
   });
 });
 
