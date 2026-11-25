@@ -98,3 +98,19 @@ The following requirements derive from the user's A/A/A/A/A decisions EFP-DEC-16
 | NS-GOV-004 | Module sign-off requires exact-source reconciliation and evidence-backed preservation, parity, backup/restore, rollback and risk gates | P0 | NS-GOV-003, NS-MIG-005, NS-DATA-006, NS-CAN-005, NS-INT-003 | Completed reconciliation report, open-risk disposition and explicit user sign-off | Planned |
 
 Supporting specification: MODULE-1-LEGACY-AND-INTEGRATION-EVIDENCE-PLAN.md. Approval of these requirements authorizes planning and static source analysis only. It does not authorize application implementation, migration, dependency installation, live provider/tenant access, Worker deployment, legacy deletion, production changes, build/test execution or runtime qualification.
+
+
+## Module 2 — Repository, Engineering Standards and Qualification requirements
+
+These requirements derive from EFP-DEC-21 through EFP-DEC-25 and the user's additional planning-process instruction dated 2026-11-25. They describe planned controls, not implemented or verified controls.
+
+| ID | Requirement | Priority | Dependencies | Acceptance / verification evidence | Status |
+|---|---|---|---|---|---|
+| NS-GOV-005 | NORTHSTAR 5.0 work is isolated on a dedicated development branch with production and stabilization history protected | P0 | NS-GOV-001, NS-GOV-003 | Verified branch/base/merge model and repository protection plan | Planned |
+| NS-ARCH-004 | Future 5.0 application source is isolated in a defined application directory with documented boundaries from legacy source and planning artifacts | P0 | NS-ARCH-001, NS-MIG-005 | Reconciled directory proposal compatible with hosting, PWA and native iOS constraints | Planned |
+| NS-ENG-001 | Engineering toolchain uses React, TypeScript, Vite, npm, committed lockfile, strict type checking, documented Node.js LTS and controlled dependency governance | P0 | NS-ARCH-001, NS-ARCH-004 | Versioned toolchain decision record and compatibility/security review | Planned |
+| NS-QUAL-001 | Quality strategy covers static checks, unit, component, integration, end-to-end, regression, accessibility, security, performance, offline/recovery and physical iPad acceptance | P0 | NS-ENG-001, NS-INT-003, NS-SEC-002 | Test strategy, workflow traceability and qualification evidence templates | Planned |
+| NS-REL-001 | CI, preview and production promotion are isolated and governed with automated gates, explicit approval, release evidence, version traceability and rollback | P0 | NS-GOV-005, NS-QUAL-001, NS-SEC-002 | CI/preview/release design and release/rollback acceptance checklist | Planned |
+| NS-GOV-006 | NORTHSTAR planning modules group varied related topics, provide recommendations/trade-offs and free-text input, carry decisions forward and avoid repetitive five-question cycles | P0 | NS-GOV-003 | Planning artifacts demonstrate coherent grouped coverage, traceability and non-repetitive decision handling | Approved planning rule |
+
+Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md. Approval authorizes planning and documentation only. It does not authorize repository restructuring, source changes, dependency installation, CI configuration, branch protection changes, builds/tests, device qualification or deployment.
