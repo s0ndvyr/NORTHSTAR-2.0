@@ -146,3 +146,34 @@ The expanded [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-
 | Evidence reconciliation | Pending comprehensive inventory, Canvas evidence, offline measurements and risk review |
 
 This remains a partial static review. No tests/builds were run and no application code was changed.
+
+
+## Module 1 — Comprehensive Legacy and Integration Evidence Plan — 2026-11-25
+
+The user approved **A / A / A / A / A** (EFP-DEC-16 through EFP-DEC-20). The grouped specification is [Module 1 — Legacy and Integration Evidence Plan](MODULE-1-LEGACY-AND-INTEGRATION-EVIDENCE-PLAN.md). It defines five coordinated work packages: complete source/dependency inventory; full persistence and data lifecycle trace; route-level Canvas and external integration evidence; seven workspace integration contracts; and evidence reconciliation/preservation gates.
+
+| Module 1 workstream | Status |
+|---|---|
+| Source and dependency inventory | Comprehensive scope approved; exact-source inventory in progress |
+| Persistence and lifecycle trace | Comprehensive scope approved; all keys and call sites pending |
+| Canvas Worker and external integrations | Route-level evidence scope approved; complete catalogue and dated official endpoint research pending |
+| Seven workspace contracts | Scope approved; detailed contracts pending |
+| Evidence and preservation reconciliation | Required before module sign-off; pending |
+
+### Updated phase tracker
+
+| Phase / workstream | Status |
+|---|---|
+| Phase 0 — Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
+| 5.0.0 — Product & Architecture Foundation | **Approved planning baseline; Engineering Foundation planning in progress** |
+| 5.0.1 — Academic Data & Canvas Intelligence | **Planning complete and approved — closed** |
+| 5.0.2 — Assignment & Coursework Experience | Planning decisions complete |
+| 5.0.3 — Courses, Calendar & Resources | Planning decisions complete |
+| 5.0.4 — Dashboard Studio & Personalization | Approved planning |
+| 5.0.5 — AI & Intelligent Academic Assistance | Approved planning |
+| 5.0.6 — Visual Refinement, Qualification & Release | Approved planning |
+| Cross-Application Intelligence | Integrated specifications drafted; final review pending |
+| Module 1 — Legacy and Integration Evidence | **Planning scope approved (EFP-DEC-16..20); evidence collection in progress** |
+| Application implementation | **Not authorized** |
+
+The source inventory remains static and incomplete. This update does not claim that Canvas endpoints, target tenant behavior, builds, tests, runtime behavior or iPad behavior have been verified. No application source was changed.
