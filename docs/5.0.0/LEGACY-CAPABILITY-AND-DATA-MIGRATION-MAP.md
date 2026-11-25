@@ -1,7 +1,8 @@
 # NORTHSTAR 5.0 — Legacy Capability and Data Migration Map
 
+**Integrated master:** [Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)  
 **Workstream:** Engineering Foundation / Cross-Application Intelligence  
-**Status:** Static planning inventory; source-level mapping and migration design remain outstanding  
+**Status:** Detailed planning specification — integrated; complete source-level inventory and mapping outstanding  
 **Decision sources:** ADR-5-002/007; CAI-DEC-01/03/04; NS-DATA-003; NS-CAI-001/005/010  
 **Authorization:** Planning only. No source modification, deletion, migration, import/export or runtime behavior change authorized.
 
