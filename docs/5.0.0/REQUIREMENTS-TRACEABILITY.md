@@ -223,3 +223,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-STATE-001: deleting an assignment preserves linked independent writing drafts, calendar events and grade records while removing only their assignment association. Tests verify retained records and snapshot validity.
 - Qualification evidence: latest completed run for the assignment detail route passed typecheck, dependency audit, domain tests and production build. The cross-record deletion test passed in workflow run 45678434370 together with strict typecheck, dependency audits and production build.
 - Boundary: all records and status actions remain local browser workflow data; no Canvas read/write, official grade update, or submission transport is claimed.
+
+
+### Canonical relationship validation — 2026-11-25
+
+- NS-DATA-001 / NS-STATE-001: browser snapshot and backup validation now rejects courses outside the active term, events linked to assignments from a different course, and practice attempts with no valid course question.
+- Term date ranges are validated for correct ordering.
+- Tests for the added relationship constraints passed the domain-test step in workflow run 45678635747; the production build step was still running at the time this traceability note was written.
+- The validation is local snapshot integrity only; it is not external source reconciliation or Canvas provenance verification.
