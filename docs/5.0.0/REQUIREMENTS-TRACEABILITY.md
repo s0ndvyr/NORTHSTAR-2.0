@@ -214,3 +214,12 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-STATE-001 / NS-ACAD-001: a global notification center derives missing/overdue and due-today assignments, upcoming seven-day events, due study cards and pending grades from the canonical local snapshot. The badge and list share the same selector; actions navigate to their destination workspace.
 - NS-QUAL-001: deterministic selector tests cover search matching, result limiting, cross-record categories, alert categories, destination paths, terminal assignment suppression and empty/capped states.
 - Boundary: reminders are local in-app signals. No operating-system push channel, server notification, email or external service is connected.
+
+
+### Assignment detail and record-integrity evidence — 2026-11-25
+
+- NS-ACAD-002: assignment list rows and global search open a dedicated detail workspace. The detail view reads the canonical assignment, course, local grade item, calendar events and saved writing draft; workflow status changes use the same canonical mutation handler.
+- NS-ACAD-002 / NS-STATE-001: editing can be opened directly from the detail surface. Assignment create/update reject invalid course references, empty titles, invalid dates, non-finite/negative numeric fields, invalid priorities and invalid workflow statuses before changing snapshot revision.
+- NS-STATE-001: deleting an assignment preserves linked independent writing drafts, calendar events and grade records while removing only their assignment association. Tests verify retained records and snapshot validity.
+- Qualification evidence: latest completed run for the assignment detail route passed typecheck, dependency audit, domain tests and production build. A subsequent cross-record deletion test is awaiting its own workflow run.
+- Boundary: all records and status actions remain local browser workflow data; no Canvas read/write, official grade update, or submission transport is claimed.
