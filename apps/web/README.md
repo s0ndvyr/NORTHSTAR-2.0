@@ -44,7 +44,7 @@ npm run build
 npm run preview
 ```
 
-The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, saved writing-draft lifecycle, calendar-event/grade-record integrity, and full backup round-trip. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
+The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, saved writing-draft lifecycle, calendar-event/grade-record integrity, and full backup round-trip. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. The development-branch qualification workflow generates, verifies with a clean `npm ci`, and commits the deterministic dependency lockfile when it changes. Broader component/integration/end-to-end coverage remains qualification work.
 
 ## Data and integration boundaries
 
