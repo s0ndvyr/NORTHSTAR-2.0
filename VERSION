@@ -1,0 +1,10 @@
+NORTHSTAR 5.0.0
+Release channel: setup-baseline
+Phase: 0 — Setup & Repository Readiness
+Status: Prepared for user sign-off; not an application release
+Source baseline: northstar-4.4.8.3.1-stabilization
+Source commit: df0427304e0f03aa822a1c8fe99547355e9c0bfc
+Created: 2026-11-25
+
+This marker identifies the NORTHSTAR 5.0.0 project baseline. It does not assert that
+the React/TypeScript application has been implemented, tested, deployed, or released.
