@@ -39,7 +39,8 @@ The audited source includes later external return-context hardening changes that
 | 5.0.5 | AI & Intelligent Academic Assistance | Approved |
 | 5.0.6 | Visual Refinement, Qualification & Release | Approved |
 | Phase 0 | Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
-| Current workstream | Cross-Application Intelligence | **Planning in progress — five decisions pending** |
+| Cross-Application Intelligence | Shared data and cross-workspace coordination | **Five decisions approved; specifications drafted; planning review pending** |
+| Application implementation | NORTHSTAR 5.0 coding | **Not authorized** |
 
 ## Phase 0 approval record
 
@@ -47,15 +48,26 @@ The user submitted the recurring five-question sign-off module with answers **1:
 
 1. **Source baseline — A:** Approve the dedicated 5.0.0 setup branch from the latest audited development source; production remains untouched.
 2. **Setup deliverables — A:** Accept the version marker, audit, architecture roadmap, requirements register, retirement register, and sign-off documentation.
-3. **Legacy bloat — A:** Preserve existing behavior until dependencies are mapped and replacements pass regression; then retire or consolidate through controlled changes.
+3. **Legacy bloat — A:** Preserve existing functionality until dependencies are mapped and replacements pass regression; then retire or consolidate through controlled changes.
 4. **Target architecture — A:** Approve React + TypeScript + Vite, an iPad-first PWA, shared academic data, domain-separated workspaces, adapters, and one authoritative design system.
 5. **Phase closure — A:** Accept Phase 0 as complete and prepare the engineering-foundation stage. This does not authorize application implementation.
 
-**Decision:** Phase 0 is formally closed. Its closure certifies completion and acceptance of the setup artifacts only; it does not certify a working 5.0 application, build, test suite, Canvas connection, iPad acceptance, or production release.
+**Decision:** Phase 0 is formally closed. Its closure certifies acceptance of setup artifacts only; it does not certify a working 5.0 application, build, test suite, Canvas connection, iPad acceptance, or production release.
 
 ## NORTHSTAR 5.0.1 status clarification
 
-NORTHSTAR 5.0.1 — Academic Data & Canvas Intelligence — was already explicitly approved and closed as a planning phase on 2026-11-25. Its approved decisions remain authoritative. This work is not reopening or replacing that phase. Cross-Application Intelligence is being advanced as a planning workstream under the broader 5.0.0 architecture/engineering foundation.
+NORTHSTAR 5.0.1 — Academic Data & Canvas Intelligence — was already explicitly approved and closed as a planning phase on 2026-11-25. Its approved decisions remain authoritative. Cross-Application Intelligence is a related engineering-foundation planning workstream; it does not reopen or replace 5.0.1.
+
+## Cross-Application Intelligence decision record
+
+On 2026-11-25 the user approved **A / A / A / A / A**:
+1. One canonical academic data layer with domain-owned models and workspace projections.
+2. Event-driven internal propagation, provider-supported webhooks/polling, manual refresh, and visible freshness/error states.
+3. Explicit field-level authority and provenance; Canvas owns official institution records and NORTHSTAR owns personal workflow data.
+4. Preserve competing versions and require user review where safe deterministic resolution is unavailable.
+5. Offline cached reads and queued permitted local edits with idempotent reconciliation and visible recovery/conflict status.
+
+Supporting specifications are drafted in [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md). New requirements NS-CAI-001 through NS-CAI-010 have been added to the traceability register. This workstream is not yet signed off: detailed schema, provider capability mapping, state machines, cache/retention policy, legacy mapping, and risk review remain.
 
 ## Version semantics
 
@@ -63,6 +75,4 @@ NORTHSTAR 5.0.1 — Academic Data & Canvas Intelligence — was already explicit
 
 ## Change control and authorization boundary
 
-This baseline is version-controlled. Changes to scope, architecture, source-retirement decisions, or acceptance criteria must be recorded in the decision/traceability documents and approved before implementation when they materially change the approved NORTHSTAR 5.0 plan.
-
-The current authorization covers setup completion and engineering-foundation **planning**. It does not authorize writing or replacing application code, deleting legacy source, changing production, deploying, or claiming runtime qualification. Those actions require a separate explicit authorization.
+The current authorization covers setup completion and engineering-foundation **planning**. It does not authorize writing or replacing application code, schema migrations, dependency installation, deleting legacy source, changing production, deploying, or claiming runtime qualification. Those actions require separate explicit authorization.
