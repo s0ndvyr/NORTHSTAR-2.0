@@ -225,3 +225,14 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Notification selectors cover overdue/missing work, due-today assignments, seven-day calendar events, due flashcards and pending grades. Badge and panel share the same data selection and routes.
 - Domain tests cover search and notification selectors. These are local in-app reminders, not push notifications.
 
+
+
+### Assignment detail and mutation-integrity increment — 2026-11-25
+
+- Added a dedicated assignment detail route reachable from assignment rows and global search. The detail surface shows the assignment brief, due date/time, points, effort estimate, priority, personal notes, workflow status, linked course, writing draft, calendar items and grade record when present.
+- Detail actions update the same canonical local assignment status, open the associated writing workspace, navigate to the course hub, and open the assignment editor from the detail page.
+- Assignment search now deep-links to the matching assignment rather than only opening the general list.
+- Added responsive detail layout rules for tablet and narrow screens.
+- Hardened assignment create/update validation: course association, title, due date, finite/nonnegative points and effort, priority, and status are checked before snapshot mutation. Invalid input returns the original snapshot without incrementing its revision.
+- Added repository tests for invalid numeric, priority and status mutations.
+- This is still a local personal workflow. It does not read or update official Canvas assignment records.
