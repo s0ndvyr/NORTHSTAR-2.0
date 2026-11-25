@@ -182,3 +182,25 @@ The user approved A/A/A/A/A (EFP-DEC-11 through EFP-DEC-15). The required invent
 The [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md) captures the currently observed repository paths and initial persistence findings. It identifies `northstar-secure-vault` (v1 / `secrets`) and `northstar-document-studio` (v1 / `documents`, `drafts`), along with known localStorage PDF identity/markup key families and sessionStorage quiz-attempt state. These observations are not yet a complete key/call-site inventory.
 
 The source inventory remains in progress. Exact migration-source reconciliation, full script dependency and DOM/event consumer mapping, complete Worker route extraction, workflow/deployment enumeration, external CDN inventory, and all storage call sites remain open. No source code was modified and no tests/builds were executed.
+
+
+## Module 2 — Repository, Engineering Standards and Qualification
+
+User checkpoint dated 2026-11-25: **A / A / A / A / A** (EFP-DEC-21..25).
+
+Approved planning direction:
+- dedicated NORTHSTAR 5.0 development branch preserving production and stabilization history;
+- isolated application directory separating future 5.0 application source, legacy material and planning documentation;
+- conventional pinned React + TypeScript + Vite + npm toolchain with strict type checking, committed lockfile, documented Node.js LTS and controlled dependency updates;
+- full qualification strategy spanning static checks, unit/component/integration/end-to-end/regression, accessibility, security, performance, offline/recovery and physical iPad acceptance;
+- controlled CI, isolated preview, explicit production approval, release evidence, version tracking and rollback.
+
+The detailed policy scope is in MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md. Supporting recommendations from the integrated architecture (React Router, TanStack Query, React state/context first, conditional Zustand, runtime schema validation, Vitest/Testing Library, Playwright and PWA tooling) remain planning defaults subject to compatibility, security, licensing, maintenance and bundle-impact evidence. They are not installed dependencies.
+
+### Planning process correction
+
+The user explicitly rejected repetitive five-question module cycles. Future modules must be comprehensive and domain-specific, combining multiple related subjects and varied decisions in one coherent planning package. Include recommendations, alternatives, trade-offs and free-text input. Carry approved decisions forward; research factual uncertainties rather than repeatedly asking the user; avoid redundant questions and sign-off loops. A consolidated review should occur when a meaningful body of planning is ready. Recorded as NS-GOV-006.
+
+### Current status and boundaries
+
+Module 2's five governing decisions are approved, but the detailed engineering policy and evidence alignment remain in progress. The repository structure, toolchain versions, hosting compatibility, branch protection, CI, preview isolation, qualification commands and release controls still require evidence-backed planning. No directory changes, source changes, dependency installation, CI/branch configuration, build/test execution, live provider access, device testing or deployment has been performed or authorized.
