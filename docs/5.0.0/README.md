@@ -32,6 +32,7 @@ The audited source includes later external return-context hardening changes that
 - [Canvas capability and authority matrix](CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md)
 - [Offline cache, retention, backup and recovery policy](OFFLINE-CACHE-RETENTION-AND-RECOVERY-POLICY.md)
 - [Legacy capability and data migration map](LEGACY-CAPABILITY-AND-DATA-MIGRATION-MAP.md)
+- [Initial legacy source evidence review](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md)
 - [Data architecture verification blueprint](DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md)
 
 ## Phase tracker
@@ -106,6 +107,20 @@ The user approved **C / B / A / A / A**:
 The integrated master specification is [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md). It recommends conventional defaults for the React/TypeScript/Vite PWA, local persistence, routing, state, validation, testing and secure provider boundaries. These are planning recommendations, not installed dependencies or implementation authorization.
 
 The five detailed specifications are linked above. Their planning content is drafted, but source-level legacy inventory, dated Canvas endpoint research, measured retention/cache parameters, final security review and evidence-based acceptance remain open. Cross-Application Intelligence remains in planning review and is not signed off.
+
+## Legacy source analysis checkpoint — 2026-11-25
+
+The user approved **A/A/A/A/A**: source-level inventory first; official Canvas documentation with endpoint evidence and tenant verification kept separate; measured platform/sensitivity-based offline policy; secure BFF requirement before hosting/database selection; and integration readiness planned across all major workspaces.
+
+An initial static source evidence review is available at [LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md). It records selected-file findings and preservation candidates, but is not a complete source audit. Full storage-key/object-store enumeration, call-site tracing, Worker route mapping, dependency/CDN inventory, exact migration-source reconciliation, and full data mapping remain open.
+
+| Workstream | Current status |
+|---|---|
+| Cross-Application Intelligence | **Integrated planning specification drafted; initial legacy source review captured; final sign-off pending** |
+| Legacy source inventory | **Initial evidence review complete; comprehensive inventory in progress** |
+| Canvas capability research | **Official endpoint-by-endpoint evidence pending; tenant verification remains separate** |
+| Offline policy | **Policy framework drafted; measured numeric limits and retention values pending** |
+| Cross-workspace integration readiness | **Planning scope established; detailed workspace contracts pending** |
 
 ## Version semantics
 
