@@ -1,5 +1,7 @@
 # NORTHSTAR 5.0.0 — Implementation Status
 
+[![NORTHSTAR Web Qualification](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml/badge.svg?branch=northstar-5.0.0-development)](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml)
+
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
