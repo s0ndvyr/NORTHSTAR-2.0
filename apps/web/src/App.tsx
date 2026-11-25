@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
@@ -570,6 +570,7 @@ function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onArtifactAt
   const navigate = useNavigate();
   const [paletteOpen,setPaletteOpen] = useState(false);
   const [notificationsOpen,setNotificationsOpen] = useState(false);
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const notificationCount = selectAcademicNotifications(snapshot).length;
   useEffect(()=>{
     const onKeyDown=(event:WindowEventMap["keydown"])=>{
@@ -579,8 +580,27 @@ function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onArtifactAt
     window.addEventListener("keydown",onKeyDown);
     return ()=>window.removeEventListener("keydown",onKeyDown);
   },[]);
+  useEffect(()=>{
+    const isOpen=paletteOpen||notificationsOpen;
+    if(!isOpen){dialogTriggerRef.current?.focus();return;}
+    const dialog=document.querySelector<HTMLElement>(".command-palette, .notification-panel");
+    if(!dialog)return;
+    const getFocusable=()=>Array.from(dialog.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(element=>element.getClientRects().length>0);
+    const initial=dialog.querySelector<HTMLElement>("[autofocus]")??getFocusable()[0];
+    initial?.focus();
+    const trapFocus=(event:KeyboardEvent)=>{
+      if(event.key!=="Tab")return;
+      const focusable=getFocusable();
+      if(!focusable.length){event.preventDefault();return;}
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    };
+    dialog.addEventListener("keydown",trapFocus);
+    return ()=>dialog.removeEventListener("keydown",trapFocus);
+  },[paletteOpen,notificationsOpen]);
   const go=(path:string)=>navigate(path);
-  return <><Topbar pathname={location.pathname} onOpenPalette={()=>{setPaletteOpen(true);setNotificationsOpen(false);}} onToggleNotifications={()=>{setNotificationsOpen(value=>!value);setPaletteOpen(false);}} notificationCount={notificationCount}/>{paletteOpen&&<CommandPalette snapshot={snapshot} onClose={()=>setPaletteOpen(false)} onNavigate={go}/ >}{notificationsOpen&&<NotificationCenter snapshot={snapshot} onNavigate={go} onClose={()=>setNotificationsOpen(false)}/>}<AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments/:assignmentId" element={<AssignmentDetail snapshot={snapshot} onStatus={onStatus} onArtifactAttach={onArtifactAttach} onArtifactDownload={onArtifactDownload} onArtifactDelete={onArtifactDelete} artifactMessage={artifactMessage}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot} onCreate={onCourseCreate} onUpdate={onCourseUpdate}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot} onCreateEvent={onEventCreate} onUpdateEvent={onEventUpdate} onDeleteEvent={onEventDelete}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete} onPracticeStart={onPracticeStart} onPracticeSave={onPracticeSave} onPracticeComplete={onPracticeComplete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot} onCreate={onGradeCreate} onUpdate={onGradeUpdate} onDelete={onGradeDelete}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="/settings" element={<Settings snapshot={snapshot} onReset={onReset} onImport={onImport} theme={theme} onThemeChange={onThemeChange}/>}/><Route path="/integrations/canvas" element={<CanvasIntegration/>}/><Route path="/ai" element={<AIWorkspace snapshot={snapshot}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
+  return <><Topbar pathname={location.pathname} onOpenPalette={()=>{dialogTriggerRef.current=document.activeElement as HTMLElement|null;setPaletteOpen(true);setNotificationsOpen(false);}} onToggleNotifications={()=>{dialogTriggerRef.current=document.activeElement as HTMLElement|null;setNotificationsOpen(value=>!value);setPaletteOpen(false);}} notificationCount={notificationCount}/>{paletteOpen&&<CommandPalette snapshot={snapshot} onClose={()=>setPaletteOpen(false)} onNavigate={go}/ >}{notificationsOpen&&<NotificationCenter snapshot={snapshot} onNavigate={go} onClose={()=>setNotificationsOpen(false)}/>}<AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments/:assignmentId" element={<AssignmentDetail snapshot={snapshot} onStatus={onStatus} onArtifactAttach={onArtifactAttach} onArtifactDownload={onArtifactDownload} onArtifactDelete={onArtifactDelete} artifactMessage={artifactMessage}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot} onCreate={onCourseCreate} onUpdate={onCourseUpdate}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot} onCreateEvent={onEventCreate} onUpdateEvent={onEventUpdate} onDeleteEvent={onEventDelete}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete} onPracticeStart={onPracticeStart} onPracticeSave={onPracticeSave} onPracticeComplete={onPracticeComplete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot} onCreate={onGradeCreate} onUpdate={onGradeUpdate} onDelete={onGradeDelete}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="/settings" element={<Settings snapshot={snapshot} onReset={onReset} onImport={onImport} theme={theme} onThemeChange={onThemeChange}/>}/><Route path="/integrations/canvas" element={<CanvasIntegration/>}/><Route path="/ai" element={<AIWorkspace snapshot={snapshot}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<AcademicSnapshot>(() => loadAcademicSnapshot());
