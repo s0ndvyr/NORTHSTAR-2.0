@@ -5,9 +5,8 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `9e9895606b2d05ab5a2d70ec64f0ca38db2dec85`  
-**Latest completed full qualification run:** [GitHub Actions #45688973347](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45688973347)  
-**Current browser qualification run:** [GitHub Actions #45691178645](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45691178645) — in progress at last check
+**Latest implementation checkpoint:** `0029de4b72a7b997730f238c49924299e7630862`  
+**Latest successful full qualification run:** [GitHub Actions #45691660498](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45691660498)
 
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
@@ -35,7 +34,7 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 
 ## Qualification evidence
 
-The latest completed workflow (#45688973347) completed these steps on the development branch:
+The latest successful workflow (#45691660498) completed these steps on the development branch:
 
 - Install dependencies from the committed lockfile.
 - TypeScript typecheck.
