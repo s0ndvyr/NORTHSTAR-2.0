@@ -60,7 +60,8 @@ describe("academic repository", () => {
     const input = { code: "PSY 201", name: "Introduction to Psychology", instructor: "Dr. Ellis", color: "rose", progress: 0 };
     const next = createCourse(snapshot, input);
     expect(next.revision).toBe(snapshot.revision + 1);
-    expect(next.courses.at(-1)).toMatchObject({ ...input, code: "PSY 201", termId: snapshot.term.id });
+    expect(next.courses.at(-1)).toMatchObject({ ...input, code: "PSY 201", termId: snapshot.term.id, source: "northstar" });
+    expect(Number.isFinite(Date.parse(next.courses.at(-1)?.updatedAt ?? ""))).toBe(true);
     expect(isAcademicSnapshot(next)).toBe(true);
     expect(createCourse(snapshot, { ...input, code: snapshot.courses[0].code.toLowerCase() })).toBe(snapshot);
     expect(createCourse(snapshot, { ...input, progress: 101 })).toBe(snapshot);
@@ -72,7 +73,7 @@ describe("academic repository", () => {
     const linkedAssignmentIds = snapshot.assignments.filter(item => item.courseId === course.id).map(item => item.id);
     const next = updateCourse(snapshot, course.id, { code: "ENG 205", name: "Advanced Academic Writing", instructor: "Dr. Morgan", color: "blue", progress: 84 });
     expect(next.revision).toBe(snapshot.revision + 1);
-    expect(next.courses.find(item => item.id === course.id)?.name).toBe("Advanced Academic Writing");
+    expect(next.courses.find(item => item.id === course.id)).toMatchObject({ name: "Advanced Academic Writing", source: "northstar" });
     expect(next.assignments.filter(item => item.courseId === course.id).map(item => item.id)).toEqual(linkedAssignmentIds);
     expect(isAcademicSnapshot(next)).toBe(true);
     expect(updateCourse(next, course.id, { code: next.courses[1].code, name: "Duplicate", instructor: "Dr. X", color: "blue", progress: 50 })).toBe(next);
