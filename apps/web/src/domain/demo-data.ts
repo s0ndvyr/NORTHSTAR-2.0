@@ -85,3 +85,59 @@ export const demoGradeItems: GradeItem[] = [
   { id: "grade-mat-quiz", courseId: "mat-151", assignmentId: "a-mat-07", title: "Chapter 7 quiz", score: 21, pointsPossible: 25, status: "graded", feedback: "Review transformations and intercepts.", gradedAt: at(-2, 12), source: "demo", updatedAt: now.toISOString() },
   { id: "grade-mat-problem", courseId: "mat-151", title: "Problem set 08", score: null, pointsPossible: 30, status: "pending", source: "demo", updatedAt: now.toISOString() },
 ];
+
+
+export const demoPracticeQuestions: PracticeQuestion[] = [
+  {
+    id: "practice-eng-thesis", courseId: "eng-204", concept: "Argument and thesis",
+    prompt: "Which thesis statement is the most effective starting point for an argumentative essay?",
+    options: [
+      { id: "a", text: "This essay is about public transportation." },
+      { id: "b", text: "Cities should expand reliable bus service because it improves access to work and reduces traffic pressure." },
+      { id: "c", text: "Public transportation has existed for a long time." },
+      { id: "d", text: "There are many different opinions about buses." },
+    ],
+    correctOptionId: "b",
+    explanation: "The strongest option makes a specific, arguable claim and previews reasons that can be developed with evidence.",
+    source: "demo",
+  },
+  {
+    id: "practice-bio-osmosis", courseId: "bio-112", concept: "Cell transport",
+    prompt: "A selectively permeable membrane separates two solutions. Which way does net osmosis move water?",
+    options: [
+      { id: "a", text: "Toward the side with the higher solute concentration." },
+      { id: "b", text: "Toward the side with the lower solute concentration." },
+      { id: "c", text: "Only from inside a cell to outside a cell." },
+      { id: "d", text: "Water cannot cross a selectively permeable membrane." },
+    ],
+    correctOptionId: "a",
+    explanation: "Net water movement is toward the higher solute concentration, assuming the solute cannot cross the membrane.",
+    source: "demo",
+  },
+  {
+    id: "practice-his-source", courseId: "his-210", concept: "Historical source analysis",
+    prompt: "Why should a historian consider the intended audience of a primary source?",
+    options: [
+      { id: "a", text: "It proves the source is accurate." },
+      { id: "b", text: "It reveals the creator's purpose and may explain choices in language or emphasis." },
+      { id: "c", text: "It makes the source a secondary source." },
+      { id: "d", text: "It removes the need to consider context." },
+    ],
+    correctOptionId: "b",
+    explanation: "Audience is part of context. It can help explain what the creator wanted readers to think, feel, or do.",
+    source: "demo",
+  },
+  {
+    id: "practice-mat-function", courseId: "mat-151", concept: "Functions",
+    prompt: "Which relation is a function?",
+    options: [
+      { id: "a", text: "{(1, 2), (1, 3), (2, 4)}" },
+      { id: "b", text: "{(2, 1), (3, 1), (4, 1)}" },
+      { id: "c", text: "{(0, 2), (0, 5), (1, 7)}" },
+      { id: "d", text: "{(3, 4), (3, 6), (3, 8)}" },
+    ],
+    correctOptionId: "b",
+    explanation: "A function assigns exactly one output to each input. Different inputs may share the same output.",
+    source: "demo",
+  },
+];
