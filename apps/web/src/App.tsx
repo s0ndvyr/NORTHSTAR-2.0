@@ -521,7 +521,7 @@ function AIWorkspace({ snapshot }: { snapshot:AcademicSnapshot }) {
   const [prepared,setPrepared]=useState("");
   const assistant=useMemo(()=>createSimulationAssistant(),[]);
   const context=summarizeAcademicContext(snapshot);
-  const toggle=()=>{const next=!enabled;setEnabled(next);setNotifications(items=>[\`Co-pilot simulation \${next?"enabled · standing by":"paused"}\`,...items].slice(0,6));};
+  const toggle=()=>{const next=!enabled;setEnabled(next);setNotifications(items=>[`Co-pilot simulation ${next?"enabled · standing by":"paused"}`,...items].slice(0,6));};
   const request=(action:AssistanceAction)=>{if(!enabled)return;const result=assistant.prepare(action,snapshot);setPrepared(result.label);setNotifications(items=>[result.message,...items].slice(0,6));};
   return <div className="content workspace-page">
     <div className="page-intro"><div className="eyebrow"><i/> INTELLIGENT ACADEMIC ASSISTANCE</div><h1>AI Workspace<em>.</em></h1><p>A future-ready co-pilot surface connected to your academic context, currently operating in simulation mode.</p></div>
