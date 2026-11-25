@@ -33,12 +33,29 @@ export interface AcademicTerm {
   endsAt: string;
 }
 
+export type AcademicResourceKind = "note" | "link" | "reference";
+
+export interface AcademicResource {
+  id: string;
+  courseId: string;
+  title: string;
+  kind: AcademicResourceKind;
+  description: string;
+  url: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  source: "demo" | "northstar";
+}
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
   term: AcademicTerm;
   courses: AcademicCourse[];
   assignments: AcademicAssignment[];
+  /** Optional during the version-1 transition so existing browser snapshots remain readable. */
+  resources?: AcademicResource[];
 }
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
