@@ -175,3 +175,34 @@ test("loads the cached application shell after network loss", async ({ page, con
   await expect(page.getByRole("heading", { name: /Make today/ })).toBeVisible();
   await context.setOffline(false);
 });
+
+test("preserves concurrent edits across tabs and exports both snapshots before reload", async ({ page }) => {
+  const secondTab = await page.context().newPage();
+  await secondTab.goto("/");
+  await expect(secondTab.getByRole("heading", { name: /Make today/ })).toBeVisible();
+
+  const createAssignment = async (target, title) => {
+    await target.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Assignments/ }).click();
+    await target.getByRole("button", { name: "New assignment" }).click();
+    await target.getByLabel("Assignment title").fill(title);
+    await target.getByLabel("Description").fill("Concurrent tab conflict qualification.");
+    await target.getByRole("button", { name: "Create assignment" }).click();
+    await expect(target.getByRole("link", { name: title })).toBeVisible();
+  };
+
+  const firstTitle = "First tab preserved assignment";
+  const secondTitle = "Second tab preserved assignment";
+  await createAssignment(page, firstTitle);
+  await createAssignment(secondTab, secondTitle);
+
+  await expect(page.getByText("Concurrent academic edit preserved")).toBeVisible();
+  await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeVisible();
+  const downloadPromise = secondTab.waitForEvent("download");
+  await secondTab.getByRole("button", { name: "Download both versions and reload" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^northstar-conflict-/);
+
+  await expect(secondTab.getByRole("link", { name: firstTitle })).toBeVisible();
+  await expect(secondTab.getByRole("link", { name: secondTitle })).toHaveCount(0);
+  await expect(page.getByText("Concurrent academic edit preserved")).toBeHidden();
+});
