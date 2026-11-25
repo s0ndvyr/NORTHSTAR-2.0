@@ -142,3 +142,14 @@ This is the first spaced-repetition engine increment. Full study guides, practic
 - Courses now opens a dedicated course hub for each course.
 - Each hub projects its assignments, resource library items and study cards from the canonical academic snapshot, with links to the corresponding full workspaces.
 - The course hub makes the cross-workspace relationships visible without duplicating or separately storing course data.
+
+
+### Coursework-to-writing workflow and qualification update — 2026-11-25
+
+- Added local writing-draft records to the canonical academic snapshot with revisioned save/update and delete behavior.
+- Review Center can create, resume, update, and delete drafts; drafts may link to assignments and are preserved as independent drafts if a linked assignment is deleted.
+- Assignment rows now provide a direct route into Review Center with the relevant assignment preselected.
+- Upgraded Vitest to 4.1.11 to clear critical development-tool advisories. The qualification workflow now uses npm 11.6.2, installs without the implicit audit phase, then runs explicit production audit and full dependency advisory reporting.
+- Latest successful dependency qualification before the assignment-to-draft route addition reported zero advisories, with typecheck, domain tests, and production build all passing.
+
+The assignment-to-draft route is awaiting its own latest workflow result. Browser/iPad acceptance and a committed package lockfile remain outstanding.
