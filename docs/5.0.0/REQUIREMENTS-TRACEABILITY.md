@@ -202,7 +202,7 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 
 ### Study Lab practice attempt evidence — 2026-11-25
 
-- NS-ACAD-004: added a course-grounded demo question bank and practice mode with course selection, navigation, answer autosave, flagging, elapsed timer, finish confirmation, scoring and per-question explanations.
-- NS-STATE-001: practice attempts are part of the canonical revisioned snapshot and resume after reload; answers, flags and elapsed time are saved locally.
-- NS-QUAL-001: repository tests cover creation/resume, answer/flag persistence, score calculation and invalid/cross-course answer rejection.
-- Acceptance remains limited to the seeded demo question bank; content coverage, configurable quizzes/tests, and browser/iPad end-to-end behavior remain open.
+- NS-ACAD-004: Study Lab now has Answer, Learn, Practice and Review modes. The demo bank contains 12 validated multiple-choice prompts (three per course); timed practice supports 5/10/15-minute attempts, course/question navigation, flagging, autosave, reload resume, automatic time-expiry submission, score calculation and per-question explanations.
+- NS-STATE-001: attempts are revisioned local snapshot records; duration, answers, flags, elapsed time and completion result persist in browser storage. Practice data remains separate from official Gradebook score records.
+- NS-QUAL-001: repository tests cover attempt creation/resume, selected duration validation, answer/flag persistence, completion scoring, invalid/cross-course answers and three-question-per-course demo content.
+- Acceptance remains limited to the seeded demo question bank and local browser behavior; instructor-authored quiz/test imports, comprehensive learning-content coverage, browser/iPad end-to-end behavior and accessibility review remain open.
