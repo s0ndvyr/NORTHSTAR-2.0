@@ -280,3 +280,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Existing assignments, resources, study cards, events and grade records retain their course identity when course metadata changes.
 - Added repository tests for course creation, duplicate/invalid rejection and update relationship integrity.
 - Course records remain local personal/demo data; institution course import and Canvas source authority are not connected.
+
+
+### Unified course progress projection — 2026-11-25
+
+- Added a shared course-progress selector: when coursework exists, progress is derived from submitted/graded assignment records; courses without tracked assignments retain their configured baseline.
+- Dashboard course pulse, course cards and course detail now use the same projection rather than mixing dynamic and static percentages.
+- Added selector tests for completion, no-assignment fallback and unknown course behavior.
+- The selector implementation passed strict typecheck, dependency audits, domain tests and production build in workflow run 45679641805; the dedicated projection test passed the domain-test step in workflow run 45679664246, with its production build still running at documentation time.
