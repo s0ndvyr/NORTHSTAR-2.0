@@ -61,3 +61,22 @@ Canvas Worker/security boundaries; assignment routing and submission; Document S
 ## Removal policy
 
 This register authorizes analysis and planning only. It does not authorize deleting existing files or disabling features. Each retirement must be implemented as a reviewable change after replacement or approved deprecation, with tests and a rollback path.
+
+
+## Data Architecture Planning checkpoint decisions — 2026-11-25
+
+The user submitted **A / A / A / A / A** through the five-question Data Architecture Planning checkpoint. Record these as approved planning-scope decisions:
+
+| Decision ID | Approved selection | Planning consequence |
+|---|---|---|
+| DAP-DEC-01 | A — Comprehensive field-level canonical academic model | Catalogue important entities, fields, relationships, ownership, provenance and lifecycle; keep logical planning distinct from a physical schema. |
+| DAP-DEC-02 | A — Comprehensive Canvas capability matrix | Document records, operations, fields, limitations, permissions, versioning and verification evidence; do not assume endpoint or tenant support. |
+| DAP-DEC-03 | A — Explicit data-class lifecycle policy | Define cache eligibility, freshness, quotas, retention, protected eviction, backup, restore, disconnect and recovery by data class. |
+| DAP-DEC-04 | A — Full legacy capability and data mapping | Map workflows, records, persistence, integrations, dependencies, preservation and replacement criteria before migration or retirement. |
+| DAP-DEC-05 | A — Complete verification blueprint | Define dependency gates, acceptance criteria, positive/negative tests, failure/recovery scenarios and required evidence before implementation approval. |
+
+**Disposition:** All five planning choices are approved. Supporting documents are linked from README.md. This checkpoint does not close the Cross-Application Intelligence workstream, authorize a physical database schema, authorize migration, authorize live Canvas access, or authorize application implementation.
+
+## Planning-only implementation boundary reaffirmed
+
+No application code, schema migration, dependency installation, live provider access, legacy deletion, production change, deployment, or runtime qualification is authorized. Legacy capabilities remain protected until mapping, replacement parity, regression evidence, backup/restore and rollback are established and separately approved.
