@@ -555,3 +555,11 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .artifact-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:9px;font-weight:500}
 .artifact-row small{color:var(--muted);font-size:8px}
 .artifact-row .icon-action{flex:none}
+
+.connectivity-state{display:inline-flex;align-items:center;gap:6px;color:#8b9db4;font:8px var(--mono);letter-spacing:.08em;white-space:nowrap}
+.connectivity-state i{width:6px;height:6px;border-radius:50%;background:#77b18b;box-shadow:0 0 8px #77b18b55}
+.connectivity-state.offline{color:#d8b47b}
+.connectivity-state.offline i{background:#d8a25f;box-shadow:0 0 8px #d8a25f55}
+.app[data-theme="light"] .connectivity-state{color:#6d8098}
+.app[data-theme="light"] .connectivity-state.offline{color:#936c2d}
+@media(max-width:600px){.connectivity-state{font-size:7px}.top-actions{gap:7px}}
