@@ -1,0 +1,42 @@
+name: NORTHSTAR Web Qualification
+
+on:
+  push:
+    branches:
+      - northstar-5.0.0-development
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/northstar-web-qualification.yml"
+  pull_request:
+    branches:
+      - northstar-5.0.0-development
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/northstar-web-qualification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck-and-build:
+    name: Typecheck and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
