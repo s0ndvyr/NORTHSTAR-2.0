@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicCourse, AcademicEvent, AcademicResource, AcademicTerm, GradeItem, StudyCard } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicEvent, AcademicResource, AcademicTerm, GradeItem, PracticeQuestion, StudyCard } from "./academic";
 
 export const demoTerm: AcademicTerm = {
   id: "term-fall-2026", name: "Fall 2026",
