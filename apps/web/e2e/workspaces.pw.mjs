@@ -93,7 +93,7 @@ test("records an explicit grade without inferring it from assignment status", as
 });
 
 test("saves a writing draft and runs the local structural review", async ({ page }) => {
-  await page.getByRole("link", { name: "Review" }).click();
+  await page.getByRole("link", { name: "Review Center" }).click();
   await page.getByRole("button", { name: "New draft" }).click();
   await page.getByLabel("Draft title").fill("Browser qualification essay");
   await page.getByLabel("Your writing").fill("This is a short sample draft. It is saved locally for a workflow check.");
