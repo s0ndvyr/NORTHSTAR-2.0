@@ -5,8 +5,8 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `6fffcb2cc1b3df3c9bfb905c0d022b28e6be3ce4`  
-**Latest successful full qualification run:** [GitHub Actions #45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998) — all 12 browser journeys passed
+**Latest implementation checkpoint:** `66aab10f8f8bac7053777e22dc40f7b544421026`  
+**Latest successful full qualification run:** [GitHub Actions #45692975729](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692975729) — all 12 browser journeys and provenance assertions passed
 
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
@@ -16,6 +16,7 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 |---|---|---|
 | React application foundation | Implemented | React 19, TypeScript, Vite, strict typecheck and production build |
 | Canonical academic data | Implemented | Validated versioned snapshot, revision tracking, local persistence and cross-record integrity |
+| Record provenance visibility | Implemented locally | DEMO/PERSONAL source labels across assignments, courses, calendar, Gradebook, Resources and Study Lab; field-level external authority/conflict resolution remain open |
 | Overview dashboard | Implemented | Shared academic projections, priority queue, course progress and activity |
 | Assignments | Implemented | Create/edit/delete, filters/search/sort/status, detail workflow, local drafts and file artifacts |
 | Courses | Implemented | Course create/edit, course hubs, connected assignments/resources/study material and derived progress |
