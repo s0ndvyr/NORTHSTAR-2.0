@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { searchWorkspaceResults, selectAcademicNotifications } from "./workspace-intelligence";
 import {
   createAcademicBackup,
   createPracticeAttempt,
