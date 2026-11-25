@@ -563,3 +563,6 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .app[data-theme="light"] .connectivity-state{color:#6d8098}
 .app[data-theme="light"] .connectivity-state.offline{color:#936c2d}
 @media(max-width:600px){.connectivity-state{font-size:7px}.top-actions{gap:7px}}
+
+.origin-label{font:8px var(--mono);letter-spacing:.1em;color:#8395af}
+.app[data-theme="light"] .origin-label{color:#73849a}
