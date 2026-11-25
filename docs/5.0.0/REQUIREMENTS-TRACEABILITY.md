@@ -182,3 +182,9 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 - NS-ACAD-002: added a confirmation-gated local turn-in action, status propagation and animated confirmation. UI explicitly states no Canvas/institution transport occurred.
 - NS-AI-001: AI Workspace is a provider-free simulation only; on/off, standing-by, sample action preparation and notification state are UI behavior, not AI execution.
 - Both are implementation progress; they do not satisfy live submission integration or AI-provider acceptance criteria.
+
+
+### Deterministic dependency installation evidence — 2026-11-25
+
+- NS-QUAL-001: `apps/web/package-lock.json` is now committed (npm lockfile v3), and CI performs clean `npm ci` with read-only repository permissions.
+- A clean lockfile install completed successfully in the workflow before the lockfile commit; subsequent CI runs use the committed lock as the reproducible dependency source.
