@@ -40,6 +40,7 @@ const workspaces = [
   { id: "review", title: "Review Center", detail: "Open workspace", type: "WORKSPACE" as const, to: "/review" },
   { id: "resources", title: "Resources", detail: "Open workspace", type: "WORKSPACE" as const, to: "/resources" },
   { id: "ai", title: "AI Workspace", detail: "Open workspace", type: "WORKSPACE" as const, to: "/ai" },
+  { id: "canvas", title: "Canvas Integration", detail: "View connection readiness", type: "WORKSPACE" as const, to: "/integrations/canvas" },
   { id: "settings", title: "Settings", detail: "Open workspace", type: "WORKSPACE" as const, to: "/settings" },
 ];
 
