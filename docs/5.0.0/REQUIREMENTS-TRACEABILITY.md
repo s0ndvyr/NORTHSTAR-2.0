@@ -290,3 +290,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - Assignment deletion and reset remove associated file bytes. JSON backup export and restore intentionally omit attachment metadata and binary bytes to avoid false recovery claims; Settings explains the separate download requirement.
 - NS-QUAL-001: artifact metadata, deletion cleanup and backup-exclusion tests passed with strict typecheck, dependency audits and production build in workflow run 45682291959.
 - Boundary: no Canvas upload or institution submission is performed. IndexedDB file bytes are local and are not encrypted by this feature.
+
+
+### Offline PWA shell evidence — 2026-11-25
+
+- NS-PLAT-001 / NS-STATE-001: production service worker precaches the app shell, provides network-first navigation fallback, and caches same-origin static assets. It ignores cross-origin requests and non-GET operations. Registration uses the configured Vite base path and is production-only.
+- Top-bar connectivity state reflects browser online/offline events. Academic data remains local-first through localStorage and IndexedDB; no remote synchronization is claimed.
+- NS-QUAL-001: service-worker registration and app shell typecheck/build passed in workflow run 45682659060; connectivity indicator typecheck, tests and build passed in workflow run 45682719412.
+- Remaining: real iPad Safari installation/offline/restore, storage quota, browser eviction and performance acceptance tests.
