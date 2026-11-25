@@ -344,3 +344,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - The AI Workspace now routes its co-pilot actions through that service instead of building simulated results directly inside the component.
 - Context summary is derived from the canonical local snapshot (courses, assignments, open/overdue work, resources and study cards); the service explicitly reports simulation mode and providerConnected=false.
 - Added service-contract tests proving no model call or external transfer is claimed. Live provider integration, consent, course-boundary controls and secure server-side execution remain separately gated.
+
+
+### Canvas adapter boundary and readiness workspace — 2026-11-25
+
+- Added a typed CanvasAdapter contract for connection status, course/assignment/grade reads and assignment submission.
+- The current adapter is explicitly unconfigured: it returns no institution records, reports canRead=false/canWrite=false and rejects every operation with a not_configured result. It makes no network request and holds no credentials.
+- Added a Canvas status/readiness workspace linked from Settings, with explicit capability state and future security/authorization safeguards.
+- Added contract tests proving that read and write operations remain blocked while unconfigured. The adapter contract/test qualification passed in workflow run 45681344308; the status-workspace UI run is completing separately.
+- Live Canvas integration remains gated by separate authorization and the approved Worker boundary.
