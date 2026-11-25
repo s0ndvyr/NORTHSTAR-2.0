@@ -260,3 +260,10 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-DATA-001 / NS-DATA-002: course records now carry optional origin and update timestamp metadata. Seeded course records are marked demo-origin; new and edited courses are marked NORTHSTAR-origin. Older version-1 snapshots remain valid when the optional metadata is absent.
 - Snapshot validation rejects unsupported origin values and invalid update timestamps. Tests verify local create/update origin transitions.
 - Canvas source IDs, per-field authority and external conflict resolution are not implemented by this local metadata foundation.
+
+
+### Provider-neutral assistant boundary evidence — 2026-11-25
+
+- NS-AI-001: introduced a typed AcademicAssistantService contract and simulation implementation; AI Workspace actions now call the service boundary. The simulation exposes providerConnected=false and only prepares labeled placeholder actions from a local academic context summary.
+- NS-AI-002 / NS-SEC-001: context summary currently reports aggregate counts only; live context assembly, course-boundary enforcement, permissions, citations, secrets and server-side provider calls remain unimplemented and separately gated.
+- NS-QUAL-001: service UI strict typecheck, domain tests, dependency audits and production build passed in workflow run 45681168275. The dedicated service-contract test is running in workflow run 45681191087.
