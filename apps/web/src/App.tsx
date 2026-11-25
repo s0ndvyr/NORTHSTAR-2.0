@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, BookOpenCheck, CalendarDays, CheckCircle2, ChevronRight, Clock3, Command, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, X } from "lucide-react";
 import type { AcademicAssignment, AcademicSnapshot, AssignmentPriority, AssignmentStatus } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
-import { createAssignment, deleteAssignment, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, type AssignmentInput } from "./domain/academic-repository";
+import { createAssignment, createResource, deleteAssignment, deleteResource, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, type AssignmentInput, type ResourceInput } from "./domain/academic-repository";
 
 const links = [
   { label: "Overview", to: "/", icon: LayoutDashboard },
@@ -17,7 +17,6 @@ const links = [
   { label: "AI Workspace", to: "/ai", icon: Sparkles },
 ];
 const pages: Record<string, { eyebrow: string; title: string; copy: string }> = {
-  "/resources": { eyebrow: "YOUR LIBRARY", title: "Resources", copy: "A home for the documents and materials that support your work." },
   "/ai": { eyebrow: "INTELLIGENT ASSISTANCE", title: "AI Workspace", copy: "A future-ready workspace. AI providers are not connected." },
   "/settings": { eyebrow: "PERSONALIZE", title: "Settings", copy: "Manage your local demo workspace." },
 };
@@ -153,13 +152,55 @@ function StudyLab({ snapshot }: { snapshot: AcademicSnapshot }) {
 function Gradebook({ snapshot }: { snapshot: AcademicSnapshot }) {
   return <div className="content workspace-page"><div className="page-intro"><div className="eyebrow"><i/> PERFORMANCE OVERVIEW</div><h1>Gradebook<em>.</em></h1><p>A transparent view of what has been graded so far. No official grades are connected.</p></div><div className="gradebook-grid">{snapshot.courses.map(course=>{const assignments=snapshot.assignments.filter(a=>a.courseId===course.id);const graded=assignments.filter(a=>a.status==="graded");const possible=graded.reduce((sum,a)=>sum+a.pointsPossible,0);return <article className="panel grade-card" key={course.id}><span className="eyebrow">{course.code}</span><h3>{course.name}</h3><strong>{graded.length}<small> / {assignments.length} graded items</small></strong><div className="bar"><i style={{width:assignments.length?`${graded.length/assignments.length*100}%`:"0%"}}/></div><p>{possible? `${possible} possible points represented in graded demo work`:"No graded demo items yet"}</p></article>})}</div><div className="footnote">This is a progress view of illustrative records, not a calculated institutional course grade.</div></div>;
 }
+
+function ResourceEditor({ courses, initial, onSave, onCancel }: { courses: AcademicSnapshot["courses"]; initial?: AcademicResource; onSave: (input: ResourceInput) => void; onCancel: () => void }) {
+  const [courseId,setCourseId]=useState(initial?.courseId??courses[0]?.id??"");
+  const [title,setTitle]=useState(initial?.title??"");
+  const [kind,setKind]=useState<AcademicResourceKind>(initial?.kind??"note");
+  const [description,setDescription]=useState(initial?.description??"");
+  const [url,setUrl]=useState(initial?.url??"");
+  const [content,setContent]=useState(initial?.content??"");
+  const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();onSave({courseId,title,kind,description,url,content})};
+  return <form className="panel editor-panel" onSubmit={submit}>
+    <div className="panel-head"><div><span className="eyebrow">{initial?"EDIT RESOURCE":"NEW RESOURCE"}</span><h3>{initial?"Update resource":"Add to your library"}</h3></div><button type="button" className="icon-action" aria-label="Close editor" onClick={onCancel}><X size={17}/></button></div>
+    <div className="editor-grid">
+      <label>Resource title<input required maxLength={120} value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Chapter notes"/></label>
+      <label>Course<select value={courseId} onChange={e=>setCourseId(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}</select></label>
+      <label>Resource type<select value={kind} onChange={e=>setKind(e.target.value as AcademicResourceKind)}><option value="note">Personal note</option><option value="reference">Reference</option><option value="link">External link</option></select></label>
+      <label>HTTPS URL<input type="url" required={kind==="link"} value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://…"/></label>
+      <label className="wide">Description<textarea rows={2} value={description} onChange={e=>setDescription(e.target.value)} placeholder="What is this resource useful for?"/></label>
+      <label className="wide">Notes / content<textarea rows={5} value={content} onChange={e=>setContent(e.target.value)} placeholder="Add your notes or a short summary…"/></label>
+    </div>
+    <p className="editor-hint">External resources must use HTTPS. Resources are stored locally in this browser.</p>
+    <div className="editor-actions"><button type="button" className="quiet-action" onClick={onCancel}>Cancel</button><button type="submit" className="primary-action"><Save size={14}/>{initial?"Save resource":"Add resource"}</button></div>
+  </form>;
+}
+function Resources({ snapshot, onCreate, onUpdate, onDelete }: { snapshot: AcademicSnapshot; onCreate:(input:ResourceInput)=>void; onUpdate:(id:string,input:ResourceInput)=>void; onDelete:(id:string)=>void }) {
+  const [query,setQuery]=useState("");
+  const [course,setCourse]=useState("all");
+  const [editor,setEditor]=useState<"new"|string|null>(null);
+  const resources=snapshot.resources??[];
+  const filtered=useMemo(()=>resources.filter(resource=>(course==="all"||resource.courseId===course)&&`${resource.title} ${resource.description} ${resource.content}`.toLowerCase().includes(query.toLowerCase())),[resources,course,query]);
+  const editing=typeof editor==="string"?resources.find(resource=>resource.id===editor):undefined;
+  const save=(input:ResourceInput)=>{if(editor==="new")onCreate(input);else if(typeof editor==="string")onUpdate(editor,input);setEditor(null)};
+  return <div className="content workspace-page">
+    <div className="page-intro page-intro-row"><div><div className="eyebrow"><i/> YOUR PERSONAL LIBRARY</div><h1>Resources<em>.</em></h1><p>Keep course notes, references and useful links connected to the work they support.</p></div><button className="primary-action" onClick={()=>setEditor("new")}><Plus size={15}/> Add resource</button></div>
+    <div className="assignment-summary"><div><strong>{resources.length}</strong><span>Library items</span></div><div><strong>{resources.filter(r=>r.kind==="note").length}</strong><span>Personal notes</span></div><div><strong>{resources.filter(r=>r.kind==="link").length}</strong><span>External links</span></div></div>
+    {editor&&<ResourceEditor key={editor} courses={snapshot.courses} initial={editing} onSave={save} onCancel={()=>setEditor(null)}/>}
+    <section className="panel assignment-panel"><div className="assignment-toolbar"><label className="assignment-search"><Search size={16}/><input aria-label="Search resources" placeholder="Search your library…" value={query} onChange={e=>setQuery(e.target.value)}/></label><label className="filter-control"><select aria-label="Filter resources by course" value={course} onChange={e=>setCourse(e.target.value)}><option value="all">All courses</option>{snapshot.courses.map(c=><option key={c.id} value={c.id}>{c.code}</option>)}</select></label></div>
+      <div className="resource-grid">{filtered.map(resource=><article className="panel resource-card" key={resource.id}><div className="resource-top"><span className="eyebrow">{snapshot.courses.find(c=>c.id===resource.courseId)?.code} · {resource.kind.toUpperCase()}</span><span className="resource-origin">{resource.source==="demo"?"DEMO":"PERSONAL"}</span></div><h3>{resource.title}</h3><p>{resource.description}</p>{resource.content&&<div className="resource-content">{resource.content}</div>}{resource.url&&<a className="text-link" href={resource.url} target="_blank" rel="noreferrer noopener">Open external resource <ArrowUpRight size={13}/></a>}<div className="resource-actions"><button className="icon-action" aria-label={`Edit ${resource.title}`} onClick={()=>setEditor(resource.id)}><Pencil size={14}/></button><button className="icon-action danger-action" aria-label={`Delete ${resource.title}`} onClick={()=>{if(window.confirm(`Delete “${resource.title}” from your local library?`))onDelete(resource.id)}}><Trash2 size={14}/></button></div></article>)}{!filtered.length&&<div className="empty-state"><Library size={22}/><b>Your library is clear.</b><span>Add a note, reference or HTTPS link to get started.</span></div>}</div>
+      <div className="list-footnote">Local library only. Files and cloud synchronization are not connected yet.</div>
+    </section>
+  </div>;
+}
+
 function Placeholder({ path, onReset }: { path: string; onReset: () => void }) {
   const page = pages[path] ?? { eyebrow: "PERSONALIZE", title: "Workspace", copy: "This workspace will be built on the shared NORTHSTAR academic foundation." };
   return <div className="content placeholder"><div className="eyebrow"><i/> {page.eyebrow}</div><h1>{page.title}<em>.</em></h1><p>{page.copy}</p><section className="panel coming"><Sparkles size={22}/><span><b>{path==="/ai"?"Provider connection is intentionally disabled.":"This workspace is taking shape."}</b><small>{path==="/ai"?"The UI is a safe placeholder. No AI provider, API key, or external service is connected.":"This area will be implemented incrementally using the approved NORTHSTAR architecture."}</small></span><em>IN DEVELOPMENT</em></section>{path==="/settings" && <section className="panel settings-panel"><div><b>Reset local demo data</b><small>Restore the original illustrative courses and assignment statuses in this browser.</small></div><button onClick={onReset}><RotateCcw size={14}/> Reset demo workspace</button></section>}</div>;
 }
-function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onReset }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onReset:()=>void }) {
+function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCreate, onResourceUpdate, onResourceDelete, onReset }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onResourceCreate:(input:ResourceInput)=>void; onResourceUpdate:(id:string,input:ResourceInput)=>void; onResourceDelete:(id:string)=>void; onReset:()=>void }) {
   const location = useLocation();
-  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
+  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<AcademicSnapshot>(() => loadAcademicSnapshot());
@@ -169,6 +210,9 @@ export default function App() {
   const handleCreate = (input: AssignmentInput) => setSnapshot(current => createAssignment(current,input));
   const handleUpdate = (id: string, input: AssignmentInput) => setSnapshot(current => updateAssignment(current,id,input));
   const handleDelete = (id: string) => setSnapshot(current => deleteAssignment(current,id));
+  const handleResourceCreate = (input: ResourceInput) => setSnapshot(current => createResource(current,input));
+  const handleResourceUpdate = (id: string,input: ResourceInput) => setSnapshot(current => updateResource(current,id,input));
+  const handleResourceDelete = (id: string) => setSnapshot(current => deleteResource(current,id));
   const handleReset = () => setSnapshot(resetAcademicSnapshot());
-  return <div className="app"><Sidebar snapshot={snapshot}/><div className="main"><Routed snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onUpdate={handleUpdate} onDelete={handleDelete} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
+  return <div className="app"><Sidebar snapshot={snapshot}/><div className="main"><Routed snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
 }
