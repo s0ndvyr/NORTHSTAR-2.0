@@ -167,3 +167,11 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 - NS-DATA-003 / NS-DATA-005: a versioned local backup envelope now exports the full academic snapshot and validates it on restore; malformed and unsupported versions are rejected.
 - NS-STATE-001: Settings supports explicit backup export and confirmation-gated restore, preserving resources, study cards and writing drafts in the same canonical snapshot.
 - Verification: unit tests cover complete snapshot round-trip and invalid backup rejection. Full recovery qualification, interrupted writes, browser quota failure, encryption, cloud backup and offline conflict recovery remain open.
+
+
+### Calendar, Gradebook and AI Workspace progress — 2026-11-25
+
+- NS-ACAD-003: Calendar now combines assignment due dates with separate class/study/reminder/personal events; Gradebook uses explicit grade-item records and points-based summaries, excluding pending/missing records.
+- NS-DATA-001: event and grade records are validated against course/assignment relationships; deleting an assignment detaches related independent drafts, events and grade items instead of destroying them.
+- NS-ACAD-005 / NS-AI-001: AI Workspace is now a provider-free co-pilot simulation with on/off, standing-by status, simulated request state, notifications and a local academic context preview. No AI call or external transfer is made.
+- NS-QUAL-001: current successful workflow evidence includes strict TypeScript, dependency audit, repository tests and production build; the Calendar/Gradebook/AI UI additions are awaiting their latest run.
