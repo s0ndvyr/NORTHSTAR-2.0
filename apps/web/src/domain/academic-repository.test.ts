@@ -5,6 +5,8 @@ import {
   createPracticeAttempt,
   completePracticeAttempt,
   createAssignment,
+  addAssignmentArtifact,
+  deleteAssignmentArtifact,
   createCourse,
   updateCourse,
   createAcademicEvent,
@@ -53,6 +55,21 @@ describe("academic repository", () => {
     expect(isAcademicSnapshot(snapshot)).toBe(true);
     expect(snapshot.courses.length).toBeGreaterThan(0);
     expect(snapshot.assignments.length).toBeGreaterThan(0);
+  });
+
+  it("attaches and removes validated local file metadata", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignment = snapshot.assignments[0];
+    const input = { id: "artifact-test-1", assignmentId: assignment.id, fileName: "research-draft.pdf", mimeType: "application/pdf", sizeBytes: 1024 };
+    const attached = addAssignmentArtifact(snapshot, input);
+    expect(attached.revision).toBe(snapshot.revision + 1);
+    expect(attached.artifacts?.[0]).toMatchObject({ ...input, source: "northstar" });
+    expect(isAcademicSnapshot(attached)).toBe(true);
+    expect(addAssignmentArtifact(snapshot, { ...input, assignmentId: "missing-assignment" })).toBe(snapshot);
+    expect(addAssignmentArtifact(snapshot, { ...input, sizeBytes: -1 })).toBe(snapshot);
+    const removed = deleteAssignmentArtifact(attached, input.id);
+    expect(removed.artifacts).toHaveLength(0);
+    expect(removed.revision).toBe(attached.revision + 1);
   });
 
   it("creates a course in the active term and rejects duplicate or invalid course data", () => {
