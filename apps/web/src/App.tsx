@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent, type Ke
 import { NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
-import type { AcademicAssignment, AssignmentArtifact, AcademicEvent, AcademicEventKind, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus, GradeItem, GradeItemStatus, StudyRating } from "./domain/academic";
+import type { AcademicAssignment, AcademicEvent, AcademicEventKind, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus, GradeItem, GradeItemStatus, StudyRating } from "./domain/academic";
 import { ASSIGNMENT_STATUS_LABELS } from "./domain/academic";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./domain/workspace-intelligence";
 import { createSimulationAssistant, summarizeAcademicContext, type AssistanceAction } from "./domain/ai-assistance";
