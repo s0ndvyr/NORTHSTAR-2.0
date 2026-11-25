@@ -339,6 +339,22 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
   expect(isAcademicSnapshot(deleted)).toBe(true);
 });
 
+describe("Study Lab question bank", () => {
+  it("provides three validated practice questions for each demo course", () => {
+    const snapshot = loadAcademicSnapshot();
+    expect(snapshot.practiceQuestions).toHaveLength(12);
+    for (const course of snapshot.courses) {
+      const courseQuestions = snapshot.practiceQuestions?.filter(question => question.courseId === course.id) ?? [];
+      expect(courseQuestions).toHaveLength(3);
+      for (const question of courseQuestions) {
+        expect(question.options.length).toBeGreaterThanOrEqual(2);
+        expect(question.options.some(option => option.id === question.correctOptionId)).toBe(true);
+        expect(question.explanation.trim().length).toBeGreaterThan(10);
+      }
+    }
+  });
+});
+
 describe("Study Lab practice attempts", () => {
   it("creates, autosaves, flags and completes a course practice attempt", () => {
     const initial = loadAcademicSnapshot();
