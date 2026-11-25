@@ -255,3 +255,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Assignment deadlines and seeded demo events remain protected from personal edit/delete controls.
 - Added repository coverage for event update, identity preservation and invalid time-range rejection.
 - Calendar changes remain local and do not modify an external institution calendar.
+
+
+### Planetary hero visual refinement — 2026-11-25
+
+- Expanded the Dashboard's existing CSS-rendered planet into layered atmospheric lighting, surface/cloud bands, orbital halos, additional star points and subtle long-duration movement.
+- Kept the effect in CSS rather than adding canvas/WebGL or another runtime dependency.
+- Added a reduced-motion override and smaller-device sizing rules.
+- This is a visual implementation increment; physical iPad rendering, frame-time and battery qualification remain open.
