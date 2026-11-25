@@ -210,7 +210,9 @@ This is local backup/restore only. It is not cloud backup, encryption, multi-dev
 
 - Added course-grounded multiple-choice practice questions with validated option sets and explanations.
 - Added revisioned practice attempts to the canonical snapshot. Attempts resume after reload and autosave answers, flags and elapsed time.
-- Practice mode includes course selection, previous/next navigation, question navigator, flag-for-review, elapsed timer, finish confirmation, score calculation and per-question explanations.
-- Added tests for attempt creation/resume, answer autosave, flagging, completion scoring and rejection of invalid/cross-course answers.
+- Study Lab has four modes: Answer, Learn, Practice and Review. The initial course bank contains 12 validated multiple-choice prompts (three for each of the four demo courses).
+- Timed practice offers 5-, 10- and 15-minute countdown sessions, course selection, previous/next and direct question navigation, flag-for-review, immediate answer/flag autosave, reload resume, automatic time-expiry submission, manual finish, score calculation and per-question feedback.
+- Practice attempts remain independent of Gradebook score records and never send institution submissions.
+- Tests cover attempt create/resume, duration persistence/range validation, answer autosave, flags, completion scoring, cross-course answer rejection and the seeded question bank.
 
-This is the initial demo question bank and practice engine. Full instructor-content-derived quiz generation, configurable tests, timer limits and advanced attempt analytics remain ahead.
+The question set is illustrative demo content. Instructor-authored assessment imports, richer test formats, accessibility and browser/iPad end-to-end qualification remain open.
