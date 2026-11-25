@@ -131,3 +131,14 @@ The following is a progress annotation, not an acceptance update. Existing requi
 | NS-QUAL-001 | A development-branch GitHub Actions workflow is configured to install, typecheck and build. | Successful recorded workflow run, deterministic lockfile, automated tests/lint/security checks. |
 
 These entries are implementation progress only. No live Canvas/AI integration, physical iPad qualification, or release acceptance is implied.
+
+
+### Resource and PWA implementation extension — 2026-11-25
+
+- NS-DATA-001: extended the shared snapshot with course-linked resource records while preserving compatibility with existing version-1 snapshots that do not yet contain a resource collection.
+- NS-STATE-001: resource create/update/delete commands use the same academic snapshot revision and browser persistence mechanism as assignments.
+- NS-ACAD-003: Resources now supports local notes, references and HTTPS-only external links, with search, course filtering and edit/delete actions.
+- NS-ARCH-001 / NS-UX-001: added web app manifest, SVG app icon, production service-worker registration, and conservative app-shell/static-asset caching.
+- NS-QUAL-001: added initial resource lifecycle and HTTPS URL validation tests; added production-dependency audit to the development qualification workflow.
+
+Acceptance remains pending for the latest code commit until the corresponding workflow completes. PWA/offline and physical iPad behavior remain unverified on target devices.
