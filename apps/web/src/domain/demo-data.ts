@@ -5,10 +5,10 @@ export const demoTerm: AcademicTerm = {
   startsAt: "2026-08-24T00:00:00", endsAt: "2026-12-18T23:59:59",
 };
 export const demoCourses: AcademicCourse[] = [
-  { id: "eng-204", code: "ENG 204", name: "Academic Writing", instructor: "Dr. Morgan", termId: demoTerm.id, color: "blue", progress: 82 },
-  { id: "bio-112", code: "BIO 112", name: "General Biology", instructor: "Prof. Chen", termId: demoTerm.id, color: "green", progress: 68 },
-  { id: "his-210", code: "HIS 210", name: "World History", instructor: "Dr. Patel", termId: demoTerm.id, color: "amber", progress: 61 },
-  { id: "mat-151", code: "MAT 151", name: "College Algebra", instructor: "Prof. Rivera", termId: demoTerm.id, color: "violet", progress: 74 },
+  { id: "eng-204", code: "ENG 204", name: "Academic Writing", instructor: "Dr. Morgan", termId: demoTerm.id, source: "demo", color: "blue", progress: 82 },
+  { id: "bio-112", code: "BIO 112", name: "General Biology", instructor: "Prof. Chen", termId: demoTerm.id, source: "demo", color: "green", progress: 68 },
+  { id: "his-210", code: "HIS 210", name: "World History", instructor: "Dr. Patel", termId: demoTerm.id, source: "demo", color: "amber", progress: 61 },
+  { id: "mat-151", code: "MAT 151", name: "College Algebra", instructor: "Prof. Rivera", termId: demoTerm.id, source: "demo", color: "violet", progress: 74 },
 ];
 const now = new Date();
 const day = (offset: number) => {
