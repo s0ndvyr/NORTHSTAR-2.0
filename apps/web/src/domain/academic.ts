@@ -92,6 +92,16 @@ export interface AcademicEvent {
   updatedAt: string;
 }
 
+export interface AssignmentArtifact {
+  id: string;
+  assignmentId: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  addedAt: string;
+  source: "northstar";
+}
+
 export type GradeItemStatus = "graded" | "pending" | "missing" | "excused";
 
 export interface GradeItem {
@@ -155,6 +165,8 @@ export interface AcademicSnapshot {
   events?: AcademicEvent[];
   /** Scores are explicit records; assignment status alone never implies a numeric grade. */
   gradeItems?: GradeItem[];
+  /** File metadata is stored in the snapshot; binary bytes live in a separate IndexedDB object store. */
+  artifacts?: AssignmentArtifact[];
   practiceQuestions?: PracticeQuestion[];
   practiceAttempts?: PracticeAttempt[];
 }
