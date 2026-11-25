@@ -66,3 +66,12 @@ NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-QUAL-003 derive from the
 ## Integrated architecture planning decision source
 
 NS-ARCH-003, NS-ARCH-004, NS-MIG-002, NS-GOV-001 and NS-GOV-002 derive from the user's C/B/A/A/A integrated architecture planning checkpoint dated 2026-11-25 (EFP-DEC-01 through EFP-DEC-05). Recommended library/tool choices remain planning defaults; no dependency is installed and no requirement is marked implemented or verified.
+
+
+| NS-MIG-003 | Legacy source inventory reconciles all routes, storage keys/stores, read/write call sites, Worker routes, dependencies, files and deployment configuration | P0 | NS-MIG-001, NS-MIG-002 | Reconciled path inventory, storage/call-site matrix, provider route catalogue and dependency inventory | In progress |
+| NS-CAN-004 | Canvas capability claims are supported by dated official endpoint documentation and explicit evidence classes; tenant verification is separately gated | P0 | NS-CAN-003, NS-CAI-002 | Endpoint/method/scope/pagination/limitation evidence matrix and separate tenant acceptance record | Planned |
+| NS-OFF-002 | Offline cache, freshness, retention and recovery limits are derived from measured platform constraints and data sensitivity | P1 | NS-DATA-005, NS-CAI-005 | Measurement record, data-class policy, quota/eviction and recovery acceptance evidence | Planned |
+| NS-SEC-002 | Privileged provider operations require a narrowly scoped server-side BFF or equivalent boundary | P0 | NS-CAI-002, NS-CAI-003, NS-ARCH-003 | Threat-reviewed BFF contract, route/method allowlist, auth/scope and secret-isolation tests | Planned |
+| NS-INT-001 | Workspace integration contracts cover Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace | P0 | NS-ARCH-003, NS-CAI-001, NS-CAI-002 | Per-workspace entity/command/event/offline/permission/acceptance matrix | Planned |
+
+These requirements derive from EFP-DEC-06 through EFP-DEC-10 (user checkpoint A/A/A/A/A dated 2026-11-25). Initial source evidence is documented in LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md. No item is considered implemented or verified.
