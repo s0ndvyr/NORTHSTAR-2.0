@@ -151,7 +151,7 @@ function isValidPracticeQuestion(value: unknown, courseIds: Set<string>): value 
     && value.source === "demo";
 }
 
-function isValidPracticeAttempt(value: unknown, questions: unknown[]): value is PracticeAttempt {
+function isValidPracticeAttempt(value: unknown, questions: unknown[], courseIds: Set<string>): value is PracticeAttempt {
   if (!isRecord(value) || !Array.isArray(value.questionIds) || !Array.isArray(value.flaggedIds) || !isRecord(value.answers)) return false;
   const questionMap = new Map<string, PracticeQuestion>();
   for (const question of questions) if (isRecord(question) && typeof question.id === "string") questionMap.set(question.id, question as unknown as PracticeQuestion);
@@ -160,7 +160,7 @@ function isValidPracticeAttempt(value: unknown, questions: unknown[]): value is 
   for (const id of value.flaggedIds) if (typeof id !== "string" || !questionIds.has(id)) return false;
   for (const [questionId, optionId] of Object.entries(value.answers)) { const question = questionMap.get(questionId); if (!question || !question.options.some(option => option.id === optionId)) return false; }
   return typeof value.id === "string" && value.id.length > 0
-    && typeof value.courseId === "string" && value.questionIds.every((id: string) => questionMap.get(id)?.courseId === value.courseId)
+    && typeof value.courseId === "string" && courseIds.has(value.courseId) && value.questionIds.length > 0 && value.questionIds.every((id: string) => questionMap.get(id)?.courseId === value.courseId)
     && typeof value.startedAt === "string" && Number.isFinite(Date.parse(value.startedAt))
     && (value.completedAt === undefined || (typeof value.completedAt === "string" && Number.isFinite(Date.parse(value.completedAt))))
     && typeof value.elapsedSeconds === "number" && Number.isFinite(value.elapsedSeconds) && value.elapsedSeconds >= 0
@@ -174,7 +174,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isInteger(value.revision) || (value.revision as number) < 0) return false;
   if (!isRecord(value.term) || typeof value.term.id !== "string" || typeof value.term.name !== "string"
     || typeof value.term.startsAt !== "string" || !Number.isFinite(Date.parse(value.term.startsAt))
-    || typeof value.term.endsAt !== "string" || !Number.isFinite(Date.parse(value.term.endsAt))) return false;
+    || typeof value.term.endsAt !== "string" || !Number.isFinite(Date.parse(value.term.endsAt)) || Date.parse(value.term.endsAt) <= Date.parse(value.term.startsAt)) return false;
   if (!Array.isArray(value.courses) || !Array.isArray(value.assignments)) return false;
   if (value.resources !== undefined && !Array.isArray(value.resources)) return false;
   if (value.studyCards !== undefined && !Array.isArray(value.studyCards)) return false;
@@ -187,7 +187,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   for (const course of value.courses) {
     if (!isRecord(course) || typeof course.id !== "string" || !course.id
       || typeof course.code !== "string" || typeof course.name !== "string"
-      || typeof course.instructor !== "string" || typeof course.termId !== "string"
+      || typeof course.instructor !== "string" || course.termId !== value.term.id
       || typeof course.color !== "string" || typeof course.progress !== "number"
       || !Number.isFinite(course.progress) || course.progress < 0 || course.progress > 100) return false;
     if (courseIds.has(course.id)) return false;
@@ -211,10 +211,14 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   const practiceQuestionIds = new Set<string>();
   for (const question of (value.practiceQuestions ?? [])) { if (!isValidPracticeQuestion(question, courseIds) || practiceQuestionIds.has(question.id)) return false; practiceQuestionIds.add(question.id); }
   const practiceAttemptIds = new Set<string>();
-  for (const attempt of (value.practiceAttempts ?? [])) { if (!isValidPracticeAttempt(attempt, value.practiceQuestions ?? []) || practiceAttemptIds.has(attempt.id)) return false; practiceAttemptIds.add(attempt.id); }
+  for (const attempt of (value.practiceAttempts ?? [])) { if (!isValidPracticeAttempt(attempt, value.practiceQuestions ?? [], courseIds) || practiceAttemptIds.has(attempt.id)) return false; practiceAttemptIds.add(attempt.id); }
   const eventIds = new Set<string>();
   for (const event of (value.events ?? [])) {
     if (!isValidEvent(event, courseIds, assignmentIds) || eventIds.has(event.id)) return false;
+    if (event.assignmentId) {
+      const linkedAssignment = value.assignments.find((entry: unknown) => isRecord(entry) && entry.id === event.assignmentId);
+      if (!isRecord(linkedAssignment) || linkedAssignment.courseId !== event.courseId) return false;
+    }
     eventIds.add(event.id);
   }
   const gradeItemIds = new Set<string>();
