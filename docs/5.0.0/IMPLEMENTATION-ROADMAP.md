@@ -432,5 +432,5 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added cross-tab storage-event notices, a conflict alert, a bundle export containing both valid academic backups, and a guarded reload of the saved copy after export.
 - Explicit backup restore/reset can intentionally replace the primary snapshot; existing conflict copies remain available for export.
 - Added repository tests for same-revision conflict preservation, subsequent-write lockout and explicit restore, plus a two-tab Playwright journey that downloads both versions and verifies the saved copy after reload.
-- Passed in [GitHub Actions #45694384485](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45694384485): 51 domain tests and 13 browser journeys.
+- Passed in [GitHub Actions #45695099527](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695099527): 51 domain tests and 13 browser journeys; the multi-tab test parses the conflict download and confirms both the local and saved snapshots are present.
 - Scope boundary: this is local multi-tab conflict protection only. It does not implement Canvas sync, remote provider conflict resolution, offline mutation queues or distributed event reconciliation.
