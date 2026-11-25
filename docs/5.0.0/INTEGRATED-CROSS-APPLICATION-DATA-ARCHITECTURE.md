@@ -203,3 +203,16 @@ Each open item must be tied to requirement IDs and resolved before the relevant 
 This specification is a planning baseline. It does not authorize application code, package installation, physical database schema or migrations, data migration, live Canvas or AI access, legacy deletion, production changes, deployment, or runtime qualification. Those require separate explicit authorization.
 
 **Disposition:** Integrated architecture planning baseline drafted; detailed supporting specifications linked; final design review and evidence closure pending.
+
+
+## 13. Secure BFF decision and integration readiness
+
+The user approved defining the secure BFF requirement before choosing hosting or database technology. All privileged Canvas/provider operations must pass through a narrowly scoped server-side BFF or equivalent trusted integration service. It must enforce exact allowed origins, authentication and authorization, endpoint/method allowlists, request/response validation, bounded redirects, rate limits, secret isolation, safe diagnostics, and auditable operation identity. It must not become an unrestricted generic proxy.
+
+Hosting/runtime and persistence are deferred until deployment constraints, provider requirements, data durability, backup/recovery and cross-device needs are evidenced. A BFF does not automatically imply a database; PostgreSQL remains conditional on a demonstrated server-persistence requirement.
+
+Integration readiness must be specified across Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace. Each workspace contract must identify canonical entities consumed, domain commands emitted, provider-backed versus local-only fields, event subscriptions, offline behavior, conflict presentation, freshness indicators, permission boundaries, and acceptance scenarios. The detailed integration contract set remains future planning work.
+
+## 14. Source evidence update
+
+The initial selected-file source review is recorded in [LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md). It is not a complete repository audit. The exact migration source branch must be reconciled, all storage keys/object stores and read/write call sites enumerated, all Worker routes and provider operations mapped, and dependencies/CDN imports inventoried before migration design can be accepted.
