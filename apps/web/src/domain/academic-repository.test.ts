@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createAcademicBackup,
   createAssignment,
   createResource,
   createStudyCard,
@@ -8,6 +9,7 @@ import {
   deleteStudyCard,
   isAcademicSnapshot,
   loadAcademicSnapshot,
+  parseAcademicBackup,
   updateAssignment,
   updateAssignmentStatus,
   updateResource,
@@ -202,5 +204,26 @@ describe("persistent writing drafts", () => {
     const deleted = deleteWritingDraft(snapshot, draftId ?? "missing");
     expect(deleted.writingDrafts).toHaveLength(0);
     expect(deleted.revision).toBe(snapshot.revision + 1);
+  });
+});
+
+describe("academic backup and restore", () => {
+  it("round-trips the complete academic snapshot through a validated backup", () => {
+    const snapshot = loadAcademicSnapshot();
+    const raw = createAcademicBackup(snapshot);
+    const restored = parseAcademicBackup(raw);
+    expect(restored).not.toBeNull();
+    expect(restored?.courses).toEqual(snapshot.courses);
+    expect(restored?.assignments).toEqual(snapshot.assignments);
+    expect(restored?.resources).toEqual(snapshot.resources);
+    expect(restored?.studyCards).toEqual(snapshot.studyCards);
+    expect(restored?.writingDrafts).toEqual(snapshot.writingDrafts);
+  });
+
+  it("rejects malformed, unknown-version, and invalid academic backups", () => {
+    expect(parseAcademicBackup("not json")).toBeNull();
+    expect(parseAcademicBackup(JSON.stringify({ format: "northstar-academic-backup", version: 99, snapshot: {} }))).toBeNull();
+    const snapshot = loadAcademicSnapshot();
+    expect(parseAcademicBackup(JSON.stringify({ format: "northstar-academic-backup", version: 1, snapshot: { ...snapshot, assignments: [{ id: "broken" }] } }))).toBeNull();
   });
 });
