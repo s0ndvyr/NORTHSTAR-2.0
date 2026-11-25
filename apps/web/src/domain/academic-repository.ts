@@ -1,5 +1,5 @@
-import type { AcademicAssignment, AcademicResource, AcademicSnapshot, AssignmentStatus, StudyCard, StudyRating, WritingDraft } from "./academic";
-import { demoAssignments, demoCourses, demoResources, demoStudyCards, demoTerm } from "./demo-data";
+import type { AcademicAssignment, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, StudyCard, StudyRating, WritingDraft } from "./academic";
+import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
@@ -10,6 +10,8 @@ export type AssignmentPatch = Partial<AssignmentInput> & { status?: AssignmentSt
 export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind" | "description" | "url" | "content">;
 export type StudyCardInput = Pick<StudyCard, "courseId" | "prompt" | "answer">;
 export type WritingDraftInput = Pick<WritingDraft, "title" | "body"> & { id?: string; assignmentId?: string };
+export type AcademicEventInput = Pick<AcademicEvent, "title" | "kind" | "startsAt" | "endsAt" | "notes"> & { courseId?: string; assignmentId?: string };
+export type GradeItemInput = Pick<GradeItem, "courseId" | "title" | "score" | "pointsPossible" | "status"> & { assignmentId?: string; feedback?: string };
 
 function initialSnapshot(): AcademicSnapshot {
   return {
@@ -21,6 +23,8 @@ function initialSnapshot(): AcademicSnapshot {
     resources: demoResources.map(resource => ({ ...resource })),
     studyCards: demoStudyCards.map(card => ({ ...card })),
     writingDrafts: [],
+    events: demoEvents.map(event => ({ ...event })),
+    gradeItems: demoGradeItems.map(item => ({ ...item })),
   };
 }
 
@@ -59,6 +63,38 @@ function isValidResource(value: unknown, courseIds: Set<string>): value is Acade
     && (value.source === "demo" || value.source === "northstar");
 }
 
+function isValidEvent(value: unknown, courseIds: Set<string>, assignmentIds: Set<string>): value is AcademicEvent {
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.title === "string" && value.title.trim().length > 0
+    && ["class", "study", "reminder", "personal"].includes(String(value.kind))
+    && typeof value.startsAt === "string" && Number.isFinite(Date.parse(value.startsAt))
+    && typeof value.endsAt === "string" && Number.isFinite(Date.parse(value.endsAt))
+    && Date.parse(value.endsAt) > Date.parse(value.startsAt)
+    && (value.courseId === undefined || (typeof value.courseId === "string" && courseIds.has(value.courseId)))
+    && (value.assignmentId === undefined || (typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId)))
+    && typeof value.notes === "string"
+    && (value.source === "demo" || value.source === "northstar")
+    && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt));
+}
+
+function isValidGradeItem(value: unknown, courseIds: Set<string>, assignmentIds: Set<string>): value is GradeItem {
+  if (!isRecord(value)) return false;
+  const validStatus = ["graded", "pending", "missing", "excused"].includes(String(value.status));
+  const validScore = value.score === null || (typeof value.score === "number" && Number.isFinite(value.score) && value.score >= 0);
+  const validScoredState = value.status === "graded" ? typeof value.score === "number" : value.score === null;
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.courseId === "string" && courseIds.has(value.courseId)
+    && (value.assignmentId === undefined || (typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId)))
+    && typeof value.title === "string" && value.title.trim().length > 0
+    && validScore && validScoredState && typeof value.pointsPossible === "number"
+    && Number.isFinite(value.pointsPossible) && value.pointsPossible > 0
+    && validStatus && (value.feedback === undefined || typeof value.feedback === "string")
+    && (value.gradedAt === undefined || (typeof value.gradedAt === "string" && Number.isFinite(Date.parse(value.gradedAt))))
+    && (value.source === "demo" || value.source === "northstar")
+    && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt));
+}
+
 function isValidWritingDraft(value: unknown, assignmentIds: Set<string>): value is WritingDraft {
   if (!isRecord(value)) return false;
   return typeof value.id === "string" && value.id.length > 0
@@ -94,6 +130,8 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (value.resources !== undefined && !Array.isArray(value.resources)) return false;
   if (value.studyCards !== undefined && !Array.isArray(value.studyCards)) return false;
   if (value.writingDrafts !== undefined && !Array.isArray(value.writingDrafts)) return false;
+  if (value.events !== undefined && !Array.isArray(value.events)) return false;
+  if (value.gradeItems !== undefined && !Array.isArray(value.gradeItems)) return false;
   const courseIds = new Set<string>();
   for (const course of value.courses) {
     if (!isRecord(course) || typeof course.id !== "string" || !course.id
@@ -119,6 +157,18 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (!isValidStudyCard(card, courseIds) || studyCardIds.has(card.id)) return false;
     studyCardIds.add(card.id);
   }
+  const eventIds = new Set<string>();
+  for (const event of (value.events ?? [])) {
+    if (!isValidEvent(event, courseIds, assignmentIds) || eventIds.has(event.id)) return false;
+    eventIds.add(event.id);
+  }
+  const gradeItemIds = new Set<string>();
+  for (const item of (value.gradeItems ?? [])) {
+    if (!isValidGradeItem(item, courseIds, assignmentIds) || gradeItemIds.has(item.id)) return false;
+    const linkedAssignment = item.assignmentId ? value.assignments.find((entry: unknown) => isRecord(entry) && entry.id === item.assignmentId) : undefined;
+    if (linkedAssignment && isRecord(linkedAssignment) && linkedAssignment.courseId !== item.courseId) return false;
+    gradeItemIds.add(item.id);
+  }
   const draftIds = new Set<string>();
   for (const draft of (value.writingDrafts ?? [])) {
     if (!isValidWritingDraft(draft, assignmentIds) || draftIds.has(draft.id)) return false;
@@ -133,7 +183,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -194,7 +244,9 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
 export function deleteAssignment(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
   if (!snapshot.assignments.some(assignment => assignment.id === id)) return snapshot;
   const writingDrafts = (snapshot.writingDrafts ?? []).map(draft => draft.assignmentId === id ? { ...draft, assignmentId: undefined } : draft);
-  return { ...revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id)), writingDrafts };
+  const events = (snapshot.events ?? []).map(event => event.assignmentId === id ? { ...event, assignmentId: undefined } : event);
+  const gradeItems = (snapshot.gradeItems ?? []).map(item => item.assignmentId === id ? { ...item, assignmentId: undefined } : item);
+  return { ...revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id)), writingDrafts, events, gradeItems };
 }
 
 export function resetAcademicSnapshot(): AcademicSnapshot {
@@ -316,8 +368,82 @@ export function parseAcademicBackup(raw: string): AcademicSnapshot | null {
       resources: parsed.snapshot.resources ?? [],
       studyCards: parsed.snapshot.studyCards ?? [],
       writingDrafts: parsed.snapshot.writingDrafts ?? [],
+      events: parsed.snapshot.events ?? [],
+      gradeItems: parsed.snapshot.gradeItems ?? [],
     };
   } catch {
     return null;
   }
+}
+
+
+export function createAcademicEvent(snapshot: AcademicSnapshot, input: AcademicEventInput): AcademicSnapshot {
+  if (!input.title.trim() || !Number.isFinite(Date.parse(input.startsAt)) || !Number.isFinite(Date.parse(input.endsAt))
+    || Date.parse(input.endsAt) <= Date.parse(input.startsAt)
+    || (input.courseId && !snapshot.courses.some(course => course.id === input.courseId))
+    || (input.assignmentId && snapshot.assignments.find(item => item.id === input.assignmentId)?.courseId !== input.courseId)) return snapshot;
+  const now = new Date().toISOString();
+  const event: AcademicEvent = {
+    ...input, id: "event-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2)),
+    title: input.title.trim(), notes: input.notes.trim(), source: "northstar", updatedAt: now,
+  };
+  return { ...snapshot, revision: snapshot.revision + 1, events: [...(snapshot.events ?? []), event] };
+}
+
+export function updateAcademicEvent(snapshot: AcademicSnapshot, id: string, patch: Partial<AcademicEventInput>): AcademicSnapshot {
+  const events = snapshot.events ?? [];
+  const current = events.find(event => event.id === id);
+  if (!current || current.source !== "northstar") return snapshot;
+  const next = { ...current, ...patch, title: (patch.title ?? current.title).trim(), notes: (patch.notes ?? current.notes).trim(), updatedAt: new Date().toISOString() };
+  if (!next.title || !Number.isFinite(Date.parse(next.startsAt)) || !Number.isFinite(Date.parse(next.endsAt))
+    || Date.parse(next.endsAt) <= Date.parse(next.startsAt)
+    || (next.courseId && !snapshot.courses.some(course => course.id === next.courseId))
+    || (next.assignmentId && snapshot.assignments.find(item => item.id === next.assignmentId)?.courseId !== next.courseId)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, events: events.map(event => event.id === id ? next : event) };
+}
+
+export function deleteAcademicEvent(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const events = snapshot.events ?? [];
+  if (!events.some(event => event.id === id && event.source === "northstar")) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, events: events.filter(event => event.id !== id) };
+}
+
+export function createGradeItem(snapshot: AcademicSnapshot, input: GradeItemInput): AcademicSnapshot {
+  if (!snapshot.courses.some(course => course.id === input.courseId) || !input.title.trim()
+    || !Number.isFinite(input.pointsPossible) || input.pointsPossible <= 0
+    || (input.assignmentId && snapshot.assignments.find(item => item.id === input.assignmentId)?.courseId !== input.courseId)
+    || (input.status === "graded" ? typeof input.score !== "number" || !Number.isFinite(input.score) || input.score < 0 : input.score !== null)) return snapshot;
+  const now = new Date().toISOString();
+  const item: GradeItem = {
+    ...input, id: "grade-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2)),
+    title: input.title.trim(), feedback: input.feedback?.trim(), gradedAt: input.status === "graded" ? now : undefined,
+    source: "northstar", updatedAt: now,
+  };
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: [...(snapshot.gradeItems ?? []), item] };
+}
+
+export function updateGradeItem(snapshot: AcademicSnapshot, id: string, input: GradeItemInput): AcademicSnapshot {
+  const items = snapshot.gradeItems ?? [];
+  const current = items.find(item => item.id === id);
+  if (!current || current.source !== "northstar") return snapshot;
+  if (!snapshot.courses.some(course => course.id === input.courseId) || !input.title.trim()
+    || !Number.isFinite(input.pointsPossible) || input.pointsPossible <= 0
+    || (input.assignmentId && snapshot.assignments.find(item => item.id === input.assignmentId)?.courseId !== input.courseId)
+    || (input.status === "graded" ? typeof input.score !== "number" || !Number.isFinite(input.score) || input.score < 0 : input.score !== null)) return snapshot;
+  const now = new Date().toISOString();
+  const next: GradeItem = { ...input, id, title: input.title.trim(), feedback: input.feedback?.trim(), gradedAt: input.status === "graded" ? current.gradedAt ?? now : undefined, source: "northstar", updatedAt: now };
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: items.map(item => item.id === id ? next : item) };
+}
+
+export function deleteGradeItem(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  const items = snapshot.gradeItems ?? [];
+  if (!items.some(item => item.id === id && item.source === "northstar")) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, gradeItems: items.filter(item => item.id !== id) };
+}
+
+export function selectGradeSummary(snapshot: AcademicSnapshot, courseId?: string) {
+  const items = (snapshot.gradeItems ?? []).filter(item => item.status === "graded" && item.score !== null && (!courseId || item.courseId === courseId));
+  const earned = items.reduce((sum, item) => sum + (item.score ?? 0), 0);
+  const possible = items.reduce((sum, item) => sum + item.pointsPossible, 0);
+  return { items: items.length, earned, possible, percentage: possible > 0 ? Math.round((earned / possible) * 1000) / 10 : null };
 }
