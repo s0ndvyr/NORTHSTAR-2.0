@@ -1,4 +1,4 @@
-import type { AcademicSnapshot } from "./academic";
+import type { AcademicAssignment, AcademicSnapshot } from "./academic";
 
 export type WorkspaceResultKind = "WORKSPACE" | "COURSE" | "ASSIGNMENT" | "EVENT" | "RESOURCE" | "DRAFT";
 export interface WorkspaceSearchResult {
@@ -42,6 +42,17 @@ const workspaces = [
   { id: "ai", title: "AI Workspace", detail: "Open workspace", type: "WORKSPACE" as const, to: "/ai" },
   { id: "settings", title: "Settings", detail: "Open workspace", type: "WORKSPACE" as const, to: "/settings" },
 ];
+
+export type AssignmentSortMode = "due" | "priority" | "updated";
+
+export function sortAssignments(assignments: AcademicAssignment[], mode: AssignmentSortMode): AcademicAssignment[] {
+  const priorityRank: Record<AcademicAssignment["priority"], number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+  return assignments.slice().sort((a,b) => mode === "priority"
+    ? priorityRank[a.priority] - priorityRank[b.priority] || Date.parse(a.dueAt) - Date.parse(b.dueAt)
+    : mode === "updated"
+      ? Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
+      : Date.parse(a.dueAt) - Date.parse(b.dueAt));
+}
 
 export function selectCourseProgress(snapshot: AcademicSnapshot, courseId: string): number {
   const course = snapshot.courses.find(item => item.id === courseId);
