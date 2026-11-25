@@ -31,11 +31,12 @@ Check types and create a production build:
 
 ```bash
 npm run typecheck
+npm run test
 npm run build
 npm run preview
 ```
 
-A committed dependency lockfile and full automated domain/component test suite remain qualification work. The development-branch GitHub Actions workflow runs the typecheck/build gate on pushes and pull requests; it does not deploy the application.
+The initial academic repository unit tests cover snapshot validation and assignment create/update/status/delete behavior. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
 
 ## Data and integration boundaries
 
