@@ -5,8 +5,9 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `0029de4b72a7b997730f238c49924299e7630862`  
-**Latest successful full qualification run:** [GitHub Actions #45691660498](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45691660498)
+**Latest implementation checkpoint:** `6fffcb2cc1b3df3c9bfb905c0d022b28e6be3ce4`  
+**Latest successful full qualification run:** [GitHub Actions #45691660498](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45691660498)  
+**Current expanded qualification run:** [GitHub Actions #45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998) — adds iPad-portrait and offline-shell checks
 
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
@@ -49,7 +50,7 @@ See [workflow run #45688973347](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions
 - The Calendar new-event default was corrected so the end time follows its next-day start time by one hour.
 - The sidebar now renders Settings once while keeping it searchable from the command palette.
 
-A 10-scenario Playwright browser suite is now wired into CI, covering navigation/focus, assignments, calendar, courses, resources, Gradebook, Review Center, timed Study Lab, theme persistence, and the AI/Canvas safety boundaries. In the current run, typecheck, production dependency audit, all 49 domain tests and production build have passed; the Playwright browser step is still running. Do not mark browser qualification complete until that step succeeds.
+A 12-scenario Playwright browser suite is now wired into CI, covering navigation/focus, assignments, calendar, courses, resources, Gradebook, Review Center, timed Study Lab, theme persistence, and the AI/Canvas safety boundaries. In the current run, typecheck, production dependency audit, all 49 domain tests and production build have passed; the Playwright browser step is still running. Do not mark browser qualification complete until that step succeeds.
 
 
 ## Remaining phase gates
