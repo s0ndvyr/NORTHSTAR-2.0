@@ -13,6 +13,18 @@ export type WritingDraftInput = Pick<WritingDraft, "title" | "body"> & { id?: st
 export type AcademicEventInput = Pick<AcademicEvent, "title" | "kind" | "startsAt" | "endsAt" | "notes"> & { courseId?: string; assignmentId?: string };
 export type GradeItemInput = Pick<GradeItem, "courseId" | "title" | "score" | "pointsPossible" | "status"> & { assignmentId?: string; feedback?: string };
 
+function isValidAssignmentInput(input: AssignmentInput, courseIds: Set<string>): boolean {
+  return courseIds.has(input.courseId)
+    && typeof input.title === "string" && input.title.trim().length > 0
+    && typeof input.description === "string"
+    && typeof input.dueAt === "string" && Number.isFinite(Date.parse(input.dueAt))
+    && typeof input.pointsPossible === "number" && Number.isFinite(input.pointsPossible) && input.pointsPossible >= 0
+    && VALID_PRIORITIES.includes(input.priority)
+    && typeof input.estimatedMinutes === "number" && Number.isFinite(input.estimatedMinutes) && input.estimatedMinutes >= 0
+    && typeof input.personalNotes === "string";
+}
+
+
 function initialSnapshot(): AcademicSnapshot {
   return {
     schemaVersion: 1,
@@ -259,8 +271,7 @@ export function updateAssignmentStatus(snapshot: AcademicSnapshot, id: string, s
 }
 
 export function createAssignment(snapshot: AcademicSnapshot, input: AssignmentInput): AcademicSnapshot {
-  if (!snapshot.courses.some(course => course.id === input.courseId)) return snapshot;
-  if (!input.title.trim() || !Number.isFinite(Date.parse(input.dueAt))) return snapshot;
+  if (!isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
   const now = new Date().toISOString();
   const assignment: AcademicAssignment = {
     ...input,
@@ -279,8 +290,8 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
   const current = snapshot.assignments.find(assignment => assignment.id === id);
   if (!current) return snapshot;
   const next = { ...current, ...patch, title: (patch.title ?? current.title).trim(), updatedAt: new Date().toISOString() };
-  if (!next.title || !snapshot.courses.some(course => course.id === next.courseId)
-    || !Number.isFinite(Date.parse(next.dueAt)) || next.pointsPossible < 0 || next.estimatedMinutes < 0) return snapshot;
+  const { id: _id, status: _status, source: _source, updatedAt: _updatedAt, ...input } = next;
+  if (!isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment => assignment.id === id ? next : assignment));
 }
 
