@@ -36,12 +36,15 @@ const dueLabel = (value: string) => {
 };
 function Sidebar({ snapshot }: { snapshot: AcademicSnapshot }) {
   const outstanding = snapshot.assignments.filter(a => !["graded", "submitted"].includes(a.status)).length;
+  const termStart = new Date(snapshot.term.startsAt).getTime();
+  const termEnd = new Date(snapshot.term.endsAt).getTime();
+  const semesterProgress = Number.isFinite(termStart) && Number.isFinite(termEnd) && termEnd > termStart ? Math.max(0,Math.min(100,Math.round((Date.now()-termStart)/(termEnd-termStart)*100))) : 0;
   return <aside className="sidebar">
     <NavLink to="/" className="brand"><span className="brand-mark"><i /></span><b>NORTHSTAR</b><small>5.0</small></NavLink>
     <div className="side-label">WORKSPACE</div>
     <nav aria-label="Primary navigation">{links.map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}><Icon size={17}/><span>{label}</span>{label === "Assignments" && <small className="count">{outstanding}</small>}</NavLink>)}</nav>
     <div className="side-bottom">
-      <div className="semester"><span className="side-label">CURRENT TERM</span><strong>{snapshot.term.name}</strong><div className="progress"><i/></div><small><span>Semester progress</span><b>68%</b></small></div>
+      <div className="semester"><span className="side-label">CURRENT TERM</span><strong>{snapshot.term.name}</strong><div className="progress"><i style={{width:`${semesterProgress}%`}}/></div><small><span>Semester progress</span><b>{semesterProgress}%</b></small></div>
       <NavLink to="/settings" className="nav-link"><Settings2 size={17}/><span>Settings</span></NavLink>
       <div className="profile"><span className="avatar">N</span><span><b>Student workspace</b><small>Personal environment</small></span><i/></div>
     </div>
@@ -55,30 +58,51 @@ function Stat({ label, value, note, icon: Icon }: { label: string; value: string
   return <article className="stat"><div><span>{label}</span><i><Icon size={16}/></i></div><strong>{value}</strong><small>{note}</small></article>;
 }
 function Dashboard({ snapshot }: { snapshot: AcademicSnapshot }) {
-  const date = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(now);
   const completed = snapshot.assignments.filter(a => ["graded", "submitted"].includes(a.status)).length;
   const open = snapshot.assignments.filter(a => !["graded", "submitted"].includes(a.status));
-  const overdue = open.filter(a => new Date(a.dueAt) < new Date()).length;
-  const upcoming = open.filter(a => new Date(a.dueAt) >= new Date()).length;
+  const overdue = open.filter(a => a.status === "missing" || new Date(a.dueAt) < now).length;
+  const upcoming = open.filter(a => a.status !== "missing" && new Date(a.dueAt) >= now).length;
   const priorities = [...open].sort((a,b) => {
-    const rank = (a: AcademicAssignment) => a.status === "missing" ? 0 : new Date(a.dueAt) < new Date() ? 1 : a.priority === "urgent" ? 2 : a.priority === "high" ? 3 : 4;
+    const rank = (a: AcademicAssignment) => a.status === "missing" ? 0 : new Date(a.dueAt) < now ? 1 : new Date(a.dueAt).toDateString()===now.toDateString()?2:a.priority === "urgent" ? 3 : a.priority === "high" ? 4 : a.status==="in_progress"||a.status==="draft"?5:6;
     return rank(a)-rank(b) || new Date(a.dueAt).getTime()-new Date(b.dueAt).getTime();
-  }).slice(0,4);
+  }).slice(0,5);
   const courseName = (id: string) => snapshot.courses.find(c => c.id === id)?.code ?? "COURSE";
+  const semesterStart = new Date(snapshot.term.startsAt).getTime();
+  const semesterEnd = new Date(snapshot.term.endsAt).getTime();
+  const semesterProgress = Number.isFinite(semesterStart)&&Number.isFinite(semesterEnd)&&semesterEnd>semesterStart?Math.max(0,Math.min(100,Math.round((now.getTime()-semesterStart)/(semesterEnd-semesterStart)*100))):0;
+  const upcomingEvents = (snapshot.events??[]).filter(event=>new Date(event.endsAt)>=now).slice().sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt));
+  const nextEvent = upcomingEvents[0];
+  const gradeSummary = selectGradeSummary(snapshot);
+  const drafts = (snapshot.writingDrafts??[]).slice().sort((a,b)=>Date.parse(b.savedAt)-Date.parse(a.savedAt));
+  const latestDraft = drafts[0];
+  const draftCount = drafts.length;
+  const progressForCourse = (courseId:string, fallback:number) => {
+    const courseAssignments=snapshot.assignments.filter(item=>item.courseId===courseId);
+    return courseAssignments.length?Math.round(courseAssignments.filter(item=>["graded","submitted"].includes(item.status)).length/courseAssignments.length*100):fallback;
+  };
+  const eventTime = nextEvent ? new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(nextEvent.startsAt)) : "No events scheduled";
   return <div className="content">
-    <div className="welcome"><div><div className="eyebrow"><i/> YOUR ACADEMIC COMMAND CENTER <span/> {date.toUpperCase()}</div><h1>Make today <em>count.</em></h1><p>Your semester, your priorities, all moving in the right direction.</p></div><div className="focus"><i/><span><b>Focus mode</b><small>Ready when you are</small></span></div></div>
+    <div className="welcome"><div><div className="eyebrow"><i/> YOUR ACADEMIC COMMAND CENTER <span/> {date.toUpperCase()}</div><h1>Make today <em>count.</em></h1><p>Your semester, your priorities, all moving in the right direction.</p></div><div className="focus"><i/><span><b>Focus mode</b><small>{priorities[0]?"Your next priority is ready":"Ready when you are"}</small></span></div></div>
     <section className="hero"><div className="hero-copy"><div className="eyebrow">✦ &nbsp; SEMESTER OVERVIEW</div><h2>Stay close to<br/>what <em>matters.</em></h2><p>Your academic picture, brought into focus. Build momentum one thoughtful step at a time.</p><NavLink to="/assignments">View your priorities <ArrowUpRight size={15}/></NavLink></div><div className="cosmos" aria-hidden="true"><div className="stars"/><div className="halo"/><div className="planet"><i/><b/><span/></div><div className="orbit orbit-a"/><div className="orbit orbit-b"/><small>01 / 02 &nbsp; — &nbsp; SEMESTER IN MOTION</small></div><span className="hero-index">N° 01</span></section>
-    <section className="stats"><Stat label="COURSES" value={String(snapshot.courses.length)} note="Active this semester" icon={GraduationCap}/><Stat label="COMPLETED WORK" value={String(completed)} note={`Of ${snapshot.assignments.length} tracked items`} icon={CheckCircle2}/><Stat label="OVERDUE / MISSING" value={String(overdue)} note="Needs your attention" icon={CalendarDays}/><Stat label="UPCOMING WORK" value={String(upcoming)} note="Still on your list" icon={Timer}/></section>
+    <section className="stats"><Stat label="COURSES" value={String(snapshot.courses.length)} note="Active this semester" icon={GraduationCap}/><Stat label="COMPLETED WORK" value={String(completed)} note={\`Of \${snapshot.assignments.length} tracked items\`} icon={CheckCircle2}/><Stat label="OVERDUE / MISSING" value={String(overdue)} note="Needs your attention" icon={CalendarDays}/><Stat label="UPCOMING WORK" value={String(upcoming)} note="Still on your list" icon={Timer}/></section>
     <section className="columns">
       <article className="panel"><div className="panel-head"><div><span className="eyebrow">YOUR NEXT MOVES</span><h3>Priority queue</h3></div><NavLink to="/assignments">All assignments <ChevronRight size={14}/></NavLink></div>
-        {priorities.map(a=><div className="priority" key={a.id}><i className={a.status === "missing" || new Date(a.dueAt)<new Date() ? "urgent" : a.priority === "high" ? "today" : "next"}/><span><b>{a.title}</b><small>{courseName(a.courseId)} · {dueLabel(a.dueAt)}</small></span><em className={a.status === "missing" || new Date(a.dueAt)<new Date() ? "urgent" : "next"}>{a.status === "missing" ? "MISSING" : new Date(a.dueAt)<new Date() ? "OVERDUE" : "UP NEXT"}</em></div>)}
+        {priorities.length?priorities.map(a=><div className="priority" key={a.id}><i className={a.status === "missing" || new Date(a.dueAt)<now ? "urgent" : a.priority === "high" || a.dueAt.slice(0,10)===now.toISOString().slice(0,10) ? "today" : "next"}/><span><b>{a.title}</b><small>{courseName(a.courseId)} · {dueLabel(a.dueAt)}</small></span><em className={a.status === "missing" || new Date(a.dueAt)<now ? "urgent" : "next"}>{a.status === "missing" ? "MISSING" : new Date(a.dueAt)<now ? "OVERDUE" : a.dueAt.slice(0,10)===now.toISOString().slice(0,10)?"DUE TODAY":"UP NEXT"}</em></div>):<div className="empty-state">You have no open assignments in this snapshot.</div>}
       </article>
-      <article className="panel continue"><div className="panel-head"><div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span><h3>Continue working</h3></div><span>•••</span></div><div className="document"><FileText size={27}/><b>{priorities[0] ? courseName(priorities[0].courseId) : "NORTHSTAR"}</b><i/><i/><i/></div><strong>{priorities[0]?.title ?? "You're all caught up"}</strong><small>{priorities[0] ? "Your next priority is ready" : "No outstanding assignments"}</small><NavLink to="/assignments">Open coursework <ArrowUpRight size={14}/></NavLink></article>
+      <article className="panel continue"><div className="panel-head"><div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span><h3>Continue working</h3></div><span>{latestDraft?"SAVED DRAFT":"COURSEWORK"}</span></div><div className="document"><FileText size={27}/><b>{latestDraft?"WRITING":priorities[0]?courseName(priorities[0].courseId):"NORTHSTAR"}</b><i/><i/><i/></div><strong>{latestDraft?latestDraft.title:priorities[0]?.title??"You're all caught up"}</strong><small>{latestDraft?"Saved "+new Date(latestDraft.savedAt).toLocaleDateString() : priorities[0]?"Your next priority is ready":"No outstanding assignments"}</small><NavLink to={latestDraft?"/review":"/assignments"}>{latestDraft?"Open Review Center":"Open coursework"} <ArrowUpRight size={14}/></NavLink></article>
     </section>
     <section className="columns lower">
-      <article className="panel"><div className="panel-head"><div><span className="eyebrow">LEARNING IN MOTION</span><h3>Course pulse</h3></div><NavLink to="/courses">View courses <ChevronRight size={14}/></NavLink></div>{snapshot.courses.map(course=><div className="course" key={course.id}><i>{course.code.slice(0,2)}</i><span><b>{course.name}</b><small>{course.code} · {course.instructor}</small></span><div className="bar"><i style={{width:`${course.progress}%`}}/></div><small>{course.progress}%</small></div>)}</article>
-      <article className="panel"><div className="panel-head"><div><span className="eyebrow">ACADEMIC SNAPSHOT</span><h3>At a glance</h3></div><Activity size={17}/></div><div className="activity"><i><CheckCircle2 size={14}/></i><span><b>{completed} items completed or submitted</b><small>Based on your local workspace status</small></span></div><div className="activity"><i><Timer size={14}/></i><span><b>{open.length} items still in progress</b><small>Update status from Assignments</small></span></div></article>
+      <article className="panel"><div className="panel-head"><div><span className="eyebrow">LEARNING IN MOTION</span><h3>Course pulse</h3></div><NavLink to="/courses">View courses <ChevronRight size={14}/></NavLink></div>{snapshot.courses.map(course=>{const progress=progressForCourse(course.id,course.progress);return <div className="course" key={course.id}><i>{course.code.slice(0,2)}</i><span><b>{course.name}</b><small>{course.code} · {course.instructor}</small></span><div className="bar"><i style={{width:\`\${progress}%\`}}/></div><small>{progress}%</small></div>})}</article>
+      <article className="panel"><div className="panel-head"><div><span className="eyebrow">ACADEMIC SNAPSHOT</span><h3>At a glance</h3></div><Activity size={17}/></div>
+        <div className="dashboard-meter"><div><span>Semester progress</span><b>{semesterProgress}%</b></div><div className="bar"><i style={{width:\`\${semesterProgress}%\`}}/></div></div>
+        <div className="activity"><i><Target size={14}/></i><span><b>{gradeSummary.percentage===null?"No scored items":gradeSummary.percentage+"% recorded points"}</b><small>{gradeSummary.earned} of {gradeSummary.possible} points · excludes pending and missing</small></span><NavLink to="/gradebook" aria-label="Open Gradebook"><ChevronRight size={14}/></NavLink></div>
+        <div className="activity"><i><CalendarDays size={14}/></i><span><b>{nextEvent?.title??"No upcoming calendar event"}</b><small>{eventTime}{nextEvent?" · "+(nextEvent.courseId?courseName(nextEvent.courseId):"Personal schedule"):" · Add a class or study block"}</small></span><NavLink to="/calendar" aria-label="Open Calendar"><ChevronRight size={14}/></NavLink></div>
+        <div className="activity"><i><FileText size={14}/></i><span><b>{draftCount} saved writing {draftCount===1?"drafts":"drafts"}</b><small>{latestDraft?latestDraft.title:"Create and resume work in Review Center"}</small></span><NavLink to="/review" aria-label="Open Review Center"><ChevronRight size={14}/></NavLink></div>
+      </article>
     </section>
+    <div className="dashboard-term-note"><span>TERM</span><b>{snapshot.term.name}</b><span>{new Date(snapshot.term.startsAt).toLocaleDateString()} — {new Date(snapshot.term.endsAt).toLocaleDateString()}</span></div>
     <div className="footnote"><Sparkles size={13}/> Local demo workspace · Changes save in this browser only. No Canvas connection.</div>
   </div>;
 }
