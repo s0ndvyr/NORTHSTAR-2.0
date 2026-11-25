@@ -295,3 +295,29 @@ export function deleteWritingDraft(snapshot: AcademicSnapshot, id: string): Acad
   if (!drafts.some(draft => draft.id === id)) return snapshot;
   return { ...snapshot, revision: snapshot.revision + 1, writingDrafts: drafts.filter(draft => draft.id !== id) };
 }
+
+export function createAcademicBackup(snapshot: AcademicSnapshot): string {
+  if (!isAcademicSnapshot(snapshot)) throw new Error("Cannot export an invalid academic snapshot.");
+  return JSON.stringify({
+    format: "northstar-academic-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    snapshot,
+  }, null, 2);
+}
+
+export function parseAcademicBackup(raw: string): AcademicSnapshot | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || parsed.format !== "northstar-academic-backup" || parsed.version !== 1) return null;
+    if (!isAcademicSnapshot(parsed.snapshot)) return null;
+    return {
+      ...parsed.snapshot,
+      resources: parsed.snapshot.resources ?? [],
+      studyCards: parsed.snapshot.studyCards ?? [],
+      writingDrafts: parsed.snapshot.writingDrafts ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
