@@ -267,3 +267,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-AI-001: introduced a typed AcademicAssistantService contract and simulation implementation; AI Workspace actions now call the service boundary. The simulation exposes providerConnected=false and only prepares labeled placeholder actions from a local academic context summary.
 - NS-AI-002 / NS-SEC-001: context summary currently reports aggregate counts only; live context assembly, course-boundary enforcement, permissions, citations, secrets and server-side provider calls remain unimplemented and separately gated.
 - NS-QUAL-001: service UI strict typecheck, domain tests, dependency audits and production build passed in workflow run 45681168275. The dedicated service-contract test is running in workflow run 45681191087.
+
+
+### Canvas adapter boundary evidence — 2026-11-25
+
+- NS-CAN-001: added typed CanvasAdapter operations for connection status, course/assignment/grade reads and assignment submission, plus a Settings-linked readiness workspace.
+- Current implementation is explicitly unconfigured: no endpoint, token, credential, network request, institution data or write capability exists. Every operation returns not_configured; the UI exposes no connect or submit action.
+- NS-SEC-001: the workspace documents the approved server-side Worker, authorization, capability and conflict safeguards required before a live adapter can be enabled.
+- NS-QUAL-001: adapter contract tests, strict typecheck, dependency audits, domain tests and build passed in workflow run 45681344308. The Canvas status UI qualification is tracked by workflow run 45681383834.
