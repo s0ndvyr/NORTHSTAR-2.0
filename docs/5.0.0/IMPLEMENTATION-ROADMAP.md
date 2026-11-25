@@ -353,3 +353,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added a Canvas status/readiness workspace linked from Settings, with explicit capability state and future security/authorization safeguards.
 - Added contract tests proving that read and write operations remain blocked while unconfigured. The adapter contract/test qualification passed in workflow run 45681344308; the status-workspace UI run is completing separately.
 - Live Canvas integration remains gated by separate authorization and the approved Worker boundary.
+
+
+### Review Center autosave — 2026-11-25
+
+- Added a 900 ms debounced local autosave for edited writing drafts, including title, body and optional assignment association.
+- Existing saved drafts remain unchanged until the user edits them; new assignment-linked drafts begin saving after the first meaningful edit. Manual Save remains available.
+- Switching drafts/new drafts resets the dirty state so unsaved content is not accidentally attributed to another draft.
+- Autosave remains browser-local; no cloud sync or AI/provider transfer occurs.
