@@ -566,3 +566,10 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 
 .origin-label{font:8px var(--mono);letter-spacing:.1em;color:#8395af}
 .app[data-theme="light"] .origin-label{color:#73849a}
+
+.conflict-warning{display:flex;align-items:center;gap:14px;width:max-content;max-width:min(720px,calc(100vw - 36px))}
+.conflict-warning>div{display:grid;gap:5px;min-width:0}
+.conflict-warning b{font-size:11px;letter-spacing:.02em}
+.conflict-warning span{font-size:10px;line-height:1.55}
+.conflict-warning button{flex:none;white-space:nowrap}
+@media(max-width:740px){.conflict-warning{left:12px;right:12px;bottom:12px;width:auto;max-width:none;align-items:flex-start;flex-direction:column}.conflict-warning button{width:100%}}
