@@ -25,6 +25,7 @@ The audited source includes later external return-context hardening changes that
 - [Decisions and retirement register](DECISIONS-AND-RETIREMENT-REGISTER.md)
 - [Phase sign-off checklist](PHASE-SIGNOFF-CHECKLIST.md)
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
+- [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md)
 - [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
 - [Cross-Application data contracts and state machines](CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md)
 - [Integrated Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)
@@ -39,7 +40,7 @@ The audited source includes later external return-context hardening changes that
 
 | Phase | Name | Status |
 |---|---|---|
-| 5.0.0 | Product & Architecture Foundation | Approved planning baseline; Engineering Foundation planning in progress |
+| 5.0.0 | Product & Architecture Foundation | Approved baseline; consolidated implementation-readiness review in progress |
 | 5.0.1 | Academic Data & Canvas Intelligence | **Planning complete and approved — closed; implementation not authorized** |
 | 5.0.2 | Assignment & Coursework Experience | Planning decisions complete |
 | 5.0.3 | Courses, Calendar & Resources | Planning decisions complete |
@@ -174,6 +175,7 @@ The user approved **A / A / A / A / A** (EFP-DEC-16 through EFP-DEC-20). The gro
 | 5.0.6 — Visual Refinement, Qualification & Release | Approved planning |
 | Cross-Application Intelligence | Integrated specifications drafted; final review pending |
 | Module 1 — Legacy and Integration Evidence | **Planning scope approved (EFP-DEC-16..20); evidence collection in progress** |
+| Engineering Foundation | **Consolidated transition plan drafted; only initial app-boundary/source-protection confirmation remains before requesting limited implementation authorization** |
 | Application implementation | **Not authorized** |
 
 The source inventory remains static and incomplete. This update does not claim that Canvas endpoints, target tenant behavior, builds, tests, runtime behavior or iPad behavior have been verified. No application source was changed.
@@ -205,3 +207,14 @@ The decisions establish: a dedicated 5.0 development branch; an isolated applica
 | Application implementation | **Not authorized** |
 
 Neither Module 1 nor Module 2 is declared fully signed off. This checkpoint does not claim source inventory completion, live provider verification, passing builds/tests, CI operation, physical iPad qualification or production readiness. No application source was changed.
+
+
+## Consolidated transition checkpoint — 2026-11-25
+
+To prevent planning from becoming a separate, unbounded project, the [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md) consolidates the approved product, workspace, architecture and engineering decisions into a staged path toward coding.
+
+The initial application foundation should not be blocked by every future integration detail. The true pre-implementation safeguards are: (1) identify and preserve the exact migration-source branch/commit, (2) confirm the isolated application boundary (recommended `apps/web/`) and its Vite/deployment path implications, and (3) keep the first implementation slice limited to the app shell, design foundation, routing, typed boundaries and synthetic demo data.
+
+Complete legacy mapping is required before porting or retiring each affected capability; official Canvas endpoint and tenant evidence is required before real provider operations; measured offline parameters are required before final offline-retention behavior; and production controls are required before release. These later gates do not prevent a separately authorized local application foundation from being built.
+
+The planning process is now consolidated and evidence-led: no repetitive five-question modules, no reopening approved decisions without material new evidence, and no additional planning modules solely to expand documentation. The transition plan is a readiness proposal, not implementation authorization.
