@@ -1,5 +1,5 @@
-import type { AcademicAssignment, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, StudyCard, StudyRating, WritingDraft } from "./academic";
-import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoResources, demoStudyCards, demoTerm } from "./demo-data";
+import type { AcademicAssignment, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
+import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
@@ -25,6 +25,8 @@ function initialSnapshot(): AcademicSnapshot {
     writingDrafts: [],
     events: demoEvents.map(event => ({ ...event })),
     gradeItems: demoGradeItems.map(item => ({ ...item })),
+    practiceQuestions: demoPracticeQuestions.map(question => ({ ...question, options: question.options.map(option => ({ ...option })) })),
+    practiceAttempts: [],
   };
 }
 
@@ -132,6 +134,8 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (value.writingDrafts !== undefined && !Array.isArray(value.writingDrafts)) return false;
   if (value.events !== undefined && !Array.isArray(value.events)) return false;
   if (value.gradeItems !== undefined && !Array.isArray(value.gradeItems)) return false;
+  if (value.practiceQuestions !== undefined && !Array.isArray(value.practiceQuestions)) return false;
+  if (value.practiceAttempts !== undefined && !Array.isArray(value.practiceAttempts)) return false;
   const courseIds = new Set<string>();
   for (const course of value.courses) {
     if (!isRecord(course) || typeof course.id !== "string" || !course.id
@@ -183,7 +187,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -370,6 +374,8 @@ export function parseAcademicBackup(raw: string): AcademicSnapshot | null {
       writingDrafts: parsed.snapshot.writingDrafts ?? [],
       events: parsed.snapshot.events ?? [],
       gradeItems: parsed.snapshot.gradeItems ?? [],
+      practiceQuestions: parsed.snapshot.practiceQuestions ?? [],
+      practiceAttempts: parsed.snapshot.practiceAttempts ?? [],
     };
   } catch {
     return null;
