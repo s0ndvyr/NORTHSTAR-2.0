@@ -412,4 +412,4 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added a 1024 × 1366 iPad Pro portrait viewport check for horizontal overflow and navigation into Assignments.
 - Added an offline-shell check that waits for service-worker readiness, reloads once under control, disables network access, and verifies the cached dashboard still renders.
 - These are Chromium-based viewport/service-worker checks, not a substitute for physical iPad Safari or prolonged offline/data-recovery qualification.
-- Current GitHub Actions run: [#45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998).
+- Passed in GitHub Actions [#45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998): all twelve Playwright browser scenarios succeeded, including the iPad portrait and offline-shell checks.
