@@ -25,20 +25,21 @@ The audited source includes later external return-context hardening changes that
 - [Decisions and retirement register](DECISIONS-AND-RETIREMENT-REGISTER.md)
 - [Phase sign-off checklist](PHASE-SIGNOFF-CHECKLIST.md)
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
+- [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
 
 ## Phase tracker
 
 | Phase | Name | Status |
 |---|---|---|
-| 5.0.0 | Product & Architecture Foundation | Planning approved |
-| 5.0.1 | Academic Data & Canvas Intelligence | Planning approved |
+| 5.0.0 | Product & Architecture Foundation | Approved planning baseline; Engineering Foundation planning in progress |
+| 5.0.1 | Academic Data & Canvas Intelligence | **Planning complete and approved — closed; implementation not authorized** |
 | 5.0.2 | Assignment & Coursework Experience | Planning decisions complete |
 | 5.0.3 | Courses, Calendar & Resources | Planning decisions complete |
 | 5.0.4 | Dashboard Studio & Personalization | Approved |
 | 5.0.5 | AI & Intelligent Academic Assistance | Approved |
 | 5.0.6 | Visual Refinement, Qualification & Release | Approved |
 | Phase 0 | Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
-| Next stage | Engineering Foundation planning | **Planning authorized; implementation not authorized** |
+| Current workstream | Cross-Application Intelligence | **Planning in progress — five decisions pending** |
 
 ## Phase 0 approval record
 
@@ -51,6 +52,10 @@ The user submitted the recurring five-question sign-off module with answers **1:
 5. **Phase closure — A:** Accept Phase 0 as complete and prepare the engineering-foundation stage. This does not authorize application implementation.
 
 **Decision:** Phase 0 is formally closed. Its closure certifies completion and acceptance of the setup artifacts only; it does not certify a working 5.0 application, build, test suite, Canvas connection, iPad acceptance, or production release.
+
+## NORTHSTAR 5.0.1 status clarification
+
+NORTHSTAR 5.0.1 — Academic Data & Canvas Intelligence — was already explicitly approved and closed as a planning phase on 2026-11-25. Its approved decisions remain authoritative. This work is not reopening or replacing that phase. Cross-Application Intelligence is being advanced as a planning workstream under the broader 5.0.0 architecture/engineering foundation.
 
 ## Version semantics
 
