@@ -500,6 +500,8 @@ export function parseAcademicBackup(raw: string): AcademicSnapshot | null {
       gradeItems: parsed.snapshot.gradeItems ?? [],
       practiceQuestions: parsed.snapshot.practiceQuestions ?? [],
       practiceAttempts: parsed.snapshot.practiceAttempts ?? [],
+      // The portable JSON envelope never contains IndexedDB file bytes.
+      artifacts: [],
     };
   } catch {
     return null;
