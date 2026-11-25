@@ -411,7 +411,7 @@ describe("global workspace intelligence", () => {
     const snapshot = loadAcademicSnapshot();
     const assignment = snapshot.assignments[0];
     const byTitle = searchWorkspaceResults(snapshot, assignment.title.toUpperCase());
-    expect(byTitle.some(result => result.id === "assignment-" + assignment.id && result.type === "ASSIGNMENT")).toBe(true);
+    expect(byTitle.some(result => result.id === "assignment-" + assignment.id && result.type === "ASSIGNMENT" && result.to === "/assignments/" + assignment.id)).toBe(true);
     const byCode = searchWorkspaceResults(snapshot, snapshot.courses[0].code.toLowerCase());
     expect(byCode.some(result => result.to === "/courses/" + snapshot.courses[0].id)).toBe(true);
     expect(searchWorkspaceResults(snapshot, "does-not-exist")).toHaveLength(0);
