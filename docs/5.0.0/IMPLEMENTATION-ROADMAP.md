@@ -312,3 +312,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Assignments now offer due-date, priority and recently-updated sorting alongside existing search, course and status filters.
 - Sorting is implemented as a shared pure selector and tested for ordering and non-mutation of the canonical array.
 - The selector and domain tests passed in workflow run 45680271312. The first UI wiring attempts exposed strict state-union typing errors; those are corrected in commit 29ea9aa and its qualification run is in progress.
+
+
+### Assignment and course workspace completion pass — 2026-11-25
+
+- Course management: add/edit courses, active-term validation, unique course codes, preservation of linked records.
+- Course progress: one shared projection drives Dashboard, Courses and Course Detail; manual baseline applies only before assignments are tracked.
+- Assignment workflow: dedicated detail route, direct editing, local status and writing-draft actions, global-search deep links, and due/priority/recent sorting.
+- Course study guides: structured local guide from course questions/concepts, flashcards, resources and open assignments, with plain-text export.
+- Qualification checkpoint: latest assignment sort UI commit passed strict typecheck, dependency audits, domain tests and production build in workflow run 45680510214. Earlier failed iterations are retained as history; the corrected development head is the current source of truth.
