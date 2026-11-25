@@ -64,6 +64,16 @@ export interface StudyCard {
 
 export type StudyRating = "again" | "hard" | "good" | "easy";
 
+export interface WritingDraft {
+  id: string;
+  title: string;
+  body: string;
+  assignmentId?: string;
+  revision: number;
+  savedAt: string;
+  source: "northstar";
+}
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
@@ -74,6 +84,8 @@ export interface AcademicSnapshot {
   resources?: AcademicResource[];
   /** Optional during the version-1 transition for existing browser snapshots. */
   studyCards?: StudyCard[];
+  /** Local writing drafts remain on this device and can optionally link to coursework. */
+  writingDrafts?: WritingDraft[];
 }
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
