@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   createAssignment,
   createResource,
+  createStudyCard,
   deleteAssignment,
   deleteResource,
+  deleteStudyCard,
   isAcademicSnapshot,
   loadAcademicSnapshot,
   updateAssignment,
   updateAssignmentStatus,
   updateResource,
+  rateStudyCard,
   type AssignmentInput,
   type ResourceInput,
+  type StudyCardInput,
 } from "./academic-repository";
 
 const input: AssignmentInput = {
@@ -120,5 +124,41 @@ describe("academic resource repository", () => {
     const removed = deleteResource(updated, resourceId!);
     expect(removed.resources?.some(item => item.id === resourceId)).toBe(false);
     expect(removed.revision).toBe(snapshot.revision + 2);
+  });
+});
+
+describe("Study Lab spaced repetition", () => {
+  const cardInput: StudyCardInput = {
+    courseId: "bio-112",
+    prompt: "Define osmosis.",
+    answer: "The net movement of water across a selectively permeable membrane.",
+  };
+
+  it("creates a validated study card in the shared snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createStudyCard(snapshot, cardInput);
+    expect(next.revision).toBe(snapshot.revision + 1);
+    expect(next.studyCards?.at(-1)).toMatchObject({ ...cardInput, source: "northstar", repetitions: 0 });
+    expect(isAcademicSnapshot(next)).toBe(true);
+  });
+
+  it("schedules review intervals from recall ratings", () => {
+    const snapshot = loadAcademicSnapshot();
+    const card = snapshot.studyCards?.[0];
+    expect(card).toBeTruthy();
+    const again = rateStudyCard(snapshot, card!.id, "again");
+    expect(again.studyCards?.find(item => item.id === card!.id)?.intervalDays).toBeCloseTo(1 / 24);
+    const good = rateStudyCard(snapshot, card!.id, "good");
+    expect(good.studyCards?.find(item => item.id === card!.id)?.intervalDays).toBe(1);
+    expect(good.studyCards?.find(item => item.id === card!.id)?.repetitions).toBe(1);
+  });
+
+  it("deletes a study card through the canonical snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const cardId = snapshot.studyCards?.[0]?.id;
+    expect(cardId).toBeTruthy();
+    const next = deleteStudyCard(snapshot, cardId!);
+    expect(next.studyCards?.some(card => card.id === cardId)).toBe(false);
+    expect(next.revision).toBe(snapshot.revision + 1);
   });
 });
