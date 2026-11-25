@@ -139,3 +139,5 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .review-actions>div{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .review-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:740px){.draft-metadata{grid-template-columns:1fr}.review-actions>div{justify-content:flex-start}}
+
+.assignment-draft-link{margin-top:6px;width:max-content;max-width:100%}
