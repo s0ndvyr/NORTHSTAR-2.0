@@ -163,3 +163,13 @@ The assignment-to-draft route is awaiting its own latest workflow result. Browse
 - Added repository tests for complete snapshot round-trip and invalid backup rejection.
 
 This is local backup/restore only. It is not cloud backup, encryption, multi-device synchronization, or a substitute for the future offline conflict/reconciliation queue.
+
+
+### Calendar and Gradebook implementation increment — 2026-11-25
+
+- Added explicit calendar event records for class sessions, study blocks, reminders and personal events, separate from assignment due dates.
+- Calendar now combines assignment deadlines and event records into one agenda and supports creating/removing personal events with optional course and assignment links.
+- Added explicit grade item records with graded, pending, missing and excused states; score values are independent from assignment statuses.
+- Gradebook now supports personal grade record create/edit/delete, course-level points summaries, feedback, and excludes pending/missing records from earned-point calculations.
+- Assignment deletion detaches linked drafts, events and grade records rather than silently deleting independent work.
+- Backup/restore tests now include calendar events and grade items.
