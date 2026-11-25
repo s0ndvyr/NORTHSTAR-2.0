@@ -285,3 +285,20 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .theme-swatch{width:15px;height:15px;border-radius:50%;border:1px solid #ffffff55}
 .midnight-swatch{background:linear-gradient(135deg,#080d18 50%,#243c5d 50%)}
 .light-swatch{background:linear-gradient(135deg,#f4f7fb 50%,#afc2db 50%)}
+
+
+/* Data-driven dashboard signals */
+.dashboard-meter{padding:10px 0 13px;border-bottom:1px solid var(--line)}
+.dashboard-meter>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:9px;color:#91a1b7}
+.dashboard-meter b{font:11px var(--mono);color:#d9e5f5}
+.dashboard-meter .bar{height:5px}
+.dashboard-meter .bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#688bb9,#abc8ef)}
+.dashboard-term-note{display:flex;align-items:center;gap:10px;padding:12px 0;margin-top:3px;border-bottom:1px solid var(--line);font-size:9px;color:#8292a9}
+.dashboard-term-note>span:first-child{font:9px var(--mono);letter-spacing:.13em;color:#71839b}
+.dashboard-term-note b{color:#b8c9df;font-weight:500}
+.dashboard-term-note>span:last-child{margin-left:auto}
+.app[data-theme="light"] .dashboard-meter{border-color:rgba(46,69,100,.12)}
+.app[data-theme="light"] .dashboard-meter>div:first-child{color:#71839a}
+.app[data-theme="light"] .dashboard-meter b{color:#385575}
+.app[data-theme="light"] .dashboard-term-note{border-color:rgba(46,69,100,.12);color:#71839a}
+.app[data-theme="light"] .dashboard-term-note b{color:#365576}
