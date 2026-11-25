@@ -72,3 +72,35 @@ This roadmap sequences implementation to reduce rework and protect existing beha
 ## Preservation and retirement rule
 
 A legacy feature is not removed merely because it is old, large, or visually redundant. First identify dependencies and data ownership; then provide a replacement or approved retirement path; run regression tests; and remove it in a separately reviewable change.
+
+
+---
+
+## Implementation checkpoint — 2026-11-25
+
+Implementation is active on `northstar-5.0.0-development`. This checkpoint records shipped source changes, not release acceptance.
+
+### Delivered in the web client
+
+- Isolated React/TypeScript/Vite client under `apps/web/`.
+- Shared local academic snapshot with runtime validation of schema version, term, course relationships, assignment fields, dates, enums, and duplicate IDs.
+- Revision-incrementing assignment commands: create, update, status change, and delete.
+- Browser persistence with graceful in-memory fallback and a visible storage warning.
+- Connected Overview, Assignments, Courses, Calendar, Study Lab review-card prototype, and Gradebook progress projection.
+- Assignment editor supports course, title, description, due date/time, points, priority, estimated duration, and personal notes.
+- Search includes assignment titles, descriptions, and notes; course and status filters remain available.
+- Dashboard and Calendar consume the same snapshot; assignment mutations propagate through both projections.
+- Development-only GitHub Actions typecheck/build workflow; it does not deploy.
+
+### Remaining gates
+
+- CI run evidence is pending; source commits and a configured workflow are not a passing build.
+- Add and commit a deterministic dependency lockfile.
+- Add domain, component, integration, and end-to-end tests for validation, CRUD, persistence failure, cross-workspace projections, and responsive behavior.
+- Expand canonical data beyond the initial term/course/assignment subset; implement field-level provenance and source authority.
+- Complete assignment artifacts, drafts, rubrics, submission simulation, and richer detail workflow.
+- Build full Resources, Review Center, study authoring/spaced repetition, and gradebook semantics.
+- Add PWA/offline behavior, accessible interaction review, iPad Safari portrait/landscape qualification, security review, and performance evidence.
+- Canvas and AI remain disconnected; no live integration claim is made.
+
+Do not mark a requirement accepted until its defined verification evidence exists.
