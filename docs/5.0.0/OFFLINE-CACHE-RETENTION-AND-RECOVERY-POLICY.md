@@ -1,7 +1,8 @@
 # NORTHSTAR 5.0 — Offline Cache, Retention, Backup and Recovery Policy
 
+**Integrated master:** [Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)  
 **Workstream:** Cross-Application Intelligence  
-**Status:** Policy proposal for review; quantitative limits and storage technology undecided  
+**Status:** Detailed planning specification — integrated; quantitative limits and storage/security review outstanding  
 **Decision sources:** CAI-DEC-05; NS-DATA-003; NS-CAI-006/007/008/010  
 **Authorization:** Planning only. No storage code, backup job, export, migration or deletion authorized.
 
