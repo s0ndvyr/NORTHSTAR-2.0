@@ -6,7 +6,8 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 
 - React 19 + TypeScript + Vite with strict TypeScript settings.
 - React Router workspace navigation and Framer Motion route transitions.
-- Midnight visual foundation, responsive iPad-first shell, and reduced-motion handling.
+- Midnight default and persistent Midnight/Light theme preference, responsive iPad-first shell, and reduced-motion handling.
+- Installable PWA manifest, app icon, production service-worker registration, and conservative offline app-shell/static-asset caching; this is not yet full offline synchronization.
 - Canonical local academic snapshot with runtime validation, revision tracking, and browser persistence.
 - Connected Overview, Assignments, Courses with per-course detail hubs, Calendar, Study Lab flashcard authoring and spaced-repetition review, Gradebook progress views, course-linked Resources library, and a local Writing Review workspace.
 - Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
@@ -16,7 +17,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, linked writing drafts, and a confirmation-gated local turn-in simulation with explicit no-Canvas messaging.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
-- Validated academic backup export/import for the complete local snapshot, including resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
+- Validated academic backup export/import for the complete local snapshot, including calendar events, grade records, resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
 - Provider-free AI Workspace simulation with co-pilot on/off, standing-by state, simulated request queue and local context preview; no provider call is made.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
 
