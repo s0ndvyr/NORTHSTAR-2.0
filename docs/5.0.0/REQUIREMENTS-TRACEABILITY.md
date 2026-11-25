@@ -302,7 +302,7 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 
 ## Implementation evidence update — 2026-11-25
 
-- Latest successful qualification: [GitHub Actions #45694384485](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45694384485). Typecheck, production dependency audit, 51 domain tests, production build and all 13 Playwright browser journeys passed.
+- Latest successful qualification: [GitHub Actions #45695099527](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695099527). Typecheck, production dependency audit, 51 domain tests, production build and all 13 Playwright browser journeys passed; the multi-tab test parses the downloaded bundle and verifies both competing snapshots are present.
 - Browser journeys include navigation/focus, assignment create/status/reload, calendar create/edit, course create/hub, resource create, explicit grade entry, writing draft/review, timed Study Lab practice, theme persistence, AI/Canvas non-connection boundaries, 1024 × 1366 iPad Pro portrait layout and offline cached-shell reload.
 - The provenance UI change displays DEMO/PERSONAL origin labels across assignments, courses, calendar items, grade records and Study Lab flashcards. Dedicated browser assertions passed in [GitHub Actions #45692975729](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692975729). Full field-level source authority, Canvas precedence and conflict-resolution tests remain open.
 - Local concurrent-edit protection uses academic snapshot revisions, preserves both competing snapshots in a separate conflict log, blocks further primary writes while unresolved, exports both versions, then reloads the saved snapshot. This is not a substitute for remote Canvas/provider reconciliation.
