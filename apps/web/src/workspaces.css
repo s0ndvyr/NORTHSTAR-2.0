@@ -544,3 +544,14 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .canvas-boundary-panel li::marker{color:var(--accent)}
 .app[data-theme="light"] .canvas-status-pill{border-color:rgba(46,69,100,.16)}
 @media(max-width:560px){.canvas-status-panel,.canvas-boundary-panel{padding:15px}.canvas-status-head{flex-direction:column}.canvas-capabilities{grid-template-columns:1fr}.canvas-capabilities>div{border-bottom:1px solid var(--line)}}
+
+.assignment-artifacts{padding:17px 0;border-top:1px solid var(--line)}
+.assignment-artifacts .panel-head{margin-bottom:10px}
+.assignment-artifacts .panel-head h3{margin:6px 0 0;color:var(--text);font:500 15px var(--display)}
+.file-attach-action{position:relative;overflow:hidden;cursor:pointer}
+.file-attach-action input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.artifact-row{display:flex;align-items:center;gap:7px;padding:10px 0;border-bottom:1px solid var(--line)}
+.artifact-row>span{display:grid;gap:4px;min-width:0;flex:1}
+.artifact-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:9px;font-weight:500}
+.artifact-row small{color:var(--muted);font-size:8px}
+.artifact-row .icon-action{flex:none}
