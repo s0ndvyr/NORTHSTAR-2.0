@@ -217,3 +217,12 @@ The first implementation slice is intentionally narrow: isolated React/TypeScrip
 The user has explicitly requested that planning remain important but not become a tiring, repetitive process. Future work must use this consolidated plan, carry forward approved decisions, resolve routine technical choices with conventional defaults, and ask for input only on material unresolved decisions. No further questionnaire is required by default.
 
 **Authorization remains planning only.** A separate explicit approval is required before the initial application foundation is implemented.
+
+
+## 14. Transition to implementation — 2026-11-25
+
+The user confirmed `apps/web/` as the official application directory and authorized beginning the first NORTHSTAR 5.0 implementation stage. The dedicated branch is `northstar-5.0.0-development`.
+
+The initial foundation now exists in that directory: React + TypeScript + Vite configuration, strict TypeScript settings, route-based workspace shell, Midnight visual foundation, responsive dashboard preview, illustrative-only academic figures and app-level setup documentation. This is a starter foundation, not a completed workspace implementation.
+
+Implementation proceeds incrementally. The initial scaffold has not yet been built or tested in a runtime in this work session; the dependency lockfile must be generated and committed during the first local install. Production workflows, the legacy root application, Canvas Worker, real provider connections, data migration and legacy retirement remain outside the current authorization.
