@@ -1,7 +1,8 @@
 # NORTHSTAR 5.0 — Canvas Capability and Authority Matrix
 
+**Integrated master:** [Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)  
 **Workstream:** Cross-Application Intelligence / Academic Data & Canvas Intelligence  
-**Status:** Planning matrix; provider-specific verification outstanding  
+**Status:** Detailed planning specification — integrated; dated endpoint research and tenant verification outstanding  
 **Decision sources:** CAI-DEC-02/03/04; NS-CAN-001/002; NS-CAI-003/004/009  
 **Authorization:** Documentation/research planning only. No live Canvas connection, credential use or institution-specific verification is authorized.
 
