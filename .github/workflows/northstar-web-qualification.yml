@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: northstar-web-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typecheck-and-build:
     name: Typecheck and production build
