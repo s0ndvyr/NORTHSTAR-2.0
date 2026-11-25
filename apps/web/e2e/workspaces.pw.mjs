@@ -63,7 +63,7 @@ test("creates a course and exposes its course hub", async ({ page }) => {
   await page.getByLabel("Course code").fill("QA 205");
   await page.getByLabel("Course name").fill("Browser Qualification");
   await page.getByLabel("Instructor").fill("Dr. Northstar");
-  await page.getByRole("button", { name: "Add course" }).click();
+  await page.locator("form.editor-panel").getByRole("button", { name: "Add course" }).click();
 
   await expect(page.getByText("QA 205").first()).toBeVisible();
   await page.getByRole("link", { name: /Open course hub/ }).last().click();
@@ -76,7 +76,7 @@ test("creates a course-linked resource in the personal library", async ({ page }
   await page.getByLabel("Resource title").fill("Browser qualification reference");
   await page.getByLabel("Description").fill("A resource created by the browser qualification suite.");
   await page.getByLabel("Notes / content").fill("Local library persistence check.");
-  await page.getByRole("button", { name: "Add resource" }).click();
+  await page.locator("form.editor-panel").getByRole("button", { name: "Add resource" }).click();
   await expect(page.getByText("Browser qualification reference")).toBeVisible();
 });
 
