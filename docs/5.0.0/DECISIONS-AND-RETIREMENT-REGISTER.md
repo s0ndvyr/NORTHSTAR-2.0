@@ -12,6 +12,20 @@
 | ADR-5-006 | Consequential AI changes require user approval | Maintains user control | Adopt |
 | ADR-5-007 | No destructive legacy cleanup before dependency and regression review | Avoids accidental feature/data loss | Adopt |
 
+## Phase 0 user sign-off decisions — 2026-11-25
+
+The user submitted **A / A / A / A / A** through the five-question Phase 0 sign-off module. The following decisions are recorded as approved:
+
+| Sign-off item | Recorded decision | Effect |
+|---|---|---|
+| SO-0-01 — Source baseline | A: Approve the dedicated 5.0.0 setup branch from the latest audited development source; production remains untouched. | Baseline accepted. |
+| SO-0-02 — Setup deliverables | A: Accept the version marker, audit, architecture roadmap, requirements register, retirement register, and sign-off documentation. | Phase 0 deliverables accepted. |
+| SO-0-03 — Legacy bloat handling | A: Preserve existing behavior until dependencies are mapped and replacements pass regression; then perform controlled retirement/consolidation. | No immediate legacy deletion authorized. |
+| SO-0-04 — Target architecture | A: Approve React + TypeScript + Vite, iPad-first PWA, shared academic data, domain-separated workspaces, adapters, and one authoritative design system. | Architecture accepted as planning baseline. |
+| SO-0-05 — Phase closure | A: Accept Phase 0 closure and prepare Engineering Foundation planning; application implementation requires separate explicit authorization. | Phase 0 closed; planning may proceed. |
+
+**Phase 0 disposition:** Closed and user-approved. This approval covers the setup package and the planning direction only. It does not certify runtime behavior or authorize application coding, legacy deletion, production changes, deployment, or qualification.
+
 ## Candidate retirement / consolidation
 
 | ID | Candidate | Proposed action | Required evidence before removal |
