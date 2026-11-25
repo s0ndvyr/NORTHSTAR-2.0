@@ -328,3 +328,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Added an explicit Draft-structure risk indicator to the Review Center, with unchecked, low, moderate and high states derived only from local structural checks (length, long sentences, repeated terms and common citation-marker presence).
 - The label is deliberately scoped to draft structure. It is not plagiarism detection, source verification, AI feedback, grade prediction or an assessment of academic misconduct.
 - The signal remains inactive until the user runs the local review.
+
+
+### Course record provenance foundation — 2026-11-25
+
+- Extended course records with optional origin (demo or northstar) and update timestamp fields, preserving compatibility with earlier version-1 browser snapshots.
+- New and edited courses are explicitly marked as NORTHSTAR-owned records with update timestamps; snapshot validation checks supported origin values and timestamp validity.
+- Added tests for origin and update metadata.
+- This is a local record-origin foundation only. Canvas/provider source IDs, field-level authority, and conflict reconciliation remain separate integration work.
