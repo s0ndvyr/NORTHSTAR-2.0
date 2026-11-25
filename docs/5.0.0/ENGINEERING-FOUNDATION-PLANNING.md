@@ -168,3 +168,17 @@ The initial selected-file evidence review is documented in LEGACY-SOURCE-INVENTO
 This review is partial. Complete source tree, all browser storage keys and IndexedDB stores, all read/write call sites, Worker route inventory, dependency/CDN inventory, exact source branch reconciliation and full data migration mapping remain outstanding. The BFF is a required security boundary for privileged provider operations; hosting/runtime and database remain deferred until evidence supports a choice. Integration contracts across all major workspaces remain to be authored.
 
 No source implementation was changed and no tests/builds were executed. Planning only.
+
+
+## 12. Comprehensive source inventory checkpoint — 2026-11-25
+
+The user approved A/A/A/A/A (EFP-DEC-11 through EFP-DEC-15). The required inventory scope is now explicit:
+- every source path, purpose, dependency/import, consumer, route/workflow relationship, and preservation/retirement disposition;
+- every localStorage/sessionStorage key and IndexedDB database/store/schema, with readers, writers, migrations, fallback, retention, cleanup and recovery;
+- every Canvas Worker route, method, permission, validation constraint, upstream endpoint, error path and security boundary;
+- complete workspace contracts for Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace;
+- reconciliation of evidence to requirements, migration, risks, preservation, parity and rollback gates before planning sign-off.
+
+The [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md) captures the currently observed repository paths and initial persistence findings. It identifies `northstar-secure-vault` (v1 / `secrets`) and `northstar-document-studio` (v1 / `documents`, `drafts`), along with known localStorage PDF identity/markup key families and sessionStorage quiz-attempt state. These observations are not yet a complete key/call-site inventory.
+
+The source inventory remains in progress. Exact migration-source reconciliation, full script dependency and DOM/event consumer mapping, complete Worker route extraction, workflow/deployment enumeration, external CDN inventory, and all storage call sites remain open. No source code was modified and no tests/builds were executed.
