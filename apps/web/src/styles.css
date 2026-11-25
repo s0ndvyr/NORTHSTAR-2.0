@@ -48,3 +48,19 @@
 @keyframes star-breathe{from{opacity:.35}to{opacity:.72}}
 @media(prefers-reduced-motion:reduce){.planet,.planet i,.planet b,.stars{animation:none!important}}
 @media(max-width:740px){.planet{width:166px;height:166px}.halo{width:236px;height:236px}.orbit{width:270px;height:82px}.orbit-b{width:300px;height:104px}}
+
+
+/* Visible keyboard focus across every workspace */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid #a9c8f5;
+  outline-offset:3px;
+  box-shadow:0 0 0 4px #8fb7ed24;
+}
+:where(a,button,input,select,textarea,[tabindex]):focus:not(:focus-visible){outline:none}
+@media(forced-colors:active){
+  :where(a,button,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid Highlight;
+    outline-offset:3px;
+    box-shadow:none;
+  }
+}
