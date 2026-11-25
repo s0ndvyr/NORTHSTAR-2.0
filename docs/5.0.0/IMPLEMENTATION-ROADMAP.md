@@ -263,3 +263,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Kept the effect in CSS rather than adding canvas/WebGL or another runtime dependency.
 - Added a reduced-motion override and smaller-device sizing rules.
 - This is a visual implementation increment; physical iPad rendering, frame-time and battery qualification remain open.
+
+
+### Calendar editing and relationship safeguards — 2026-11-25
+
+- Wired the existing validated event-update command into the Calendar workspace. User-created events can now be reopened, edited and saved without changing their record identity; seeded demo events and assignment deadlines remain read-only.
+- Changing an event's course clears a selected assignment if that assignment belongs to a different course, preventing a silent failed save.
+- Added tests for event update, revision increments, invalid time ranges and cross-course assignment rejection.
+- The calendar editor and event-update command remain local browser workflows.
