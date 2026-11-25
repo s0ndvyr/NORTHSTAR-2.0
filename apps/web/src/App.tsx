@@ -33,7 +33,7 @@ function Sidebar() {
   </aside>;
 }
 function Topbar() {
-  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>Overview</b></div><div className="top-actions"><button className="icon-button" aria-label="Search"><Search size={17}/></button><span className="demo-state"><i/> DEMO ENVIRONMENT</span><button className="quick"><Command size={14}/> Quick actions <kbd>⌘ K</kbd></button></div></header>;
+  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>Overview</b></div><div className="top-actions"><span className="icon-button" aria-label="Search preview"><Search size={17}/></span><span className="demo-state"><i/> DEMO ENVIRONMENT</span><span className="quick"><Command size={14}/> Quick actions <kbd>⌘ K</kbd></span></div></header>;
 }
 function Stat({ label, value, note, icon: Icon }: { label: string; value: string; note: string; icon: typeof Timer }) {
   return <article className="stat"><div><span>{label}</span><i><Icon size={16}/></i></div><strong>{value}</strong><small>{note}</small></article>;
