@@ -12,6 +12,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Installable PWA manifest, app icon, production service-worker registration, and conservative offline app-shell/static-asset caching; this is not yet full offline synchronization.
 - Canonical local academic snapshot with runtime validation, revision tracking, and browser persistence.
 - Connected Overview, Assignments, Courses with per-course detail hubs, Calendar, Study Lab flashcard authoring, spaced-repetition review, and course-grounded practice sets, Gradebook progress views, course-linked Resources library, and a local Writing Review workspace.
+- Courses workspace supports local course creation and metadata editing with active-term assignment, unique course-code validation and preservation of linked academic records.
 - Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
 - Calendar events for classes, study blocks, reminders and personal time, distinct from assignment deadlines, with course/assignment links and local event management.
 - Explicit grade records with graded/pending/missing/excused states, optional assignment links, feedback, points-based summaries, and no inferred numeric scores from assignment status.
