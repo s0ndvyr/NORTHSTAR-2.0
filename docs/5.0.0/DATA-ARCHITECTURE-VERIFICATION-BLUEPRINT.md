@@ -1,7 +1,8 @@
 # NORTHSTAR 5.0 — Data Architecture Verification Blueprint
 
+**Integrated master:** [Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)  
 **Workstream:** Cross-Application Intelligence  
-**Status:** Planning verification blueprint; no tests executed  
+**Status:** Detailed planning specification — integrated; review pending; no tests executed  
 **Decision sources:** CAI-DEC-01 through CAI-DEC-05; NS-DATA-001/002/003; NS-STATE-001; NS-CAN-001/002; NS-CAI-001 through NS-CAI-010  
 **Authorization:** Planning only. No implementation, live provider testing or production qualification authorized.
 
