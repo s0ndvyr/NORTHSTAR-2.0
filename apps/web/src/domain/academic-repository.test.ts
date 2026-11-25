@@ -110,12 +110,26 @@ describe("academic repository", () => {
     expect(next.revision).toBe(snapshot.revision + 1);
   });
 
-  it("deletes an assignment and increments the revision", () => {
-    const snapshot = loadAcademicSnapshot();
-    const assignment = snapshot.assignments[0];
+  it("deletes an assignment but preserves and detaches independent linked work", () => {
+    const base = loadAcademicSnapshot();
+    const assignment = base.assignments[0];
+    const now = "2026-11-25T12:00:00.000Z";
+    const snapshot = {
+      ...base,
+      writingDrafts: [{ id: "linked-draft", title: "Saved essay", body: "Keep this draft.", assignmentId: assignment.id, revision: 1, savedAt: now, source: "northstar" as const }],
+      events: [{ id: "linked-event", title: "Work session", kind: "study" as const, startsAt: now, endsAt: "2026-11-25T13:00:00.000Z", assignmentId: assignment.id, courseId: assignment.courseId, notes: "", source: "northstar" as const, updatedAt: now }],
+      gradeItems: [{ id: "linked-grade", courseId: assignment.courseId, assignmentId: assignment.id, title: assignment.title, score: null, pointsPossible: Math.max(1, assignment.pointsPossible), status: "pending" as const, source: "northstar" as const, updatedAt: now }],
+    };
     const next = deleteAssignment(snapshot, assignment.id);
     expect(next.assignments.some(item => item.id === assignment.id)).toBe(false);
-    expect(next.revision).toBe(snapshot.revision + 1);
+    expect(next.writingDrafts?.[0]).toMatchObject({ id: "linked-draft", title: "Saved essay" });
+    expect(next.writingDrafts?.[0].assignmentId).toBeUndefined();
+    expect(next.events?.[0]).toMatchObject({ id: "linked-event", title: "Work session" });
+    expect(next.events?.[0].assignmentId).toBeUndefined();
+    expect(next.gradeItems?.[0]).toMatchObject({ id: "linked-grade", status: "pending" });
+    expect(next.gradeItems?.[0].assignmentId).toBeUndefined();
+    expect(next.revision).toBe(base.revision + 1);
+    expect(isAcademicSnapshot(next)).toBe(true);
   });
 
   it("rejects malformed snapshots and duplicate assignment identities", () => {
