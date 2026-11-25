@@ -277,14 +277,14 @@ function Calendar({ snapshot, onCreateEvent, onUpdateEvent, onDeleteEvent }: { s
   const [courseId,setCourseId]=useState("");
   const [assignmentId,setAssignmentId]=useState("");
   const [startsAt,setStartsAt]=useState(localDateTime());
-  const [endsAt,setEndsAt]=useState(localDateTime(new Date(Date.now()+3600000).toISOString()));
+  const [endsAt,setEndsAt]=useState(localDateTime(new Date(Date.now()+90000000).toISOString()));
   const [notes,setNotes]=useState("");
   const [eventError,setEventError]=useState("");
   const assignments=snapshot.assignments.map(item=>({id:item.id,title:item.title,courseId:item.courseId,startsAt:item.dueAt,endsAt:item.dueAt,kind:"deadline" as const,notes:item.personalNotes,source:"northstar" as const,status:item.status}));
   const events=(snapshot.events??[]).map(item=>({...item,kind:item.kind as string,status:"event"}));
   const timeline=[...assignments,...events].sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt));
   const grouped=timeline.reduce<Record<string,typeof timeline>>((groups,item)=>{const key=new Date(item.startsAt).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});(groups[key]??=[]).push(item);return groups;},{});
-  const openNew=()=>{setEditingEvent(undefined);setEventError("");setTitle("");setKind("class");setCourseId("");setAssignmentId("");setStartsAt(localDateTime());setEndsAt(localDateTime(new Date(Date.now()+3600000).toISOString()));setNotes("");setShowEditor(true);};
+  const openNew=()=>{setEditingEvent(undefined);setEventError("");setTitle("");setKind("class");setCourseId("");setAssignmentId("");setStartsAt(localDateTime());setEndsAt(localDateTime(new Date(Date.now()+90000000).toISOString()));setNotes("");setShowEditor(true);};
   const openEdit=(id:string)=>{const item=(snapshot.events??[]).find(event=>event.id===id);if(!item)return;setEditingEvent(item);setEventError("");setTitle(item.title);setKind(item.kind);setCourseId(item.courseId??"");setAssignmentId(item.assignmentId??"");setStartsAt(localDateTime(item.startsAt));setEndsAt(localDateTime(item.endsAt));setNotes(item.notes);setShowEditor(true);};
   const closeEditor=()=>{setShowEditor(false);setEditingEvent(undefined);};
   const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const startTime=Date.parse(startsAt);const endTime=Date.parse(endsAt);if(!Number.isFinite(startTime)||!Number.isFinite(endTime)||endTime<=startTime){setEventError("Choose an end time later than the start time.");return;}const input:AcademicEventInput={title,kind,courseId:courseId||undefined,assignmentId:assignmentId||undefined,startsAt:new Date(startTime).toISOString(),endsAt:new Date(endTime).toISOString(),notes};if(editingEvent)onUpdateEvent(editingEvent.id,input);else onCreateEvent(input);closeEditor();};
