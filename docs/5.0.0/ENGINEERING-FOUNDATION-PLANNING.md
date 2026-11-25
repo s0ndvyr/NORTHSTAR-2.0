@@ -143,3 +143,12 @@ Traceability additions: NS-DATA-004, NS-CAN-003, NS-DATA-005, NS-MIG-001 and NS-
 - Do not mark any verification gate passed from planning documents alone.
 
 The Engineering Foundation planning stage remains open. The artifacts above do not authorize implementation, dependency installation, schema migration, live Canvas testing, legacy deletion, deployment or release.
+
+
+## 10. Integrated architecture planning decisions — 2026-11-25
+
+The user approved C/B/A/A/A for the next engineering-foundation planning checkpoint. The selected documentation structure is one integrated master architecture specification supported by five detailed specifications. The selected decision method is to recommend conventional, maintainable technical defaults and require an ADR for material deviations. Legacy capability/data/dependency/workflow mapping must be comprehensive. Workstream sign-off requires full specifications, traceability, risk and open-decision review, and acceptance criteria. Planning continues after this workstream; application coding remains unauthorized.
+
+The integrated specification is [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md). It recommends React/TypeScript/Vite, npm with lockfile, React Router, TanStack Query for server-backed data, React state/context first with Zustand only where justified, Zod at trust boundaries, IndexedDB for local durable records, a narrowly scoped server-side provider boundary, PostgreSQL only if server persistence is required, Vitest/Testing Library, Playwright, and explicit PWA caching rules.
+
+These choices are planning recommendations and have not been installed, built, or tested. The five detailed specifications remain subject to evidence closure. Full legacy source inventory, dated Canvas endpoint research, quantitative cache/retention parameters, hosting topology, and security/privacy review remain open.
