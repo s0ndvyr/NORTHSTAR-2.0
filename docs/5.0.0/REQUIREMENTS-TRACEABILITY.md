@@ -198,3 +198,11 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 - Remaining: latest dashboard/theme qualification, lint, component/integration/E2E and accessibility audits, plus visual and touch acceptance on the target iPad.
 
 The user has explicitly authorized bounded local/demo implementation on the development branch. Earlier planning-only approvals are superseded for this work. Live Canvas/provider access, real credentials, destructive legacy retirement, production deployment and release promotion remain separately gated.
+
+
+### Study Lab practice attempt evidence — 2026-11-25
+
+- NS-ACAD-004: added a course-grounded demo question bank and practice mode with course selection, navigation, answer autosave, flagging, elapsed timer, finish confirmation, scoring and per-question explanations.
+- NS-STATE-001: practice attempts are part of the canonical revisioned snapshot and resume after reload; answers, flags and elapsed time are saved locally.
+- NS-QUAL-001: repository tests cover creation/resume, answer/flag persistence, score calculation and invalid/cross-course answer rejection.
+- Acceptance remains limited to the seeded demo question bank; content coverage, configurable quizzes/tests, and browser/iPad end-to-end behavior remain open.
