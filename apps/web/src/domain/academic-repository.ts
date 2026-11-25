@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicCourse, AcademicEvent, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtifact, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
 import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 const STORAGE_KEY = "northstar-5-academic-demo-v1";
@@ -6,6 +6,7 @@ const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submi
 const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
 export type CourseInput = Pick<AcademicCourse, "code" | "name" | "instructor" | "color" | "progress">;
+export type AssignmentArtifactInput = Pick<AssignmentArtifact, "id" | "assignmentId" | "fileName" | "mimeType" | "sizeBytes">;
 export type AssignmentInput = Pick<AcademicAssignment, "courseId" | "title" | "description" | "dueAt" | "pointsPossible" | "priority" | "estimatedMinutes" | "personalNotes">;
 export type AssignmentPatch = Partial<AssignmentInput> & { status?: AssignmentStatus };
 export type ResourceInput = Pick<AcademicResource, "courseId" | "title" | "kind" | "description" | "url" | "content">;
@@ -40,6 +41,7 @@ function initialSnapshot(): AcademicSnapshot {
     gradeItems: demoGradeItems.map(item => ({ ...item })),
     practiceQuestions: demoPracticeQuestions.map(question => ({ ...question, options: question.options.map(option => ({ ...option })) })),
     practiceAttempts: [],
+    artifacts: [],
   };
 }
 
@@ -108,6 +110,17 @@ function isValidGradeItem(value: unknown, courseIds: Set<string>, assignmentIds:
     && (value.gradedAt === undefined || (typeof value.gradedAt === "string" && Number.isFinite(Date.parse(value.gradedAt))))
     && (value.source === "demo" || value.source === "northstar")
     && typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt));
+}
+
+function isValidAssignmentArtifact(value: unknown, assignmentIds: Set<string>): value is AssignmentArtifact {
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.assignmentId === "string" && assignmentIds.has(value.assignmentId)
+    && typeof value.fileName === "string" && value.fileName.trim().length > 0
+    && typeof value.mimeType === "string"
+    && typeof value.sizeBytes === "number" && Number.isFinite(value.sizeBytes) && value.sizeBytes >= 0
+    && typeof value.addedAt === "string" && Number.isFinite(Date.parse(value.addedAt))
+    && value.source === "northstar";
 }
 
 function isValidWritingDraft(value: unknown, assignmentIds: Set<string>): value is WritingDraft {
@@ -182,6 +195,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (value.writingDrafts !== undefined && !Array.isArray(value.writingDrafts)) return false;
   if (value.events !== undefined && !Array.isArray(value.events)) return false;
   if (value.gradeItems !== undefined && !Array.isArray(value.gradeItems)) return false;
+  if (value.artifacts !== undefined && !Array.isArray(value.artifacts)) return false;
   if (value.practiceQuestions !== undefined && !Array.isArray(value.practiceQuestions)) return false;
   if (value.practiceAttempts !== undefined && !Array.isArray(value.practiceAttempts)) return false;
   const courseIds = new Set<string>();
@@ -231,6 +245,11 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (linkedAssignment && isRecord(linkedAssignment) && linkedAssignment.courseId !== item.courseId) return false;
     gradeItemIds.add(item.id);
   }
+  const artifactIds = new Set<string>();
+  for (const artifact of (value.artifacts ?? [])) {
+    if (!isValidAssignmentArtifact(artifact, assignmentIds) || artifactIds.has(artifact.id)) return false;
+    artifactIds.add(artifact.id);
+  }
   const draftIds = new Set<string>();
   for (const draft of (value.writingDrafts ?? [])) {
     if (!isValidWritingDraft(draft, assignmentIds) || draftIds.has(draft.id)) return false;
@@ -245,7 +264,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [] };
+      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [], artifacts: parsed.artifacts ?? [] };
     }
   } catch {
     // A malformed or unavailable browser store must not prevent the app from opening.
@@ -330,6 +349,22 @@ export function updateAssignment(snapshot: AcademicSnapshot, id: string, patch: 
   };
   if (!VALID_STATUSES.includes(next.status) || !isValidAssignmentInput(input, new Set(snapshot.courses.map(course => course.id)))) return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment => assignment.id === id ? next : assignment));
+}
+
+export function addAssignmentArtifact(snapshot: AcademicSnapshot, input: AssignmentArtifactInput): AcademicSnapshot {
+  if (!snapshot.assignments.some(item => item.id === input.assignmentId)
+    || !input.id.trim() || !input.fileName.trim()
+    || !Number.isFinite(input.sizeBytes) || input.sizeBytes < 0
+    || (snapshot.artifacts ?? []).some(item => item.id === input.id)) return snapshot;
+  const artifact: AssignmentArtifact = {
+    ...input, fileName: input.fileName.trim(), source: "northstar", addedAt: new Date().toISOString(),
+  };
+  return { ...snapshot, revision: snapshot.revision + 1, artifacts: [...(snapshot.artifacts ?? []), artifact] };
+}
+
+export function deleteAssignmentArtifact(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
+  if (!(snapshot.artifacts ?? []).some(item => item.id === id)) return snapshot;
+  return { ...snapshot, revision: snapshot.revision + 1, artifacts: (snapshot.artifacts ?? []).filter(item => item.id !== id) };
 }
 
 export function deleteAssignment(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
