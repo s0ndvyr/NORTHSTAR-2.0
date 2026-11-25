@@ -271,3 +271,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Changing an event's course clears a selected assignment if that assignment belongs to a different course, preventing a silent failed save.
 - Added tests for event update, revision increments, invalid time ranges and cross-course assignment rejection.
 - The calendar editor and event-update command remain local browser workflows.
+
+
+### Course authoring and editing increment — 2026-11-25
+
+- Courses workspace now supports adding and editing courses within the active term, including course code, name, instructor, accent and initial progress.
+- Course commands validate required metadata, progress range and case-insensitive unique course codes, and increment the shared academic snapshot revision.
+- Existing assignments, resources, study cards, events and grade records retain their course identity when course metadata changes.
+- Added repository tests for course creation, duplicate/invalid rejection and update relationship integrity.
+- Course records remain local personal/demo data; institution course import and Canvas source authority are not connected.
