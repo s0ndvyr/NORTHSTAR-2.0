@@ -177,3 +177,31 @@ The user approved **A / A / A / A / A** (EFP-DEC-16 through EFP-DEC-20). The gro
 | Application implementation | **Not authorized** |
 
 The source inventory remains static and incomplete. This update does not claim that Canvas endpoints, target tenant behavior, builds, tests, runtime behavior or iPad behavior have been verified. No application source was changed.
+
+
+## Module 2 — Repository, Engineering Standards and Qualification — 2026-11-25
+
+The user approved **A / A / A / A / A** (EFP-DEC-21 through EFP-DEC-25). The comprehensive grouped specification is [Module 2 — Repository, Engineering Standards and Qualification Plan](MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md).
+
+The decisions establish: a dedicated 5.0 development branch; an isolated application directory; a conventional pinned React/TypeScript/Vite/npm toolchain; a full qualification framework; and a controlled CI/preview/release pipeline. Supporting policies cover repository governance, application boundaries, dependency/code standards, test layers, academic workflow acceptance, accessibility, security, performance, offline recovery, physical iPad qualification, PWA constraints, CI, preview isolation, production approval, versioning, rollback and ADR/change control.
+
+**Additional standing planning-process requirement:** future modules must be comprehensive, cover multiple varied and related topics, provide recommendations and trade-offs, include free-text input, carry decisions forward and avoid repetitive five-question cycles or unnecessary sign-offs. This is recorded as EFP planning governance / NS-GOV-006.
+
+### Updated phase tracker
+
+| Phase / workstream | Status |
+|---|---|
+| Phase 0 — Setup & Repository Readiness | **Closed — user-approved 2026-11-25** |
+| 5.0.0 — Product & Architecture Foundation | **Approved planning baseline; Engineering Foundation planning in progress** |
+| 5.0.1 — Academic Data & Canvas Intelligence | **Planning complete and approved — closed** |
+| 5.0.2 — Assignment & Coursework Experience | Planning decisions complete |
+| 5.0.3 — Courses, Calendar & Resources | Planning decisions complete |
+| 5.0.4 — Dashboard Studio & Personalization | Approved planning |
+| 5.0.5 — AI & Intelligent Academic Assistance | Approved planning |
+| 5.0.6 — Visual Refinement, Qualification & Release | Approved planning |
+| Cross-Application Intelligence | Integrated specifications drafted; final review pending |
+| Module 1 — Legacy and Integration Evidence | Planning scope approved; evidence collection and reconciliation in progress |
+| Module 2 — Repository, Engineering Standards and Qualification | **Decision set approved (EFP-DEC-21..25); detailed policy planning and evidence alignment in progress** |
+| Application implementation | **Not authorized** |
+
+Neither Module 1 nor Module 2 is declared fully signed off. This checkpoint does not claim source inventory completion, live provider verification, passing builds/tests, CI operation, physical iPad qualification or production readiness. No application source was changed.
