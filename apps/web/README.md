@@ -2,6 +2,8 @@
 - Academic notification center derived from the shared snapshot: missing/overdue work, due-today assignments, upcoming seven-day events, due flashcards and pending grades. The bell count and displayed list use the same selector.
 # NORTHSTAR Web Application
 
+> Implementation progress: [NORTHSTAR 5.0.0 status board](../../docs/5.0.0/IMPLEMENTATION-STATUS.md).
+
 The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root application and Canvas Worker.
 
 ## Implemented foundation
