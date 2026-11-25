@@ -8,7 +8,7 @@ import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotificati
 import { createSimulationAssistant, summarizeAcademicContext, type AssistanceAction } from "./domain/ai-assistance";
 import { deleteAssignmentArtifactFile, readAssignmentArtifactFile, saveAssignmentArtifactFile } from "./domain/assignment-artifact-storage";
 import { createUnconfiguredCanvasAdapter, type CanvasConnectionStatus } from "./domain/canvas-adapter";
-import { createAcademicBackup, parseAcademicBackup, addAssignmentArtifact, deleteAssignmentArtifact, createCourse, updateCourse, createAcademicEvent, updateAcademicEvent, createGradeItem, createPracticeAttempt, completePracticeAttempt, updatePracticeAttempt, createAssignment, createResource, createStudyCard, deleteAcademicEvent, deleteGradeItem, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, updateGradeItem, rateStudyCard, saveWritingDraft, selectGradeSummary, deleteWritingDraft, type AcademicEventInput, type CourseInput, type AssignmentInput, type GradeItemInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
+import { ACADEMIC_STORAGE_KEY, loadAcademicConflicts, clearAcademicConflict, createAcademicBackup, parseAcademicBackup, addAssignmentArtifact, deleteAssignmentArtifact, createCourse, updateCourse, createAcademicEvent, updateAcademicEvent, createGradeItem, createPracticeAttempt, completePracticeAttempt, updatePracticeAttempt, createAssignment, createResource, createStudyCard, deleteAcademicEvent, deleteGradeItem, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, updateGradeItem, rateStudyCard, saveWritingDraft, selectGradeSummary, deleteWritingDraft, type AcademicEventInput, type CourseInput, type AssignmentInput, type GradeItemInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
 
 const links = [
   { label: "Overview", to: "/", icon: LayoutDashboard },
@@ -609,7 +609,19 @@ export default function App() {
   useEffect(()=>{document.documentElement.dataset.theme=theme;try{window.localStorage.setItem("northstar-theme",theme);}catch{/* Theme remains active for this session. */}},[theme]);
   const [storageAvailable,setStorageAvailable] = useState(true);
   const [artifactMessage,setArtifactMessage] = useState("");
-  useEffect(() => { setStorageAvailable(saveAcademicSnapshot(snapshot)); }, [snapshot]);
+  const [conflicts,setConflicts] = useState(() => loadAcademicConflicts());
+  const [remoteUpdateAvailable,setRemoteUpdateAvailable] = useState(false);
+  useEffect(() => {
+    setStorageAvailable(saveAcademicSnapshot(snapshot));
+    setConflicts(loadAcademicConflicts());
+  }, [snapshot]);
+  useEffect(() => {
+    const onStorage = (event:StorageEvent) => {
+      if(event.key===ACADEMIC_STORAGE_KEY) setRemoteUpdateAvailable(true);
+    };
+    window.addEventListener("storage",onStorage);
+    return ()=>window.removeEventListener("storage",onStorage);
+  }, []);
   const handleStatus = (id: string, status: AssignmentStatus) => setSnapshot(current => updateAssignmentStatus(current,id,status));
   const handleCourseCreate = (input:CourseInput) => setSnapshot(current => createCourse(current,input));
   const handleCourseUpdate = (id:string,input:CourseInput) => setSnapshot(current => updateCourse(current,id,input));
@@ -662,7 +674,18 @@ export default function App() {
   const handleGradeCreate = (input:GradeItemInput) => setSnapshot(current => createGradeItem(current,input));
   const handleGradeUpdate = (id:string,input:GradeItemInput) => setSnapshot(current => updateGradeItem(current,id,input));
   const handleGradeDelete = (id:string) => setSnapshot(current => deleteGradeItem(current,id));
-  const handleImport = async (restored:AcademicSnapshot) => { await Promise.allSettled((snapshot.artifacts??[]).map(item=>deleteAssignmentArtifactFile(item.id))); setSnapshot(restored); setArtifactMessage("Backup restored. Binary file attachments are not part of JSON backups."); };
-  const handleReset = async () => { await Promise.allSettled((snapshot.artifacts??[]).map(item=>deleteAssignmentArtifactFile(item.id))); setSnapshot(resetAcademicSnapshot()); setArtifactMessage("Demo workspace reset."); };
-  return <div className="app" data-theme={theme}><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar snapshot={snapshot}/><div className="main"><Routed theme={theme} onThemeChange={setTheme} snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onArtifactAttach={handleArtifactAttach} onArtifactDownload={handleArtifactDownload} onArtifactDelete={handleArtifactDelete} artifactMessage={artifactMessage} onCourseCreate={handleCourseCreate} onCourseUpdate={handleCourseUpdate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onStudyCreate={handleStudyCreate} onStudyRate={handleStudyRate} onStudyDelete={handleStudyDelete} onPracticeStart={handlePracticeStart} onPracticeSave={handlePracticeSave} onPracticeComplete={handlePracticeComplete} onDraftSave={handleDraftSave} onDraftDelete={handleDraftDelete} onEventCreate={handleEventCreate} onEventUpdate={handleEventUpdate} onEventDelete={handleEventDelete} onGradeCreate={handleGradeCreate} onGradeUpdate={handleGradeUpdate} onGradeDelete={handleGradeDelete} onImport={handleImport} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
+  const handleImport = async (restored:AcademicSnapshot) => { await Promise.allSettled((snapshot.artifacts??[]).map(item=>deleteAssignmentArtifactFile(item.id))); saveAcademicSnapshot(restored,true); setSnapshot(restored); setRemoteUpdateAvailable(false); setArtifactMessage("Backup restored. Binary file attachments are not part of JSON backups."); };
+  const handleReset = async () => { await Promise.allSettled((snapshot.artifacts??[]).map(item=>deleteAssignmentArtifactFile(item.id))); setSnapshot(resetAcademicSnapshot()); setConflicts(loadAcademicConflicts()); setRemoteUpdateAvailable(false); setArtifactMessage("Demo workspace reset."); };
+  const handleConflictDownload = () => {
+    const conflict=conflicts[0];
+    if(!conflict)return;
+    const bundle={format:"northstar-academic-conflict",version:1,detectedAt:conflict.detectedAt,localBackup:JSON.parse(createAcademicBackup(conflict.localSnapshot)),savedBackup:JSON.parse(createAcademicBackup(conflict.persistedSnapshot)),note:"Binary assignment attachments are stored separately in browser IndexedDB and are not included in JSON conflict bundles."};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,2)],{type:"application/json"}));
+    const anchor=document.createElement("a");anchor.href=url;anchor.download="northstar-conflict-"+new Date().toISOString().replace(/[:.]/g,"-")+".json";document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+    clearAcademicConflict(conflict.id);
+    setConflicts(loadAcademicConflicts());
+    setRemoteUpdateAvailable(true);
+  };
+  const handleReloadLatest = () => window.location.reload();
+  return <div className="app" data-theme={theme}><a className="skip-link" href="#main-content">Skip to main content</a><Sidebar snapshot={snapshot}/><div className="main">{conflicts.length>0&&<div className="storage-warning conflict-warning" role="alert"><div><b>Concurrent academic edit preserved</b><span>Two tabs changed the same saved revision. Neither version was silently overwritten. Download both snapshots before reloading the latest saved copy.</span></div><button className="primary-action" onClick={handleConflictDownload}>Download both versions</button></div>}{remoteUpdateAvailable&&conflicts.length===0&&<div className="storage-warning" role="status"><span>Another NORTHSTAR tab saved newer academic data. Reload to use the latest saved workspace.</span><button className="quiet-action" onClick={handleReloadLatest}>Reload latest</button></div>}<Routed theme={theme} onThemeChange={setTheme} snapshot={snapshot} onStatus={handleStatus} onCreate={handleCreate} onArtifactAttach={handleArtifactAttach} onArtifactDownload={handleArtifactDownload} onArtifactDelete={handleArtifactDelete} artifactMessage={artifactMessage} onCourseCreate={handleCourseCreate} onCourseUpdate={handleCourseUpdate} onUpdate={handleUpdate} onDelete={handleDelete} onResourceCreate={handleResourceCreate} onResourceUpdate={handleResourceUpdate} onResourceDelete={handleResourceDelete} onStudyCreate={handleStudyCreate} onStudyRate={handleStudyRate} onStudyDelete={handleStudyDelete} onPracticeStart={handlePracticeStart} onPracticeSave={handlePracticeSave} onPracticeComplete={handlePracticeComplete} onDraftSave={handleDraftSave} onDraftDelete={handleDraftDelete} onEventCreate={handleEventCreate} onEventUpdate={handleEventUpdate} onEventDelete={handleEventDelete} onGradeCreate={handleGradeCreate} onGradeUpdate={handleGradeUpdate} onGradeDelete={handleGradeDelete} onImport={handleImport} onReset={handleReset}/>{!storageAvailable&&<div className="storage-warning" role="status">Browser storage is unavailable. Changes are kept for this session only.</div>}</div></div>;
 }
