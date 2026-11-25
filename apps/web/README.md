@@ -25,6 +25,8 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Validated academic backup export/import for the complete local snapshot, including calendar events, grade records, resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
 - Provider-free AI Workspace simulation with co-pilot on/off, standing-by state, simulated request preparation, notification feed and local context preview; no provider call is made.
+- Typed AcademicAssistantService simulation boundary for future provider integration; current service only prepares labeled placeholders from local aggregate context and explicitly reports no provider connection.
+- Typed CanvasAdapter contract with an unconfigured implementation and Settings-linked readiness workspace; all reads/writes are blocked, no institution data is requested, and no Canvas connection is claimed.
 - Illustrative demo records only; no Canvas, institution, or AI provider is connected.
 
 ## Requirements
