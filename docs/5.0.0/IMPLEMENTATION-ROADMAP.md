@@ -305,3 +305,10 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Extracted sorting into a pure domain selector so the UI uses one deterministic comparator and source arrays are not mutated.
 - Added tests for all three modes and immutability.
 - The shared sort-selector implementation passed typecheck, dependency audits, domain tests and build in workflow run 45680271312. The first UI wiring run identified a narrow state-union typing issue; it is corrected in the current development head and is awaiting its latest workflow run.
+
+
+### Assignment queue controls — 2026-11-25
+
+- Assignments now offer due-date, priority and recently-updated sorting alongside existing search, course and status filters.
+- Sorting is implemented as a shared pure selector and tested for ordering and non-mutation of the canonical array.
+- The selector and domain tests passed in workflow run 45680271312. The first UI wiring attempts exposed strict state-union typing errors; those are corrected in commit 29ea9aa and its qualification run is in progress.
