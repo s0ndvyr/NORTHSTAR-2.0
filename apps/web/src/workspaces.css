@@ -120,3 +120,22 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .course-detail-grid>.panel{min-width:0}
 .empty-inline{font-size:9px;color:#7f90a8;padding:10px 0}
 @media(max-width:740px){.course-detail-grid{grid-template-columns:1fr}}
+
+
+/* Persistent local writing drafts */
+.review-side{display:grid;gap:13px;min-width:0}
+.saved-drafts{padding:16px}
+.saved-drafts>.panel-head{margin-bottom:9px}
+.saved-draft{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 9px;border:0;border-top:1px solid var(--line);background:transparent;color:inherit;text-align:left;cursor:pointer}
+.saved-draft>span{display:grid;gap:4px;min-width:0}
+.saved-draft b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:500;color:#dce5f2}
+.saved-draft small{font-size:8px;color:#8292a8}
+.saved-draft.active{background:#8eafd918;border-radius:6px}
+.saved-draft.active b{color:#c6dcf8}
+.draft-empty{padding:14px 2px;color:#8493a8;font-size:10px;line-height:1.65}
+.draft-metadata{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.draft-metadata label{display:grid;gap:6px;color:#a7b5c9;font-size:9px}
+.draft-metadata input,.draft-metadata select{min-width:0;width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:#0a1421;color:#e1e9f5;font:10px 'DM Sans',sans-serif}
+.review-actions>div{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.review-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:740px){.draft-metadata{grid-template-columns:1fr}.review-actions>div{justify-content:flex-start}}
