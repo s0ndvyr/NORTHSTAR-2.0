@@ -135,3 +135,10 @@ This is a useful first-pass tool, not completion of the planned AI-assisted Revi
 - Added unit coverage for card creation, validation, rating schedules and deletion.
 
 This is the first spaced-repetition engine increment. Full study guides, practice generation, learning analytics, and content-grounded answer explanations remain ahead.
+
+
+### Course hub increment — 2026-11-25
+
+- Courses now opens a dedicated course hub for each course.
+- Each hub projects its assignments, resource library items and study cards from the canonical academic snapshot, with links to the corresponding full workspaces.
+- The course hub makes the cross-workspace relationships visible without duplicating or separately storing course data.
