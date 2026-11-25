@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
   createAcademicBackup,
@@ -21,6 +21,9 @@ import {
   deleteStudyCard,
   isAcademicSnapshot,
   loadAcademicSnapshot,
+  loadAcademicConflicts,
+  clearAcademicConflict,
+  saveAcademicSnapshot,
   parseAcademicBackup,
   updatePracticeAttempt,
   updateAcademicEvent,
@@ -49,7 +52,67 @@ const input: AssignmentInput = {
   personalNotes: "Draft the outline first.",
 };
 
+
+function stubAcademicStorage() {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, String(value)); },
+    removeItem: (key: string) => { values.delete(key); },
+    clear: () => values.clear(),
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    get length() { return values.size; },
+  } as Storage;
+  vi.stubGlobal("window", { localStorage: storage });
+  return storage;
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
 describe("academic repository", () => {
+  it("preserves a competing same-revision snapshot instead of overwriting it", () => {
+    stubAcademicStorage();
+    const base = loadAcademicSnapshot();
+    expect(saveAcademicSnapshot(base, true)).toBe(true);
+    const assignment = base.assignments[0];
+    const persisted = updateAssignmentStatus(base, assignment.id, "submitted");
+    const local = updateAssignment(base, assignment.id, {
+      courseId: assignment.courseId,
+      title: "Concurrent local edit",
+      description: assignment.description,
+      dueAt: assignment.dueAt,
+      pointsPossible: assignment.pointsPossible,
+      priority: assignment.priority,
+      estimatedMinutes: assignment.estimatedMinutes,
+      personalNotes: assignment.personalNotes,
+    });
+    expect(persisted.revision).toBe(local.revision);
+    expect(saveAcademicSnapshot(persisted)).toBe(true);
+    expect(saveAcademicSnapshot(local)).toBe(true);
+
+    const saved = loadAcademicSnapshot().assignments.find(item => item.id === assignment.id)!;
+    expect(saved.status).toBe("submitted");
+    expect(saved.title).toBe(assignment.title);
+    const conflicts = loadAcademicConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].localSnapshot.assignments.find(item => item.id === assignment.id)?.title).toBe("Concurrent local edit");
+    expect(conflicts[0].persistedSnapshot.assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
+    expect(clearAcademicConflict(conflicts[0].id)).toBe(true);
+    expect(loadAcademicConflicts()).toHaveLength(0);
+  });
+
+  it("allows an explicit restore to replace a newer saved revision", () => {
+    stubAcademicStorage();
+    const original = loadAcademicSnapshot();
+    expect(saveAcademicSnapshot(original, true)).toBe(true);
+    const newer = updateAssignmentStatus(original, original.assignments[0].id, "submitted");
+    expect(saveAcademicSnapshot(newer)).toBe(true);
+    expect(saveAcademicSnapshot(original, true)).toBe(true);
+    expect(loadAcademicSnapshot().revision).toBe(original.revision);
+    expect(loadAcademicSnapshot().assignments[0].status).toBe(original.assignments[0].status);
+  });
+
+
   it("loads a valid versioned demo snapshot", () => {
     const snapshot = loadAcademicSnapshot();
     expect(isAcademicSnapshot(snapshot)).toBe(true);
