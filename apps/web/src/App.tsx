@@ -155,7 +155,7 @@ function Calendar({ snapshot, onCreateEvent, onDeleteEvent }: { snapshot:Academi
   const [courseId,setCourseId]=useState("");
   const [assignmentId,setAssignmentId]=useState("");
   const [startsAt,setStartsAt]=useState(localDateTime());
-  const [endsAt,setEndsAt]=useState(localDateTime());
+  const [endsAt,setEndsAt]=useState(localDateTime(new Date(Date.now()+86400000+3600000).toISOString()));
   const [notes,setNotes]=useState("");
   const assignments=snapshot.assignments.map(item=>({id:item.id,title:item.title,courseId:item.courseId,startsAt:item.dueAt,endsAt:item.dueAt,kind:"deadline" as const,notes:item.personalNotes,source:"northstar" as const,status:item.status}));
   const events=(snapshot.events??[]).map(item=>({...item,kind:item.kind as string,status:"event"}));
