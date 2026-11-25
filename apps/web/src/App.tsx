@@ -8,7 +8,7 @@ import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotificati
 import { createSimulationAssistant, summarizeAcademicContext, type AssistanceAction } from "./domain/ai-assistance";
 import { deleteAssignmentArtifactFile, readAssignmentArtifactFile, saveAssignmentArtifactFile } from "./domain/assignment-artifact-storage";
 import { createUnconfiguredCanvasAdapter, type CanvasConnectionStatus } from "./domain/canvas-adapter";
-import { ACADEMIC_STORAGE_KEY, loadAcademicConflicts, clearAcademicConflict, createAcademicBackup, parseAcademicBackup, addAssignmentArtifact, deleteAssignmentArtifact, createCourse, updateCourse, createAcademicEvent, updateAcademicEvent, createGradeItem, createPracticeAttempt, completePracticeAttempt, updatePracticeAttempt, createAssignment, createResource, createStudyCard, deleteAcademicEvent, deleteGradeItem, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, updateGradeItem, rateStudyCard, saveWritingDraft, selectGradeSummary, deleteWritingDraft, type AcademicEventInput, type CourseInput, type AssignmentInput, type GradeItemInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
+import { ACADEMIC_STORAGE_KEY, ACADEMIC_CONFLICTS_KEY, loadAcademicConflicts, clearAcademicConflict, createAcademicBackup, parseAcademicBackup, addAssignmentArtifact, deleteAssignmentArtifact, createCourse, updateCourse, createAcademicEvent, updateAcademicEvent, createGradeItem, createPracticeAttempt, completePracticeAttempt, updatePracticeAttempt, createAssignment, createResource, createStudyCard, deleteAcademicEvent, deleteGradeItem, deleteAssignment, deleteResource, deleteStudyCard, loadAcademicSnapshot, resetAcademicSnapshot, saveAcademicSnapshot, updateAssignment, updateAssignmentStatus, updateResource, updateGradeItem, rateStudyCard, saveWritingDraft, selectGradeSummary, deleteWritingDraft, type AcademicEventInput, type CourseInput, type AssignmentInput, type GradeItemInput, type ResourceInput, type StudyCardInput, type WritingDraftInput } from "./domain/academic-repository";
 
 const links = [
   { label: "Overview", to: "/", icon: LayoutDashboard },
@@ -618,6 +618,7 @@ export default function App() {
   useEffect(() => {
     const onStorage = (event:StorageEvent) => {
       if(event.key===ACADEMIC_STORAGE_KEY) setRemoteUpdateAvailable(true);
+      if(event.key===ACADEMIC_CONFLICTS_KEY) setConflicts(loadAcademicConflicts());
     };
     window.addEventListener("storage",onStorage);
     return ()=>window.removeEventListener("storage",onStorage);
