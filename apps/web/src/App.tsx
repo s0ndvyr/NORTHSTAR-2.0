@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ChangeEvent } from "react";
-import { NavLink, Route, Routes, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, ClipboardCheck, CheckCircle2, ChevronRight, Clock3, Command, Download, FileText, Filter, GraduationCap, LayoutDashboard, Library, Pencil, Plus, Power, RotateCcw, Save, Search, Settings2, Sparkles, Target, Timer, Trash2, Upload, X } from "lucide-react";
 import type { AcademicAssignment, AcademicEventKind, AcademicResource, AcademicResourceKind, AcademicSnapshot, AssignmentPriority, AssignmentStatus, GradeItem, GradeItemStatus, StudyRating } from "./domain/academic";
@@ -50,9 +50,54 @@ function Sidebar({ snapshot }: { snapshot: AcademicSnapshot }) {
     </div>
   </aside>;
 }
-function Topbar({ pathname }: { pathname: string }) {
+function Topbar({ pathname, onOpenPalette, onToggleNotifications, notificationCount }: { pathname: string; onOpenPalette:()=>void; onToggleNotifications:()=>void; notificationCount:number }) {
   const title = pathname === "/" ? "Overview" : pathname.slice(1).replace(/^./, c => c.toUpperCase());
-  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>{title}</b></div><div className="top-actions"><span className="demo-state"><i/> LOCAL DEMO DATA</span><span className="quick"><Command size={14}/> NORTHSTAR 5.0</span></div></header>;
+  return <header className="topbar"><div className="crumb">Workspace <span>/</span> <b>{title}</b></div><div className="top-actions"><span className="demo-state"><i/> LOCAL DEMO DATA</span><button type="button" className="quick command-trigger" onClick={onOpenPalette} aria-label="Open command palette"><Search size={13}/> Search / Go <kbd>⌘ K</kbd></button><button type="button" className="notification-trigger" onClick={onToggleNotifications} aria-label={notificationCount?(`Open notifications, ${notificationCount} items`):"Open notifications"}><Bell size={15}/>{notificationCount>0&&<i>{notificationCount>9?"9+":notificationCount}</i>}</button></div></header>;
+}
+
+type PaletteResult = { id:string; title:string; detail:string; type:string; to:string; icon:typeof Search };
+function CommandPalette({ snapshot, onClose, onNavigate }: { snapshot:AcademicSnapshot; onClose:()=>void; onNavigate:(path:string)=>void }) {
+  const [query,setQuery]=useState("");
+  const results=useMemo<PaletteResult[]>(()=>{
+    const q=query.trim().toLowerCase();
+    const rows:PaletteResult[]=[
+      ...links.map(item=>({id:"nav-"+item.to,title:item.label,detail:"Open workspace",type:"WORKSPACE",to:item.to,icon:item.icon})),
+      ...snapshot.courses.map(item=>({id:item.id,title:item.name,detail:item.code+" · "+item.instructor,type:"COURSE",to:"/courses/"+item.id,icon:GraduationCap})),
+      ...snapshot.assignments.map(item=>({id:item.id,title:item.title,detail:(snapshot.courses.find(course=>course.id===item.courseId)?.code??"COURSE")+" · "+ASSIGNMENT_STATUS_LABELS[item.status],type:"ASSIGNMENT",to:"/assignments",icon:CheckCircle2})),
+      ...(snapshot.events??[]).map(item=>({id:item.id,title:item.title,detail:"Calendar · "+new Date(item.startsAt).toLocaleDateString(),type:"EVENT",to:"/calendar",icon:CalendarDays})),
+      ...(snapshot.resources??[]).map(item=>({id:item.id,title:item.title,detail:"Resource · "+(snapshot.courses.find(course=>course.id===item.courseId)?.code??"General"),type:"RESOURCE",to:"/resources",icon:Library})),
+      ...(snapshot.writingDrafts??[]).map(item=>({id:item.id,title:item.title,detail:"Saved writing · "+dateLabel(item.savedAt),type:"DRAFT",to:"/review",icon:FileText})),
+    ];
+    return rows.filter(row=>!q||(row.title+" "+row.detail+" "+row.type).toLowerCase().includes(q)).slice(0,14);
+  },[query,snapshot]);
+  return <div className="palette-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
+    <section className="command-palette" role="dialog" aria-modal="true" aria-label="NORTHSTAR command palette">
+      <div className="palette-search"><Search size={17}/><input autoFocus value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search courses, assignments, events, resources…" aria-label="Search NORTHSTAR"/><kbd>ESC</kbd></div>
+      <div className="palette-results">{results.length?results.map(result=>{const Icon=result.icon;return <button type="button" key={result.id} onClick={()=>{onNavigate(result.to);onClose();}}><i><Icon size={15}/></i><span><b>{result.title}</b><small>{result.detail}</small></span><em>{result.type}</em></button>}):<div className="palette-empty">No matching items. Try a course code, assignment title or workspace name.</div>}</div>
+      <footer><span><kbd>↵</kbd> Open result</span><span><kbd>ESC</kbd> Close</span></footer>
+    </section>
+  </div>;
+}
+
+type NotificationItem = { id:string; title:string; detail:string; to:string; tone:"urgent"|"today"|"info" };
+function NotificationCenter({ snapshot, onNavigate, onClose }: { snapshot:AcademicSnapshot; onNavigate:(path:string)=>void; onClose:()=>void }) {
+  const now=new Date();
+  const today=now.toDateString();
+  const upcomingHorizon=now.getTime()+7*86400000;
+  const items:NotificationItem[]=[
+    ...snapshot.assignments.filter(item=>item.status==="missing"||(!["graded","submitted"].includes(item.status)&&Date.parse(item.dueAt)<now.getTime())).map(item=>({id:"assignment-"+item.id,title:item.title,detail:(snapshot.courses.find(course=>course.id===item.courseId)?.code??"COURSE")+" · "+(item.status==="missing"?"Marked missing":"Past due"),to:"/assignments",tone:"urgent" as const})),
+    ...snapshot.assignments.filter(item=>!["graded","submitted","missing"].includes(item.status)&&new Date(item.dueAt).toDateString()===today).map(item=>({id:"today-"+item.id,title:item.title,detail:(snapshot.courses.find(course=>course.id===item.courseId)?.code??"COURSE")+" · Due today",to:"/assignments",tone:"today" as const})),
+    ...(snapshot.events??[]).filter(item=>Date.parse(item.startsAt)>=now.getTime()&&Date.parse(item.startsAt)<=upcomingHorizon).map(item=>({id:"event-"+item.id,title:item.title,detail:"Upcoming · "+new Date(item.startsAt).toLocaleString(),to:"/calendar",tone:"info" as const})),
+    ...(snapshot.studyCards??[]).filter(item=>Date.parse(item.nextReviewAt)<=now.getTime()).map(item=>({id:"study-"+item.id,title:"Flashcard due: "+item.prompt,detail:snapshot.courses.find(course=>course.id===item.courseId)?.code??"Study Lab",to:"/study",tone:"info" as const})),
+    ...(snapshot.gradeItems??[]).filter(item=>item.status==="pending").map(item=>({id:"grade-"+item.id,title:"Grade pending: "+item.title,detail:snapshot.courses.find(course=>course.id===item.courseId)?.code??"Gradebook",to:"/gradebook",tone:"info" as const})),
+  ].slice(0,12);
+  return <div className="notification-layer" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
+    <section className="notification-panel" role="dialog" aria-modal="true" aria-label="Academic notifications">
+      <div className="notification-head"><div><span className="eyebrow">ACADEMIC SIGNALS</span><h3>Notifications</h3></div><button type="button" className="icon-action" aria-label="Close notifications" onClick={onClose}><X size={16}/></button></div>
+      {items.length?items.map(item=><button type="button" className="notification-item" key={item.id} onClick={()=>{onNavigate(item.to);onClose();}}><i className={item.tone}/><span><b>{item.title}</b><small>{item.detail}</small></span><ChevronRight size={14}/></button>):<div className="notification-empty"><Bell size={20}/><b>All clear for now</b><span>No overdue work or upcoming reminders in this snapshot.</span></div>}
+      <footer>Local reminders · Based on your current academic snapshot</footer>
+    </section>
+  </div>;
 }
 function Stat({ label, value, note, icon: Icon }: { label: string; value: string; note: string; icon: typeof Timer }) {
   return <article className="stat"><div><span>{label}</span><i><Icon size={16}/></i></div><strong>{value}</strong><small>{note}</small></article>;
@@ -444,7 +489,24 @@ function Placeholder({ path, onReset }: { path: string; onReset: () => void }) {
 }
 function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCreate, onResourceUpdate, onResourceDelete, onStudyCreate, onStudyRate, onStudyDelete, onDraftSave, onDraftDelete, onEventCreate, onEventDelete, onGradeCreate, onGradeUpdate, onGradeDelete, onPracticeStart, onPracticeSave, onPracticeComplete, onImport, onReset, theme, onThemeChange }: { snapshot: AcademicSnapshot; onStatus: (id:string,status:AssignmentStatus)=>void; onCreate:(input:AssignmentInput)=>void; onUpdate:(id:string,input:AssignmentInput)=>void; onDelete:(id:string)=>void; onResourceCreate:(input:ResourceInput)=>void; onResourceUpdate:(id:string,input:ResourceInput)=>void; onResourceDelete:(id:string)=>void; onStudyCreate:(input:StudyCardInput)=>void; onStudyRate:(id:string,rating:StudyRating)=>void; onStudyDelete:(id:string)=>void; onDraftSave:(input:WritingDraftInput)=>void; onDraftDelete:(id:string)=>void; onEventCreate:(input:AcademicEventInput)=>void; onEventDelete:(id:string)=>void; onGradeCreate:(input:GradeItemInput)=>void; onGradeUpdate:(id:string,input:GradeItemInput)=>void; onGradeDelete:(id:string)=>void; onPracticeStart:(courseId:string,durationSeconds:number)=>void; onPracticeSave:(id:string,answers:Record<string,string>,flagged:string[],elapsed:number)=>void; onPracticeComplete:(id:string,answers:Record<string,string>,flagged:string[],elapsed:number)=>void; onImport:(snapshot:AcademicSnapshot)=>void; onReset:()=>void; theme:"midnight"|"light"; onThemeChange:(theme:"midnight"|"light")=>void }) {
   const location = useLocation();
-  return <><Topbar pathname={location.pathname}/><AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot} onCreateEvent={onEventCreate} onDeleteEvent={onEventDelete}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete} onPracticeStart={onPracticeStart} onPracticeSave={onPracticeSave} onPracticeComplete={onPracticeComplete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot} onCreate={onGradeCreate} onUpdate={onGradeUpdate} onDelete={onGradeDelete}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="/settings" element={<Settings snapshot={snapshot} onReset={onReset} onImport={onImport} theme={theme} onThemeChange={onThemeChange}/>}/><Route path="/ai" element={<AIWorkspace snapshot={snapshot}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
+  const navigate = useNavigate();
+  const [paletteOpen,setPaletteOpen] = useState(false);
+  const [notificationsOpen,setNotificationsOpen] = useState(false);
+  const now = new Date();
+  const notificationCount = snapshot.assignments.filter(item=>item.status==="missing"||(!["graded","submitted"].includes(item.status)&&Date.parse(item.dueAt)<now.getTime())||(!["graded","submitted","missing"].includes(item.status)&&new Date(item.dueAt).toDateString()===now.toDateString())).length
+    + (snapshot.events??[]).filter(item=>Date.parse(item.startsAt)>=now.getTime()&&Date.parse(item.startsAt)<=now.getTime()+7*86400000).length
+    + (snapshot.studyCards??[]).filter(item=>Date.parse(item.nextReviewAt)<=now.getTime()).length
+    + (snapshot.gradeItems??[]).filter(item=>item.status==="pending").length;
+  useEffect(()=>{
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();setPaletteOpen(true);setNotificationsOpen(false);}
+      if(event.key==="Escape"){setPaletteOpen(false);setNotificationsOpen(false);}
+    };
+    window.addEventListener("keydown",onKeyDown);
+    return ()=>window.removeEventListener("keydown",onKeyDown);
+  },[]);
+  const go=(path:string)=>navigate(path);
+  return <><Topbar pathname={location.pathname} onOpenPalette={()=>{setPaletteOpen(true);setNotificationsOpen(false);}} onToggleNotifications={()=>{setNotificationsOpen(value=>!value);setPaletteOpen(false);}} notificationCount={notificationCount}/>{paletteOpen&&<CommandPalette snapshot={snapshot} onClose={()=>setPaletteOpen(false)} onNavigate={go}/ >}{notificationsOpen&&<NotificationCenter snapshot={snapshot} onNavigate={go} onClose={()=>setNotificationsOpen(false)}/>}<AnimatePresence mode="wait"><motion.main key={location.pathname} className="scroll" initial={{opacity:0,y:7}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.18}}><Routes><Route path="/" element={<Dashboard snapshot={snapshot}/>}/><Route path="/assignments" element={<Assignments snapshot={snapshot} onStatus={onStatus} onCreate={onCreate} onUpdate={onUpdate} onDelete={onDelete}/>}/><Route path="/courses" element={<Courses snapshot={snapshot}/>}/><Route path="/courses/:courseId" element={<CourseDetail snapshot={snapshot}/>}/><Route path="/calendar" element={<Calendar snapshot={snapshot} onCreateEvent={onEventCreate} onDeleteEvent={onEventDelete}/>}/><Route path="/study" element={<StudyLab snapshot={snapshot} onCreate={onStudyCreate} onRate={onStudyRate} onDelete={onStudyDelete} onPracticeStart={onPracticeStart} onPracticeSave={onPracticeSave} onPracticeComplete={onPracticeComplete}/>}/><Route path="/gradebook" element={<Gradebook snapshot={snapshot} onCreate={onGradeCreate} onUpdate={onGradeUpdate} onDelete={onGradeDelete}/>}/><Route path="/resources" element={<Resources snapshot={snapshot} onCreate={onResourceCreate} onUpdate={onResourceUpdate} onDelete={onResourceDelete}/>}/><Route path="/review" element={<ReviewCenter snapshot={snapshot} onSaveDraft={onDraftSave} onDeleteDraft={onDraftDelete}/>}/><Route path="/settings" element={<Settings snapshot={snapshot} onReset={onReset} onImport={onImport} theme={theme} onThemeChange={onThemeChange}/>}/><Route path="/ai" element={<AIWorkspace snapshot={snapshot}/>}/><Route path="*" element={<Placeholder path={location.pathname} onReset={onReset}/>}/></Routes></motion.main></AnimatePresence></>;
 }
 export default function App() {
   const [snapshot, setSnapshot] = useState<AcademicSnapshot>(() => loadAcademicSnapshot());
