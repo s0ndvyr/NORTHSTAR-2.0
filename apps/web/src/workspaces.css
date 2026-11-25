@@ -465,3 +465,6 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .app[data-theme="light"] .notification-item:hover{background:#f2f6fb}
 .app[data-theme="light"] .notification-item small,.app[data-theme="light"] .notification-panel footer{color:#75869c}
 @media(max-width:740px){.command-trigger{gap:5px;padding:0 7px;font-size:8px}.command-trigger kbd{display:none}.notification-panel{top:56px;right:9px}.palette-backdrop{padding:7vh 10px 15px}.palette-search{padding:13px}.palette-results>button{padding:12px 8px}}
+
+.palette-results>button.selected{background:#1b2b42}
+.app[data-theme="light"] .palette-results>button.selected{background:#e7eef7}
