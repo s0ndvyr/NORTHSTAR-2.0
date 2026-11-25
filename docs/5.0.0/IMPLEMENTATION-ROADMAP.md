@@ -370,3 +370,11 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Assignment deletion and workspace reset clear linked binary files; JSON backup/restore intentionally excludes file bytes and attachment metadata so it cannot create broken references. Users are told to download attachments separately before relying on a JSON backup.
 - Added repository tests for attachment metadata lifecycle, assignment-delete cleanup and backup exclusion. The current attachment integration commit passed strict typecheck, dependency audits, domain tests and production build in workflow run 45682291959.
 - This supports local coursework artifacts only. It is not Canvas upload, cloud file sync, encrypted storage or a verified submission.
+
+
+### PWA offline shell and local connectivity state — 2026-11-25
+
+- Added a versioned service worker that precaches the app shell, uses network-first navigation with cached index fallback, and caches same-origin static assets for repeat/offline loads.
+- Service worker registration is enabled only in production and uses Vite's configured base path. It does not cache cross-origin requests or non-GET operations.
+- Added a live online/offline indicator in the top bar and simplified nested assignment/course breadcrumbs.
+- Academic snapshot writes remain browser-local through localStorage; assignment file bytes remain in IndexedDB. This is an offline shell/local data foundation, not remote sync or a verified iPad Safari offline qualification.
