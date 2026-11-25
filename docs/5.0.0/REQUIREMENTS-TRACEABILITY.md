@@ -1,28 +1,28 @@
 # NORTHSTAR 5.0 — Initial Requirements Traceability
 
-Status values: **Planned**, **Audit required**, **Not implemented**, **Not verified**. No requirement is marked accepted merely because it appears in a plan.
+Status values: **Planned**, **Audit required**, **Not implemented**, **Not verified**, **In progress**. Implementation progress is not release acceptance; every acceptance criterion still needs evidence.
 
 | ID | Requirement | Priority | Dependencies | Implementation / verification evidence | Status |
 |---|---|---|---|---|---|
-| NS-ARCH-001 | React + TypeScript + Vite iPad-first PWA | P0 | Engineering foundation | Reproducible build, typecheck, iPad smoke test | Not implemented |
+| NS-ARCH-001 | React + TypeScript + Vite iPad-first PWA | P0 | Engineering foundation | `apps/web/` client, PWA manifest/service worker, committed npm lockfile and successful clean-install/typecheck/build CI evidence; physical iPad smoke test remains outstanding | Not verified |
 | NS-ARCH-002 | Clear workspace/domain boundaries | P0 | NS-ARCH-001 | Architecture map and dependency-boundary tests | Planned |
-| NS-DATA-001 | Canonical shared academic data model | P0 | Domain boundaries | Schema, relationship, integrity tests | Planned |
+| NS-DATA-001 | Canonical shared academic data model | P0 | Domain boundaries | Shared browser snapshot covers term/course/assignment/resource/study-card/draft/event/grade-item records with relationship validation and backup round-trip tests | In progress |
 | NS-DATA-002 | Field ownership, provenance, and source authority | P0 | NS-DATA-001 | Conflict/source-authority tests | Planned |
-| NS-DATA-003 | Versioned migration, backup, restore, and recovery | P0 | NS-DATA-001 | Migration and restore test evidence | Planned |
-| NS-STATE-001 | Centralized state, persistence, autosave, and drafts | P0 | NS-DATA-001 | Persistence, recovery, and cross-workspace tests | Planned |
-| NS-UX-001 | Unified authoritative design system | P0 | NS-ARCH-001 | Component inventory and visual/accessibility tests | Planned |
+| NS-DATA-003 | Versioned migration, backup, restore, and recovery | P0 | NS-DATA-001 | Validated local JSON export/import and full-snapshot round-trip tests; interrupted writes, storage quota and long-term migration/recovery tests remain open | In progress |
+| NS-STATE-001 | Centralized state, persistence, autosave, and drafts | P0 | NS-DATA-001 | Shared revisioned local snapshot with assignment/resource/study/event/grade/draft commands, storage fallback, backup/restore and persistent theme preference | In progress |
+| NS-UX-001 | Unified authoritative design system | P0 | NS-ARCH-001 | Midnight default and persistent Light theme, shared workspace surfaces, common controls and reduced-motion treatment; full component inventory and visual/accessibility audit remain open | In progress |
 | NS-UX-002 | iPad-first touch, orientation, and adaptive layouts | P0 | NS-UX-001 | Physical iPad acceptance evidence | Not verified |
-| NS-UX-003 | Reduced motion and accessible interaction | P1 | NS-UX-001 | Automated and manual accessibility review | Planned |
-| NS-ACAD-001 | Dashboard command center and intelligent priorities | P1 | NS-DATA-001 | Priority-rule and end-to-end tests | Not implemented |
-| NS-ACAD-002 | Assignment lifecycle and cross-workspace synchronization | P0 | NS-DATA-001, NS-STATE-001 | Assignment lifecycle and regression tests | Audit required |
-| NS-ACAD-003 | Courses, Calendar, Gradebook, Resources, Study Lab, Review Center | P0 | NS-DATA-001 | Workspace acceptance tests | Audit required |
+| NS-UX-003 | Reduced motion and accessible interaction | P1 | NS-UX-001 | Reduced-motion CSS, semantic form controls and status feedback are present; automated accessibility and manual keyboard/touch review remain open | In progress |
+| NS-ACAD-001 | Dashboard command center and intelligent priorities | P1 | NS-DATA-001 | Overview derives term progress, priority ranking, per-course completion, recorded-points summary, next event and latest saved writing from the shared snapshot | In progress |
+| NS-ACAD-002 | Assignment lifecycle and cross-workspace synchronization | P0 | NS-DATA-001, NS-STATE-001 | Assignment create/edit/delete/status/search/filter, local turn-in simulation, linked saved drafts and shared dashboard/calendar/course projections | In progress |
+| NS-ACAD-003 | Courses, Calendar, Gradebook, Resources, Study Lab, Review Center | P0 | NS-DATA-001 | Course hubs, personal calendar events, explicit grade records, resource CRUD, spaced-repetition cards and persistent writing review drafts | In progress |
 | NS-CAN-001 | Canvas adapter and authoritative source mapping | P0 | NS-DATA-002 | Contract tests and authorized live verification | Not verified |
 | NS-CAN-002 | Sync retry, idempotency, conflict preservation, and status | P0 | NS-CAN-001, NS-STATE-001 | Failure/replay/conflict tests | Audit required |
 | NS-AI-001 | Provider-neutral AI service boundary | P1 | NS-ARCH-002 | Adapter contract tests | Planned |
 | NS-AI-002 | Relevant, course-bounded context with source transparency | P1 | NS-DATA-002, NS-AI-001 | Grounding, relevance, and boundary tests | Planned |
 | NS-AI-003 | Approval before consequential AI actions | P0 | NS-AI-001, NS-STATE-001 | Permission and approval-flow tests | Planned |
 | NS-SEC-001 | Secret isolation, least privilege, and secure integration boundaries | P0 | NS-ARCH-002 | Secret scan, threat review, security tests | Audit required |
-| NS-QUAL-001 | Automated build, type, lint, unit, integration, and regression gates | P0 | NS-ARCH-001 | CI run evidence | Audit required |
+| NS-QUAL-001 | Automated build, type, lint, unit, integration, and regression gates | P0 | NS-ARCH-001 | Successful clean `npm ci`, strict typecheck, dependency advisories, domain tests and production build; lint, component/integration/E2E and device checks remain open | In progress |
 | NS-QUAL-002 | Performance, accessibility, and physical iPad qualification | P0 | NS-UX-001 | Recorded test evidence | Not verified |
 | NS-REL-001 | Controlled preview/production release, rollback, and monitoring | P0 | NS-QUAL-001 | Deployment and rollback evidence | Audit required |
 | NS-CAI-001 | One canonical academic data layer with domain ownership and workspace projections | P0 | NS-ARCH-002, NS-DATA-001 | Entity/schema review, duplicate-identity and cross-workspace consistency tests | Planned |
@@ -188,3 +188,13 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 
 - NS-QUAL-001: `apps/web/package-lock.json` is now committed (npm lockfile v3), and CI performs clean `npm ci` with read-only repository permissions.
 - A clean lockfile install completed successfully in the workflow before the lockfile commit; subsequent CI runs use the committed lock as the reproducible dependency source.
+
+
+### Theme and dashboard integration extension — 2026-11-25
+
+- NS-UX-001: Settings now provides persistent Midnight and Light theme selection. Midnight is the default; the preference is stored under `northstar-theme` in the current browser and applied to the application shell and shared workspace surfaces.
+- NS-ACAD-001: sidebar term progress uses term dates; Dashboard derives course completion, recorded-points summary, next upcoming calendar event and latest saved writing draft from the shared academic snapshot. Priority ranking now separates missing/overdue, due-today, urgent/high and ordinary open work.
+- NS-QUAL-001: `apps/web/package-lock.json` is committed. A successful clean-lockfile `npm ci`, typecheck, dependency-audit, domain-test and production-build run is recorded. A later workflow change removed automatic repository mutation and uses read-only contents permissions.
+- Remaining: latest dashboard/theme qualification, lint, component/integration/E2E and accessibility audits, plus visual and touch acceptance on the target iPad.
+
+The user has explicitly authorized bounded local/demo implementation on the development branch. Earlier planning-only approvals are superseded for this work. Live Canvas/provider access, real credentials, destructive legacy retirement, production deployment and release promotion remain separately gated.
