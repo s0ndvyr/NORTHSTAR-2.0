@@ -139,7 +139,7 @@ export const demoPracticeQuestions: PracticeQuestion[] = [
     correctOptionId: "b",
     explanation: "A function assigns exactly one output to each input. Different inputs may share the same output.",
     source: "demo",
-  },,
+  },
   {
     id: "practice-eng-source-check", courseId: "eng-204", concept: "Source evaluation",
     prompt: "Which source is usually the strongest starting point for a research claim about a recent public-health recommendation?",
