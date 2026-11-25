@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createAcademicBackup,
   createAssignment,
+  createAcademicEvent,
+  createGradeItem,
+  deleteAcademicEvent,
+  deleteGradeItem,
+  selectGradeSummary,
   createResource,
   createStudyCard,
   deleteAssignment,
@@ -19,6 +24,8 @@ import {
   type AssignmentInput,
   type ResourceInput,
   type StudyCardInput,
+  type AcademicEventInput,
+  type GradeItemInput,
   type WritingDraftInput,
 } from "./academic-repository";
 
@@ -226,4 +233,103 @@ describe("academic backup and restore", () => {
     const snapshot = loadAcademicSnapshot();
     expect(parseAcademicBackup(JSON.stringify({ format: "northstar-academic-backup", version: 1, snapshot: { ...snapshot, assignments: [{ id: "broken" }] } }))).toBeNull();
   });
+});
+
+
+describe("Calendar event records", () => {
+  const event: AcademicEventInput = {
+    title: "Focused biology study block",
+    kind: "study",
+    startsAt: "2026-12-02T15:00:00.000Z",
+    endsAt: "2026-12-02T16:00:00.000Z",
+    courseId: "bio-112",
+    notes: "Review cell transport.",
+  };
+
+  it("creates a validated standalone event and increments the revision", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createAcademicEvent(snapshot, event);
+    expect(next.revision).toBe(snapshot.revision + 1);
+    expect(next.events?.at(-1)).toMatchObject({ ...event, source: "northstar" });
+    expect(isAcademicSnapshot(next)).toBe(true);
+  });
+
+  it("rejects invalid event time ranges and unknown courses", () => {
+    const snapshot = loadAcademicSnapshot();
+    expect(createAcademicEvent(snapshot, { ...event, endsAt: event.startsAt })).toBe(snapshot);
+    expect(createAcademicEvent(snapshot, { ...event, courseId: "unknown" })).toBe(snapshot);
+  });
+
+  it("deletes a personal event but keeps seeded demo events protected", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createAcademicEvent(snapshot, event);
+    const personalId = next.events?.find(item => item.source === "northstar")?.id;
+    const removed = deleteAcademicEvent(next, personalId ?? "");
+    expect(removed.events?.some(item => item.id === personalId)).toBe(false);
+    const demoId = snapshot.events?.[0]?.id;
+    expect(deleteAcademicEvent(snapshot, demoId ?? "")).toBe(snapshot);
+  });
+});
+
+describe("Gradebook score records", () => {
+  const grade: GradeItemInput = {
+    courseId: "eng-204",
+    title: "Research response rubric",
+    score: 42,
+    pointsPossible: 50,
+    status: "graded",
+    feedback: "Clear line of reasoning.",
+  };
+
+  it("creates a personal score record without changing official assignment status", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createGradeItem(snapshot, grade);
+    expect(next.revision).toBe(snapshot.revision + 1);
+    expect(next.gradeItems?.at(-1)).toMatchObject({ ...grade, source: "northstar" });
+    expect(next.assignments.find(item => item.id === "a-eng-01")?.status).toBe("in_progress");
+    expect(isAcademicSnapshot(next)).toBe(true);
+  });
+
+  it("rejects scores with invalid status/value combinations", () => {
+    const snapshot = loadAcademicSnapshot();
+    expect(createGradeItem(snapshot, { ...grade, status: "pending", score: 10 })).toBe(snapshot);
+    expect(createGradeItem(snapshot, { ...grade, pointsPossible: 0 })).toBe(snapshot);
+  });
+
+  it("summarizes graded points only and excludes pending or missing items", () => {
+    const snapshot = loadAcademicSnapshot();
+    const summary = selectGradeSummary(snapshot, "eng-204");
+    expect(summary.items).toBe(2);
+    expect(summary.earned).toBe(32);
+    expect(summary.possible).toBe(35);
+    expect(summary.percentage).toBe(91.4);
+    expect(selectGradeSummary(snapshot, "missing-course").percentage).toBeNull();
+  });
+
+  it("deletes a personal grade record without allowing demo records to be removed", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createGradeItem(snapshot, grade);
+    const personalId = next.gradeItems?.find(item => item.source === "northstar")?.id;
+    const removed = deleteGradeItem(next, personalId ?? "");
+    expect(removed.gradeItems?.some(item => item.id === personalId)).toBe(false);
+    const demoId = snapshot.gradeItems?.[0]?.id;
+    expect(deleteGradeItem(snapshot, demoId ?? "")).toBe(snapshot);
+  });
+});
+
+it("detaches calendar and grade links when a linked assignment is removed", () => {
+  const snapshot = loadAcademicSnapshot();
+  const assignmentId = snapshot.assignments[0].id;
+  const next = createAcademicEvent(snapshot, {
+    title: "Assignment review",
+    kind: "reminder",
+    startsAt: "2026-12-01T15:00:00.000Z",
+    endsAt: "2026-12-01T15:30:00.000Z",
+    courseId: snapshot.assignments[0].courseId,
+    assignmentId,
+    notes: "Review feedback.",
+  });
+  const deleted = deleteAssignment(next, assignmentId);
+  expect(deleted.events?.find(item => item.title === "Assignment review")?.assignmentId).toBeUndefined();
+  expect(isAcademicSnapshot(deleted)).toBe(true);
 });
