@@ -41,6 +41,7 @@ test("creates an assignment and updates its local workflow status", async ({ pag
   const assignmentLink = page.getByRole("link", { name: title });
   await expect(assignmentLink).toBeVisible();
   const assignmentRow = page.locator(".assignment-row").filter({ has: assignmentLink });
+  await expect(assignmentRow.locator(".origin-label")).toHaveText("PERSONAL");
   await page.getByLabel("Update status for " + title).selectOption("in_progress");
   await expect(assignmentRow.locator(".status-pill.status-in_progress")).toBeVisible();
   await page.reload();
@@ -56,6 +57,7 @@ test("creates and edits the connected calendar agenda", async ({ page }) => {
   await page.getByLabel("Notes").fill("Verify calendar persistence and edit workflow.");
   await page.getByRole("button", { name: "Save event" }).click();
   await expect(page.getByText(title)).toBeVisible();
+  await expect(page.locator(".calendar-item").filter({ hasText: title }).locator(".origin-label")).toHaveText("PERSONAL");
 
   await page.getByRole("button", { name: "Edit " + title }).click();
   await page.getByLabel("Event title").fill("Updated browser qualification study block");
@@ -72,6 +74,7 @@ test("creates a course and exposes its course hub", async ({ page }) => {
   await page.locator("form.editor-panel").getByRole("button", { name: "Add course" }).click();
 
   await expect(page.getByText("QA 205").first()).toBeVisible();
+  await expect(page.locator(".course-card").filter({ hasText: "QA 205" }).locator(".origin-label")).toHaveText("PERSONAL");
   await page.getByRole("link", { name: /Open course hub/ }).last().click();
   await expect(page.getByRole("heading", { name: /Browser Qualification/ })).toBeVisible();
 });
@@ -95,6 +98,7 @@ test("records an explicit grade without inferring it from assignment status", as
   await page.getByLabel("Score earned").fill("17");
   await page.getByRole("button", { name: "Save grade" }).click();
   await expect(page.getByText("Browser qualification quiz")).toBeVisible();
+  await expect(page.locator(".grade-record").filter({ hasText: "Browser qualification quiz" }).locator(".origin-label")).toHaveText("PERSONAL");
   await expect(page.getByText("17 / 20").first()).toBeVisible();
 });
 
