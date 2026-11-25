@@ -113,7 +113,7 @@ These requirements derive from EFP-DEC-21 through EFP-DEC-25 and the user's addi
 | NS-REL-001 | CI, preview and production promotion are isolated and governed with automated gates, explicit approval, release evidence, version traceability and rollback | P0 | NS-GOV-005, NS-QUAL-001, NS-SEC-002 | CI/preview/release design and release/rollback acceptance checklist | Planned |
 | NS-GOV-006 | NORTHSTAR planning modules group varied related topics, provide recommendations/trade-offs and free-text input, carry decisions forward and avoid repetitive five-question cycles | P0 | NS-GOV-003 | Planning artifacts demonstrate coherent grouped coverage, traceability and non-repetitive decision handling | Approved planning rule |
 
-Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md. Approval authorizes planning and documentation only. It does not authorize repository restructuring, source changes, dependency installation, CI configuration, branch protection changes, builds/tests, device qualification or deployment.
+Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN.md. The planning approvals themselves did not authorize implementation. A subsequent explicit user instruction authorizes continued local/demo application implementation and development-branch CI/build/test work. It does not authorize live provider access, credentials, destructive migration, legacy retirement, production deployment or release promotion.
 
 
 ## Implementation evidence checkpoint — 2026-11-25
@@ -123,11 +123,11 @@ The following is a progress annotation, not an acceptance update. Existing requi
 | Requirement | Current implementation evidence | Remaining acceptance evidence |
 |---|---|---|
 | NS-ARCH-001 | React/TypeScript/Vite client exists under `apps/web/`; strict TypeScript configuration and workspace routing are present. | Lockfile, successful clean build, PWA qualification, iPad acceptance. |
-| NS-DATA-001 | Version-1 academic snapshot models term, courses and assignments; runtime validator checks relationships, field types, enum values and duplicate IDs. | Full canonical entity catalogue, migration coverage, domain integrity tests. |
-| NS-STATE-001 | Local snapshot persistence and revisioned assignment commands exist; storage failure falls back to session memory and is surfaced in the UI. | Durable draft/recovery behavior, persistence tests, backup/restore, offline queue. |
+| NS-DATA-001 | Version-1 academic snapshot now includes terms, courses, assignments, resources and course-linked spaced-repetition cards; runtime validation checks record shape, relationships, enums and duplicate identities. Revisioned writing drafts have been added to the same persisted snapshot. | Full canonical entity catalogue, migration/restore coverage, field-level provenance and domain integrity tests. |
+| NS-STATE-001 | Local snapshot persistence and revisioned assignment, resource, study-card and writing-draft commands exist; storage failure falls back to session memory and is surfaced in the UI. | Durable multi-device recovery, backup/restore, conflict resolution and offline write queue. |
 | NS-ACAD-001 | Dashboard calculates completion, overdue/upcoming counts, course pulse and a priority queue from the shared snapshot. | Priority-rule tests, richer semester calculations and end-to-end verification. |
-| NS-ACAD-002 | Assignment create/edit/delete/status, search, course/status filters, notes, priority, due date and estimates are implemented. Calendar and dashboard read the same assignment collection. | Draft/artifact lifecycle, submission-state semantics, conflict/recovery tests and cross-workspace E2E. |
-| NS-ACAD-003 | Courses, Calendar, Study Lab review-card prototype and Gradebook progress projection are implemented; Resources remains a placeholder. | Full workspace workflows, resource management, learning engine and grade semantics. |
+| NS-ACAD-002 | Assignment create/edit/delete/status, search, course/status filters, notes, priority, due date and estimates are implemented. Review Center can save/resume assignment-linked writing drafts. Calendar and dashboard read the same assignment collection. | File/artifact lifecycle, honest submission-state semantics, conflict/recovery tests and cross-workspace E2E. |
+| NS-ACAD-003 | Courses include detail hubs; Calendar projects assignment deadlines; Study Lab has authored flashcards and spaced-repetition commands; Gradebook currently shows assignment-based progress only; Resources has local create/edit/delete; Review Center has local writing checks and persistent drafts. | Calendar event authoring, genuine score/feedback records, richer learning/review paths, course tools and end-to-end workspace synchronization. |
 | NS-QUAL-001 | A development-branch GitHub Actions workflow is configured to install, typecheck and build. | Successful recorded workflow run, deterministic lockfile, automated tests/lint/security checks. |
 
 These entries are implementation progress only. No live Canvas/AI integration, physical iPad qualification, or release acceptance is implied.
@@ -142,3 +142,13 @@ These entries are implementation progress only. No live Canvas/AI integration, p
 - NS-QUAL-001: added initial resource lifecycle and HTTPS URL validation tests; added production-dependency audit to the development qualification workflow.
 
 Acceptance remains pending for the latest code commit until the corresponding workflow completes. PWA/offline and physical iPad behavior remain unverified on target devices.
+
+
+### Writing Review persistence extension — 2026-11-25
+
+- NS-STATE-001: added revisioned local writing drafts in the shared academic snapshot, with save/update/delete and optional assignment association.
+- NS-ACAD-002 / NS-ACAD-003: Review Center now saves named drafts, resumes them, lists saved work, allows association to an assignment, and preserves the writing as an independent draft if that assignment is removed.
+- NS-SEC-001: the interface and application README explicitly disclose that browser-local drafts are not encrypted, synchronized or sent to a provider; users are warned not to store credentials or highly sensitive content.
+- NS-QUAL-001: repository tests cover draft creation, revision, preservation after assignment deletion, and deletion. The corresponding GitHub Actions qualification run is pending.
+
+This remains a local/demo capability; no cloud document service, AI review, plagiarism service or official assignment submission is connected.
