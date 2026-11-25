@@ -573,3 +573,5 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .conflict-warning span{font-size:10px;line-height:1.55}
 .conflict-warning button{flex:none;white-space:nowrap}
 @media(max-width:740px){.conflict-warning{left:12px;right:12px;bottom:12px;width:auto;max-width:none;align-items:flex-start;flex-direction:column}.conflict-warning button{width:100%}}
+
+.conflict-reload-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:#080f1beF;color:#e3ecf8;text-align:center;font:600 13px var(--display);letter-spacing:.02em}
