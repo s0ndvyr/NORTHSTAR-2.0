@@ -123,6 +123,38 @@ function isValidStudyCard(value: unknown, courseIds: Set<string>): value is Stud
     && (value.source === "demo" || value.source === "northstar");
 }
 
+function isValidPracticeQuestion(value: unknown, courseIds: Set<string>): value is PracticeQuestion {
+  if (!isRecord(value) || !Array.isArray(value.options)) return false;
+  const optionIds = new Set<string>();
+  for (const option of value.options) {
+    if (!isRecord(option) || typeof option.id !== "string" || !option.id || typeof option.text !== "string" || !option.text.trim() || optionIds.has(option.id)) return false;
+    optionIds.add(option.id);
+  }
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.courseId === "string" && courseIds.has(value.courseId)
+    && typeof value.prompt === "string" && value.prompt.trim().length > 0
+    && value.options.length >= 2 && typeof value.correctOptionId === "string" && optionIds.has(value.correctOptionId)
+    && typeof value.explanation === "string" && value.explanation.trim().length > 0
+    && typeof value.concept === "string" && value.concept.trim().length > 0
+    && value.source === "demo";
+}
+
+function isValidPracticeAttempt(value: unknown, questions: unknown[]): value is PracticeAttempt {
+  if (!isRecord(value) || !Array.isArray(value.questionIds) || !Array.isArray(value.flaggedIds) || !isRecord(value.answers)) return false;
+  const questionMap = new Map<string, PracticeQuestion>();
+  for (const question of questions) if (isRecord(question) && typeof question.id === "string") questionMap.set(question.id, question as unknown as PracticeQuestion);
+  const questionIds = new Set<string>();
+  for (const id of value.questionIds) { if (typeof id !== "string" || !questionMap.has(id) || questionIds.has(id)) return false; questionIds.add(id); }
+  for (const id of value.flaggedIds) if (typeof id !== "string" || !questionIds.has(id)) return false;
+  for (const [questionId, optionId] of Object.entries(value.answers)) { const question = questionMap.get(questionId); if (!question || !question.options.some(option => option.id === optionId)) return false; }
+  return typeof value.id === "string" && value.id.length > 0
+    && typeof value.courseId === "string" && value.questionIds.every((id: string) => questionMap.get(id)?.courseId === value.courseId)
+    && typeof value.startedAt === "string" && Number.isFinite(Date.parse(value.startedAt))
+    && (value.completedAt === undefined || (typeof value.completedAt === "string" && Number.isFinite(Date.parse(value.completedAt))))
+    && typeof value.elapsedSeconds === "number" && Number.isFinite(value.elapsedSeconds) && value.elapsedSeconds >= 0
+    && (value.score === undefined || (typeof value.score === "number" && Number.isFinite(value.score) && value.score >= 0 && value.score <= 100))
+    && (value.status === "in_progress" || value.status === "completed");
+}
 export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isInteger(value.revision) || (value.revision as number) < 0) return false;
   if (!isRecord(value.term) || typeof value.term.id !== "string" || typeof value.term.name !== "string"
@@ -161,6 +193,10 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
     if (!isValidStudyCard(card, courseIds) || studyCardIds.has(card.id)) return false;
     studyCardIds.add(card.id);
   }
+  const practiceQuestionIds = new Set<string>();
+  for (const question of (value.practiceQuestions ?? [])) { if (!isValidPracticeQuestion(question, courseIds) || practiceQuestionIds.has(question.id)) return false; practiceQuestionIds.add(question.id); }
+  const practiceAttemptIds = new Set<string>();
+  for (const attempt of (value.practiceAttempts ?? [])) { if (!isValidPracticeAttempt(attempt, value.practiceQuestions ?? []) || practiceAttemptIds.has(attempt.id)) return false; practiceAttemptIds.add(attempt.id); }
   const eventIds = new Set<string>();
   for (const event of (value.events ?? [])) {
     if (!isValidEvent(event, courseIds, assignmentIds) || eventIds.has(event.id)) return false;
