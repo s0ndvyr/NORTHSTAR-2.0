@@ -48,6 +48,22 @@ export interface AcademicResource {
   source: "demo" | "northstar";
 }
 
+export interface StudyCard {
+  id: string;
+  courseId: string;
+  prompt: string;
+  answer: string;
+  nextReviewAt: string;
+  intervalDays: number;
+  easeFactor: number;
+  repetitions: number;
+  createdAt: string;
+  updatedAt: string;
+  source: "demo" | "northstar";
+}
+
+export type StudyRating = "again" | "hard" | "good" | "easy";
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
@@ -56,6 +72,8 @@ export interface AcademicSnapshot {
   assignments: AcademicAssignment[];
   /** Optional during the version-1 transition so existing browser snapshots remain readable. */
   resources?: AcademicResource[];
+  /** Optional during the version-1 transition for existing browser snapshots. */
+  studyCards?: StudyCard[];
 }
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
