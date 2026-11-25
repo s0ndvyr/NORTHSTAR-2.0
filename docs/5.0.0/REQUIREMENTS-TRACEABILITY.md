@@ -239,3 +239,10 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - NS-DATA-001 / NS-STATE-001: course metadata edits preserve course identity, so linked assignments, resources, study cards, events and grade records continue to resolve to the same course.
 - NS-QUAL-001: course create/update tests, strict TypeScript, dependency audits, domain tests and production build passed in workflow run 45679429881.
 - Remaining: course archive/retirement policy, institution course import, and device/browser acceptance remain open.
+
+
+### Unified course progress evidence — 2026-11-25
+
+- NS-ACAD-001 / NS-ACAD-003: Dashboard course pulse, Courses cards and Course Detail now use one shared selector. Completion is derived from submitted/graded assignments; the course baseline is used only when no assignments are tracked.
+- NS-STATE-001: one deterministic projection prevents different workspaces from showing conflicting course completion values.
+- NS-QUAL-001: selector implementation and its dedicated completion/fallback tests passed strict typecheck, dependency audits, domain tests and production build in workflow runs 45679641805 and 45679696914.
