@@ -41,7 +41,7 @@ export function searchWorkspaceResults(snapshot: AcademicSnapshot, query: string
     ...snapshot.assignments.map(item => ({
       id: "assignment-" + item.id, title: item.title,
       detail: (snapshot.courses.find(course => course.id === item.courseId)?.code ?? "COURSE") + " · " + item.status.replaceAll("_", " "),
-      type: "ASSIGNMENT" as const, to: "/assignments",
+      type: "ASSIGNMENT" as const, to: "/assignments/" + item.id,
     })),
     ...(snapshot.events ?? []).map(item => ({
       id: "event-" + item.id, title: item.title,
