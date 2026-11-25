@@ -472,7 +472,6 @@ function Routed({ snapshot, onStatus, onCreate, onUpdate, onDelete, onResourceCr
   const navigate = useNavigate();
   const [paletteOpen,setPaletteOpen] = useState(false);
   const [notificationsOpen,setNotificationsOpen] = useState(false);
-  const now = new Date();
   const notificationCount = selectAcademicNotifications(snapshot).length;
   useEffect(()=>{
     const onKeyDown=(event:KeyboardEvent)=>{
