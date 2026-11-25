@@ -6,8 +6,7 @@
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
 **Latest implementation checkpoint:** `6fffcb2cc1b3df3c9bfb905c0d022b28e6be3ce4`  
-**Latest successful full qualification run:** [GitHub Actions #45691660498](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45691660498)  
-**Current expanded qualification run:** [GitHub Actions #45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998) — adds iPad-portrait and offline-shell checks
+**Latest successful full qualification run:** [GitHub Actions #45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998) — all 12 browser journeys passed
 
 This page is the durable progress board for the NORTHSTAR 5.0.0 implementation phase. It is updated as implementation and qualification checkpoints are completed. It does not imply that work continues in the background between ChatGPT messages.
 
