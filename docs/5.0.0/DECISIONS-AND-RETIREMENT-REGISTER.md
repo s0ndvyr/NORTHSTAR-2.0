@@ -113,3 +113,20 @@ The user approved **A / A / A / A / A**:
 An initial static source evidence review is recorded in [LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md). It inspects selected repository source and documentation files and records preservation candidates, data classes, and follow-up inventory work. It is explicitly not a complete source-tree audit.
 
 **Disposition:** Planning decisions approved; initial source review captured; comprehensive source inventory, endpoint-by-endpoint official Canvas research, quantitative offline policy and cross-workspace integration-readiness plan remain in progress.
+
+
+## Comprehensive source inventory checkpoint decisions — 2026-11-25
+
+The user submitted **A / A / A / A / A** through the five-question source inventory checkpoint. Record the following approved planning decisions:
+
+| Decision ID | Approved selection | Planning consequence |
+|---|---|---|
+| EFP-DEC-11 | A — Inventory every legacy source file, purpose, dependencies, imports, consumers, and preservation/retirement status. | Maintain a path-level inventory with evidence and explicit unknowns; do not infer unused status from missing references. |
+| EFP-DEC-12 | A — Map every browser-persistence key, database, object store, schema version, writer, reader, and lifecycle. | Produce a complete storage/key/call-site matrix including migrations, fallbacks, cleanup, backup and recovery. |
+| EFP-DEC-13 | A — Catalogue every Canvas Worker route, method, permission, validation rule, upstream endpoint, error and security boundary. | Build a route-level contract and reconcile each route with source, tests and official Canvas endpoint evidence. |
+| EFP-DEC-14 | A — Define a complete integration contract for every workspace. | Each workspace contract covers canonical entities, commands, events, permissions, offline behavior, conflicts, freshness and acceptance criteria. |
+| EFP-DEC-15 | A — Reconcile inventory findings against requirements, migration plans, risks and preservation gates before sign-off. | No planning sign-off or migration recommendation until traceability and preservation evidence are reconciled. |
+
+The user authorized continued comprehensive source analysis and documentation, GitHub documentation updates and phase-tracker maintenance only. Application code, migrations, dependency changes, provider access, legacy deletion, deployment and runtime qualification remain unauthorized.
+
+The expanded [Source-Tree and Persistence Inventory Checkpoint](SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md) records the observed repository tree, script/style/test paths, two IndexedDB databases and three object stores, known local/session storage families, initial preservation findings and remaining evidence passes. It is explicitly a checkpoint, not a complete inventory or verification report.
