@@ -26,6 +26,7 @@ The audited source includes later external return-context hardening changes that
 - [Phase sign-off checklist](PHASE-SIGNOFF-CHECKLIST.md)
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
 - [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
+- [Cross-Application data contracts and state machines](CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md)
 
 ## Phase tracker
 
