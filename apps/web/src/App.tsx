@@ -202,7 +202,7 @@ function Assignments({ snapshot, onStatus, onCreate, onUpdate, onDelete }: { sna
   const filtered = useMemo(() => snapshot.assignments.filter(a => {
     const matchesQuery = `${a.title} ${a.description} ${a.personalNotes}`.toLowerCase().includes(query.toLowerCase());
     return matchesQuery && (status === "all" || a.status === status) && (course === "all" || a.courseId === course);
-  }).sort((a,b) => sort==="priority" ? ({urgent:0,high:1,normal:2,low:3}[a.priority]-{urgent:0,high:1,normal:2,low:3}[b.priority] || Date.parse(a.dueAt)-Date.parse(b.dueAt)) : sort==="updated" ? Date.parse(b.updatedAt)-Date.parse(a.updatedAt) : Date.parse(a.dueAt)-Date.parse(b.dueAt), [snapshot.assignments, query, status, course, sort]);
+  }).sort((a,b) => sort==="priority" ? ({urgent:0,high:1,normal:2,low:3}[a.priority]-{urgent:0,high:1,normal:2,low:3}[b.priority] || Date.parse(a.dueAt)-Date.parse(b.dueAt)) : sort==="updated" ? Date.parse(b.updatedAt)-Date.parse(a.updatedAt) : Date.parse(a.dueAt)-Date.parse(b.dueAt)), [snapshot.assignments, query, status, course, sort]);
   const editing = typeof editor === "string" ? snapshot.assignments.find(a=>a.id===editor) : undefined;
   const submitLocally = (assignment:AcademicAssignment) => { if(window.confirm("Mark this assignment as submitted in the NORTHSTAR local demo only? Nothing will be sent to Canvas or your institution.")){onStatus(assignment.id,"submitted");setSubmitNotice(`${assignment.title} marked submitted locally. No external submission was made.`);} };
   const handleSave = (input: AssignmentInput) => {
