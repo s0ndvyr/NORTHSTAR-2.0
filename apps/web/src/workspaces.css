@@ -56,3 +56,16 @@
 .grade-card p{font-size:9px;color:#8291a7}
 .storage-warning{position:fixed;right:18px;bottom:18px;z-index:10;max-width:320px;padding:12px 15px;border:1px solid #d7ac6a55;border-radius:8px;background:#2c2419;color:#e6c994;font-size:10px;box-shadow:0 8px 30px #0008}
 @media(max-width:740px){.page-intro-row{align-items:flex-start;flex-direction:column}.editor-grid{grid-template-columns:1fr}.editor-grid label.wide{grid-column:auto}.calendar-layout,.study-layout,.gradebook-grid{grid-template-columns:1fr}.flashcard{min-height:220px;padding:20px}.calendar-list{padding:4px 12px}.calendar-time{font-size:8px}}
+
+
+/* Course-linked resource library */
+.resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px}
+.resource-card{position:relative;padding:16px;min-width:0}
+.resource-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.resource-origin{font:8px var(--mono);letter-spacing:.1em;color:#8395af}
+.resource-card h3{font:600 15px var(--display);margin:14px 0 6px}
+.resource-card>p{font-size:10px;line-height:1.6;color:#8998ad}
+.resource-content{padding:11px 12px;margin:12px 0;border-left:2px solid #8eafd966;border-radius:0 6px 6px 0;background:#8eafd90b;color:#b2c0d3;font-size:10px;line-height:1.7;white-space:pre-wrap}
+.resource-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.editor-hint{font-size:9px;color:#8392a8;margin:10px 0 0}
+@media(max-width:740px){.resource-grid{grid-template-columns:1fr;padding:10px}.resource-card{padding:14px}}
