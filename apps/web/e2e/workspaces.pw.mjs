@@ -42,6 +42,9 @@ test("creates an assignment and updates its local workflow status", async ({ pag
   await expect(assignmentLink).toBeVisible();
   await page.getByLabel("Update status for " + title).selectOption("in_progress");
   await expect(page.locator(".status-pill.status-in_progress")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await expect(page.locator(".status-pill.status-in_progress")).toBeVisible();
 });
 
 test("creates and edits the connected calendar agenda", async ({ page }) => {
