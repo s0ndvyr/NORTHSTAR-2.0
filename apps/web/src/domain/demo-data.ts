@@ -1,4 +1,4 @@
-import type { AcademicAssignment, AcademicCourse, AcademicResource, AcademicTerm, StudyCard } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicEvent, AcademicResource, AcademicTerm, GradeItem, StudyCard } from "./academic";
 
 export const demoTerm: AcademicTerm = {
   id: "term-fall-2026", name: "Fall 2026",
@@ -57,4 +57,31 @@ export const demoStudyCards: StudyCard[] = [
   { id: "study-bio-osmosis", courseId: "bio-112", prompt: "What is osmosis?", answer: "Osmosis is the net movement of water across a selectively permeable membrane toward the side with the higher concentration of solutes.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
   { id: "study-his-primary", courseId: "his-210", prompt: "What questions help evaluate a primary source?", answer: "Ask who created it, when and where it was created, its intended audience, its purpose, what it reveals, and whose perspective may be missing.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
   { id: "study-mat-function", courseId: "mat-151", prompt: "What is a function in algebra?", answer: "A function is a relation that assigns exactly one output to each permitted input. A vertical-line test can help identify whether a graph represents a function.", nextReviewAt: resourceNow, intervalDays: 0, easeFactor: 2.5, repetitions: 0, createdAt: resourceNow, updatedAt: resourceNow, source: "demo" },
+];
+
+const at = (offset: number, hour: number, minute = 0) => {
+  const value = new Date(now);
+  value.setDate(value.getDate() + offset);
+  value.setHours(hour, minute, 0, 0);
+  return value.toISOString();
+};
+
+export const demoEvents: AcademicEvent[] = [
+  { id: "event-eng-seminar", title: "Academic Writing seminar", kind: "class", startsAt: at(1, 10), endsAt: at(1, 11, 15), courseId: "eng-204", notes: "Bring the latest research response draft.", source: "demo", updatedAt: now.toISOString() },
+  { id: "event-bio-lecture", title: "Biology lecture", kind: "class", startsAt: at(2, 11, 30), endsAt: at(2, 12, 45), courseId: "bio-112", notes: "Cell transport and membrane function.", source: "demo", updatedAt: now.toISOString() },
+  { id: "event-history-study", title: "Primary-source study block", kind: "study", startsAt: at(2, 16), endsAt: at(2, 17), courseId: "his-210", notes: "Compare authorship, context and purpose.", source: "demo", updatedAt: now.toISOString() },
+  { id: "event-algebra-workshop", title: "Algebra workshop", kind: "class", startsAt: at(4, 14), endsAt: at(4, 15, 15), courseId: "mat-151", notes: "Bring questions about rational expressions.", source: "demo", updatedAt: now.toISOString() },
+  { id: "event-personal-review", title: "Weekly planning review", kind: "personal", startsAt: at(5, 9), endsAt: at(5, 9, 30), notes: "Review priorities and adjust study blocks.", source: "demo", updatedAt: now.toISOString() },
+];
+
+export const demoGradeItems: GradeItem[] = [
+  { id: "grade-eng-reflection", courseId: "eng-204", assignmentId: "a-eng-02", title: "Reading reflection", score: 14, pointsPossible: 15, status: "graded", feedback: "Clear reflection; add more direct evidence.", gradedAt: at(-1, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-eng-source", courseId: "eng-204", title: "Source evaluation", score: 18, pointsPossible: 20, status: "graded", feedback: "Strong source selection and relevance.", gradedAt: at(-6, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-eng-research", courseId: "eng-204", assignmentId: "a-eng-01", title: "Research response — Draft 2", score: null, pointsPossible: 50, status: "pending", source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-bio-safety", courseId: "bio-112", title: "Lab safety check", score: 9, pointsPossible: 10, status: "graded", feedback: "Complete.", gradedAt: at(-4, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-bio-cell", courseId: "bio-112", title: "Cell structure quiz", score: 17, pointsPossible: 20, status: "graded", gradedAt: at(-8, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-his-source", courseId: "his-210", title: "Primary source response", score: 16, pointsPossible: 20, status: "graded", feedback: "Make the historical context explicit.", gradedAt: at(-5, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-his-discussion", courseId: "his-210", assignmentId: "a-his-03", title: "Primary source discussion", score: null, pointsPossible: 20, status: "missing", source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-mat-quiz", courseId: "mat-151", assignmentId: "a-mat-07", title: "Chapter 7 quiz", score: 21, pointsPossible: 25, status: "graded", feedback: "Review transformations and intercepts.", gradedAt: at(-2, 12), source: "demo", updatedAt: now.toISOString() },
+  { id: "grade-mat-problem", courseId: "mat-151", title: "Problem set 08", score: null, pointsPossible: 30, status: "pending", source: "demo", updatedAt: now.toISOString() },
 ];
