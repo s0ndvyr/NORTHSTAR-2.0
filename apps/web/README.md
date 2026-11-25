@@ -19,7 +19,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 ## Requirements
 
 - Node.js 20.19 or newer
-- npm 10 or newer
+- npm 11.6.2 or newer (qualification workflow pins npm 11.6.2)
 
 ## Local development
 
@@ -39,7 +39,7 @@ npm run build
 npm run preview
 ```
 
-The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, and saved writing-draft lifecycle. The development-branch GitHub Actions workflow runs typecheck, domain tests, and production build on pushes and pull requests; it does not deploy the application. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
+The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, and saved writing-draft lifecycle. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
 
 ## Data and integration boundaries
 
