@@ -4,15 +4,15 @@ Status values: **Planned**, **Audit required**, **Not implemented**, **Not verif
 
 | ID | Requirement | Priority | Dependencies | Implementation / verification evidence | Status |
 |---|---|---|---|---|---|
-| NS-ARCH-001 | React + TypeScript + Vite iPad-first PWA | P0 | Engineering foundation | `apps/web/` client, PWA manifest/service worker, committed npm lockfile and successful clean-install/typecheck/build CI evidence; physical iPad smoke test remains outstanding | Not verified |
+| NS-ARCH-001 | React + TypeScript + Vite iPad-first PWA | P0 | Engineering foundation | `apps/web/` client, PWA manifest/service worker, committed npm lockfile, successful clean-install/typecheck/build CI, 12 browser journeys including iPad-sized/offline-shell checks; physical iPad Safari remains outstanding | In progress |
 | NS-ARCH-002 | Clear workspace/domain boundaries | P0 | NS-ARCH-001 | Architecture map and dependency-boundary tests | Planned |
 | NS-DATA-001 | Canonical shared academic data model | P0 | Domain boundaries | Shared browser snapshot covers term/course/assignment/resource/study-card/draft/event/grade-item records with relationship validation and backup round-trip tests | In progress |
-| NS-DATA-002 | Field ownership, provenance, and source authority | P0 | NS-DATA-001 | Conflict/source-authority tests | Planned |
+| NS-DATA-002 | Field ownership, provenance, and source authority | P0 | NS-DATA-001 | Canonical records carry demo/personal origin metadata and the UI exposes it across assignments, courses, calendar, Gradebook and Study Lab; field-authority/conflict tests remain open | In progress |
 | NS-DATA-003 | Versioned migration, backup, restore, and recovery | P0 | NS-DATA-001 | Validated local JSON export/import and full-snapshot round-trip tests; interrupted writes, storage quota and long-term migration/recovery tests remain open | In progress |
 | NS-STATE-001 | Centralized state, persistence, autosave, and drafts | P0 | NS-DATA-001 | Shared revisioned local snapshot with assignment/resource/study/event/grade/draft commands, storage fallback, backup/restore and persistent theme preference | In progress |
 | NS-UX-001 | Unified authoritative design system | P0 | NS-ARCH-001 | Midnight default and persistent Light theme, shared workspace surfaces, common controls and reduced-motion treatment; full component inventory and visual/accessibility audit remain open | In progress |
 | NS-UX-002 | iPad-first touch, orientation, and adaptive layouts | P0 | NS-UX-001 | Physical iPad acceptance evidence | Not verified |
-| NS-UX-003 | Reduced motion and accessible interaction | P1 | NS-UX-001 | Reduced-motion CSS, semantic form controls and status feedback are present; automated accessibility and manual keyboard/touch review remain open | In progress |
+| NS-UX-003 | Reduced motion and accessible interaction | P1 | NS-UX-001 | Reduced-motion CSS, skip navigation, focus-visible/forced-colors styling, dialog focus containment/restoration and 12 browser journeys; screen-reader, contrast and manual keyboard/touch review remain open | In progress |
 | NS-ACAD-001 | Dashboard command center and intelligent priorities | P1 | NS-DATA-001 | Overview derives term progress, priority ranking, per-course completion, recorded-points summary, next event and latest saved writing from the shared snapshot | In progress |
 | NS-ACAD-002 | Assignment lifecycle and cross-workspace synchronization | P0 | NS-DATA-001, NS-STATE-001 | Assignment create/edit/delete/status/search/filter, local turn-in simulation, linked saved drafts and shared dashboard/calendar/course projections | In progress |
 | NS-ACAD-003 | Courses, Calendar, Gradebook, Resources, Study Lab, Review Center | P0 | NS-DATA-001 | Course hubs, personal calendar events, explicit grade records, resource CRUD, spaced-repetition cards and persistent writing review drafts | In progress |
@@ -22,19 +22,19 @@ Status values: **Planned**, **Audit required**, **Not implemented**, **Not verif
 | NS-AI-002 | Relevant, course-bounded context with source transparency | P1 | NS-DATA-002, NS-AI-001 | Grounding, relevance, and boundary tests | Planned |
 | NS-AI-003 | Approval before consequential AI actions | P0 | NS-AI-001, NS-STATE-001 | Permission and approval-flow tests | Planned |
 | NS-SEC-001 | Secret isolation, least privilege, and secure integration boundaries | P0 | NS-ARCH-002 | Secret scan, threat review, security tests | Audit required |
-| NS-QUAL-001 | Automated build, type, lint, unit, integration, and regression gates | P0 | NS-ARCH-001 | Successful clean `npm ci`, strict typecheck, dependency advisories, domain tests and production build; lint, component/integration/E2E and device checks remain open | In progress |
-| NS-QUAL-002 | Performance, accessibility, and physical iPad qualification | P0 | NS-UX-001 | Recorded test evidence | Not verified |
+| NS-QUAL-001 | Automated build, type, lint, unit, integration, and regression gates | P0 | NS-ARCH-001 | Successful clean `npm ci`, strict typecheck, production dependency audit, 49 domain tests, 12 Playwright browser journeys and production build in CI; lint, component/integration coverage and device checks remain open | In progress |
+| NS-QUAL-002 | Performance, accessibility, and physical iPad qualification | P0 | NS-UX-001 | Chromium iPad Pro portrait viewport and offline-shell checks pass; physical iPad Safari, performance/battery, assistive technology and complete accessibility audit remain outstanding | In progress |
 | NS-REL-001 | Controlled preview/production release, rollback, and monitoring | P0 | NS-QUAL-001 | Deployment and rollback evidence | Audit required |
-| NS-CAI-001 | One canonical academic data layer with domain ownership and workspace projections | P0 | NS-ARCH-002, NS-DATA-001 | Entity/schema review, duplicate-identity and cross-workspace consistency tests | Planned |
+| NS-CAI-001 | One canonical academic data layer with domain ownership and workspace projections | P0 | NS-ARCH-002, NS-DATA-001 | Shared validated academic snapshot and workspace projections; 49 domain tests and cross-workspace browser journeys pass; full entity catalogue and provider ownership review remain open | In progress |
 | NS-CAI-002 | Typed, versioned, idempotent internal event propagation | P0 | NS-CAI-001, NS-STATE-001 | Event contract, ordering, duplicate delivery, retry and subscriber recovery tests | Planned |
 | NS-CAI-003 | Provider-aware external updates using supported webhooks/polling and manual refresh fallback | P0 | NS-CAN-001, NS-CAI-002 | Provider capability matrix, rate-limit, cursor, freshness and refresh tests | Audit required |
-| NS-CAI-004 | Field-level source authority and durable provenance | P0 | NS-DATA-002, NS-CAI-001 | Field authority matrix and source-precedence/conflict tests | Planned |
+| NS-CAI-004 | Field-level source authority and durable provenance | P0 | NS-DATA-002, NS-CAI-001 | Demo/personal provenance retained in canonical records and surfaced in workspace views; field-level source authority matrix and source-precedence/conflict tests remain open | In progress |
 | NS-CAI-005 | Conflict preservation, review and auditable resolution; no universal last-write-wins | P0 | NS-CAI-004, NS-CAI-002 | Concurrent edit, stale revision, deletion, ambiguous response and resolution tests | Planned |
 | NS-CAI-006 | Offline cached reads with freshness indicators and bounded cache policy | P1 | NS-DATA-003, NS-STATE-001 | Offline cache, stale labeling, quota and eviction tests | Planned |
 | NS-CAI-007 | Durable offline local writes and safe, idempotent reconnect reconciliation | P0 | NS-CAI-005, NS-CAI-006, NS-CAN-001 | Queue durability, permission revalidation, replay ordering, deduplication and recovery tests | Planned |
 | NS-CAI-008 | Visible synchronization lifecycle, error, retry and recovery status | P1 | NS-CAI-002, NS-CAI-003 | Sync state-machine and user-visible status acceptance tests | Planned |
 | NS-CAI-009 | Permission-aware adapter and domain-service boundaries for provider writes | P0 | NS-SEC-001, NS-CAN-001 | Authorization, secret isolation, revocation and approval-flow tests | Planned |
-| NS-CAI-010 | Cross-workspace consistency and recovery verification | P0 | NS-CAI-001 through NS-CAI-009 | End-to-end workflow, offline/reconnect, conflict and regression evidence | Planned |
+| NS-CAI-010 | Cross-workspace consistency and recovery verification | P0 | NS-CAI-001 through NS-CAI-009 | Twelve passing Playwright journeys cover connected workspaces, local persistence, iPad-sized layout and offline app-shell reload; reconnect, conflict and external-provider recovery remain open | In progress |
 
 
 | NS-DATA-004 | Field-level canonical entity catalogue with explicit relationships, ownership, lifecycle and field provenance | P0 | NS-DATA-001, NS-DATA-002, NS-CAI-001, NS-CAI-004 | Reviewed logical model, field ownership catalogue, relationship/integrity and lifecycle test specifications | Planned |
@@ -298,3 +298,11 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - Top-bar connectivity state reflects browser online/offline events. Academic data remains local-first through localStorage and IndexedDB; no remote synchronization is claimed.
 - NS-QUAL-001: service-worker registration and app shell typecheck/build passed in workflow run 45682659060; connectivity indicator typecheck, tests and build passed in workflow run 45682719412.
 - Remaining: real iPad Safari installation/offline/restore, storage quota, browser eviction and performance acceptance tests.
+
+
+## Implementation evidence update — 2026-11-25
+
+- Latest successful qualification: [GitHub Actions #45692086998](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692086998). Typecheck, production dependency audit, 49 domain tests, production build and all 12 Playwright browser journeys passed.
+- Browser journeys include navigation/focus, assignment create/status/reload, calendar create/edit, course create/hub, resource create, explicit grade entry, writing draft/review, timed Study Lab practice, theme persistence, AI/Canvas non-connection boundaries, 1024 × 1366 iPad Pro portrait layout and offline cached-shell reload.
+- The provenance UI change now displays DEMO/PERSONAL origin labels across assignments, courses, calendar items, grade records and Study Lab flashcards. Its dedicated browser assertions are in the current qualification run; do not mark those new assertions accepted until that run succeeds.
+- No Canvas connection, AI provider, cloud sync, remote data authority, physical iPad Safari, or production release is claimed by this evidence.
