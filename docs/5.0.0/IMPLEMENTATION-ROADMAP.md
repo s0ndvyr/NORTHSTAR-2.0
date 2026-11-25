@@ -361,3 +361,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Existing saved drafts remain unchanged until the user edits them; new assignment-linked drafts begin saving after the first meaningful edit. Manual Save remains available.
 - Switching drafts/new drafts resets the dirty state so unsaved content is not accidentally attributed to another draft.
 - Autosave remains browser-local; no cloud sync or AI/provider transfer occurs.
+
+
+### Assignment file artifacts — 2026-11-25
+
+- Assignment Detail now supports attaching, downloading and removing local files. File bytes are stored in a dedicated IndexedDB database; the academic snapshot stores validated metadata and relationships only.
+- Added a 25 MB per-file limit, local-only status feedback, and no-Canvas messaging.
+- Assignment deletion and workspace reset clear linked binary files; JSON backup/restore intentionally excludes file bytes and attachment metadata so it cannot create broken references. Users are told to download attachments separately before relying on a JSON backup.
+- Added repository tests for attachment metadata lifecycle, assignment-delete cleanup and backup exclusion. The current attachment integration commit passed strict typecheck, dependency audits, domain tests and production build in workflow run 45682291959.
+- This supports local coursework artifacts only. It is not Canvas upload, cloud file sync, encrypted storage or a verified submission.
