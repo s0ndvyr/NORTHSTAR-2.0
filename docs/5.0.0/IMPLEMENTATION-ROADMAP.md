@@ -246,3 +246,12 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Term date ranges are checked for valid ordering.
 - Added malformed-snapshot tests for wrong-term courses, cross-course event links and empty practice attempts.
 - These checks apply to browser persistence and imported backups before the data is accepted. No external provider records are involved.
+
+
+### Calendar event editing increment — 2026-11-25
+
+- Calendar now supports editing user-created class, study, reminder and personal events in addition to creating and deleting them.
+- The editor restores the event's existing values, preserves its identity, validates its time range and course/assignment relationship, and increments the shared snapshot revision on save.
+- Assignment deadlines and seeded demo events remain protected from personal edit/delete controls.
+- Added repository coverage for event update, identity preservation and invalid time-range rejection.
+- Calendar changes remain local and do not modify an external institution calendar.
