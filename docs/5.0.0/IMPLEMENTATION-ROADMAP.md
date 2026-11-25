@@ -378,3 +378,13 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Service worker registration is enabled only in production and uses Vite's configured base path. It does not cache cross-origin requests or non-GET operations.
 - Added a live online/offline indicator in the top bar and simplified nested assignment/course breadcrumbs.
 - Academic snapshot writes remain browser-local through localStorage; assignment file bytes remain in IndexedDB. This is an offline shell/local data foundation, not remote sync or a verified iPad Safari offline qualification.
+
+
+### Keyboard accessibility and browser qualification harness — 2026-11-25
+
+- Added a visible skip-to-main-content link and a focusable main landmark.
+- Added visible keyboard focus styling across links, buttons, inputs and other controls, including forced-colors support.
+- Command palette and notification dialogs now move focus into the dialog, contain Tab/Shift+Tab navigation, close on Escape and restore focus to the opening control.
+- Added Playwright browser workflow coverage for dashboard/skip navigation/command palette, assignment creation and status changes, calendar create/edit, and course creation/course-hub navigation.
+- CI provisions the pinned Playwright runner ephemerally so the app's runtime dependency graph and committed lockfile remain unchanged.
+- Automated browser results are pending the current GitHub Actions run; keyboard/screen-reader and physical iPad review remain separate manual qualification gates.
