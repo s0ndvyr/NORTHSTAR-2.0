@@ -5,8 +5,8 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `daeff3c38f72a9f065b576f3e40f5791c95e3ab3`  
-**Latest successful full qualification run:** [GitHub Actions #45694384485](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45694384485) — 13 browser journeys, 51 domain tests and build passed
+**Latest implementation checkpoint:** `d99842e928f1e73e0c96aedc6d8f919a7a1e7b20`  
+**Latest successful full qualification run:** [GitHub Actions #45695099527](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695099527) — 13 browser journeys, 51 domain tests and build passed; conflict bundle contents verified
 
 Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
 
