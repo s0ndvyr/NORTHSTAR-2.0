@@ -107,20 +107,22 @@ The following are open and should be resolved before an implementation-ready eng
 
 No option is considered selected merely because it appears in this list.
 
-## 7. Exit criteria for Engineering Foundation planning
+## 7. Revised exit criteria and planning proportionality
 
-- All open decisions have recorded options, rationale, dependencies, and an explicit selection.
-- Source-tree and module ownership are documented.
-- Quality gates are measurable and mapped to requirements.
-- Security and integration boundaries are explicit.
-- iPad acceptance and accessibility criteria are testable.
-- Migration/preservation map covers all known existing capabilities and data.
-- Risks, rollback, and evidence requirements are documented.
-- User completes the recurring five-question sign-off module and explicitly approves the phase.
+Engineering Foundation planning is complete enough to transition when:
+- the approved product and architecture baseline is carried forward without reopening settled decisions;
+- the exact migration source and preservation/backup approach are identified before any legacy data migration;
+- the isolated application boundary and build/deployment path are confirmed before the first app implementation/preview;
+- the first implementation slice, security boundaries and minimum quality checks are explicit;
+- later evidence gaps are assigned to the implementation stage where they become relevant.
+
+A complete inventory of every legacy file, Canvas endpoint, retention parameter and release setting is not a prerequisite for creating a separate application shell. Those items remain mandatory before the affected capability is migrated, integrated or released.
+
+Planning must be proportional to risk. Use consolidated reviews, conventional defaults and implementation-time ADRs for reversible decisions. Do not require repetitive five-question modules or separate sign-offs for every engineering topic.
 
 ## 8. Current status
 
-**Planning opened.** No application implementation has started. The next work should complete the planning decisions and specifications above, then present the phase sign-off module. A separate explicit implementation authorization is required after planning approval.
+**Consolidated implementation-readiness planning is drafted.** The next review should be limited to the application boundary and exact migration-source protection. Once those are confirmed, request explicit, narrowly scoped authorization for the initial application foundation. Application implementation remains unauthorized.
 
 
 ## 9. Cross-Application Intelligence — detailed planning additions
