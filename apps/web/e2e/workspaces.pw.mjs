@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -201,6 +202,11 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   await secondTab.getByRole("button", { name: "Download both versions and reload" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^northstar-conflict-/);
+  const bundlePath = await download.path();
+  const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
+  expect(bundle.format).toBe("northstar-academic-conflict");
+  expect(bundle.conflicts[0].localBackup.snapshot.assignments.some(item => item.title === secondTitle)).toBe(true);
+  expect(bundle.conflicts[0].savedBackup.snapshot.assignments.some(item => item.title === firstTitle)).toBe(true);
 
   await expect(secondTab.getByRole("link", { name: firstTitle })).toBeVisible();
   await expect(secondTab.getByRole("link", { name: secondTitle })).toHaveCount(0);
