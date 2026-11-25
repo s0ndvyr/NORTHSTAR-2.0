@@ -518,3 +518,14 @@ a.course-card:hover{transform:translateY(-2px);border-color:#9ebce34a}
 .study-guide-sections ul{display:grid;gap:8px;margin:0;padding-left:17px;color:var(--muted);font-size:9px;line-height:1.6}
 .study-guide-sections li::marker{color:var(--accent)}
 @media(max-width:650px){.study-guide-sections{grid-template-columns:1fr}.study-guide-toolbar{align-items:flex-start;flex-direction:column}.study-guide-toolbar select{max-width:100%}.study-guide-panel{padding:14px}}
+
+.draft-risk-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:12px 0}
+.draft-risk-row span{color:var(--muted);font-size:9px}
+.draft-risk-row b{padding:5px 8px;border-radius:5px;font:9px var(--mono);letter-spacing:.05em}
+.draft-risk-row .risk-high{background:#a84e3d26;color:#e5a08e}
+.draft-risk-row .risk-moderate{background:#b58a3b24;color:#dfbf7d}
+.draft-risk-row .risk-low{background:#528e6d24;color:#9bd0ae}
+.draft-risk-row .risk-unchecked{background:var(--line);color:var(--muted)}
+.app[data-theme="light"] .draft-risk-row .risk-high{color:#a84e3d}
+.app[data-theme="light"] .draft-risk-row .risk-moderate{color:#916b25}
+.app[data-theme="light"] .draft-risk-row .risk-low{color:#39754f}
