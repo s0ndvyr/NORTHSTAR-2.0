@@ -1,7 +1,8 @@
 import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtifact, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
 import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
-const STORAGE_KEY = "northstar-5-academic-demo-v1";
+export const ACADEMIC_STORAGE_KEY = "northstar-5-academic-demo-v1";
+const CONFLICT_STORAGE_KEY = "northstar-5-academic-conflicts-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
 const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
@@ -261,7 +262,7 @@ export function isAcademicSnapshot(value: unknown): value is AcademicSnapshot {
 export function loadAcademicSnapshot(): AcademicSnapshot {
   if (typeof window === "undefined") return initialSnapshot();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(ACADEMIC_STORAGE_KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [], artifacts: parsed.artifacts ?? [] };
@@ -272,10 +273,84 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
   return initialSnapshot();
 }
 
-export function saveAcademicSnapshot(snapshot: AcademicSnapshot): boolean {
+export interface AcademicSnapshotConflict {
+  id: string;
+  detectedAt: string;
+  localSnapshot: AcademicSnapshot;
+  persistedSnapshot: AcademicSnapshot;
+}
+
+function isAcademicSnapshotConflict(value: unknown): value is AcademicSnapshotConflict {
+  return isRecord(value) && typeof value.id === "string" && typeof value.detectedAt === "string"
+    && Number.isFinite(Date.parse(value.detectedAt))
+    && isAcademicSnapshot(value.localSnapshot) && isAcademicSnapshot(value.persistedSnapshot);
+}
+
+export function loadAcademicConflicts(): AcademicSnapshotConflict[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CONFLICT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isAcademicSnapshotConflict) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function clearAcademicConflict(id: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const remaining = loadAcademicConflicts().filter(conflict => conflict.id !== id);
+    if (remaining.length) window.localStorage.setItem(CONFLICT_STORAGE_KEY, JSON.stringify(remaining));
+    else window.localStorage.removeItem(CONFLICT_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function preserveSnapshotConflict(localSnapshot: AcademicSnapshot, persistedSnapshot: AcademicSnapshot): boolean {
+  try {
+    const conflicts = loadAcademicConflicts();
+    const localJson = JSON.stringify(localSnapshot);
+    const persistedJson = JSON.stringify(persistedSnapshot);
+    if (conflicts.some(conflict => JSON.stringify(conflict.localSnapshot) === localJson && JSON.stringify(conflict.persistedSnapshot) === persistedJson)) return true;
+    if (conflicts.length >= 10) return false;
+    const conflict: AcademicSnapshotConflict = {
+      id: "conflict-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2)),
+      detectedAt: new Date().toISOString(),
+      localSnapshot,
+      persistedSnapshot,
+    };
+    window.localStorage.setItem(CONFLICT_STORAGE_KEY, JSON.stringify([...conflicts, conflict]));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Saves only when the candidate is newer than the persisted revision.
+ * A competing same/newer revision is preserved as a two-sided conflict instead
+ * of silently replacing the other tab's academic snapshot.
+ */
+export function saveAcademicSnapshot(snapshot: AcademicSnapshot, force = false): boolean {
   if (typeof window === "undefined" || !isAcademicSnapshot(snapshot)) return false;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    if (!force) {
+      const raw = window.localStorage.getItem(ACADEMIC_STORAGE_KEY);
+      if (raw) {
+        const persisted: unknown = JSON.parse(raw);
+        if (isAcademicSnapshot(persisted)) {
+          const localJson = JSON.stringify(snapshot);
+          const persistedJson = JSON.stringify(persisted);
+          if (localJson === persistedJson) return true;
+          if (persisted.revision >= snapshot.revision) return preserveSnapshotConflict(snapshot, persisted);
+        }
+      }
+    }
+    window.localStorage.setItem(ACADEMIC_STORAGE_KEY, JSON.stringify(snapshot));
     return true;
   } catch {
     // The caller keeps the in-memory copy; persistence failure is not silent in the UI.
@@ -378,7 +453,7 @@ export function deleteAssignment(snapshot: AcademicSnapshot, id: string): Academ
 
 export function resetAcademicSnapshot(): AcademicSnapshot {
   const fresh = initialSnapshot();
-  saveAcademicSnapshot(fresh);
+  saveAcademicSnapshot(fresh, true);
   return fresh;
 }
 
