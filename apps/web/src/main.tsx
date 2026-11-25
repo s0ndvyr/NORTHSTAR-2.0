@@ -8,3 +8,11 @@ import "./workspaces.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode><BrowserRouter><App /></BrowserRouter></React.StrictMode>,
 );
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).catch(() => {
+      // Offline support is progressive enhancement; the online app remains available.
+    });
+  });
+}
