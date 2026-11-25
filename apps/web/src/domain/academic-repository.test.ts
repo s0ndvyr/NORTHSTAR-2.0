@@ -372,6 +372,8 @@ describe("Study Lab practice attempts", () => {
     const started = createPracticeAttempt(loadAcademicSnapshot(), "his-210");
     const attempt = started.practiceAttempts?.find(item => item.status === "in_progress")!;
     const rejected = updatePracticeAttempt(started, attempt.id, { "practice-his-source": "unknown-option" }, [], 10);
+    const foreignQuestion = updatePracticeAttempt(started, attempt.id, { "practice-eng-thesis": "b" }, [], 10);
     expect(rejected).toBe(started);
+    expect(foreignQuestion).toBe(started);
   });
 });
