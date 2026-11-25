@@ -26,6 +26,20 @@ The user submitted **A / A / A / A / A** through the five-question Phase 0 sign-
 
 **Phase 0 disposition:** Closed and user-approved. This approval covers the setup package and the planning direction only. It does not certify runtime behavior or authorize application coding, legacy deletion, production changes, deployment, or qualification.
 
+## Cross-Application Intelligence decisions — 2026-11-25
+
+The user submitted **A / A / A / A / A** through the five-question Cross-Application Intelligence planning module.
+
+| Decision ID | Approved decision | Effect |
+|---|---|---|
+| CAI-DEC-01 | A — One canonical academic data layer with domain-owned models and workspace-specific read projections. | Prevents competing workspace copies of shared academic facts. |
+| CAI-DEC-02 | A — Event-driven internal updates; provider webhooks/polling where supported; manual refresh and visible stale/error states. | Enables prompt internal propagation while respecting provider capabilities. |
+| CAI-DEC-03 | A — Explicit field-level source authority and provenance; Canvas owns official institution records and NORTHSTAR owns personal workflow fields. | Authority cannot be inferred from timestamps or selected independently by each workspace. |
+| CAI-DEC-04 | A — Never silently overwrite; preserve competing versions and request user review when safe automatic resolution is unavailable. | Conflict preservation and auditable resolution are mandatory. |
+| CAI-DEC-05 | A — Offline cached reads and queued permitted local edits with idempotent reconciliation and visible conflict/recovery status. | Offline support must preserve work and safely reconcile after reconnect. |
+
+**Disposition:** Five decisions approved. Supporting specifications are drafted in CROSS-APPLICATION-INTELLIGENCE-PLANNING.md. This is planning approval for these architecture choices, not phase closure or implementation authorization.
+
 ## Candidate retirement / consolidation
 
 | ID | Candidate | Proposed action | Required evidence before removal |
