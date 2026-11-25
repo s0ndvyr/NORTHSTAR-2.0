@@ -175,3 +175,10 @@ This remains a local/demo capability; no cloud document service, AI review, plag
 - NS-DATA-001: event and grade records are validated against course/assignment relationships; deleting an assignment detaches related independent drafts, events and grade items instead of destroying them.
 - NS-ACAD-005 / NS-AI-001: AI Workspace is now a provider-free co-pilot simulation with on/off, standing-by status, simulated request state, notifications and a local academic context preview. No AI call or external transfer is made.
 - NS-QUAL-001: current successful workflow evidence includes strict TypeScript, dependency audit, repository tests and production build; the Calendar/Gradebook/AI UI additions are awaiting their latest run.
+
+
+### Assignment submission simulation and co-pilot surface — 2026-11-25
+
+- NS-ACAD-002: added a confirmation-gated local turn-in action, status propagation and animated confirmation. UI explicitly states no Canvas/institution transport occurred.
+- NS-AI-001: AI Workspace is a provider-free simulation only; on/off, standing-by, sample action preparation and notification state are UI behavior, not AI execution.
+- Both are implementation progress; they do not satisfy live submission integration or AI-provider acceptance criteria.
