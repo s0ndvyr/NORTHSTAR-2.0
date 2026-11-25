@@ -163,6 +163,7 @@ describe("academic repository", () => {
       writingDrafts: [{ id: "linked-draft", title: "Saved essay", body: "Keep this draft.", assignmentId: assignment.id, revision: 1, savedAt: now, source: "northstar" as const }],
       events: [{ id: "linked-event", title: "Work session", kind: "study" as const, startsAt: now, endsAt: "2026-11-25T13:00:00.000Z", assignmentId: assignment.id, courseId: assignment.courseId, notes: "", source: "northstar" as const, updatedAt: now }],
       gradeItems: [{ id: "linked-grade", courseId: assignment.courseId, assignmentId: assignment.id, title: assignment.title, score: null, pointsPossible: Math.max(1, assignment.pointsPossible), status: "pending" as const, source: "northstar" as const, updatedAt: now }],
+      artifacts: [{ id: "linked-artifact", assignmentId: assignment.id, fileName: "essay.pdf", mimeType: "application/pdf", sizeBytes: 100, addedAt: now, source: "northstar" as const }],
     };
     const next = deleteAssignment(snapshot, assignment.id);
     expect(next.assignments.some(item => item.id === assignment.id)).toBe(false);
@@ -172,6 +173,7 @@ describe("academic repository", () => {
     expect(next.events?.[0].assignmentId).toBeUndefined();
     expect(next.gradeItems?.[0]).toMatchObject({ id: "linked-grade", status: "pending" });
     expect(next.gradeItems?.[0].assignmentId).toBeUndefined();
+    expect(next.artifacts).toHaveLength(0);
     expect(next.revision).toBe(base.revision + 1);
     expect(isAcademicSnapshot(next)).toBe(true);
   });
