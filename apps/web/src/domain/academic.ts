@@ -9,6 +9,9 @@ export interface AcademicCourse {
   termId: string;
   color: string;
   progress: number;
+  /** Origin of this course record; absent only in early version-1 browser snapshots. */
+  source?: "demo" | "northstar";
+  updatedAt?: string;
 }
 
 export interface AcademicAssignment {
