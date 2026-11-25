@@ -17,6 +17,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Calendar events for classes, study blocks, reminders and personal time, distinct from assignment deadlines, with course/assignment links and local event management.
 - Explicit grade records with graded/pending/missing/excused states, optional assignment links, feedback, points-based summaries, and no inferred numeric scores from assignment status.
 - Study Lab four-mode Answer/Learn/Practice/Review workspace, 12 course-grounded practice questions (three per course), 5/10/15-minute countdown sessions, course/question navigation, immediate local answer and flag autosave, reload resume, time-expiry submission, score calculation, and per-question explanations.
+- Learn mode builds a course-scoped study guide from saved practice concepts, flashcards, resources and open assignments, with plain-text export; the guide is deterministic local assembly, not AI-generated content.
 - Study Lab flashcard create/delete, course association, prompt/answer reveal, Again/Hard/Good/Easy recall ratings, and next-review scheduling using an ease/interval model.
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, linked writing drafts, and a confirmation-gated local turn-in simulation with explicit no-Canvas messaging.
