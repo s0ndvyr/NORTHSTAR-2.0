@@ -10,6 +10,8 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Canonical local academic snapshot with runtime validation, revision tracking, and browser persistence.
 - Connected Overview, Assignments, Courses with per-course detail hubs, Calendar, Study Lab flashcard authoring and spaced-repetition review, Gradebook progress views, course-linked Resources library, and a local Writing Review workspace.
 - Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
+- Calendar events for classes, study blocks, reminders and personal time, distinct from assignment deadlines, with course/assignment links and local event management.
+- Explicit grade records with graded/pending/missing/excused states, optional assignment links, feedback, points-based summaries, and no inferred numeric scores from assignment status.
 - Study Lab flashcard create/delete, course association, prompt/answer reveal, Again/Hard/Good/Easy recall ratings, and next-review scheduling using an ease/interval model.
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
@@ -40,7 +42,7 @@ npm run build
 npm run preview
 ```
 
-The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, and saved writing-draft lifecycle. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
+The academic repository unit tests cover snapshot validation, assignment create/update/status/delete behavior, resource lifecycle/HTTPS validation, spaced-repetition scheduling, saved writing-draft lifecycle, calendar-event/grade-record integrity, and full backup round-trip. The development-branch GitHub Actions workflow runs typecheck, production dependency audit, a full development-dependency advisory report, domain tests, and production build on pushes and pull requests; it does not deploy the application. The current dependency tree reports zero advisories in the latest successful run. A committed dependency lockfile and broader component/integration/end-to-end coverage remain qualification work.
 
 ## Data and integration boundaries
 
