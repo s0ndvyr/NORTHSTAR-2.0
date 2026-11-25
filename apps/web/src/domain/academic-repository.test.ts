@@ -225,6 +225,8 @@ describe("academic backup and restore", () => {
     expect(restored?.resources).toEqual(snapshot.resources);
     expect(restored?.studyCards).toEqual(snapshot.studyCards);
     expect(restored?.writingDrafts).toEqual(snapshot.writingDrafts);
+    expect(restored?.events).toEqual(snapshot.events);
+    expect(restored?.gradeItems).toEqual(snapshot.gradeItems);
   });
 
   it("rejects malformed, unknown-version, and invalid academic backups", () => {
