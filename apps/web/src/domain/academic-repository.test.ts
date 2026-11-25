@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress } from "./workspace-intelligence";
+import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress } from "./workspace-intelligence";
 import {
   createAcademicBackup,
   createPracticeAttempt,
@@ -496,6 +496,22 @@ describe("shared course projections", () => {
     const noAssignments = { ...snapshot, assignments: snapshot.assignments.filter(item => item.courseId !== course.id) };
     expect(selectCourseProgress(noAssignments, course.id)).toBe(course.progress);
     expect(selectCourseProgress(snapshot, "unknown-course")).toBe(0);
+  });
+});
+
+describe("course study guide projection", () => {
+  it("builds a guide only from the selected course's canonical records", () => {
+    const snapshot = loadAcademicSnapshot();
+    const course = snapshot.courses[0];
+    const guide = buildCourseStudyGuide(snapshot, course.id);
+    expect(guide).toMatchObject({ courseId: course.id, courseCode: course.code, courseName: course.name, progress: selectCourseProgress(snapshot, course.id) });
+    expect(guide?.sections.some(section => section.title === "Concepts to understand" && section.items.length > 0)).toBe(true);
+    expect(guide?.sections.some(section => section.title === "Flashcard recall")).toBe(true);
+    expect(guide?.sections.every(section => section.items.length > 0)).toBe(true);
+    expect(buildCourseStudyGuide(snapshot, "unknown-course")).toBeNull();
+    const otherCourse = snapshot.courses[1];
+    const otherGuide = buildCourseStudyGuide(snapshot, otherCourse.id);
+    expect(otherGuide?.sections.flatMap(section => section.items).join(" ")).not.toContain(course.name);
   });
 });
 
