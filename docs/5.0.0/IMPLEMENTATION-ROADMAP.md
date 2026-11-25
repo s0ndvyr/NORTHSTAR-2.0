@@ -125,3 +125,13 @@ The complete latest workflow run is the qualification source for these changes; 
 - The interface explicitly states that this is not AI feedback, plagiarism detection, source verification, or a grade prediction. Provider-backed review remains a separate future integration.
 
 This is a useful first-pass tool, not completion of the planned AI-assisted Review Center or co-pilot workflows.
+
+
+### Study Lab implementation increment — 2026-11-25
+
+- Added a course-linked StudyCard model to the canonical academic snapshot. Existing version-1 snapshots without study cards remain readable and are normalized to an empty collection.
+- Added local card create/update/delete and Again/Hard/Good/Easy review commands. Each review updates ease, repetition count, interval, next-review timestamp, and snapshot revision.
+- Replaced the assignment-derived flashcard mock with a real local flashcard deck: create cards, reveal answers, rate recall, view due count and schedule, and remove cards.
+- Added unit coverage for card creation, validation, rating schedules and deletion.
+
+This is the first spaced-repetition engine increment. Full study guides, practice generation, learning analytics, and content-grounded answer explanations remain ahead.
