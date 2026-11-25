@@ -2,8 +2,10 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.clear();
-    sessionStorage.clear();
+    if (sessionStorage.getItem("northstar-e2e-clean") !== "1") {
+      localStorage.clear();
+      sessionStorage.setItem("northstar-e2e-clean", "1");
+    }
   });
   await page.goto("/");
 });
