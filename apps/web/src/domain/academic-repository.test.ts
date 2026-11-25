@@ -72,6 +72,24 @@ describe("academic repository", () => {
     expect(next).toBe(snapshot);
   });
 
+  it("rejects non-finite and invalid numeric assignment inputs without corrupting the snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    expect(createAssignment(snapshot, { ...input, pointsPossible: Number.NaN })).toBe(snapshot);
+    expect(createAssignment(snapshot, { ...input, estimatedMinutes: Number.POSITIVE_INFINITY })).toBe(snapshot);
+    expect(createAssignment(snapshot, { ...input, pointsPossible: -1 })).toBe(snapshot);
+    expect(isAcademicSnapshot(snapshot)).toBe(true);
+  });
+
+  it("rejects invalid assignment updates and status values without changing the snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignment = snapshot.assignments[0];
+    expect(updateAssignment(snapshot, assignment.id, { pointsPossible: Number.NaN })).toBe(snapshot);
+    expect(updateAssignment(snapshot, assignment.id, { estimatedMinutes: -5 })).toBe(snapshot);
+    expect(updateAssignment(snapshot, assignment.id, { priority: "critical" as AssignmentInput["priority"] })).toBe(snapshot);
+    expect(updateAssignment(snapshot, assignment.id, { status: "unknown" as AssignmentInput["priority"] as never })).toBe(snapshot);
+    expect(isAcademicSnapshot(snapshot)).toBe(true);
+  });
+
   it("updates assignment fields without replacing its identity", () => {
     const snapshot = loadAcademicSnapshot();
     const assignment = snapshot.assignments[0];
