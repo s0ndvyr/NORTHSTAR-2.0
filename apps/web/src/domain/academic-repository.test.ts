@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   createAcademicBackup,
+  createPracticeAttempt,
+  completePracticeAttempt,
   createAssignment,
   createAcademicEvent,
   createGradeItem,
@@ -15,6 +17,7 @@ import {
   isAcademicSnapshot,
   loadAcademicSnapshot,
   parseAcademicBackup,
+  updatePracticeAttempt,
   updateAssignment,
   updateAssignmentStatus,
   updateResource,
@@ -334,4 +337,41 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
   const deleted = deleteAssignment(next, assignmentId);
   expect(deleted.events?.find(item => item.title === "Assignment review")?.assignmentId).toBeUndefined();
   expect(isAcademicSnapshot(deleted)).toBe(true);
+});
+
+describe("Study Lab practice attempts", () => {
+  it("creates, autosaves, flags and completes a course practice attempt", () => {
+    const initial = loadAcademicSnapshot();
+    const started = createPracticeAttempt(initial, "bio-112");
+    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress");
+    expect(attempt).toBeTruthy();
+    expect(attempt?.questionIds).toContain("practice-bio-osmosis");
+    const saved = updatePracticeAttempt(started, attempt!.id, { "practice-bio-osmosis": "a" }, ["practice-bio-osmosis"], 42);
+    expect(saved.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
+      answers: { "practice-bio-osmosis": "a" },
+      flaggedIds: ["practice-bio-osmosis"],
+      elapsedSeconds: 42,
+    });
+    const completed = completePracticeAttempt(saved, attempt!.id);
+    expect(completed.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
+      status: "completed",
+      score: 100,
+    });
+    expect(completed.revision).toBe(saved.revision + 1);
+    expect(isAcademicSnapshot(completed)).toBe(true);
+  });
+
+  it("resumes an existing in-progress attempt instead of creating a duplicate", () => {
+    const started = createPracticeAttempt(loadAcademicSnapshot(), "eng-204");
+    const resumed = createPracticeAttempt(started, "eng-204");
+    expect(resumed).toBe(started);
+    expect(resumed.practiceAttempts?.filter(item => item.courseId === "eng-204" && item.status === "in_progress")).toHaveLength(1);
+  });
+
+  it("rejects answers that do not belong to the question", () => {
+    const started = createPracticeAttempt(loadAcademicSnapshot(), "his-210");
+    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress")!;
+    const rejected = updatePracticeAttempt(started, attempt.id, { "practice-his-source": "unknown-option" }, [], 10);
+    expect(rejected).toBe(started);
+  });
 });
