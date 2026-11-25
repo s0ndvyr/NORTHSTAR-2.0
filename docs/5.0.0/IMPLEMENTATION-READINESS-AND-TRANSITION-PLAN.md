@@ -34,8 +34,8 @@ These are the only items that should block the initial application foundation.
 
 ### Gate A — Protect and identify the migration source
 
-- Reconcile the exact branch and commit that will serve as the legacy migration source. The audited stabilization commit and the later indexed default-branch snapshot are not interchangeable.
-- Preserve an immutable reference to that source and establish a recoverable backup/archive before importing or transforming user data.
+- **Source identity confirmed:** the repository branch `northstar-4.4.8.3.1-stabilization` currently resolves to the audited commit `df0427304e0f03aa822a1c8fe99547355e9c0bfc`. The 5.0 setup branch was based on this audited commit. Keep this exact commit as the migration reference; do not substitute the separate default-branch snapshot used for the initial partial source review.
+- Before importing or transforming user data, establish and verify a recoverable backup/archive and record its provenance. The branch/commit reference is source identity, not a substitute for a data backup.
 - Keep all legacy runtime files untouched while the new app is introduced.
 
 **Boundary:** A complete file-by-file migration map is required before migrating or retiring legacy capabilities, but it does not need to block building a separate empty application shell.
@@ -44,7 +44,9 @@ These are the only items that should block the initial application foundation.
 
 - Use a dedicated application directory, with `apps/web/` as the recommended default for the React/Vite client.
 - Keep `docs/5.0.0/`, existing legacy runtime files, Worker/native assets and the new app source clearly separated.
-- Before implementation, confirm the Vite base path and eventual Cloudflare Pages build/output settings against the repository's current deployment configuration. Do not change production deployment during this planning step.
+- Static configuration review found no Vite configuration, Vite build script or lockfile in the setup branch's current legacy root. The existing root `package.json` contains legacy test scripts/dependencies; `wrangler.jsonc` targets the Canvas Worker, not a Vite frontend.
+- The existing GitHub Pages workflow assembles the legacy site by copying root `index.html`, `manifest.json`, `styles/` and `scripts/`, and publishes a preview from the stabilization branch. A new `apps/web/` Vite app will therefore require an intentional Pages workflow adaptation to build and publish its `dist/` output. Do not let the legacy copy/deploy workflow accidentally publish the wrong application.
+- Keep the Canvas Worker deployment separate. Confirm the Vite base path and Pages build/output settings before preview deployment; do not change production deployment during the initial local foundation step.
 
 ### Gate C — Agree the first implementation slice
 
@@ -103,10 +105,10 @@ No unresolved item may be silently treated as complete. It is simply assigned to
 | Product/workspace scope | Approved planning baseline | Carry forward |
 | Core architecture and data ownership | Approved planning specifications | Carry forward |
 | Engineering standards and qualification approach | Approved policy direction; detailed settings remain | Before relevant toolchain/CI work |
-| Exact migration-source branch/commit | Not reconciled across all reviewed snapshots | Before legacy import or migration |
+| Exact migration-source branch/commit | **Confirmed:** stabilization branch currently points to audited commit `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Preserve as immutable migration reference |
 | Recoverable source/data backup plan | Policy defined; source-specific evidence pending | Before data migration |
 | Application directory | Isolated directory approved; `apps/web/` recommended here | Confirm before first implementation |
-| Vite/Cloudflare path and output compatibility | Not verified against live deployment configuration | Before preview deployment |
+| Vite/Cloudflare path and output compatibility | Static review: legacy Pages workflow copies root assets; Worker config is separate; Vite build/output adaptation required | Before preview deployment |
 | Complete legacy inventory | Partial static evidence only | Before porting/retiring each affected capability |
 | Official Canvas endpoint evidence and tenant verification | Pending | Before real Canvas operation |
 | Measured offline/retention parameters | Pending | Before final offline policy implementation |
@@ -116,7 +118,7 @@ No unresolved item may be silently treated as complete. It is simply assigned to
 
 The planning objective is to make the initial implementation safe and unambiguous—not to finish every future engineering decision in advance.
 
-Once the user confirms the application boundary and the migration-source protection approach, the first implementation slice is sufficiently defined to request explicit authorization. That authorization should be a short, separate decision covering the app shell/toolchain scope only; it should not imply approval for Canvas integration, data migration, legacy deletion, production deployment or the full release.
+The migration-source identity is now confirmed. Once the user confirms the recommended `apps/web/` boundary, the first implementation slice is sufficiently defined to request explicit authorization. The Pages workflow adaptation can be planned as part of the initial foundation, but production publishing must remain untouched. That authorization should be a short, separate decision covering the app shell/toolchain scope only; it should not imply approval for Canvas integration, data migration, legacy deletion, production deployment or the full release.
 
 ## 9. Planning-process rule
 
