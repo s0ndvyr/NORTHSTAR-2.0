@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   createAssignment,
+  createResource,
   deleteAssignment,
+  deleteResource,
   isAcademicSnapshot,
   loadAcademicSnapshot,
   updateAssignment,
   updateAssignmentStatus,
+  updateResource,
   type AssignmentInput,
+  type ResourceInput,
 } from "./academic-repository";
 
 const input: AssignmentInput = {
@@ -37,7 +41,7 @@ describe("academic repository", () => {
       title: input.title,
       courseId: input.courseId,
       status: "not_started",
-      source: "demo",
+      source: "northstar",
     });
     expect(isAcademicSnapshot(next)).toBe(true);
   });
@@ -80,5 +84,41 @@ describe("academic repository", () => {
     const snapshot = loadAcademicSnapshot();
     expect(isAcademicSnapshot({ ...snapshot, schemaVersion: 99 })).toBe(false);
     expect(isAcademicSnapshot({ ...snapshot, assignments: [...snapshot.assignments, snapshot.assignments[0]] })).toBe(false);
+  });
+});
+
+describe("academic resource repository", () => {
+  const resource: ResourceInput = {
+    courseId: "eng-204",
+    title: "Thesis planning note",
+    kind: "note",
+    description: "A short planning reference.",
+    url: "",
+    content: "Narrow the claim before drafting.",
+  };
+
+  it("creates a course-linked resource in the canonical snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const next = createResource(snapshot, resource);
+    expect(next.revision).toBe(snapshot.revision + 1);
+    expect(next.resources).toHaveLength((snapshot.resources ?? []).length + 1);
+    expect(next.resources?.at(-1)).toMatchObject({ ...resource, source: "northstar" });
+    expect(isAcademicSnapshot(next)).toBe(true);
+  });
+
+  it("rejects non-HTTPS external resource URLs", () => {
+    const snapshot = loadAcademicSnapshot();
+    expect(createResource(snapshot, { ...resource, kind: "link", url: "javascript:alert(1)" })).toBe(snapshot);
+  });
+
+  it("updates and deletes resources through the same revisioned snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const resourceId = snapshot.resources?.[0]?.id;
+    expect(resourceId).toBeTruthy();
+    const updated = updateResource(snapshot, resourceId!, { title: "Updated library title" });
+    expect(updated.resources?.find(item => item.id === resourceId)?.title).toBe("Updated library title");
+    const removed = deleteResource(updated, resourceId!);
+    expect(removed.resources?.some(item => item.id === resourceId)).toBe(false);
+    expect(removed.revision).toBe(snapshot.revision + 2);
   });
 });
