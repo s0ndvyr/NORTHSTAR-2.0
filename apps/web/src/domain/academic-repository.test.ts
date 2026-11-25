@@ -12,9 +12,12 @@ import {
   updateAssignmentStatus,
   updateResource,
   rateStudyCard,
+  deleteWritingDraft,
+  saveWritingDraft,
   type AssignmentInput,
   type ResourceInput,
   type StudyCardInput,
+  type WritingDraftInput,
 } from "./academic-repository";
 
 const input: AssignmentInput = {
@@ -160,5 +163,44 @@ describe("Study Lab spaced repetition", () => {
     const next = deleteStudyCard(snapshot, cardId!);
     expect(next.studyCards?.some(card => card.id === cardId)).toBe(false);
     expect(next.revision).toBe(snapshot.revision + 1);
+  });
+});
+
+
+describe("persistent writing drafts", () => {
+  const draft: WritingDraftInput = {
+    title: "Research response draft",
+    body: "A focused claim supported by evidence and careful analysis.",
+  };
+
+  it("saves and revises a draft in the shared academic snapshot", () => {
+    const snapshot = loadAcademicSnapshot();
+    const first = saveWritingDraft(snapshot, draft);
+    expect(first.revision).toBe(snapshot.revision + 1);
+    expect(first.writingDrafts).toHaveLength(1);
+    const saved = first.writingDrafts?.[0];
+    expect(saved).toMatchObject({ title: draft.title, body: draft.body, revision: 1, source: "northstar" });
+    const second = saveWritingDraft(first, { ...draft, id: saved?.id, body: draft.body + " Revised." });
+    expect(second.writingDrafts).toHaveLength(1);
+    expect(second.writingDrafts?.[0]).toMatchObject({ id: saved?.id, revision: 2, body: draft.body + " Revised." });
+    expect(isAcademicSnapshot(second)).toBe(true);
+  });
+
+  it("keeps a draft when its linked assignment is deleted", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignmentId = snapshot.assignments[0].id;
+    const saved = saveWritingDraft(snapshot, { ...draft, assignmentId });
+    const draftId = saved.writingDrafts?.[0]?.id;
+    const deleted = deleteAssignment(saved, assignmentId);
+    expect(deleted.writingDrafts?.find(item => item.id === draftId)?.assignmentId).toBeUndefined();
+    expect(isAcademicSnapshot(deleted)).toBe(true);
+  });
+
+  it("deletes a draft through the shared revisioned snapshot", () => {
+    const snapshot = saveWritingDraft(loadAcademicSnapshot(), draft);
+    const draftId = snapshot.writingDrafts?.[0]?.id;
+    const deleted = deleteWritingDraft(snapshot, draftId ?? "missing");
+    expect(deleted.writingDrafts).toHaveLength(0);
+    expect(deleted.revision).toBe(snapshot.revision + 1);
   });
 });
