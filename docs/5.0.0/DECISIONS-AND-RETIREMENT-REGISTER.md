@@ -99,3 +99,17 @@ The user submitted **C / B / A / A / A** through the integrated architecture pla
 ## Authorization boundary reaffirmed
 
 These decisions do not authorize application code, dependency installation, a physical database schema or migration, live Canvas access, legacy deletion, production changes, deployment or runtime qualification.
+
+
+## Legacy source analysis and integration planning checkpoint — 2026-11-25
+
+The user approved **A / A / A / A / A**:
+- **EFP-DEC-06 — A:** Complete the legacy source-level inventory and data mapping first.
+- **EFP-DEC-07 — A:** Research Canvas capabilities from current official documentation, recording endpoint evidence; keep target-tenant verification separate.
+- **EFP-DEC-08 — A:** Derive offline cache, freshness, retention and recovery values from platform constraints, sensitivity and measured usage; do not guess numeric limits.
+- **EFP-DEC-09 — A:** Define the secure backend-for-frontend (BFF) requirement first; defer hosting and database choices until evidence supports them.
+- **EFP-DEC-10 — A:** Plan integration readiness across Assignments, Courses, Calendar, Gradebook, Resources, Study Lab and AI Workspace.
+
+An initial static source evidence review is recorded in [LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md). It inspects selected repository source and documentation files and records preservation candidates, data classes, and follow-up inventory work. It is explicitly not a complete source-tree audit.
+
+**Disposition:** Planning decisions approved; initial source review captured; comprehensive source inventory, endpoint-by-endpoint official Canvas research, quantitative offline policy and cross-workspace integration-readiness plan remain in progress.
