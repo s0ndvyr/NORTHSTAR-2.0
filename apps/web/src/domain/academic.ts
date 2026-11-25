@@ -134,6 +134,41 @@ export interface PracticeAttempt {
   status: "in_progress" | "completed";
 }
 
+
+export type AssessmentKind = "practice" | "quiz" | "test";
+export interface AssessmentOption { id: string; text: string; }
+export interface AssessmentQuestion {
+  id: string;
+  prompt: string;
+  options: AssessmentOption[];
+  correctOptionId: string;
+  explanation: string;
+}
+export interface AcademicAssessment {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  kind: AssessmentKind;
+  durationMinutes: number;
+  questions: AssessmentQuestion[];
+  source: "demo";
+  updatedAt: string;
+}
+export interface AssessmentAttempt {
+  id: string;
+  assessmentId: string;
+  courseId: string;
+  status: "in_progress" | "submitted";
+  answers: Record<string, string>;
+  flaggedQuestionIds: string[];
+  startedAt: string;
+  updatedAt: string;
+  submittedAt?: string;
+  score?: number;
+  pointsPossible: number;
+}
+
 export interface AcademicSnapshot {
   schemaVersion: 1;
   revision: number;
