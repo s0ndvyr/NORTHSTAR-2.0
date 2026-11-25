@@ -20,7 +20,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - Learn mode builds a course-scoped study guide from saved practice concepts, flashcards, resources and open assignments, with plain-text export; the guide is deterministic local assembly, not AI-generated content.
 - Study Lab flashcard create/delete, course association, prompt/answer reveal, Again/Hard/Good/Easy recall ratings, and next-review scheduling using an ease/interval model.
 - Review Center saved-draft create/resume/update/delete, optional assignment association, local word/sentence/repetition/citation-marker checks, and draft preservation when a linked assignment is removed.
-- Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, linked writing drafts, and a confirmation-gated local turn-in simulation with explicit no-Canvas messaging.
+- Assignment create, edit, delete, search, course/status filters, due-date/priority/recent-update sorting, priority, notes, due dates, estimates, linked writing drafts, and a confirmation-gated local turn-in simulation with explicit no-Canvas messaging.
 - Dedicated assignment detail route with course, due date, priority, personal notes, linked drafts/events/grades, local status control, direct edit and writing-workspace actions; global search opens the selected assignment directly.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
 - Validated academic backup export/import for the complete local snapshot, including calendar events, grade records, resources, study cards and writing drafts; restore requires confirmation and rejects malformed or unknown-version backups.
