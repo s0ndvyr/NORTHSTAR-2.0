@@ -397,3 +397,10 @@ The question set is illustrative demo content. Instructor-authored assessment im
 - Corrected a real Calendar editor default bug: a new event began tomorrow but its default end time was only one hour from now, so the initial time range was invalid. The end now defaults to one hour after the next-day start.
 - Updated the browser tests to assert the intended command palette result and disambiguate duplicated grade-summary text.
 - Latest browser qualification is pending; do not treat these journeys as passed until the current CI run reports success.
+
+
+### Navigation cleanup — 2026-11-25
+
+- Removed the duplicate visible Settings entry from the sidebar while preserving Settings in the workspace command-palette index.
+- Kept the single Settings destination in the sidebar's lower utility area.
+- Browser selectors now scope workspace links to primary navigation and the Settings link to the sidebar, matching the intended shell hierarchy.
