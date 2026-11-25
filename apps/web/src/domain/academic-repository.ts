@@ -372,7 +372,8 @@ export function deleteAssignment(snapshot: AcademicSnapshot, id: string): Academ
   const writingDrafts = (snapshot.writingDrafts ?? []).map(draft => draft.assignmentId === id ? { ...draft, assignmentId: undefined } : draft);
   const events = (snapshot.events ?? []).map(event => event.assignmentId === id ? { ...event, assignmentId: undefined } : event);
   const gradeItems = (snapshot.gradeItems ?? []).map(item => item.assignmentId === id ? { ...item, assignmentId: undefined } : item);
-  return { ...revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id)), writingDrafts, events, gradeItems };
+  const artifacts = (snapshot.artifacts ?? []).filter(item => item.assignmentId !== id);
+  return { ...revise(snapshot, snapshot.assignments.filter(assignment => assignment.id !== id)), writingDrafts, events, gradeItems, artifacts };
 }
 
 export function resetAcademicSnapshot(): AcademicSnapshot {
