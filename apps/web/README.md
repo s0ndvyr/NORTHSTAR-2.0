@@ -8,7 +8,7 @@ The NORTHSTAR 5.0 client lives in `apps/web/`, isolated from the legacy root app
 - React Router workspace navigation and Framer Motion route transitions.
 - Midnight visual foundation, responsive iPad-first shell, and reduced-motion handling.
 - Canonical local academic snapshot with runtime validation, revision tracking, and browser persistence.
-- Connected Overview, Assignments, Courses, Calendar, Study Lab review cards, Gradebook progress views, and a course-linked Resources library.
+- Connected Overview, Assignments, Courses, Calendar, Study Lab review cards, Gradebook progress views, course-linked Resources library, and a local Writing Review workspace.
 - Resource create/edit/delete, course filtering, personal notes, references, and HTTPS-only external links. Resource records share the same versioned academic snapshot and revision counter as assignments.
 - Assignment create, edit, delete, search, course/status filters, priority, notes, due dates, estimates, and status workflow.
 - Storage-unavailable fallback that keeps the current session usable and surfaces a warning.
