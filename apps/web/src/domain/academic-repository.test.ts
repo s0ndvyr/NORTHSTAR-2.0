@@ -2,8 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
   createAcademicBackup,
-  createPracticeAttempt,
-  completePracticeAttempt,
   createAssignment,
   addAssignmentArtifact,
   deleteAssignmentArtifact,
@@ -25,7 +23,6 @@ import {
   clearAcademicConflict,
   saveAcademicSnapshot,
   parseAcademicBackup,
-  updatePracticeAttempt,
   updateAcademicEvent,
   updateAssignment,
   updateAssignmentStatus,
@@ -527,69 +524,45 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
   expect(isAcademicSnapshot(deleted)).toBe(true);
 });
 
-describe("Study Lab question bank", () => {
-  it("provides three validated practice questions for each demo course", () => {
+describe("Study Lab non-assessment scope", () => {
+  it("seeds flashcards without a quiz question bank or timed attempts", () => {
     const snapshot = loadAcademicSnapshot();
-    expect(snapshot.practiceQuestions).toHaveLength(12);
-    for (const course of snapshot.courses) {
-      const courseQuestions = snapshot.practiceQuestions?.filter(question => question.courseId === course.id) ?? [];
-      expect(courseQuestions).toHaveLength(3);
-      for (const question of courseQuestions) {
-        expect(question.options.length).toBeGreaterThanOrEqual(2);
-        expect(question.options.some(option => option.id === question.correctOptionId)).toBe(true);
-        expect(question.explanation.trim().length).toBeGreaterThan(10);
-      }
-    }
+    expect(snapshot.studyCards?.length).toBeGreaterThan(0);
+    expect(snapshot.practiceQuestions).toBeUndefined();
+    expect(snapshot.practiceAttempts).toBeUndefined();
   });
-});
 
-describe("Study Lab practice attempts", () => {
-  it("creates, autosaves, flags and completes a course practice attempt", () => {
-    const initial = loadAcademicSnapshot();
-    const started = createPracticeAttempt(initial, "bio-112");
-    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress");
-    expect(attempt).toBeTruthy();
-    expect(attempt?.questionIds).toContain("practice-bio-osmosis");
-    expect(attempt?.durationSeconds).toBe(600);
-    const correctAnswers = Object.fromEntries(attempt!.questionIds.map(id => [id, initial.practiceQuestions?.find(question => question.id === id)?.correctOptionId ?? ""]));
-    const saved = updatePracticeAttempt(started, attempt!.id, correctAnswers, ["practice-bio-osmosis"], 42);
-    expect(saved.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
-      answers: correctAnswers,
-      flaggedIds: ["practice-bio-osmosis"],
-      elapsedSeconds: 42,
-    });
-    const completed = completePracticeAttempt(saved, attempt!.id);
-    expect(completed.practiceAttempts?.find(item => item.id === attempt!.id)).toMatchObject({
-      status: "completed",
+  it("preserves legacy local practice history when validating and restoring old backups", () => {
+    const snapshot = loadAcademicSnapshot();
+    const courseId = snapshot.courses[0].id;
+    const legacyQuestion = {
+      id: "legacy-practice-question",
+      courseId,
+      concept: "Legacy compatibility",
+      prompt: "Legacy prompt",
+      options: [{ id: "a", text: "Option A" }, { id: "b", text: "Option B" }],
+      correctOptionId: "a",
+      explanation: "Legacy explanation retained for backup compatibility.",
+      source: "demo" as const,
+    };
+    const legacyAttempt = {
+      id: "legacy-practice-attempt",
+      courseId,
+      questionIds: [legacyQuestion.id],
+      answers: { [legacyQuestion.id]: "a" },
+      flaggedIds: [],
+      startedAt: "2026-11-25T12:00:00.000Z",
+      completedAt: "2026-11-25T12:01:00.000Z",
+      elapsedSeconds: 60,
+      durationSeconds: 600,
       score: 100,
-    });
-    expect(completed.revision).toBe(saved.revision + 1);
-    expect(isAcademicSnapshot(completed)).toBe(true);
-  });
-
-  it("persists a selected time limit and rejects unsafe duration values", () => {
-    const initial = loadAcademicSnapshot();
-    const started = createPracticeAttempt(initial, "bio-112", 300);
-    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress");
-    expect(attempt?.durationSeconds).toBe(300);
-    expect(createPracticeAttempt(initial, "bio-112", 30)).toBe(initial);
-    expect(isAcademicSnapshot(started)).toBe(true);
-  });
-
-  it("resumes an existing in-progress attempt instead of creating a duplicate", () => {
-    const started = createPracticeAttempt(loadAcademicSnapshot(), "eng-204");
-    const resumed = createPracticeAttempt(started, "eng-204");
-    expect(resumed).toBe(started);
-    expect(resumed.practiceAttempts?.filter(item => item.courseId === "eng-204" && item.status === "in_progress")).toHaveLength(1);
-  });
-
-  it("rejects answers that do not belong to the question", () => {
-    const started = createPracticeAttempt(loadAcademicSnapshot(), "his-210");
-    const attempt = started.practiceAttempts?.find(item => item.status === "in_progress")!;
-    const rejected = updatePracticeAttempt(started, attempt.id, { "practice-his-source": "unknown-option" }, [], 10);
-    const foreignQuestion = updatePracticeAttempt(started, attempt.id, { "practice-eng-thesis": "b" }, [], 10);
-    expect(rejected).toBe(started);
-    expect(foreignQuestion).toBe(started);
+      status: "completed" as const,
+    };
+    const legacySnapshot = { ...snapshot, practiceQuestions: [legacyQuestion], practiceAttempts: [legacyAttempt] };
+    expect(isAcademicSnapshot(legacySnapshot)).toBe(true);
+    const restored = parseAcademicBackup(createAcademicBackup(legacySnapshot));
+    expect(restored?.practiceQuestions).toEqual([legacyQuestion]);
+    expect(restored?.practiceAttempts).toEqual([legacyAttempt]);
   });
 });
 
