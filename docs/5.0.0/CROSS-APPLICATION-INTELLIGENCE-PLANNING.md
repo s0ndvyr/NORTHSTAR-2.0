@@ -333,3 +333,23 @@ On 2026-11-25 the user approved **C / B / A / A / A**:
 See [INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md) for the integrated system boundaries, recommended technical defaults, consistency model, offline policy, migration controls, verification gates and outstanding evidence.
 
 The integrated technical recommendations are planning defaults only. Library installation, physical schema design, source migration and runtime qualification remain unauthorized. The full source-level legacy inventory and dated Canvas endpoint capability research are still outstanding; this workstream is not signed off.
+
+
+
+## 18. Current owner product-scope clarification and supersession — 2026-11-25
+
+The owner reaffirmed that NORTHSTAR is an academic organizer/intelligence layer, not a Canvas/LMS replacement. Academic workspaces and ongoing course-editor development remain approved. The following earlier planning statements are superseded for the target NORTHSTAR 5.0 application wherever they describe native user-facing operations:
+- queued/pending Canvas submission, submission receipt creation, upload/re-submit or submission recovery;
+- provider-write commands for assignments, grades, calendar, discussions or documents;
+- timed graded quizzes/tests, question banks, answer attempts, scoring or quiz submission;
+- general-purpose document editing.
+
+The canonical architecture may retain a minimal **read-only provider status snapshot** where needed to display an externally recorded assignment state. It must be provider-owned, provenance-bearing, permission-dependent and non-editable from NORTHSTAR. It is not a Submission command, upload workflow, attempt entity or receipt simulation. A local personal status may describe the user's planning progress but cannot be represented as provider-confirmed.
+
+Study Lab is restricted to flashcards, spaced repetition, study guides and other non-assessment learning aids. Review Center is a limited local writing-feedback/draft workspace, not a document editor suite. Course editor operations are local to NORTHSTAR's personal course workspace and must not mutate Canvas course records.
+
+**Preservation of historical decisions:** The original ten NS-CAI requirements and prior architecture decisions remain in the record. NS-CAI-009's provider-write portion is restricted by NS-SCOPE-001; its least-privilege, secret-isolation, permission and revocation principles remain applicable. The old submission-specific state-machine text is historical and is not a target 5.0 acceptance contract.
+
+**External gate:** The current Instructure Canvas API Policy effective 2026-11-25 creates an unresolved authorization/partnership question (NS-CAN-011). Public API documentation research is allowed; no live tenant request or credential use occurs until written authorization is documented.
+
+**Implementation/evidence:** The new `apps/web/` app has had its timed quiz engine and local turn-in action removed, and its Canvas adapter has no submission operation. The legacy root app/Worker still contains older capabilities and is tracked separately under NS-CAN-012 / NSX-028. This is source-level implementation evidence only; final CI and browser qualification are tracked in the execution plan.
