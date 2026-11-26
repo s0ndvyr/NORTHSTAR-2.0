@@ -3,11 +3,10 @@
 [![NORTHSTAR Web Qualification](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml/badge.svg?branch=northstar-5.0.0-development)](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml)
 
 **Status:** Active implementation and qualification  
-**Last updated:** 2026-11-26 02:46 UTC  
+**Last updated:** 2026-11-26 02:50 UTC  
 **Development branch:** `northstar-5.0.0-development`  
-**Last fully qualified application-code checkpoint:** `4aaa2984cc45e55456097a901b8734b713bfc61d`  
-**Latest successful full qualification run:** [GitHub Actions #45744014664](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744014664) on commit `4aaa2984...` — 17 workflow steps succeeded; typecheck, production dependency audit, 50 domain tests across 3 files, production build and all 13 Playwright browser journeys passed
-**Current security-hardening change:** commit `d6622c8d...` adds HTTPS-only external resource URL validation and tests; run [#45744506192](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744506192) has passed typecheck, audit, domain tests and build; browser qualification is pending
+**Latest fully qualified application-code checkpoint:** `d6622c8d9a1d82a45441465a996f591f0f716354`  
+**Latest successful full qualification run:** [GitHub Actions #45744506192](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744506192) on commit `d6622c8d...` — 17 workflow steps succeeded; typecheck, production dependency audit, 61 domain tests across 4 files, production build and all 13 Playwright browser journeys passed
 
 Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
 
@@ -48,9 +47,9 @@ All 17 workflow steps completed successfully:
 - Production dependency audit passed.
 - Domain test suite passed: 50 tests across 3 files.
 - Production Vite build passed.
-- All 13 Playwright browser journeys passed in 16.6 seconds, including the 1024 × 1366 Chromium tablet viewport, offline cached-shell reload, two-tab conflict export with explicit save acknowledgement and non-assessment flashcard practice.
+- All 13 Playwright browser journeys passed in 19.6 seconds, including the 1024 × 1366 Chromium tablet viewport, offline cached-shell reload, two-tab conflict export with explicit save acknowledgement, non-assessment flashcard practice and the current external-link rendering path.
 
-The earlier baseline run #45695594885 also passed 51 domain tests and 13 browser journeys on commit 4fc4e478. The latest run qualifies the current code checkpoint. Two documentation-only commits follow; no application code changed after 4aaa2984.
+The earlier baseline run #45695594885 also passed 51 domain tests and 13 browser journeys on commit 4fc4e478. The latest run qualifies the current code checkpoint. Six documentation-only commits follow; no application code changed after d6622c8.
 
 The automated iPad viewport check is Chromium-based. It does not establish physical iPad Safari compatibility, touch/keyboard behavior, assistive-technology acceptance, or long-duration storage/offline reliability. Those remain open manual/device gates.
 
@@ -83,7 +82,7 @@ Continue implementation in coherent, connected increments. Do not restart planni
 
 NORTHSTAR 5.0 remains an academic organizer/intelligence layer. Academic workspaces and the course editor remain approved. Native quizzes/tests, assignment submissions/turn-in workflows and general-purpose document editors are excluded. Canvas and external services retain those workflows.
 
-The new 5.0 app's timed multiple-choice Study Lab attempt engine, local “Turn in locally” action and Canvas `submitAssignment` adapter method have been removed. The Canvas adapter remains unconfigured/read-only; Submitted/Graded records are display-only and the personal status updater rejects those transitions. Automated qualification passed on code commit 4aaa2984, including the explicit conflict-export acknowledgement flow. The legacy root app and Worker still contain older capabilities and remain separately tracked under NSX-028; they have not been disabled or deleted. The Review Center remains limited to local writing drafts and feedback; it is not a general-purpose document editor. Legacy source remains untouched pending mapping and separate retirement approval.
+The new 5.0 app's timed multiple-choice Study Lab attempt engine, local “Turn in locally” action and Canvas `submitAssignment` adapter method have been removed. The Canvas adapter remains unconfigured/read-only; Submitted/Graded records are display-only and the personal status updater rejects those transitions. Automated qualification passed on code commit d6622c8, including the explicit conflict-export acknowledgement flow and HTTPS-only external resource URL validation. The legacy root app and Worker still contain older capabilities and remain separately tracked under NSX-028; they have not been disabled or deleted. The Review Center remains limited to local writing drafts and feedback; it is not a general-purpose document editor. Legacy source remains untouched pending mapping and separate retirement approval.
 
 See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md) for task dependencies, approval boundaries and evidence.
 
@@ -92,13 +91,13 @@ See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENC
 
 - Phase 0 remains formally closed. The separate bounded authorization for local/demo implementation and development-branch qualification is recorded in the transition plan; Phase 0 sign-off itself is not treated as implementation authorization.
 - The 5.0.1 Academic Data & Canvas Intelligence planning specification remains approved as planning only. The separate Cross-Application Intelligence final planning review is still pending; the schema, provider mapping, read-only sync contract and API-policy gate are documented in the execution plan.
-- The last fully qualified code checkpoint 4aaa2984 passed the full 5.0 web qualification workflow. A subsequent security-hardening change d6622c8d validates external resource URLs and is awaiting the browser stage of run 45744506192.
+- The latest code checkpoint d6622c8 passed the full 5.0 web qualification workflow in run 45744506192. The current development branch is documentation-only after that code checkpoint.
 - The current Instructure API Policy (effective 2026-11-25) creates a written authorization/partnership gate. No live Canvas request or credential use is claimed.
 - The repository release manifest remains legacy 4.4.x: Pages production 4.4.7.5, preview 4.4.8.3.1 and Worker 0.4.22. The 5.0 app has no deployment workflow or 5.0 release entry. Live deployment state was not rechecked.
 - Remaining high-risk recovery gap: conflict export now retains records until the user confirms saving the bundle and any needed files; the bundle contains an attachment metadata manifest but not binary bytes. Portable attachment archive/restore, cross-store atomicity, quota recovery and orphan cleanup remain open under NSX-029; a new archive/restore workflow requires separate scope approval.
 - Remaining qualification gates: accessibility across workspaces, physical iPad Safari, offline/quota/corruption/interrupted-write matrix, attachment lifecycle, legacy capability parity, security/privacy review and release readiness.
 
 
-## Security hardening in progress — 2026-11-26
+## Security hardening checkpoint — 2026-11-26
 
-A static review found two new-app resource links directly bound stored URLs to href. The new helper apps/web/src/domain/external-links.ts now allows absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and both links use rel=noopener noreferrer. Unit tests cover the accepted and rejected cases. Typecheck, dependency audit, domain tests and build have passed in run 45744506192; the browser qualification stage is still pending. CSP/response headers, dynamic security testing, local data-at-rest policy and release sign-off remain open.
+A static review found two new-app resource links directly bound stored URLs to href. The new helper apps/web/src/domain/external-links.ts now allows absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and both links use rel=noopener noreferrer. Unit tests cover the accepted and rejected cases. All 17 workflow steps passed in run 45744506192, including 61 domain tests across 4 files and all 13 Playwright browser journeys. CSP/response headers, dynamic security testing, local data-at-rest policy and release sign-off remain open.
