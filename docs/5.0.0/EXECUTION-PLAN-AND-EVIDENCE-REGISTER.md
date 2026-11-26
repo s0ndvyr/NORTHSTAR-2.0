@@ -53,16 +53,16 @@ Each task record must include task ID; start branch and SHA; inspected/changed p
 | Audited stabilization branch | `northstar-4.4.8.3.1-stabilization` | Branch API |
 | Audited migration-source head | `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Branch API |
 | Development branch | `northstar-5.0.0-development` | Branch API |
-| Development branch head | `492f7802b955a11d459f345e3b39f09ec4a4ded6` | Branch API, verified 2026-11-26 02:42 UTC |
+| Development branch head | `cbde2e3967e98867a0ac956c3c77be9ab6708a8d` | Branch API, verified 2026-11-26 02:48 UTC |
 | Prior successful CI/code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Ancestor of current development branch; successful run 45695594885, not current branch head |
 | Phase 0 to setup branch | 62 commits ahead, 0 behind | Compare API |
 | Last application-code checkpoint | `4aaa2984cc45e55456097a901b8734b713bfc61d` | Latest recovery code/test commit; qualified by run 45744014664 |
 | Phase 0 branch tree | 78 tracked files at inspected head | Recursive Git tree |
-| Development branch tree | 110 tracked files at inspected head | Recursive Git tree |
+| Development branch tree | 112 tracked files at inspected head | Recursive Git tree; includes external-links helper and tests |
 | 4.4.8.3.2 qualification branch | `northstar-4.4.8.3.2-assignment-workspace-qualification` at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b` | Branch API |
-| Prior successful CI checkpoint to current development head | 82 commits ahead, 0 behind | Compare API |
-| Last app-code commit to current development head | 2 commits ahead, 0 behind; only DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md changed | Compare API |
-| Phase 0 to development branch | 459 commits ahead, 0 behind | Compare API, 2026-11-26 02:42 UTC |
+| Prior successful CI checkpoint to current development head | 99 commits ahead, 0 behind | Compare API |
+| Last app-code commit to current development head | 6 commits ahead, 0 behind; changed paths are documentation only | Compare API |
+| Phase 0 to development branch | 476 commits ahead, 0 behind | Compare API, 2026-11-26 02:48 UTC |
 
 The audited stabilization branch remains at `df0427304e0f03aa822a1c8fe99547355e9c0bfc`; a later 4.4.8.3.2 qualification branch exists at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b`. The Phase 0 setup branch is 62 commits ahead of the stabilization source and contains the closed Phase 0 planning artifacts. The development branch is 443 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch remains divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint), so it is not a substitute for the migration source.
 
@@ -97,7 +97,7 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 | NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — deterministic seed and explicit conflict-export acknowledgement passed all 13 browser journeys; broader storage failure/recovery matrix remains** |
 | NSX-023 | Complete physical iPad Safari/PWA acceptance | NS-UX-002; NS-QUAL-002 | NSX-021, NSX-022 | **Blocked — physical device/session required** |
 | NSX-024 | Complete capability parity and legacy preservation reconciliation | NS-MIG-001/002/003/005; Phase 0 preservation rule | NSX-004, NSX-005, NSX-015 | **Partial; no legacy deletion authorized** |
-| NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Partial — threat model and 19-file static source review documented; HTTPS URL validation implemented with tests pending run 45744506192; CSP, dynamic security testing and release controls remain** |
+| NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Partial — threat model and static source review documented; HTTPS URL validation passed CI/browser qualification; CSP, dynamic security testing and release controls remain** |
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
 | NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
 | NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — conflict export acknowledgement and attachment metadata manifest implemented and browser-qualified; binary archive/restore, cross-store transaction and orphan cleanup remain** |
@@ -342,7 +342,7 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 - **Deliverables:** Security review, release checklist, known limitations and gated action list.
 - **Acceptance:** No unresolved critical security/data-loss issue; preview and production are separate; production release remains blocked until explicit approval.
 - **Verification:** Static review, automated scans/CI and documented manual checks. Do not claim production readiness from a passing app build.
-- **Status:** Partial — threat model and static source audit documented; HTTPS URL validation and unit tests committed, qualification run 45744506192 pending; no full dynamic security audit, CSP validation, penetration test or release sign-off.
+- **Status:** Partial — threat model and static source audit documented; HTTPS URL validation and unit tests passed run 45744506192; no full dynamic security audit, CSP validation, penetration test or release sign-off.
 
 #### NSX-026 — Final reconciliation and closeout
 - **Work:** Recheck branch head, commits, docs, traceability, task statuses and evidence locations after all authorized work.
@@ -394,7 +394,7 @@ The Review Center is a limited local writing draft/feedback surface, not a gener
 | EV-008 | NSX-020 | Commits `2f29f7e5...`, `8bc90367...`, `a8d780d3...`, `8b38a3f0...` | Removed timed quiz/attempt UI, local turn-in affordance and Canvas `submitAssignment` contract; Study Lab concepts now derive from flashcards | Source diff evidence; current CI qualification still pending |
 | EV-009 | NSX-021/022 | GitHub Actions run `45695594885`; job `139492079926` logs | Run completed `success`; 17 workflow steps succeeded; domain tests: 3 files / 51 tests passed; Playwright: 13 tests passed in 19.1s | Automated CI evidence for commit `4fc4e478...` only; does not qualify later code changes, physical iPad Safari, live provider or production. |
 | EV-010 | NSX-001/020 | Commit `4fc4e478...` diff | Only `apps/web/vite.config.ts` changed; chunk warning limit set to 650 | Commit diff |
-| EV-011 | NSX-001 | Current development head 0f1c402e...; branch API and compare against Phase 0 | Current dev head; 450 commits ahead of Phase 0, 0 behind; latest app code checkpoint 58f0c139... with documentation-only commits after it | Git ref and ancestry evidence |
+| EV-011 | NSX-001 | Current development head cbde2e39...; branch API and compare against Phase 0 | Current dev head; 476 commits ahead of Phase 0, 0 behind; latest app code checkpoint d6622c8d... with documentation-only commits after it | Git ref and ancestry evidence |
 
 | EV-012 | NSX-003/020 | Decision register, README, traceability and architecture addenda; commits 46807747..., 4f38ce73..., cc85e5f4..., 956390fe... | Current product boundary recorded: academic workspaces/course editor retained; native quizzes, submissions and document editor excluded; legacy source preserved | Repository decision/document evidence; no legacy retirement |
 | EV-013 | NSX-006/028 | canvas-bridge/worker.js, tests/bridge.test.mjs, scripts/submissions.js, scripts/document-editor.js, scripts/document-storage.js | Legacy Worker and UI retain old write/quiz/upload/document capabilities; Worker and test files match audited stabilization blobs | Static source evidence; no live Worker recheck |
@@ -410,7 +410,7 @@ The Review Center is a limited local writing draft/feedback surface, not a gener
 | EV-023 | NSX-030 | GitHub Actions run 45743250191 on commit 57c4e5d... | Typecheck failed because test fixtures referenced AcademicSnapshot without importing its type; subsequent correction committed as 58f0c139... | Failure captured; correction committed; rerun in progress |
 | EV-024 | NSX-020/022/030 | GitHub Actions run 45743400167 on commit 58f0c139...; job 139653581983 | 17 steps succeeded; TypeScript typecheck, production dependency audit, 3 domain test files / 50 tests, Vite production build and 13 Playwright journeys passed (17.4s) | Automated qualification passed for this code commit; documentation-only commits follow |
 | EV-025 | NSX-022/029/025 | Commits eb83e57..., a0618d0..., 1dde510..., 9dfd287..., 4aaa2984...; GitHub Actions run 45744014664, job 139655583227 | Conflict bundle now includes local/saved attachment metadata manifest; conflict records remain until user explicitly confirms bundle/file preservation; added clear-all operation, unit test and two-tab browser assertion. Run passed: 17 steps, 50 domain tests across 3 files, production build and 13 Playwright journeys (16.6s) | Automated qualification passed for code commit 4aaa2984; binary attachment bytes remain excluded |
-| EV-026 | NSX-025 | Commits creating apps/web/src/domain/external-links.ts and external-links.test.ts plus App.tsx update `d6622c8d...`; run 45744506192 | Both external resource link renderers now accept HTTPS URLs only, reject credentials and unsafe schemes, and set rel=noopener noreferrer; unit tests cover HTTPS, HTTP, JavaScript, data, file, relative and credential-bearing URLs | Typecheck, dependency audit, domain tests and build passed; browser installation/qualification in progress |
+| EV-026 | NSX-025 | Commits creating apps/web/src/domain/external-links.ts and external-links.test.ts plus App.tsx update `d6622c8d...`; run 45744506192, job 139657201264 | Both external resource link renderers accept HTTPS URLs only, reject credentials and unsafe schemes, and set rel=noopener noreferrer; tests cover valid HTTPS and rejected HTTP/JavaScript/data/file/relative/credential-bearing URLs | 17 workflow steps succeeded; 4 domain test files / 61 tests passed; production build and 13 Playwright journeys passed (19.6s) |
 
 ### 6.1 Latest successful baseline CI evidence
 
@@ -426,7 +426,7 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 - Run 45743250191: typecheck failed because the new test fixture omitted the AcademicSnapshot type import. Corrected in commit 58f0c139.
 - Run 45743400167: completed successfully on code checkpoint 58f0c139; 17 workflow steps, 50 domain tests and 13 Playwright journeys passed.
 - Run 45744014664: completed successfully on recovery code checkpoint 4aaa2984; 17 workflow steps, 50 domain tests and 13 Playwright journeys passed. This verifies the explicit conflict-export acknowledgement flow and attachment metadata manifest; binary file backup remains excluded. The current branch head is two documentation-only commits ahead.
-- Run 45744506192: current HTTPS external-link validation change (commit d6622c8d) has passed typecheck, production dependency audit, domain tests and build; browser installation/qualification is still in progress.
+- Run 45744506192: HTTPS external-link validation change (commit d6622c8d) passed all 17 workflow steps: typecheck, production dependency audit, 4 domain test files / 61 tests, production build and 13 Playwright journeys (19.6s).
 
 
 ## 7. Explicit blockers and approval gates
@@ -455,7 +455,7 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 
 ## 9. Next execution actions
 
-1. Complete the current security-hardening qualification run 45744506192 on the HTTPS URL validation change; then continue broader recovery qualification under NSX-022 and NSX-029 rather than treating the prior CI pass as full release acceptance.
+1. Preserve the qualified HTTPS URL validation checkpoint d6622c8d / run 45744506192; continue CSP/response-header design, dynamic security tests and broader recovery qualification under NSX-022/025/029.
 2. Complete NSX-022's offline/recovery matrix: storage quota/corruption, interrupted writes, cross-tab competing edits, reload recovery and safe conflict export acknowledgement.
 3. Complete NSX-029 planning for attachment Blob/metadata lifecycle, portable backup/restore, conflict attachment manifest, orphan cleanup and quota behavior. Do not implement a new archive/restore workflow until its scope and data-loss behavior are approved.
 4. Complete NSX-030 canonical personal/provider status separation in the persisted model and migration contract; current type/runtime guard is only an intermediate control.
@@ -465,4 +465,4 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 8. Keep NSX-027 blocked until written Customer/Instructure authorization and approved tenant/scopes exist. Keep NSX-028 blocked until the owner decides legacy runtime disposition and separately authorizes any deployment/retirement.
 9. Finish NSX-026 repository/document reconciliation only after all authorized work and evidence are complete.
 
-**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization, personal/provider status protections and explicit conflict-export acknowledgement passed full CI/browser qualification on code commit 4aaa2984 (run 45744014664). A subsequent HTTPS external-link validation change is committed but its browser qualification run 45744506192 is still in progress. Binary attachment backup, broader recovery, accessibility, iPad, security and release gates remain. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
+**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization, personal/provider status protections and explicit conflict-export acknowledgement passed full CI/browser qualification on code commit 4aaa2984 (run 45744014664). A subsequent HTTPS external-link validation change passed full CI/browser qualification on code commit d6622c8d (run 45744506192). The current branch head is six documentation-only commits ahead. CSP, dynamic security testing, binary attachment backup, broader recovery, accessibility, iPad and release gates remain. Binary attachment backup, broader recovery, accessibility, iPad, security and release gates remain. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
