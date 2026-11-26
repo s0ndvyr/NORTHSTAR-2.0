@@ -166,3 +166,48 @@ All sources below were reviewed on **2026-11-25**. These links are official Inst
 - [Throttling](https://developerdocs.instructure.com/services/canvas/basics/file.throttling) — dynamic request-cost limits and response headers.
 
 **Disposition:** Public documentation research has begun and a read-only endpoint baseline is recorded. Exact mapping of every existing Worker route to the official contracts remains open. Target-tenant authorization is unresolved. No live Canvas request, credential, submission, quiz or document-editing workflow is implemented or verified.
+
+
+## 11. Legacy Worker source and deployment separation
+
+The audited legacy Worker is still present byte-for-byte on both `northstar-4.4.8.3.1-stabilization` and `northstar-5.0.0-development` at the inspected checkpoint:
+
+- `canvas-bridge/worker.js` SHA: `dccb78bfc377f90ce5aba5d51ba52c129dc2aeee`
+- `tests/bridge.test.mjs` SHA: `0163a1d7ef483c4a336867ade9a76b813aff6f75`
+- Worker build marker in source: `0.4.22 (4.4.8.2)`
+- The source fixes `ALLOWED_ORIGIN` to the GitHub Pages origin and `CANVAS_ORIGIN` to the institution Canvas origin. These are legacy deployment-bound constants; no live request was made.
+- A deployment workflow exists at `.github/workflows/deploy-canvas-bridge.yml`. The currently deployed Worker version and deployment state have **not** been verified.
+
+### 11.1 Legacy route families found by static inspection
+
+**Read/launch routes in legacy source:**
+- `/login/session_token` with a bounded `return_to` allowlist for assignment, quiz, file and external-tool pages.
+- Current-user identity and course/course-assignment/assignment-group/file metadata reads.
+- Assignment submission history/feedback/rubric reads.
+- Classic Quiz details/questions/submission/time and quiz-submission question reads.
+- New Quizzes details and items under `/api/quiz/v1/`.
+- Discussion topics, entries, replies and entry lists.
+- Assignment-specific external-tool sessionless launch.
+
+**Write/action routes in legacy source:**
+- Assignment submission creation for text, URL and uploaded-file types.
+- Assignment and quiz file-upload initialization and signed-storage upload/finalization.
+- Classic Quiz start, answer updates, flag/unflag and completion.
+- Discussion entry/reply creation and discussion entry editing.
+
+The Worker validates origin, bearer header, method, path, query and JSON payload; it caps upload size at 25 MB and validates signed upload destinations. These controls are evidence of the legacy implementation's design, not proof of current deployment or policy authorization.
+
+### 11.2 Test evidence and scope conflict
+
+`tests/bridge.test.mjs` explicitly tests successful assignment submission, quiz attempt start/answers/flagging/completion, assignment/quiz file uploads and discussion writes, as well as read and external-tool launch routes. `scripts/submissions.js` contains a Canvas POST submission client and receipt verification. `scripts/canvas-sync.js` normalizes provider-owned submission/grade states. `scripts/document-editor.js` and `scripts/document-storage.js` implement a legacy PDF/document editing and storage path.
+
+These are **legacy capabilities**, not the approved NORTHSTAR 5.0 application scope. The new `apps/web/` app now has a read-only, unconfigured Canvas adapter and no submit operation; it does not call these legacy routes. The legacy files and tests remain preserved. This is a scope separation, not a claim that the legacy source has been deleted or that the deployed Worker has been disabled.
+
+### 11.3 Required disposition
+
+NSX-028 / NS-CAN-012 track the outstanding decision:
+- Confirm whether the legacy site/Worker remains an intentionally separate frozen legacy product or whether its write/quiz/document capabilities should be disabled/decommissioned.
+- Verify deployment state only through an authorized deployment/account check.
+- Do not edit, disable, delete or redeploy the Worker, legacy UI, tests or document-editor files until the owner separately authorizes that action and the parity/rollback/security review is complete.
+
+**Risk:** The current NORTHSTAR 5.0 product boundary excludes native quizzes, submissions and document editors, while legacy source still contains those capabilities. The new app and legacy runtime must not be conflated.
