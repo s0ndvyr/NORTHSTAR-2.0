@@ -93,3 +93,25 @@ No gate is passed by documentation alone.
 Open: exact Canvas endpoint matrix; provider revision semantics; storage technology; cache quotas/freshness thresholds; retention and backup destination; legacy key/call-site inventory; grade calculation semantics; fixture privacy; performance budgets; physical iPad test matrix. Each gap needs an owner, decision date and affected requirement before implementation readiness.
 
 **Disposition:** Verification plan drafted; no tests, builds, live Canvas checks or iPad qualification performed.
+
+
+
+## 8. Current scope-specific acceptance and evidence additions — 2026-11-25
+
+Under NS-SCOPE-001, target 5.0 acceptance must include negative-scope checks:
+- no native quiz/test engine, timed assessment, question-bank attempt or scoring route/component;
+- no local “turn in” action, Canvas submission method, upload/re-submit or receipt simulation;
+- no general-purpose document editor; Review Center remains limited to local writing feedback/drafts;
+- no 5.0 call site into legacy Worker write/quiz/document routes;
+- Submitted/Graded provider/demo statuses are display-only and carry source/provenance; personal planning status cannot mutate provider facts.
+
+Local learning acceptance covers flashcard prompt/reveal/self-rating, spaced-repetition schedule, course study-guide generation and resource navigation. It must not create a graded assessment result.
+
+Additional data recovery scenarios:
+- two tabs initialize an empty store on the same day and must converge on identical seed content;
+- a malformed/incompatible stored snapshot is preserved and not overwritten by demo seed data;
+- localStorage quota failure, IndexedDB blocked/quota/abort, failed attach metadata save, failed delete, interrupted import/reset and orphan Blob detection;
+- backup/restore round trip explicitly reports that binary attachments are excluded until NS-DATA-007 is closed;
+- conflict bundle download is not treated as saved until the user acknowledges it; conflict data remains recoverable until then.
+
+The scope correction and cross-tab initialization fix are implemented in source; the latest qualification run is pending. No new browser or device acceptance is claimed until the run and required manual/device evidence pass.
