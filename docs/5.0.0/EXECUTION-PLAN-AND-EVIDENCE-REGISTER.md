@@ -53,16 +53,20 @@ Each task record must include task ID; start branch and SHA; inspected/changed p
 | Audited stabilization branch | `northstar-4.4.8.3.1-stabilization` | Branch API |
 | Audited migration-source head | `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Branch API |
 | Development branch | `northstar-5.0.0-development` | Branch API |
-| Development branch head | `e7aabe53c4f30f600900964ef42adf764da2fe47` | Branch API |
-| Last application-code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Commit diff |
+| Development branch head | `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5` | Branch API, verified 2026-11-26 02:31 UTC |
+| Prior successful CI/code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Ancestor of current development branch; successful run 45695594885, not current branch head |
 | Phase 0 to setup branch | 62 commits ahead, 0 behind | Compare API |
-| Phase 0 to development branch | 378 commits ahead, 0 behind | Compare API |
+| Last application-code checkpoint | `470641fda0c6104005c730a737359209f0ee276b` | Latest app/test code commit; subsequent 19 commits are documentation-only |
 | Phase 0 branch tree | 78 tracked files at inspected head | Recursive Git tree |
-| Development branch tree | 109 tracked files at inspected head | Recursive Git tree |
+| Development branch tree | 110 tracked files at inspected head | Recursive Git tree |
+| 4.4.8.3.2 qualification branch | `northstar-4.4.8.3.2-assignment-workspace-qualification` at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b` | Branch API |
+| Prior CI checkpoint to current development head | 66 commits ahead, 0 behind | Compare API |
+| Last app-code commit to current development head | 19 commits ahead, 0 behind; changed paths are documentation only | Compare API |
+| Phase 0 to development branch | 443 commits ahead, 0 behind | Compare API, 2026-11-26 |
 
-The stabilization branch still points to the audited source commit. The setup branch is 62 commits ahead of that source and contains the Phase 0 planning artifacts. The development branch is 378 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch is not a substitute for the migration source: it is divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint).
+The audited stabilization branch remains at `df0427304e0f03aa822a1c8fe99547355e9c0bfc`; a later 4.4.8.3.2 qualification branch exists at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b`. The Phase 0 setup branch is 62 commits ahead of the stabilization source and contains the closed Phase 0 planning artifacts. The development branch is 443 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch remains divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint), so it is not a substitute for the migration source.
 
-The current development head `e7aabe5` is a documentation/status update whose parent is `4fc4e47`. The `4fc4e47` application-code commit changes only `apps/web/vite.config.ts`, setting `chunkSizeWarningLimit: 650`; it is not itself a feature implementation commit.
+The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The latest app/test code commit is `470641fda0c6104005c730a737359209f0ee276b`; the 19 commits between that code checkpoint and the current branch head change documentation only. The earlier `4fc4e4788710c771c6490c9514a70f1c2ca51674` checkpoint is 66 commits behind the current development head and has a successful CI run, but it is not the current application-code checkpoint.
 
 ## 3. Ordered task register
 
