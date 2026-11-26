@@ -209,3 +209,12 @@ This module authorizes documentation updates and static repository/source analys
 - build/test execution or claims of runtime qualification.
 
 Any such work requires separate explicit user authorization. Planning approval and module sign-off do not imply implementation approval.
+
+
+## 13. Superseding authorization record — 2026-11-25
+
+The restriction in Section 12 records the authorization boundary at the time Module 1 was approved. It remains valid for live Canvas/StudentVUE/AI access, tenant verification, migration, Worker deployment, production changes and legacy deletion/disablement.
+
+A later, separate owner authorization is recorded in the development-branch [README](README.md), [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md) and [Requirements Traceability](REQUIREMENTS-TRACEABILITY.md). It authorizes bounded local/demo application implementation and development-branch CI/build/test work. This later authorization does not reopen Phase 0 and does not authorize the excluded operations listed above.
+
+The current controlling task sequence and evidence requirements are in [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md). Where this historical module text and the later authorization differ, the later explicit owner authorization controls only within its stated scope; all other restrictions remain.
