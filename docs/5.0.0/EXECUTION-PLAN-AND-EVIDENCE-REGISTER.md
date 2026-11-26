@@ -193,13 +193,13 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 
 #### NSX-007 — Official Canvas API evidence
 - **Work:** For each in-scope read capability, collect current official Instructure documentation: endpoint/method/version, fields, pagination, scopes/roles, rate limits, incremental updates, version semantics, errors, conditional fields and limitations. Distinguish official docs from tenant verification.
-- **Systems:** Canvas Courses, Assignments, Submissions/grade status read data where needed, Enrollments/Grades, Calendar, Files/Modules/Pages/Resources, and authentication/launch only where justified by approved workspaces.
+- **Systems:** Canvas Courses, Assignments, read-only provider assignment status if necessary, Grades, Calendar, Files/Modules/Pages/Resources. No submission, quiz, discussion or document write workflows in the 5.0 target.
 - **Deliverables:** Dated capability matrix with source URL, retrieval date, supported operations, scopes, constraints, evidence class and linked requirement/test IDs.
 - **Acceptance:** No provider capability is asserted without official documentation; no tenant behavior is called verified without a separately authorized tenant test.
 - **Verification:** Official provider documentation review and cross-check against Worker source. No writes, real credentials or tenant access.
 - **Dependencies:** NSX-006.
 - **Approval boundary:** Read-only public documentation research is authorized; live tenant access and any write test are not.
-- **Status:** Not started.
+- **Status:** Partial — official policy/API references and initial endpoint matrix recorded; exact route mapping remains open.
 
 #### NSX-008 — Canonical model completion
 - **Work:** Reconcile entities, fields, identity, versioning, lifecycle, relationships and nullable/optional semantics against source and workspace requirements.
