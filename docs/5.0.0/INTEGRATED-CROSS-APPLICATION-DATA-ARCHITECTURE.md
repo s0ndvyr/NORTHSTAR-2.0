@@ -256,3 +256,12 @@ No other live academic provider connector was found in the audited source. This 
 - User-supplied CSV/JSON and local file attachments remain user-owned; source/provenance and backup semantics must be explicit.
 - Provider-derived and user-authored fields remain separate; derived forecasts are labeled and never written back to a provider.
 - Cloudflare deployment state is not academic data and does not establish provider authorization.
+
+
+
+
+## 17. Authorization supersession and current architecture status
+
+The planning-only authorization statements in Sections 1 and 12 record the earlier architecture checkpoint. A later separate owner authorization, documented in `IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md` and the development-branch README, permits bounded local/demo implementation in `apps/web/` and development-branch CI/build/test. This does not reopen Phase 0.
+
+This integrated architecture remains a **planning specification** for live provider integration, provider SyncRun/SyncCheckpoint services, physical persistence redesign, data migration, external tenant access, production deployment and legacy runtime retirement. Those remain gated by the task-specific approvals in the execution plan. The secure BFF decision remains the required boundary if any live provider access is later authorized; the current app has no provider token or live API request.
