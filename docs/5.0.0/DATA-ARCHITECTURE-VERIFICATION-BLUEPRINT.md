@@ -191,7 +191,7 @@ Inspected 19 files across `apps/web/src/`, `apps/web/index.html`, `apps/web/publ
 - No `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`, `eval`, `new Function`, `document.write`, `window.open`, `XMLHttpRequest` or `WebSocket` usage was found in the inspected new-app source.
 - Resource `content` is rendered as React text, not injected HTML.
 - The only application `fetch` found is in the service worker. It handles same-origin GET navigation/static-asset requests; it does not cache cross-origin responses, academic records or API payloads.
-- The Study Lab external reference link uses `target="_blank"` with `rel="noreferrer"`; the Resources workspace link uses `rel="noreferrer noopener"`. Both currently bind a stored URL directly to `href`; explicit HTTPS scheme validation is still required and is tracked under NSX-025.
+- Both Study Lab and Resources external links now pass stored values through `safeExternalUrl`, which accepts absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and uses `rel="noopener noreferrer"`. Unit tests cover valid HTTPS and rejected JavaScript/data/file/HTTP/relative/credential-bearing values. The code is included in qualification run 45744506192, which is in progress at this update.
 - `apps/web/index.html` has no Content-Security-Policy meta tag, and the Vite config does not establish production response security headers. A production CSP/header policy must be designed and tested at the actual hosting layer before release.
 - The new app stores academic snapshot/conflict data in localStorage and attachment Blobs in IndexedDB without application-level encryption. This is a documented release/privacy risk, not an assertion that the browser profile is a secure vault.
 
