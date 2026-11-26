@@ -233,3 +233,26 @@ The architecture's earlier provider-write and pending-submission sections are pr
 The current Instructure Canvas API Policy effective 2026-11-25 requires an authorization/partnership determination before live API access. Public documentation research is captured in the Canvas matrix, but no live tenant request is authorized or claimed. Legacy Worker/UI write routes remain in the 4.4.x source and are tracked separately; do not disable or delete them without NSX-028 approval.
 
 The 5.0 app's localStorage/IndexedDB persistence is now mapped in the source inventory. Important unresolved architecture gaps include plaintext local snapshot/artifacts, no cross-store transaction, JSON backup exclusion of attachment bytes, conflict-bundle acknowledgement, quota/eviction limits and physical Safari evidence. NS-DATA-007 / NSX-029 owns attachment lifecycle and backup/recovery closure.
+
+
+## 16. Provider and application mapping — observed source state
+
+| Provider / system | Legacy 4.4.x source behavior | Target NORTHSTAR 5.0 behavior | Authority / gate |
+|---|---|---|---|
+| **Canvas (Instructure)** | Legacy Worker and root UI support course/assignment/grade reads, quiz APIs, submissions, file uploads, discussions and LTI launch | New app exposes an unconfigured read-only adapter stub for courses, assignments and grades; no network call, credentials or write method | Canvas remains authoritative; read-only live use blocked by NS-CAN-011; legacy write routes disposition blocked by NSX-028 |
+| **StudentVUE** | User-selected CSV/JSON import, normalized and stored locally; no StudentVUE API integration found | No StudentVUE connector/import flow in the current `apps/web/` app | Imported data is user-supplied/unverified until validation; any future import needs provenance and deletion/retention rules |
+| **Gemini / Google AI** | Legacy root scripts include Gemini API calls and a locally vaulted API key/model preference | New app uses deterministic local simulation/heuristics; no real AI provider call or API key | No external AI provider in 5.0; future use requires separate authorization, privacy/retention and Instructure AI transparency compliance if Canvas data is involved |
+| **Local browser storage** | localStorage JSON stores notes, periods, hidden assignments, draft/staging/return context; IndexedDB vault and document store | localStorage stores the canonical academic snapshot/conflict records/theme; IndexedDB stores local assignment attachment Blobs; service worker caches static shell | User-owned local data; current snapshot and blobs are plaintext at rest; attachment backup/recovery remains open under NS-DATA-007 |
+| **User-selected files** | Legacy PDF editor stores source bytes and annotation drafts; Canvas upload staging can send files through legacy Worker | New app stores assignment reference attachments locally only; no Canvas upload or submission | User-owned file data; file bytes not included in current JSON backup; no provider transfer |
+| **External tools / LTI** | Legacy Worker supports assignment-specific sessionless launch | New app may expose a safe external resource link only; no signed launch, credential forwarding or tool session | External provider remains authoritative; any launch beyond ordinary URL navigation needs separate authorization |
+| **Cloudflare Pages / Workers** | Hosting/deployment platform for legacy Pages and Canvas bridge Worker | New app qualification workflow only; no 5.0 deployment/release workflow or 5.0 release entry found | Infrastructure provider, not academic data authority; deployment changes require separate release authorization |
+
+No other live academic provider connector was found in the audited source. This is a static source inventory, not an exhaustive account-connector audit.
+
+### 16.1 Data-flow restrictions
+
+- No provider data enters the 5.0 app until an explicitly authorized read adapter is configured.
+- No Canvas write route, Gemini API request, StudentVUE API request, LTI signed launch or external file upload is invoked by the 5.0 app.
+- User-supplied CSV/JSON and local file attachments remain user-owned; source/provenance and backup semantics must be explicit.
+- Provider-derived and user-authored fields remain separate; derived forecasts are labeled and never written back to a provider.
+- Cloudflare deployment state is not academic data and does not establish provider authorization.
