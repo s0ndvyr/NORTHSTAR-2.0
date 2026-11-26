@@ -1,6 +1,54 @@
-# NORTHSTAR | Academic Command Center
+# NORTHSTAR 5.0.0 | Academic Command Center
 
-A redesigned, iPad-friendly academic dashboard for GitHub Pages. The interface starts with **example data**, clearly labeled; connecting Canvas replaces that data with your live courses and assignments.
+NORTHSTAR 5.0 is a personal, iPad-first academic organizer and intelligence layer. It coordinates courses, assignments, planning, calendar, gradebook insights, resources, study aids and local writing feedback. It is **not** a Canvas/LMS replacement.
+
+> **Important:** This repository still contains the historical NORTHSTAR 4.4.x root application and its Canvas Worker. The old 4.4.x instructions are retained below for historical reference only; they are not the NORTHSTAR 5.0 product specification or deployment instructions.
+
+## Current NORTHSTAR 5.0 application
+
+- Application source: `apps/web/` (React 19, TypeScript, Vite 6, iPad-first PWA).
+- Development branch: `northstar-5.0.0-development`.
+- Data mode: synthetic/local demo data; no live Canvas, StudentVUE or AI provider connection.
+- Canvas boundary: the new app's adapter is unconfigured and read-only. No provider write operation is exposed.
+- Assignment boundary: organize and track work; no native turn-in, upload, re-submit or submission receipt workflow. Submitted/Graded records are display-only.
+- Study Lab: flashcards, spaced repetition and course guides; no timed quiz/test engine or graded attempts.
+- Course editor: personal NORTHSTAR course organization only; it does not edit Canvas.
+- Review Center: limited local writing feedback/drafts, not a general-purpose document editor.
+- AI Workspace: deterministic local simulation; no real AI API key or provider request.
+
+### Local development and qualification
+
+Requirements: Node.js 20.19+ (CI uses Node 22).
+
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+
+Available checks:
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run check:bundle
+```
+
+The GitHub Actions workflow `.github/workflows/northstar-web-qualification.yml` runs typecheck, production dependency audit, domain tests, production build and Playwright browser qualification. Playwright is installed ephemerally by CI; the workflow does not deploy the app.
+
+### Current release and qualification boundary
+
+- No NORTHSTAR 5.0 Pages/production deployment or 5.0 release entry is recorded.
+- The current `release.json` remains a legacy 4.4.x manifest: it records Pages production 4.4.7.5, preview 4.4.8.3.1 and Canvas Worker 0.4.22. Those are repository release records; the live deployment was not rechecked in this work session.
+- The legacy Worker source still contains submission, quiz, upload and discussion-write routes. It is not used by the new 5.0 app. Its deactivation/retirement requires a separate owner decision and deployment authorization.
+- Live Canvas authorization under the current Instructure API Policy is unresolved; no tenant request or credential use is authorized.
+- Automated local/demo qualification is in progress. Physical iPad Safari testing, full accessibility/security/performance qualification, live provider verification, data migration and production release are not claimed.
+- The current local academic snapshot and attachment files are stored separately in browser localStorage/IndexedDB. The JSON backup does not include attachment bytes; see `docs/5.0.0/SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md`.
+
+## Legacy NORTHSTAR 4.4.x application documentation (historical; not the 5.0 scope)
+
+The following root-level files and instructions describe the 4.4.x application and its existing deployment. They are retained to preserve project history and support legacy investigation. Do not interpret them as approval to add these workflows to NORTHSTAR 5.0.
 
 ## Run and publish
 
