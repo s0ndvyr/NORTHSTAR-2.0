@@ -2,7 +2,7 @@
 
 **Control document:** Execution plan for the existing NORTHSTAR 5.0.0 project  
 **Status:** Active; baseline verified, scope reconciliation and evidence work in progress  
-**Plan revision:** 1.0 — 2026-11-25  
+**Plan revision:** 1.1 — 2026-11-26  
 **Execution branch:** `northstar-5.0.0-development`  
 **Planning baseline branch:** `northstar-5.0.0-phase-0-setup`  
 **Phase 0:** Formally closed; this document does not reopen it  
@@ -53,20 +53,20 @@ Each task record must include task ID; start branch and SHA; inspected/changed p
 | Audited stabilization branch | `northstar-4.4.8.3.1-stabilization` | Branch API |
 | Audited migration-source head | `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Branch API |
 | Development branch | `northstar-5.0.0-development` | Branch API |
-| Development branch head | `cbde2e3967e98867a0ac956c3c77be9ab6708a8d` | Branch API, verified 2026-11-26 02:48 UTC |
+| Development branch head | `6235833780bc60ced7e043ba9f45e371b7fa9e3f` | Branch API, verified 2026-11-26 02:56 UTC |
 | Prior successful CI/code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Ancestor of current development branch; successful run 45695594885, not current branch head |
 | Phase 0 to setup branch | 62 commits ahead, 0 behind | Compare API |
-| Last application-code checkpoint | `4aaa2984cc45e55456097a901b8734b713bfc61d` | Latest recovery code/test commit; qualified by run 45744014664 |
+| Last application-code checkpoint | `d6622c8d9a1d82a45441465a996f591f0f716354` | Latest security-hardening code/test commit; qualified by run 45744506192 |
 | Phase 0 branch tree | 78 tracked files at inspected head | Recursive Git tree |
 | Development branch tree | 112 tracked files at inspected head | Recursive Git tree; includes external-links helper and tests |
 | 4.4.8.3.2 qualification branch | `northstar-4.4.8.3.2-assignment-workspace-qualification` at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b` | Branch API |
-| Prior successful CI checkpoint to current development head | 99 commits ahead, 0 behind | Compare API |
-| Last app-code commit to current development head | 6 commits ahead, 0 behind; changed paths are documentation only | Compare API |
-| Phase 0 to development branch | 476 commits ahead, 0 behind | Compare API, 2026-11-26 02:48 UTC |
+| Prior successful CI checkpoint to current development head | 113 commits ahead, 0 behind | Compare API |
+| Last app-code commit to current development head | 20 commits ahead, 0 behind; 8 changed paths are documentation only | Compare API |
+| Phase 0 to development branch | 490 commits ahead, 0 behind | Compare API, 2026-11-26 02:56 UTC |
 
 The audited stabilization branch remains at `df0427304e0f03aa822a1c8fe99547355e9c0bfc`; a later 4.4.8.3.2 qualification branch exists at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b`. The Phase 0 setup branch is 62 commits ahead of the stabilization source and contains the closed Phase 0 planning artifacts. The development branch is 443 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch remains divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint), so it is not a substitute for the migration source.
 
-The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The latest app/test code commit is `470641fda0c6104005c730a737359209f0ee276b`; the 19 commits between that code checkpoint and the current branch head change documentation only. The earlier `4fc4e4788710c771c6490c9514a70f1c2ca51674` checkpoint is 66 commits behind the current development head and has a successful CI run, but it is not the current application-code checkpoint.
+The current development head is `6235833780bc60ced7e043ba9f45e371b7fa9e3f`. The latest app/test code commit is `d6622c8d9a1d82a45441465a996f591f0f716354`, qualified by run 45744506192; the 20 commits between that code checkpoint and the current branch head change documentation only across eight paths. The earlier `4fc4e4788710c771c6490c9514a70f1c2ca51674` checkpoint is 113 commits behind the current development head and has a successful CI run, but it is not the current application-code checkpoint.
 
 ## 3. Ordered task register
 
