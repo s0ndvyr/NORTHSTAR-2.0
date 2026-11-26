@@ -64,3 +64,20 @@ Exact freshness thresholds; per-class/total cache quotas; retention periods and 
 Test quota exhaustion during draft save; app termination during queue write; device loss and restore; corrupted/incomplete archive; disconnect with queued operations; permission revocation; stale grades/deadlines; selective file eviction; restore duplicates; and term archive. Evidence must show unsynced user work is never silently lost.
 
 **Disposition:** Proposed lifecycle policy; quantitative and platform-specific decisions remain open.
+
+
+
+## 11. Current 5.0 implementation boundary and evidence update — 2026-11-25
+
+The original policy's pending provider-operation metadata and restore/replay sections were drafted for a broader write-enabled integration. Under NS-SCOPE-001, those are not active NORTHSTAR 5.0 product operations. The 5.0 Canvas boundary is read-only and unconfigured pending NS-CAN-011. There is no offline queue for Canvas submissions, quiz attempts, discussion posts, document edits or other provider writes.
+
+Current 5.0 offline behavior is:
+- local academic snapshot persisted in localStorage;
+- local assignment attachment Blobs stored separately in IndexedDB;
+- a service worker caches the static application shell/assets and falls back to cached navigation;
+- no provider data sync, cloud sync or cross-device replication is implemented;
+- cross-tab local edits use revision checks and two-sided conflict preservation.
+
+The 5.0 JSON backup and conflict bundle exclude IndexedDB attachment bytes (and the current JSON helper removes artifact metadata). The UI warns that attachments must be downloaded separately. There is no separate attachment archive or orphan scanner. Attach/delete/import/reset operations span localStorage and IndexedDB without a cross-store transaction. These are explicit NS-DATA-007 / NSX-029 gaps, not accepted recovery behavior.
+
+Do not invent numeric storage quotas, freshness periods or retention windows. Measure browser/physical iPad behavior and define per-data-class policy before claiming storage reliability. Local academic data and attachments are currently plaintext at rest; security classification, encryption requirements and user-facing disclosure remain open.
