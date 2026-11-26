@@ -171,6 +171,14 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 - **Dependencies:** NSX-008, NSX-020, NS-DATA-008.
 - **Status:** Partial — type and updater boundary implemented; full persisted field split and CI qualification pending.
 
+#### NSX-027 — Instructure API authorization gate
+- **Work:** Obtain written determination whether NORTHSTAR is a Customer-authorized User application or a third-party integration provider/subcontractor under the Instructure API Policy effective 2026-11-25. Establish whether express permission or an active Integration Tier Partnership is required; identify approved customer/tenant, developer key, scopes, registration disclosure and permitted data/actions.
+- **Evidence:** Current official policy says API usage must be authorized; third-party subcontractors require their own active Integration Tier Partnership; access without a partnership or express permission is prohibited. Official docs require institution-enabled developer keys/scopes, OAuth2, Link-header pagination and rate-limit handling.
+- **Deliverable:** Written institution/Customer or Instructure authorization, approved tenant/domain and developer-key scope matrix, documented OAuth flow and data/action disclosure.
+- **Acceptance:** No live API request occurs until the authorization document is recorded and the approved scope matrix is reviewed. A user token or a developer key alone is not treated as policy authorization.
+- **Verification:** Written evidence review; after approval only, a minimal read-only test against the authorized tenant with request/response redaction.
+- **Status:** Blocked — no written authorization or tenant scope confirmation is present.
+
 #### NSX-028 — Legacy Worker and excluded-workflow disposition
 - **Work:** Reconcile the legacy Worker, bridge tests, submission client, quiz routes, discussion writes, file uploads, LTI launch and PDF/document editor against NS-SCOPE-001. Determine whether the legacy runtime remains a separately preserved/frozen product or must be disabled/decommissioned.
 - **Evidence:** On the audited stabilization and current development branches, `canvas-bridge/worker.js` is byte-identical (SHA `dccb78bfc377f90ce5aba5d51ba52c129dc2aeee`) and `tests/bridge.test.mjs` is byte-identical (SHA `0163a1d7ef483c4a336867ade9a76b813aff6f75`). Tests explicitly exercise assignment submissions, quiz attempts, assignment/quiz uploads and discussion writes. `scripts/submissions.js` contains the Canvas POST client; `scripts/document-editor.js` and `scripts/document-storage.js` contain legacy document editing/storage.
