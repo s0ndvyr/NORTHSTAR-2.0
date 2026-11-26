@@ -215,3 +215,76 @@ For the current 5.0 application:
 - Any later provider-write requirement requires a new owner decision, an updated API-policy authorization record, a threat model, an ADR and new acceptance criteria before implementation.
 
 The old submission-specific state machine is retained as historical planning text, not a target 5.0 implementation contract. NS-CAI-009 is restricted by NS-SCOPE-001; its least-privilege and revocation controls remain.
+
+
+
+
+## 14. Read-only provider synchronization contract — 2026-11-25
+
+This state machine replaces the broader provider-write operation model for the target NORTHSTAR 5.0 application. It applies only after NS-CAN-011 authorization and only to explicitly approved read endpoints.
+
+### 14.1 Read synchronization states
+
+| State | Meaning | Entry/exit rule |
+|---|---|---|
+| `unconfigured` | No authorized provider connection or adapter configuration | Current Canvas state; no network request is made |
+| `idle` | Authorized adapter exists and no read is running | User/manual/scheduled refresh may enqueue a read |
+| `queued` | Read refresh is waiting for connectivity or an execution slot | No provider side effect; can be cancelled |
+| `running` | A read-only GET and its pagination sequence are active | One in-flight request by default; authorization checked before each request |
+| `partial` | Some pages were validated but the complete collection was not retrieved | Preserve last good snapshot; persist opaque next link/checkpoint; show incomplete/freshness state |
+| `succeeded` | All pages validated and the checkpoint/snapshot was committed | Only this state advances last-success timestamp |
+| `waiting-for-network` | Network unavailable or request timed out | Keep last good data; retry only after connectivity/manual action and backoff |
+| `waiting-for-auth` | 401 or expired/revoked credential | Stop requests; require reauthorization; never loop retry |
+| `permission-denied` | 403 or scope/role restriction | Stop this resource; do not retry without permission change |
+| `rate-limited` | 429/rate-limit response | Respect Retry-After if supplied; otherwise bounded backoff; keep request-cost evidence |
+| `retry-scheduled` | Transient 5xx/network failure may be retried | Backoff with jitter and bounded attempts; preserve checkpoint |
+| `failed` | Invalid request, schema violation or terminal provider error | Keep last good snapshot; record redacted error class and actionable message |
+| `stale` | Last successful read is outside a future approved freshness policy or source is unreachable | Display source timestamp and stale marker; do not fabricate current data |
+| `cancelled` | User or lifecycle cancelled the read | Preserve last complete snapshot and checkpoint |
+
+### 14.2 Read-run record
+
+A `SyncRun` records: run ID, provider, tenant/account scope, resource type, scope key, trigger, start/end time, state, pages attempted/completed, records accepted/rejected, next-link checkpoint, request-cost/rate-limit headers where available, correlation ID and redacted error class. It never stores tokens, authorization headers, private response bodies or full academic content.
+
+A `SyncCheckpoint` is unique per provider + tenant/account + resource type + scope key. It stores the opaque provider next-link exactly as returned, page count, last attempt, last successful completion, partial flag, retry time and schema/transform version. Do not synthesize a Canvas page URL from page numbers. If a next link is rejected/expired, restart the bounded resource read and deduplicate by provider object identity.
+
+### 14.3 Pagination and request scheduling
+
+- Treat response Link headers as opaque; follow `rel="next"` exactly.
+- Do not mark a resource complete until all pages validate and the resulting snapshot/checkpoint commits.
+- Default to one concurrent Canvas request. Use bounded concurrency only after tenant-specific evidence and rate-limit monitoring.
+- Honor 429 and Retry-After; record X-Request-Cost and X-Rate-Limit-Remaining when present.
+- Manual refresh and bounded polling are permitted only after NS-CAN-011. Do not assume webhooks exist.
+- Preserve the previous complete snapshot when a page fails; expose partial/stale state rather than replacing it with a truncated list.
+- Deduplicate by provider + tenant + object type + external ID string. Never coerce 64-bit Canvas IDs to numbers.
+
+### 14.4 Provider error classification
+
+| Provider/network result | Required behavior |
+|---|---|
+| 400 / 422 | Treat as invalid request or contract mismatch; stop and surface a safe diagnostic; no automatic retry |
+| 401 | Move to waiting-for-auth; stop provider calls until reauthorization |
+| 403 | Move to permission-denied; do not retry without a scope/role/policy change |
+| 404 | Mark source unavailable for this read; only tombstone after authoritative repeated evidence; preserve user-owned dependents |
+| 429 | Move to rate-limited; respect Retry-After where present and apply bounded backoff |
+| 5xx / timeout / connection loss | Keep last good snapshot; move to retry-scheduled or waiting-for-network; resume from a valid checkpoint |
+| Malformed JSON / schema validation failure | Reject the affected page/record; do not partially overwrite authoritative data; retain redacted diagnostics |
+| Pagination link invalid/expired | Mark partial; retain the last valid checkpoint; restart safely if the provider no longer accepts the link |
+| Permission revoked/disconnect | Stop reads, mark provider data stale/unavailable, preserve user-owned notes and planning records |
+
+### 14.5 Field-level merge and conflict rules
+
+1. Provider-authoritative fields update only from an authorized, validated provider read. A local edit cannot overwrite them.
+2. User-owned fields (personal priority, target date, notes, study cards, personal calendar blocks and writing drafts) are never overwritten by provider refresh.
+3. Keep personal and provider assignment status separate. A provider Submitted/Graded value is read-only; a local status action cannot create it.
+4. If a provider changes a due date while the user has a personal target date, retain both fields and show their distinct meanings; this is not a destructive conflict.
+5. If two providers or two records claim the same canonical identity, keep both external references and mark identity unresolved; do not auto-merge based only on course title or code.
+6. If a provider record disappears or becomes inaccessible, mark it stale/unavailable or tombstoned according to evidence; preserve user-owned notes, drafts and attachments as orphaned-source records.
+7. Cross-tab localStorage conflicts preserve both local and persisted snapshots. Do not clear them until the user has exported/acknowledged the recovery bundle; file bytes in IndexedDB require separate handling under NS-DATA-007.
+8. A failed read never rolls back a newer valid provider snapshot or erases local overlays.
+
+### 14.6 Current implementation and verification gap
+
+The current 5.0 Canvas adapter is unconfigured and has no network implementation. The local academic snapshot has revision/conflict handling, but there is no provider SyncRun/SyncCheckpoint store, provider provenance envelope or live read pipeline. This contract is specified for a future separately authorized integration; it is not a claim of implemented synchronization.
+
+Verification must cover: interrupted pagination; duplicate/out-of-order pages; 401/403/404/429/5xx; malformed payload; permission revocation; duplicate external IDs; timezone preservation; provider field update with local overlay; stale-source deletion; and preservation of the last complete snapshot.
