@@ -97,6 +97,7 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
 | NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
 | NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — risks identified; recovery design and implementation not started** |
+| NSX-030 | Enforce separation of personal assignment planning status from provider-owned Submitted/Graded status in schema, domain APIs and UI | NS-DATA-008; NS-SCOPE-001 | NSX-008, NSX-020 | **Partial — personal-status type/updater guard added; full canonical field split and CI qualification pending** |
 
 ### 3.1 Task execution details and completion criteria
 
@@ -354,7 +355,8 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 11. NSX-018/019 complete risk review and CAI planning acceptance.
 11. NSX-020 through NSX-025 continue authorized local/demo implementation and qualification in parallel where dependencies permit.
 12. NSX-029 closes cross-store attachment recovery before final offline/recovery acceptance.
-13. NSX-026 reconciles the final state.
+13. NSX-030 completes provider/personal assignment-state separation before live provider integration.
+14. NSX-026 reconciles the final state.
 
 No live provider work, migration, legacy deletion or production deployment is inserted into this sequence without a separate authorization record.
 
