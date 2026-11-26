@@ -264,7 +264,7 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
     if (raw !== null) {
       try {
         const parsed: unknown = JSON.parse(raw);
-        if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [], artifacts: parsed.artifacts ?? [] };
+        if (isAcademicSnapshot(parsed)) return parsed;
       } catch {
         // Preserve malformed/incompatible bytes for recovery; never replace them with demo data.
       }
