@@ -54,3 +54,18 @@ Direct provider-key workflows; optional StudentVUE import; duplicate Copilot/aut
 Complete inventory, source-to-target mapping, data classification, transformation catalogue, representative fixtures, reconciliation report, error handling, backup/restore rehearsal, parity test plan, cutover/rollback runbook and user acceptance criteria. The current source audit is static and does not establish runtime behavior or data completeness.
 
 **Disposition:** Mapping framework drafted; actual legacy inventory and migration execution remain outstanding.
+
+
+
+## 9. Current product-scope disposition — 2026-11-25
+
+The following legacy capabilities must be mapped and preserved as legacy source, but are excluded from the target NORTHSTAR 5.0 application by NS-SCOPE-001:
+- Canvas assignment submission, upload, re-submit and receipt flows;
+- Classic/New Quizzes question/attempt/answer/flag/score flows;
+- discussion posting/reply/edit workflows;
+- PDF/document editor and document-draft editing suite;
+- any provider write operation that would make NORTHSTAR a second source of truth.
+
+Target 5.0 equivalents are organizer/intelligence capabilities only: assignment tracking and personal planning, external Canvas handoff, read-only provider status when authorized, course workspaces/editor for personal NORTHSTAR metadata, calendar, gradebook insights, resources, flashcards/spaced repetition/study guides, limited writing feedback and simulated AI.
+
+Legacy root files, Worker routes, tests and release records are not deleted or disabled by this map. NSX-028 requires an explicit owner decision whether the 4.4.x legacy runtime remains a separately frozen product or is deactivated/decommissioned. Any migration/retirement must first complete the source-to-target mapping, preserve user data, pass parity tests, produce a backup and rollback plan, and receive separate authorization.
