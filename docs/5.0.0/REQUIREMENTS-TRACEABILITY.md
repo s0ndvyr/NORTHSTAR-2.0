@@ -326,3 +326,12 @@ Legacy root files such as `scripts/submissions.js`, quiz-related code and `scrip
 NS-CAN-011 was added after reviewing the current Instructure Canvas API Policy (effective 2026-11-25). The policy states API use must be authorized by Instructure and describes an Integration Tier Partnership subscription or express permission restriction. The repository does not establish NORTHSTAR's applicable Customer/User classification or written permission. This is a blocker for live Canvas access, not a reason to stop public documentation research or local/demo work.
 
 The Canvas capability matrix now records official public documentation for course, assignment, enrollment/grade, calendar, file, page and module reads; OAuth/developer-key scope handling; pagination; throttling; and the current product restriction to read-only provider operations. No target-tenant request has been made. See [CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md](CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md) and the task/evidence record in [EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md).
+
+
+| NS-CAN-012 | Legacy Canvas Worker routes and legacy UI capabilities are fully mapped and isolated from the NORTHSTAR 5.0 app; no excluded quiz, submission, file-upload or discussion-write route is invoked by the new app | P0 | NS-CAN-005, NS-SCOPE-001, NS-MIG-005 | Route-to-test-to-UI call graph; no 5.0 call site; owner disposition of legacy runtime; deployment evidence only if separately authorized | In progress — legacy route families identified; full call graph and owner disposition open |
+
+## Legacy provider-route scope reconciliation — 2026-11-25
+
+Static inspection confirms the legacy `canvas-bridge/worker.js` and `tests/bridge.test.mjs` are byte-identical on the audited stabilization branch and current 5.0 development branch. The Worker source and tests include assignment submissions, quiz attempts/answers/flags/completion, assignment/quiz file uploads and discussion writes. Legacy `scripts/submissions.js` and PDF/document editor/storage files remain present.
+
+These are not part of the new `apps/web/` target scope. The new app's Canvas adapter has no submission operation and remains unconfigured. Legacy source is preserved; no deployment state is claimed. NS-CAN-012 and NSX-028 track the remaining call-graph, deployment-evidence and owner-disposition work. No legacy route has been disabled or removed.
