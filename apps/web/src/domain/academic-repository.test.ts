@@ -22,7 +22,6 @@ import {
   isAcademicSnapshot,
   loadAcademicSnapshot,
   loadAcademicConflicts,
-  clearAcademicConflict,
   clearAllAcademicConflicts,
   saveAcademicSnapshot,
   parseAcademicBackup,
