@@ -151,3 +151,12 @@ Dynamic keys must be derived from call sites, not guessed from string search alo
 This checkpoint expands the observed source-tree and persistence inventory and identifies two IndexedDB databases with three object stores in total, plus browser-storage key families requiring exhaustive tracing. It does not claim the full source inventory, storage inventory, Worker route catalogue, Canvas endpoint research or migration map is complete.
 
 **No application source files were modified. No dependencies were installed. No tests or builds were run. No Canvas tenant, Cloudflare Worker, browser runtime or iPad was accessed. Application implementation remains unauthorized.**
+
+
+## 7. Current-state addendum — 2026-11-25
+
+The statement in Section 6 that no application files had been modified, no tests/builds had been run and application implementation remained unauthorized was accurate for the Phase 0 inventory checkpoint. It is historical and must not be read as the current development-branch state.
+
+A later separate owner authorization permits bounded local/demo implementation and development-branch CI/build/test work; see the [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md), [Requirements Traceability](REQUIREMENTS-TRACEABILITY.md) and [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md).
+
+The inventory itself remains an initial checkpoint, not a complete dependency/persistence map. The audited legacy Worker remains present in the development branch and is byte-identical to the stabilization branch at the inspected SHA. Its write routes and the old document-editor/submission source remain preserved pending NSX-028 owner disposition. No Worker deployment state is asserted.
