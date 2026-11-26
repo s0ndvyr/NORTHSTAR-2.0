@@ -319,6 +319,16 @@ export function clearAcademicConflict(id: string): boolean {
   }
 }
 
+export function clearAllAcademicConflicts(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.removeItem(ACADEMIC_CONFLICTS_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function preserveSnapshotConflict(localSnapshot: AcademicSnapshot, persistedSnapshot: AcademicSnapshot): boolean {
   try {
     const conflicts = loadAcademicConflicts();
