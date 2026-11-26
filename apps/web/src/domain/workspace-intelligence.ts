@@ -69,11 +69,10 @@ export function buildCourseStudyGuide(snapshot: AcademicSnapshot, courseId: stri
   if (!course) return null;
   const resources = (snapshot.resources ?? []).filter(item => item.courseId === courseId);
   const cards = (snapshot.studyCards ?? []).filter(item => item.courseId === courseId);
-  const questions = (snapshot.practiceQuestions ?? []).filter(item => item.courseId === courseId);
   const assignments = snapshot.assignments.filter(item => item.courseId === courseId && !["graded", "submitted"].includes(item.status))
     .slice().sort((a,b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
   const sections: StudyGuideSection[] = [
-    { title: "Concepts to understand", items: [...new Set(questions.map(item => item.concept + " — " + item.prompt))] },
+    { title: "Concepts to understand", items: [...new Set(cards.map(item => item.prompt))] },
     { title: "Flashcard recall", items: cards.map(item => item.prompt + " — " + item.answer) },
     { title: "Course materials", items: resources.map(item => item.title + (item.description ? " — " + item.description : "")) },
     { title: "Open coursework", items: assignments.map(item => item.title + " — " + item.status.replaceAll("_", " ") + " — due " + new Date(item.dueAt).toLocaleString()) },
