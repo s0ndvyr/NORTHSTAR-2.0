@@ -288,3 +288,9 @@ A `SyncCheckpoint` is unique per provider + tenant/account + resource type + sco
 The current 5.0 Canvas adapter is unconfigured and has no network implementation. The local academic snapshot has revision/conflict handling, but there is no provider SyncRun/SyncCheckpoint store, provider provenance envelope or live read pipeline. This contract is specified for a future separately authorized integration; it is not a claim of implemented synchronization.
 
 Verification must cover: interrupted pagination; duplicate/out-of-order pages; 401/403/404/429/5xx; malformed payload; permission revocation; duplicate external IDs; timezone preservation; provider field update with local overlay; stale-source deletion; and preservation of the last complete snapshot.
+
+
+
+## 15. Authorization status clarification
+
+The original planning-only header remains accurate for the provider contract/state machines specified here: they are not implemented as a live provider integration. A later separate owner authorization permits bounded local/demo app implementation and development-branch qualification. It does not authorize live Canvas access, provider writes, external data migration, production deployment or legacy Worker changes.
