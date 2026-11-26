@@ -1,6 +1,7 @@
-import { initialSnapshot, afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
+  initialSnapshot,
   createAcademicBackup,
   createAssignment,
   addAssignmentArtifact,
