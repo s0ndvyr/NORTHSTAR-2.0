@@ -241,3 +241,74 @@ The development branch now:
 - adds a unit test for deterministic initial seed content and an E2E persistence wait in the two-tab scenario.
 
 Source commits: `ffcb6d83a95a5a5eda9af48c5e04c60afc4a6e78`, `a3ab1f75bf92a64eb9c4691be2139f45fea0f9e6`, `3a87cca28c06760a622c22a85dfe3b24a920adc8`, `67c6403e8c83b7b3a58a2d71bfa09a01873bb2d0`. The cross-tab initialization fix passed run 45743400167 (13 Playwright journeys). The subsequent conflict-export acknowledgement and attachment-manifest fix passed run 45744014664 (17 workflow steps, 50 domain tests, 13 Playwright journeys). Binary attachment archive/restore and broader quota/corruption/interrupted-write recovery remain open.
+
+
+
+
+## 9. Repository-wide storage call-site reconciliation — 2026-11-26
+
+This pass inspected legacy runtime scripts, the Canvas Worker, native iOS source, the new 5.0 app, service-worker source and selected regression tests. The development tree now contains 112 tracked files. This is a broad literal call-site inventory; dynamically generated keys and every consumer/cleanup path still require a final source-to-source graph.
+
+### 9.1 New NORTHSTAR 5.0 storage
+
+| Store | Exact key/database | Direct source call sites | Data / lifecycle |
+|---|---|---|---|
+| localStorage | `northstar-5-academic-demo-v1` | `apps/web/src/domain/academic-repository.ts` load/seed/save | Local academic snapshot and all app-owned entities; schema v1; plaintext |
+| localStorage | `northstar-5-academic-conflicts-v1` | `academic-repository.ts` load/preserve/clear; `App.tsx` export/acknowledge | Two-sided conflict snapshots; capped at 10; conflict records remain until explicit user acknowledgement |
+| localStorage | `northstar-theme` | `App.tsx` startup/theme update | Theme preference |
+| IndexedDB | `northstar-5-assignment-artifacts`, v1, store `files` | `assignment-artifact-storage.ts` open/upgrade/get/put/delete | Binary Blob files and metadata; 25 MB per-file cap; no portable backup or total quota policy |
+| Cache Storage | `northstar-shell-v5.0.0` | `apps/web/public/sw.js`; registration in `apps/web/src/main.tsx` | Same-origin app shell/static assets only; no academic data or provider responses |
+
+The HTTPS-only external link helper/test (`external-links.ts`, `external-links.test.ts`) has no persistence behavior.
+
+### 9.2 Legacy localStorage keys and dynamic key families
+
+| Key / family | Source call sites | Purpose / lifecycle |
+|---|---|---|
+| `northstar_settings_v1` | `scripts/app.js:410,420` | Main app settings object |
+| `northstar_notes_v2` | `scripts/premium.js:22,1828–1831` | User notes; create/update/delete |
+| `northstar_periods_v1` | `scripts/premium.js:23,1931` | Academic/marking periods |
+| `northstar_hidden_assignments_v1` | `scripts/premium.js:434,440` | Local assignment visibility preference |
+| `northstar_gemini_model_v1` | `scripts/premium.js:1978–1979` | Preferred AI model (not the API key) |
+| `northstar_ignored_courses_v1` | `scripts/premium.js` | Ignored course IDs |
+| `northstar_ledger_period_v1` | `scripts/premium.js:2268,2417` | Grade-ledger period selection |
+| `northstar_studentvue_grades_v1` | `scripts/studentvue.js:6,81,85,100` | Legacy plaintext imported grades; migrated into vault key `studentvue-grades` by `premium.js:2500–2545` |
+| `northstar-last-seen-release` | `scripts/release.js:111` | Last-seen release marker |
+| `northstar_[preview_]draft_{localAssignmentId}` | `scripts/premium.js:968–969,1026,1035` | Assignment response draft; preview namespace is separate |
+| `northstar_[preview_]discussion_draft_v1_{courseId}_{topicId}_{slot}` | `scripts/premium.js:977,1026,1035` and discussion handlers | Initial/reply/edit discussion draft slots |
+| `northstar_[preview_]discussion_uncertain_v1_{courseId}_{topicId}` | `scripts/premium.js:990,994,1054,1077,1080,1091,1095` | Ambiguous discussion-write marker; blocks blind retry until provider read-back |
+| `northstar_[preview_]canvas_staged_uploads_v1_{courseId}_{assignmentId}_{localAssignmentId}` | `scripts/premium.js:1584,1590,1597` | Staged upload IDs/metadata/expiry only; binary bytes are not stored in this key |
+| `northstar_[preview_]canvas_submission_uncertain_v1_{canvasAssignmentId}_{localAssignmentId}` | `scripts/premium.js:1603,1608,1613` | Ambiguous submission marker; blocks repeat submission pending reconciliation |
+| `northstar_[preview_]external_return_v2` | `scripts/premium.js:2215,2220,2226` | Provider return context; assignment/course IDs and sync/submission state; not launch URL or credentials |
+| `northstar_[preview_]pdf_markup_v2_{assignmentId}_{fileId}` and `_pdf_identity_v1` | `scripts/assignment-room.js:92,169–171,830` | PDF annotation fallback and file identity; IndexedDB is primary for PDF bytes/drafts |
+| Legacy plaintext credential keys `canvas_token`, `canvas_base` | `scripts/premium.js:18–20` | Removed at boot before vault hydration; no longer intended as persistent stores |
+
+### 9.3 Legacy sessionStorage and encrypted vault
+
+**sessionStorage keys:**
+- `northstar_canvas_session`, `northstar_gemini_session`, `northstar_gemini_model`: one-time migration/hydration values removed after vault hydration (`scripts/premium.js:50–55`).
+- `northstar_[preview_]active_quiz_v1_{canvasCourseId}_{quizId}`: current-tab Canvas quiz attempt ID, attempt number, validation token, access code, start time and flagged question IDs (`scripts/premium.js:543–545`). This belongs only to the preserved legacy quiz workflow and is excluded from the new 5.0 target.
+
+**Encrypted vault:**
+- Database: `northstar-secure-vault`, version 1, object store `secrets`.
+- Device key: `__device_key__`, non-extractable AES-GCM-256 key.
+- Named encrypted values observed at call sites: `canvas-credentials`, `gemini-api-key`, `canvas-snapshot`, `studentvue-grades`.
+- Core implementation: `scripts/vault.js:12–55`; callers include `scripts/premium.js` and `scripts/app.js`.
+- Encryption-at-rest does not protect against XSS or malicious same-origin scripts. Credential custody is legacy-only and is not used by the new 5.0 app.
+
+### 9.4 Other persistence boundaries and regression evidence
+
+- `northstar-document-studio`, IndexedDB v1, stores `documents` and `drafts`: source PDF bytes and editable annotation drafts are separate; opened by `scripts/document-storage.js`, consumed by `scripts/assignment-room.js`.
+- Native iOS source uses a persistent `WKWebView` for Canvas-generated session-token URLs and LTI launches. `NorthstarSecureContentPresenter.swift` validates message origin protocol/host/port before handling trusted-dashboard messages. The native README explicitly prohibits storing session URLs in localStorage, logs, analytics or assignment drafts. No Keychain implementation was found in the inspected Swift file.
+- The new app's storage event listener coordinates cross-tab local snapshot changes; no `BroadcastChannel` usage was found in the inspected app/runtime source.
+- Regression tests: `tests/boot.test.mjs` mocks vault migration and checks local period/hidden-course/session/StudentVUE behavior; `tests/document-storage.test.mjs` uses fake IndexedDB and tests quota/interruption/fallback; `tests/phase3-integration.test.mjs` asserts upload staging does not persist raw file bytes; `tests/assignment-room-fallback.test.mjs` asserts signed URLs are not persisted; `tests/release.test.mjs` checks IndexedDB store separation and diagnostics.
+- No `localStorage.clear()`, `sessionStorage.clear()`, cookie persistence, or BroadcastChannel use was found in the inspected runtime set. This is a search result, not proof across uninspected dynamic code.
+
+### 9.5 Remaining source-to-source closure work
+
+1. Resolve each dynamic key helper to every writer, reader, expiry, retry, clear, import, export and migration path; especially the discussion/submit/quiz keys that remain legacy-only.
+2. Complete the source graph from `scripts/app.js` boot order through `premium.js`, `canvas-sync.js`, `submissions.js`, Worker routes and tests.
+3. Verify native iOS session handoff and persistence behavior against the actual Xcode project/build settings; the repository contains source and README only.
+4. Verify actual deployed Worker/Pages state separately from `release.json`; no live environment was checked.
+5. Complete Safari quota, IndexedDB transaction-abort, app termination, storage eviction, conflict recovery and attachment restore tests.
+6. Reconcile every key and database to the canonical data class, retention, user export, deletion and revocation requirements. Until then, NSX-005/012/015/016 remain partial.
