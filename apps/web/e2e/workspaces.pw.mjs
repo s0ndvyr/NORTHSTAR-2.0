@@ -192,6 +192,10 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   const firstTitle = "First tab preserved assignment";
   const secondTitle = "Second tab preserved assignment";
   await createAssignment(page, firstTitle);
+  await expect.poll(() => page.evaluate((title) => {
+    const snapshot = JSON.parse(localStorage.getItem("northstar-5-academic-demo-v1") || "null");
+    return snapshot?.assignments?.some(item => item.title === title) ?? false;
+  }, firstTitle)).toBe(true);
   await createAssignment(secondTab, secondTitle);
 
   await expect(page.getByText("Concurrent academic edit preserved")).toBeVisible();
@@ -203,13 +207,15 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   const bundlePath = await download.path();
   const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
   expect(bundle.format).toBe("northstar-academic-conflict");
-  const localTitles = bundle.conflicts[0].localBackup.snapshot.assignments.map(item => item.title);
-  const savedTitles = bundle.conflicts[0].savedBackup.snapshot.assignments.map(item => item.title);
-  expect([...localTitles, ...savedTitles]).toContain(firstTitle);
-  expect([...localTitles, ...savedTitles]).toContain(secondTitle);
+  const conflictSnapshots = bundle.conflicts.flatMap(conflict => [
+    conflict.localBackup.snapshot,
+    conflict.savedBackup.snapshot,
+  ]);
+  const preservedTitles = conflictSnapshots.flatMap(snapshot => snapshot.assignments.map(item => item.title));
+  expect(preservedTitles).toContain(firstTitle);
+  expect(preservedTitles).toContain(secondTitle);
 
-  const firstVisible = await secondTab.getByRole("link", { name: firstTitle }).count();
-  const secondVisible = await secondTab.getByRole("link", { name: secondTitle }).count();
-  expect(firstVisible + secondVisible).toBe(1);
+  await expect(secondTab.getByRole("link", { name: firstTitle })).toBeVisible();
+  await expect(secondTab.getByRole("link", { name: secondTitle })).toHaveCount(0);
   await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeHidden();
 });
