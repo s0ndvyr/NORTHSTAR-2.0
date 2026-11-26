@@ -21,10 +21,10 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 | Record provenance visibility | Implemented locally | DEMO/PERSONAL source labels across assignments, courses, calendar, Gradebook, Resources and Study Lab; field-level external authority/conflict resolution remain open |
 | Concurrent edit protection | Implemented locally | Revision guard, two-sided conflict preservation, cross-tab notice, conflict bundle export and safe reload; external-provider reconciliation remains open |
 | Overview dashboard | Implemented | Shared academic projections, priority queue, course progress and activity |
-| Assignments | Implemented | Create/edit/delete, filters/search/sort/status, detail workflow, local drafts and file artifacts |
+| Assignments | Implemented locally; scope cleanup in progress | Create/edit/delete, filters/search/sort, local planning status, notes/drafts and local artifacts; no native submission workflow is in scope |
 | Courses | Implemented | Course create/edit, course hubs, connected assignments/resources/study material and derived progress |
 | Calendar | Implemented | Assignment deadlines plus local event create/edit/delete |
-| Study Lab | Implemented | Flashcards, spaced repetition, course study guides and local practice attempts/results |
+| Study Lab | Implemented locally; scope cleanup in progress | Flashcards, spaced repetition and course study guides remain in scope; timed graded practice/quiz engine is excluded by NS-SCOPE-001 |
 | Gradebook | Implemented | Explicit score records and course summaries; assignment status does not imply a grade |
 | Resources | Implemented | Course-linked local library with create/edit/delete/search/filter |
 | Review Center | Implemented | Local writing drafts, autosave and heuristic structural feedback; not AI-generated grading |
@@ -74,3 +74,12 @@ These require separate implementation/operational authorization and verification
 ## Working rule
 
 Continue implementation in coherent, connected increments. Do not restart planning cycles or treat this status page as a reason to pause coding. Update this board after material implementation or qualification checkpoints, and clearly label anything that is implemented, tested, manually reviewed, or still unverified.
+
+
+## Current product-scope guardrail
+
+NORTHSTAR 5.0 remains an academic organizer/intelligence layer. Academic workspaces and the course editor remain approved. Native quizzes/tests, assignment submissions/turn-in workflows and general-purpose document editors are excluded. Canvas and external services retain those workflows.
+
+The current source audit found a timed multiple-choice Study Lab attempt engine, a local “Turn in locally” action and an unconfigured Canvas adapter method named `submitAssignment`. They do not contact Canvas, but they resemble excluded native workflows. Their removal/reshaping is tracked by NSX-003/NSX-020 and NS-SCOPE-001. The Review Center remains limited to local writing drafts and feedback; it is not a general-purpose document editor. Legacy source remains untouched pending mapping and separate retirement approval.
+
+See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md) for task dependencies, approval boundaries and evidence.
