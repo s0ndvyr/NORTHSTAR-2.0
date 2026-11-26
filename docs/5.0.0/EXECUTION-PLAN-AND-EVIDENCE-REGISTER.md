@@ -53,16 +53,16 @@ Each task record must include task ID; start branch and SHA; inspected/changed p
 | Audited stabilization branch | `northstar-4.4.8.3.1-stabilization` | Branch API |
 | Audited migration-source head | `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Branch API |
 | Development branch | `northstar-5.0.0-development` | Branch API |
-| Development branch head | `58f0c1392c272e3e8245c8295c16789cb79f08db` | Branch API, verified 2026-11-26 02:35 UTC |
+| Development branch head | `0f1c402e83fb6cdfd517993c04eed73af74121a0` | Branch API, verified 2026-11-26 02:38 UTC |
 | Prior successful CI/code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Ancestor of current development branch; successful run 45695594885, not current branch head |
 | Phase 0 to setup branch | 62 commits ahead, 0 behind | Compare API |
 | Last application-code checkpoint | `58f0c1392c272e3e8245c8295c16789cb79f08db` | Latest app/test code commit; current head |
 | Phase 0 branch tree | 78 tracked files at inspected head | Recursive Git tree |
 | Development branch tree | 110 tracked files at inspected head | Recursive Git tree |
 | 4.4.8.3.2 qualification branch | `northstar-4.4.8.3.2-assignment-workspace-qualification` at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b` | Branch API |
-| Prior successful CI checkpoint to current development head | 70 commits ahead, 0 behind | Compare API |
-| Last app-code commit to current development head | 0 commits ahead, 0 behind | Branch API; latest commit is code/test |
-| Phase 0 to development branch | 447 commits ahead, 0 behind | Compare API, 2026-11-26 02:35 UTC |
+| Prior successful CI checkpoint to current development head | 73 commits ahead, 0 behind | Compare API |
+| Last app-code commit to current development head | 3 commits ahead, 0 behind; only execution-plan/status documentation changed | Compare API |
+| Phase 0 to development branch | 450 commits ahead, 0 behind | Compare API, 2026-11-26 02:38 UTC |
 
 The audited stabilization branch remains at `df0427304e0f03aa822a1c8fe99547355e9c0bfc`; a later 4.4.8.3.2 qualification branch exists at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b`. The Phase 0 setup branch is 62 commits ahead of the stabilization source and contains the closed Phase 0 planning artifacts. The development branch is 443 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch remains divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint), so it is not a substitute for the migration source.
 
@@ -92,16 +92,16 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 | NSX-017 | Reconcile all requirement statuses and historical decision supersession | NS-GOV-001/003/004; traceability policy | NSX-003 through NSX-016 | **In progress** |
 | NSX-018 | Conduct cross-document, security, privacy, migration and operational risk review | NS-GOV-003/004; NS-SEC-001/002; NS-REL-001 | NSX-004 through NSX-017 | **Not started** |
 | NSX-019 | Prepare Cross-Application Intelligence design acceptance package | NS-GOV-001/004; CAI planning sign-off criteria | NSX-007 through NSX-018 | **Blocked pending evidence closure and owner review** |
-| NSX-020 | Align the new app implementation with the no-LMS-replacement scope | NS-SCOPE-001; current owner clarification | NSX-003 | **In progress — quiz/turn-in/submit affordances removed and adapter read-only; latest qualification run pending** |
+| NSX-020 | Align the new app implementation with the no-LMS-replacement scope | NS-SCOPE-001; current owner clarification | NSX-003 | **Complete — new-app scope correction passed full CI/browser qualification; legacy runtime remains separate under NSX-028** |
 | NSX-021 | Complete workspace accessibility qualification | NS-UX-003; NS-QUAL-001/002 | Current app implementation | **Partial; manual qualification open** |
-| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — deterministic seed/synchronous initialization fix committed; current CI run 45743400167 pending** |
+| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — deterministic seed/synchronous initialization fix passed the 13-journey browser suite; broader storage failure/recovery matrix remains** |
 | NSX-023 | Complete physical iPad Safari/PWA acceptance | NS-UX-002; NS-QUAL-002 | NSX-021, NSX-022 | **Blocked — physical device/session required** |
 | NSX-024 | Complete capability parity and legacy preservation reconciliation | NS-MIG-001/002/003/005; Phase 0 preservation rule | NSX-004, NSX-005, NSX-015 | **Partial; no legacy deletion authorized** |
 | NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Not started** |
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
 | NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
 | NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — risks identified; recovery design and implementation not started** |
-| NSX-030 | Enforce separation of personal assignment planning status from provider-owned Submitted/Graded status in schema, domain APIs and UI | NS-DATA-008; NS-SCOPE-001 | NSX-008, NSX-020 | **Partial — type/runtime guard and immutable provider-state check committed; full persisted field split and CI qualification pending** |
+| NSX-030 | Enforce separation of personal assignment planning status from provider-owned Submitted/Graded status in schema, domain APIs and UI | NS-DATA-008; NS-SCOPE-001 | NSX-008, NSX-020 | **Partial — type/runtime guard and immutable provider-state check passed CI; full persisted field split and migration remain** |
 
 ### 3.1 Task execution details and completion criteria
 
@@ -394,7 +394,7 @@ The Review Center is a limited local writing draft/feedback surface, not a gener
 | EV-008 | NSX-020 | Commits `2f29f7e5...`, `8bc90367...`, `a8d780d3...`, `8b38a3f0...` | Removed timed quiz/attempt UI, local turn-in affordance and Canvas `submitAssignment` contract; Study Lab concepts now derive from flashcards | Source diff evidence; current CI qualification still pending |
 | EV-009 | NSX-021/022 | GitHub Actions run `45695594885`; job `139492079926` logs | Run completed `success`; 17 workflow steps succeeded; domain tests: 3 files / 51 tests passed; Playwright: 13 tests passed in 19.1s | Automated CI evidence for commit `4fc4e478...` only; does not qualify later code changes, physical iPad Safari, live provider or production. |
 | EV-010 | NSX-001/020 | Commit `4fc4e478...` diff | Only `apps/web/vite.config.ts` changed; chunk warning limit set to 650 | Commit diff |
-| EV-011 | NSX-001 | Current development head 58f0c139...; branch API and compare against Phase 0 | Current dev head; 447 commits ahead of Phase 0, 0 behind; latest code/test commit | Git ref and ancestry evidence |
+| EV-011 | NSX-001 | Current development head 0f1c402e...; branch API and compare against Phase 0 | Current dev head; 450 commits ahead of Phase 0, 0 behind; latest app code checkpoint 58f0c139... with documentation-only commits after it | Git ref and ancestry evidence |
 
 | EV-012 | NSX-003/020 | Decision register, README, traceability and architecture addenda; commits 46807747..., 4f38ce73..., cc85e5f4..., 956390fe... | Current product boundary recorded: academic workspaces/course editor retained; native quizzes, submissions and document editor excluded; legacy source preserved | Repository decision/document evidence; no legacy retirement |
 | EV-013 | NSX-006/028 | canvas-bridge/worker.js, tests/bridge.test.mjs, scripts/submissions.js, scripts/document-editor.js, scripts/document-storage.js | Legacy Worker and UI retain old write/quiz/upload/document capabilities; Worker and test files match audited stabilization blobs | Static source evidence; no live Worker recheck |
@@ -402,13 +402,13 @@ The Review Center is a limited local writing draft/feedback surface, not a gener
 | EV-015 | NSX-007/027 | Instructure API Policy effective 2026-11-25 and official Canvas Developer Docs; CANVAS-CAPABILITY-AND-AUTHORITY-MATRIX.md | Policy authorization/partnership gate, OAuth/developer key, pagination and rate-limit mechanics documented | Public official documentation; no live tenant request |
 | EV-016 | NSX-008/009 | CANONICAL-ACADEMIC-DATA-MODEL.md Sections 9–11 | Detailed logical schema, field authority, relationships, nullability, provenance, validation and lifecycle rules documented | Planning deliverable; not a physical schema or migration |
 | EV-017 | NSX-011 | CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md Sections 13–15 | Read-only provider sync states, pagination/checkpoint, rate-limit/error handling and field-level conflict rules specified | Planning deliverable; no provider sync service implemented |
-| EV-018 | NSX-022 | Commits ffcb6d83..., a3ab1f75..., 3a87cca2..., 67c6403e... | Deterministic local-day demo seed, synchronous initial snapshot persistence, invalid snapshot preservation and serialized-shape preservation implemented | Source diff evidence; latest E2E qualification pending |
-| EV-019 | NSX-030 | Commits 7613f405..., e67b448a..., e1e20296..., bebb2245..., 470641fd..., 75c4c99c..., 57c4e5d8... | Added PersonalAssignmentStatus type, personal-only updater, UI typing and runtime guard preventing updates to Submitted/Graded records | Source diff evidence; latest typecheck run pending |
+| EV-018 | NSX-022 | Commits ffcb6d83..., a3ab1f75..., 3a87cca2..., 67c6403e...; run 45743400167 | Deterministic local-day demo seed, synchronous initial snapshot persistence, invalid snapshot preservation and serialized-shape preservation implemented; 13 browser journeys passed | Source diff and automated browser evidence |
+| EV-019 | NSX-030 | Commits 7613f405..., e67b448a..., e1e20296..., bebb2245..., 470641fd..., 75c4c99c..., 57c4e5d8...; run 45743400167 | Added PersonalAssignmentStatus type, personal-only updater, UI typing and runtime guard preventing updates to Submitted/Graded records | Source diff and passing typecheck/domain-test evidence; full persisted field split remains |
 | EV-020 | NSX-028 | release.json; Pages workflow run 45410896624; Worker source blob SHA dccb78b... | Manifest records Pages preview 4.4.8.3.1, production 4.4.7.5 and Worker 0.4.22; workflow success; current Worker file matches recorded deployment source blob | Repository release record and workflow metadata; live HTTP/Cloudflare state not rechecked |
 | EV-021 | NSX-022 | GitHub Actions run 45741495661 on commit 54d122c... | 12/13 browser tests passed; cross-tab test failed because the two tabs could seed different time-varying revision-1 demo snapshots, creating a false conflict and blocking later persistence | Failure captured from workflow logs; root cause corrected in source commits EV-018 |
 | EV-022 | NSX-030/020 | GitHub Actions run 45742347520 on commit 470641f... | Typecheck and production dependency audit passed; domain tests 48 passed / 2 failed because assertions still expected local Submitted transitions; build/browser steps skipped | Failure captured; fixture/expectations and runtime provider-state guard corrected in 75c4c99... / 57c4e5d... |
 | EV-023 | NSX-030 | GitHub Actions run 45743250191 on commit 57c4e5d... | Typecheck failed because test fixtures referenced AcademicSnapshot without importing its type; subsequent correction committed as 58f0c139... | Failure captured; correction committed; rerun in progress |
-| EV-024 | NSX-020/022/030 | GitHub Actions run 45743400167 on commit 58f0c139... | Latest code qualification run started; result pending at this checkpoint | Automated workflow in progress; no pass claimed |
+| EV-024 | NSX-020/022/030 | GitHub Actions run 45743400167 on commit 58f0c139...; job 139653581983 | 17 steps succeeded; TypeScript typecheck, production dependency audit, 3 domain test files / 50 tests, Vite production build and 13 Playwright journeys passed (17.4s) | Automated qualification passed for this code commit; documentation-only commits follow |
 
 ### 6.1 Latest successful baseline CI evidence
 
@@ -422,7 +422,7 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 - Run 45741495661: 12/13 browser tests passed; the cross-tab persistence journey exposed the time-varying initial-seed race. Corrected by deterministic local-day demo timestamps and synchronous first-snapshot persistence.
 - Run 45742347520: typecheck and dependency audit passed; domain tests 48 passed / 2 failed because assertions still expected local Submitted status transitions. Corrected by keeping provider-owned Submitted/Graded records immutable and updating fixtures/expectations.
 - Run 45743250191: typecheck failed because the new test fixture omitted the AcademicSnapshot type import. Corrected in commit 58f0c139.
-- Run 45743400167: current code checkpoint 58f0c139; in progress at this update. No success is claimed until the full workflow completes.
+- Run 45743400167: completed successfully on code checkpoint 58f0c139; 17 workflow steps succeeded, 50 domain tests and all 13 Playwright journeys passed. The current branch head is three documentation-only commits ahead; no application code changed after the qualified checkpoint.
 
 
 ## 7. Explicit blockers and approval gates
@@ -451,7 +451,7 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 
 ## 9. Next execution actions
 
-1. Complete the current full qualification run 45743400167 on 58f0c139; resolve any remaining root cause, rerun, and only then update NSX-020/022/030 acceptance status.
+1. Preserve the successful code checkpoint 58f0c139 / run 45743400167 as the current automated baseline; continue broader recovery qualification under NSX-022 and NSX-029 rather than treating the CI pass as full release acceptance.
 2. Complete NSX-022's offline/recovery matrix: storage quota/corruption, interrupted writes, cross-tab competing edits, reload recovery and safe conflict export acknowledgement.
 3. Complete NSX-029 planning for attachment Blob/metadata lifecycle, portable backup/restore, conflict attachment manifest, orphan cleanup and quota behavior. Do not implement a new archive/restore workflow until its scope and data-loss behavior are approved.
 4. Complete NSX-030 canonical personal/provider status separation in the persisted model and migration contract; current type/runtime guard is only an intermediate control.
@@ -461,4 +461,4 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 8. Keep NSX-027 blocked until written Customer/Instructure authorization and approved tenant/scopes exist. Keep NSX-028 blocked until the owner decides legacy runtime disposition and separately authorizes any deployment/retirement.
 9. Finish NSX-026 repository/document reconciliation only after all authorized work and evidence are complete.
 
-**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization and personal/provider status protections are implemented in source, but the latest full CI run 45743400167 is still in progress; no pass is claimed. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
+**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization and personal/provider status protections are implemented in source and passed full CI/browser qualification on code commit 58f0c139 (run 45743400167). The current branch head is three documentation-only commits ahead. Broader recovery, accessibility, iPad, security and release gates remain. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
