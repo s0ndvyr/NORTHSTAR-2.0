@@ -5,8 +5,8 @@
 **Status:** Active implementation and qualification  
 **Last updated:** 2026-11-25  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `d99842e928f1e73e0c96aedc6d8f919a7a1e7b20`  
-**Latest successful full qualification run:** [GitHub Actions #45695099527](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695099527) — 13 browser journeys, 51 domain tests and build passed; conflict bundle contents verified
+**Latest implementation checkpoint:** `4fc4e4788710c771c6490c9514a70f1c2ca51674`  
+**Latest successful full qualification run:** [GitHub Actions #45695594885](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695594885) — typecheck, production dependency audit, 51 domain tests, production build and all 13 Playwright browser journeys passed
 
 Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
 
@@ -38,23 +38,18 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 
 ## Qualification evidence
 
-The latest successful workflow (#45691660498) completed these steps on the development branch:
+Latest successful workflow: [GitHub Actions #45695594885](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695594885), on commit `4fc4e4788710c771c6490c9514a70f1c2ca51674`.
 
-- Install dependencies from the committed lockfile.
-- TypeScript typecheck.
-- Production dependency audit (no high-severity production dependency finding blocked the run).
-- Domain test suite.
-- Production Vite build.
+All workflow steps completed successfully:
 
-See [workflow run #45688973347](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45688973347). The automated suite includes domain/repository tests; it is not a substitute for full browser end-to-end, assistive-technology, or physical iPad testing.
+- Dependencies installed reproducibly with `npm ci` from the committed lockfile.
+- Strict TypeScript typecheck passed.
+- Production dependency audit passed.
+- Domain test suite passed (51 tests across the domain test files).
+- Production Vite build passed.
+- All 13 Playwright browser journeys passed, including the 1024 × 1366 iPad Pro portrait viewport, offline cached-shell reload, and two-tab conflict export/recovery journey.
 
-
-- The assignment browser journey also verifies that a changed local workflow status survives a full page reload.
-- The Calendar new-event default was corrected so the end time follows its next-day start time by one hour.
-- The sidebar now renders Settings once while keeping it searchable from the command palette.
-
-A 12-scenario Playwright browser suite is now wired into CI, covering navigation/focus, assignments, calendar, courses, resources, Gradebook, Review Center, timed Study Lab, theme persistence, and the AI/Canvas safety boundaries. In the current run, typecheck, production dependency audit, all 49 domain tests and production build have passed; the Playwright browser step is still running. Do not mark browser qualification complete until that step succeeds.
-
+The automated iPad viewport check is Chromium-based. It does not establish physical iPad Safari compatibility, touch/keyboard behavior, assistive-technology acceptance, or long-duration storage/offline reliability. Those remain open manual/device gates.
 
 ## Remaining phase gates
 
