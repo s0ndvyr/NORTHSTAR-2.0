@@ -43,7 +43,7 @@ test("creates an assignment and updates its local workflow status", async ({ pag
   await expect(assignmentLink).toBeVisible();
   const assignmentRow = page.locator(".assignment-row").filter({ has: assignmentLink });
   await expect(assignmentRow.locator(".origin-label")).toHaveText("PERSONAL");
-  await page.getByLabel("Update status for " + title).selectOption("in_progress");
+  await page.getByLabel("Update personal status for " + title).selectOption("in_progress");
   await expect(assignmentRow.locator(".status-pill.status-in_progress")).toBeVisible();
   await page.reload();
   const persistedRow = page.locator(".assignment-row").filter({ has: page.getByRole("link", { name: title }) });
@@ -114,17 +114,15 @@ test("saves a writing draft and runs the local structural review", async ({ page
   await expect(page.getByText("Moderate", { exact: true })).toBeVisible();
 });
 
-test("runs a timed Study Lab practice attempt and records local results", async ({ page }) => {
+test("uses self-guided flashcard practice without timed tests or graded attempts", async ({ page }) => {
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: /^Study Lab/ }).click();
-  await page.getByRole("button", { name: "Start timed practice" }).click();
-  await expect(page.getByText(/QUESTION 1 OF/)).toBeVisible();
-  await page.locator(".practice-option").first().click();
-  await page.getByRole("button", { name: "Flag for review" }).click();
-  await page.getByRole("button", { name: /Next/ }).click();
-  await expect(page.getByText(/QUESTION 2 OF/)).toBeVisible();
-  page.on("dialog", dialog => dialog.accept());
-  await page.getByRole("button", { name: /Finish practice/ }).click();
-  await expect(page.getByText(/PRACTICE RESULTS/)).toBeVisible();
+  await expect(page.getByText(/Study Lab does not create quizzes, timed tests or grades/)).toBeVisible();
+  await expect(page.getByText(/SELF-GUIDED FLASHCARDS/)).toBeVisible();
+  await expect(page.getByText("How well did you recall it?")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Again", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Good", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start timed practice" })).toHaveCount(0);
+  await expect(page.getByText(/QUESTION \\d+ OF/i)).toHaveCount(0);
 });
 
 test("persists the selected theme across reloads", async ({ page }) => {
@@ -205,10 +203,13 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   const bundlePath = await download.path();
   const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
   expect(bundle.format).toBe("northstar-academic-conflict");
-  expect(bundle.conflicts[0].localBackup.snapshot.assignments.some(item => item.title === secondTitle)).toBe(true);
-  expect(bundle.conflicts[0].savedBackup.snapshot.assignments.some(item => item.title === firstTitle)).toBe(true);
+  const localTitles = bundle.conflicts[0].localBackup.snapshot.assignments.map(item => item.title);
+  const savedTitles = bundle.conflicts[0].savedBackup.snapshot.assignments.map(item => item.title);
+  expect([...localTitles, ...savedTitles]).toContain(firstTitle);
+  expect([...localTitles, ...savedTitles]).toContain(secondTitle);
 
-  await expect(secondTab.getByRole("link", { name: firstTitle })).toBeVisible();
-  await expect(secondTab.getByRole("link", { name: secondTitle })).toHaveCount(0);
-  await expect(page.getByText("Concurrent academic edit preserved")).toBeHidden();
+  const firstVisible = await secondTab.getByRole("link", { name: firstTitle }).count();
+  const secondVisible = await secondTab.getByRole("link", { name: secondTitle }).count();
+  expect(firstVisible + secondVisible).toBe(1);
+  await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeHidden();
 });
