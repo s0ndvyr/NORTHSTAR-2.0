@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AcademicSnapshot } from "./academic";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
   initialSnapshot,
