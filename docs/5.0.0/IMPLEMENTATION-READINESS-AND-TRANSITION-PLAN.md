@@ -134,3 +134,17 @@ The user confirmed that `apps/web/` is the official NORTHSTAR 5.0 application lo
 **Authorization exclusions remain in force:** this does not authorize changes to production or the production publishing workflow; real Canvas or AI provider connections; privileged credentials; user-data migration; destructive schema/data changes; legacy source deletion; live service deployment; or claims of runtime, build, test, security, accessibility or physical iPad qualification. Those require their own evidence and, where consequential, separate approval.
 
 The implementation will proceed in small, reviewable increments. Later planning should be performed alongside implementation only when a real decision or risk requires it.
+
+
+
+## 11. Current authorization interpretation — 2026-11-25
+
+Section 10 is the separate owner authorization that supersedes the earlier planning-only statements in Sections 1 and 8 for the initial `apps/web/` foundation. Later owner-approved product scope and recovery/qualification work extend the bounded local/demo implementation work on the dedicated development branch. They do not authorize every future feature or integration.
+
+The current controlling execution plan records each task's authorization and dependency. In particular:
+- local/demo scope corrections, local persistence/recovery fixes and development-branch CI/build/test may proceed where they are within the approved product boundary;
+- live Canvas/API access is blocked by NS-CAN-011 until current Instructure API Policy applicability and written permission are established;
+- legacy Worker/UI deactivation, deletion or redeployment is blocked by NSX-028 pending a separate owner decision and deployment/rollback authorization;
+- data migration, production release and physical iPad qualification remain separate gates.
+
+Phase 0 remains closed. No Phase 0 sign-off is being used as application implementation authorization.
