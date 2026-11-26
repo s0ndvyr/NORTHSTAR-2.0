@@ -43,7 +43,7 @@ The GitHub Actions workflow `.github/workflows/northstar-web-qualification.yml` 
 - The current `release.json` remains a legacy 4.4.x manifest: it records Pages production 4.4.7.5, preview 4.4.8.3.1 and Canvas Worker 0.4.22. Those are repository release records; the live deployment was not rechecked in this work session.
 - The legacy Worker source still contains submission, quiz, upload and discussion-write routes. It is not used by the new 5.0 app. Its deactivation/retirement requires a separate owner decision and deployment authorization.
 - Live Canvas authorization under the current Instructure API Policy is unresolved; no tenant request or credential use is authorized.
-- Automated local/demo qualification is in progress. Physical iPad Safari testing, full accessibility/security/performance qualification, live provider verification, data migration and production release are not claimed.
+- Latest application-code checkpoint 58f0c139 passed GitHub Actions qualification run 45743400167: typecheck, production dependency audit, 50 domain tests, production build and all 13 Playwright browser journeys. Physical iPad Safari testing, full accessibility/security/performance qualification, live provider verification, data migration and production release are not claimed.
 - The current local academic snapshot and attachment files are stored separately in browser localStorage/IndexedDB. The JSON backup does not include attachment bytes; see `docs/5.0.0/SOURCE-TREE-AND-PERSISTENCE-INVENTORY.md`.
 
 ## Legacy NORTHSTAR 4.4.x application documentation (historical; not the 5.0 scope)
