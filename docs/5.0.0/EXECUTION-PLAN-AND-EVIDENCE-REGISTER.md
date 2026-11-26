@@ -162,6 +162,15 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 - **Verification:** IndexedDB quota/blocked/abort tests; localStorage quota/corruption tests; interrupted attach/import/delete; missing Blob; orphan scan; backup round trip; conflict export interrupted or dismissed.
 - **Status:** Partial — source risks documented; implementation not started.
 
+#### NSX-030 — Personal versus provider assignment status
+- **Work:** Complete the semantic separation between a user's local planning status and any provider-owned assignment/submission state. Keep display of provider/demo Submitted/Graded records read-only; no local command may create those states.
+- **Current implementation:** `PersonalAssignmentStatus` is a separate TypeScript type limited to `not_started`, `in_progress` and `missing`. `updateAssignmentStatus` accepts only that type and enforces the runtime allowlist. Assignment UI controls use the personal type; Submitted/Graded are rendered as read-only records. The stored `AcademicAssignment.status` field still contains the broader display union, so full canonical field separation/migration remains open.
+- **Deliverable:** Canonical `personalStatus` field and optional provider-owned status snapshot; migration of demo/backup snapshots; explicit display/provenance rules; no submit method or action.
+- **Acceptance:** Personal status updates cannot set Submitted/Graded at type or runtime; provider status cannot be changed by local actions; legacy/demo snapshots remain readable; old data migration is deterministic and reversible.
+- **Verification:** Typecheck, unit tests for rejected status transitions, E2E UI tests for read-only Submitted/Graded states, snapshot migration/backup round trip.
+- **Dependencies:** NSX-008, NSX-020, NS-DATA-008.
+- **Status:** Partial — type and updater boundary implemented; full persisted field split and CI qualification pending.
+
 #### NSX-028 — Legacy Worker and excluded-workflow disposition
 - **Work:** Reconcile the legacy Worker, bridge tests, submission client, quiz routes, discussion writes, file uploads, LTI launch and PDF/document editor against NS-SCOPE-001. Determine whether the legacy runtime remains a separately preserved/frozen product or must be disabled/decommissioned.
 - **Evidence:** On the audited stabilization and current development branches, `canvas-bridge/worker.js` is byte-identical (SHA `dccb78bfc377f90ce5aba5d51ba52c129dc2aeee`) and `tests/bridge.test.mjs` is byte-identical (SHA `0163a1d7ef483c4a336867ade9a76b813aff6f75`). Tests explicitly exercise assignment submissions, quiz attempts, assignment/quiz uploads and discussion writes. `scripts/submissions.js` contains the Canvas POST client; `scripts/document-editor.js` and `scripts/document-storage.js` contain legacy document editing/storage.
