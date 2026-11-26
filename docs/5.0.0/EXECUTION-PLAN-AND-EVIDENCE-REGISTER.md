@@ -73,7 +73,7 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-003 | Record current product-scope guardrail and reconcile earlier conflicting requirements | Latest owner clarification; NS-CAI-009; NS-ACAD-004; NS-MIG-001 | NSX-002 | **In progress** |
 | NSX-004 | Complete exact-source tracked-file inventory and source/dependency/consumer graph | EFP-DEC-16; NS-MIG-002/003/005 | NSX-001 | **Partial** |
 | NSX-005 | Complete browser persistence, file, key, schema and lifecycle call-site map | EFP-DEC-17; NS-MIG-004; NS-DATA-006 | NSX-004 | **Partial** |
-| NSX-006 | Enumerate every Canvas Worker route and external operation | EFP-DEC-18; NS-SEC-003; NS-CAN-005 | NSX-004 | **Partial** |
+| NSX-006 | Enumerate every Canvas Worker route and external operation | EFP-DEC-18; NS-SEC-003; NS-CAN-005 | NSX-004 | **Partial — legacy read/write route families mapped; per-route test/security matrix remains** |
 | NSX-007 | Research official Canvas API capabilities, endpoint semantics, scopes, pagination, rate limits and evidence dates | NS-CAN-003/004/005; NS-CAI-003 | NSX-006 | **In progress — public read-only endpoint baseline captured; route-level mapping remains open** |
 | NSX-027 | Resolve Instructure API Policy applicability and document written authorization/partnership/express-permission gate before any live Canvas access | NS-CAN-011; current Instructure API Policy effective 2026-11-25 | NSX-007 | **Blocked — classification and written permission are not established** |
 | NSX-008 | Reconcile canonical entities, field schemas, identities and relationships | DAP-DEC-01; NS-DATA-001/004; NS-CAI-001 | NSX-004, NSX-005 | **Partial — logical model drafted** |
@@ -95,6 +95,7 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-024 | Complete capability parity and legacy preservation reconciliation | NS-MIG-001/002/003/005; Phase 0 preservation rule | NSX-004, NSX-005, NSX-015 | **Partial; no legacy deletion authorized** |
 | NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Not started** |
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
+| NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
 
 ### 3.1 Task execution details and completion criteria
 
@@ -149,6 +150,14 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 - **Verification:** Static route regex/dispatch analysis, tests inspection and workflow/config review. No Worker deployment or live request.
 - **Dependencies:** NSX-004.
 - **Status:** Partial. Worker source is inspected; full route catalogue is outstanding.
+
+#### NSX-028 — Legacy Worker and excluded-workflow disposition
+- **Work:** Reconcile the legacy Worker, bridge tests, submission client, quiz routes, discussion writes, file uploads, LTI launch and PDF/document editor against NS-SCOPE-001. Determine whether the legacy runtime remains a separately preserved/frozen product or must be disabled/decommissioned.
+- **Evidence:** On the audited stabilization and current development branches, `canvas-bridge/worker.js` is byte-identical (SHA `dccb78bfc377f90ce5aba5d51ba52c129dc2aeee`) and `tests/bridge.test.mjs` is byte-identical (SHA `0163a1d7ef483c4a336867ade9a76b813aff6f75`). Tests explicitly exercise assignment submissions, quiz attempts, assignment/quiz uploads and discussion writes. `scripts/submissions.js` contains the Canvas POST client; `scripts/document-editor.js` and `scripts/document-storage.js` contain legacy document editing/storage.
+- **Deliverable:** Legacy route-to-test-to-UI call graph; deployed-version evidence if separately authorized; explicit owner disposition; preservation/rollback/decommission plan.
+- **Acceptance:** No 5.0 app call site reaches excluded legacy routes. Legacy runtime disposition is explicit. No Worker or legacy source change occurs without separate approval and deployment/rollback evidence.
+- **Verification:** Static route/call-site/test mapping. Deployment state requires authorized Cloudflare/GitHub deployment access; static source cannot prove what is live.
+- **Status:** Blocked pending owner decision. No legacy route has been disabled, deleted or redeployed.
 
 #### NSX-007 — Official Canvas API evidence
 - **Work:** For each in-scope read capability, collect current official Instructure documentation: endpoint/method/version, fields, pagination, scopes/roles, rate limits, incremental updates, version semantics, errors, conditional fields and limitations. Distinguish official docs from tenant verification.
@@ -329,7 +338,8 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 6. NSX-010/011 define propagation, synchronization and conflict behavior.
 7. NSX-012/013 complete offline lifecycle and security boundary.
 8. NSX-027 resolves Instructure API Policy authorization before any live provider access.
-9. NSX-014/015 define workspace integration and migration/parity.
+9. NSX-028 resolves legacy Worker/UI disposition before any legacy route is disabled or reused.
+10. NSX-014/015 define workspace integration and migration/parity.
 10. NSX-016/017 connect every requirement to acceptance and evidence.
 11. NSX-018/019 complete risk review and CAI planning acceptance.
 11. NSX-020 through NSX-025 continue authorized local/demo implementation and qualification in parallel where dependencies permit.
@@ -341,10 +351,7 @@ No live provider work, migration, legacy deletion or production deployment is in
 
 The development status board records the following as implemented locally: React 19/TypeScript/Vite foundation; versioned local academic snapshot; dashboard; assignment CRUD/tracking; course create/edit and hubs; calendar events; gradebook records; resources; Study Lab flashcards/spaced repetition; Review Center local drafts/heuristic feedback; simulated AI; unconfigured Canvas adapter; Midnight/Light themes; reduced motion; PWA shell; local backup/recovery. These are implementation claims from the board and source, not blanket acceptance.
 
-The current implementation also contains two scope conflicts requiring NSX-020 resolution:
-- a timed multiple-choice practice/attempt engine in Study Lab (timer, answers, flags, scoring and attempt submission);
-- a local “Turn in locally” action and a Canvas adapter interface method named `submitAssignment`.
-These do not contact Canvas, but they resemble the native quiz/submission workflows now excluded by NS-SCOPE-001. They must be removed or reshaped in the new app. Legacy source remains untouched.
+The new app scope conflicts identified in NSX-020 have been corrected in source: the timed multiple-choice Study Lab attempt engine was replaced with self-guided flashcard review; the local “Turn in locally” action was removed; Submitted/Graded states are display-only; and the Canvas adapter no longer exposes `submitAssignment`. Automated qualification is pending. Separately, the legacy Worker and root scripts still contain real submission/quiz/document-editor code. Those files are byte-identical to the audited stabilization branch and remain untouched pending NSX-028 owner disposition.
 
 The Review Center is a limited local writing draft/feedback surface, not a general-purpose document editor. Keep it constrained to that approved purpose.
 
@@ -381,7 +388,7 @@ Recorded checks: clean `npm ci`, TypeScript typecheck, production dependency aud
 | Canvas/provider writes | Not in current product scope for submissions; any other consequential provider write requires new explicit approval | Read-only capability planning and local/demo UI |
 | AI provider connection | Separate explicit authorization, provider/account and secret-handling review | Provider-neutral simulation and service contract planning |
 | User-data migration/import | Separate explicit authorization plus verified backup/archive, mapping and rollback | Static source mapping, fixtures and migration design |
-| Legacy source deletion/retirement | Separate explicit authorization plus parity, backup and rollback evidence | Inventory and preservation classification |
+| Legacy source deletion/retirement or disabling legacy Worker write routes | Separate explicit authorization plus parity, backup and rollback evidence; explicit decision whether legacy remains frozen or is decommissioned | Inventory, route/test mapping and scope separation |
 | Production workflow/deployment/release | Separate explicit production approval and release gate | Isolated development CI and preview planning |
 | Quantitative offline limits | Measured usage and physical Safari/storage evidence | Conservative policy framework and official platform research |
 | CAI planning closure | Complete evidence, risk and workspace contract package; owner sign-off | Continue all static research/documentation tasks |
