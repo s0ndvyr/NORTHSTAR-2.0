@@ -3,10 +3,10 @@
 [![NORTHSTAR Web Qualification](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml/badge.svg?branch=northstar-5.0.0-development)](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml)
 
 **Status:** Active implementation and qualification  
-**Last updated:** 2026-11-25  
+**Last updated:** 2026-11-26 02:36 UTC  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest implementation checkpoint:** `4fc4e4788710c771c6490c9514a70f1c2ca51674`  
-**Latest successful full qualification run:** [GitHub Actions #45695594885](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695594885) — typecheck, production dependency audit, 51 domain tests, production build and all 13 Playwright browser journeys passed
+**Latest application-code checkpoint:** `58f0c1392c272e3e8245c8295c16789cb79f08db`  
+**Latest successful full qualification run:** [GitHub Actions #45743400167](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45743400167) on commit `58f0c139...` — 17 workflow steps succeeded; typecheck, production dependency audit, 50 domain tests across 3 files, production build and all 13 Playwright browser journeys passed
 
 Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
 
@@ -19,35 +19,37 @@ This page is the durable progress board for the NORTHSTAR 5.0.0 implementation p
 | React application foundation | Implemented | React 19, TypeScript, Vite, strict typecheck and production build |
 | Canonical academic data | Implemented | Validated versioned snapshot, revision tracking, local persistence and cross-record integrity |
 | Record provenance visibility | Implemented locally | DEMO/PERSONAL source labels across assignments, courses, calendar, Gradebook, Resources and Study Lab; field-level external authority/conflict resolution remain open |
-| Concurrent edit protection | Implemented locally | Revision guard, two-sided conflict preservation, cross-tab notice, conflict bundle export and safe reload; external-provider reconciliation remains open |
+| Concurrent edit protection | Implemented locally; recovery qualification partial | Revision guard, two-sided conflict preservation, deterministic initial seed and cross-tab notice; 13-browser-journey suite passes. Conflict export currently clears after initiating download; explicit save acknowledgement and attachment manifest remain open |
 | Overview dashboard | Implemented | Shared academic projections, priority queue, course progress and activity |
-| Assignments | Implemented locally; scope cleanup in progress | Create/edit/delete, filters/search/sort, local planning status, notes/drafts and local artifacts; no native submission workflow is in scope |
+| Assignments | Implemented locally; scope correction qualified | Create/edit/delete, filters/search/sort, personal planning status, notes/drafts and local artifacts; Submitted/Graded records are display-only and the personal updater cannot create or modify them; no native submission workflow |
 | Courses | Implemented | Course create/edit, course hubs, connected assignments/resources/study material and derived progress |
 | Calendar | Implemented | Assignment deadlines plus local event create/edit/delete |
-| Study Lab | Implemented locally; scope cleanup in progress | Flashcards, spaced repetition and course study guides remain in scope; timed graded practice/quiz engine is excluded by NS-SCOPE-001 |
+| Study Lab | Implemented locally; scope correction qualified | Flashcards, spaced repetition and course study guides; no timed quiz/test engine, question bank, graded attempt or assessment submission |
 | Gradebook | Implemented | Explicit score records and course summaries; assignment status does not imply a grade |
 | Resources | Implemented | Course-linked local library with create/edit/delete/search/filter |
 | Review Center | Implemented | Local writing drafts, autosave and heuristic structural feedback; not AI-generated grading |
 | AI Workspace | Implemented as simulation | No model provider, API key, remote request or external data transfer |
-| Canvas integration | Adapter boundary / not connected | No institution URL, credentials, Canvas reads or submissions |
+| Canvas integration | Read-only adapter boundary / not connected | Adapter exposes no submission method; no institution URL, credentials, live Canvas reads or provider writes |
 | Navigation and notifications | Implemented locally | Command palette and academic alerts derived from local snapshot; not push notifications |
 | Keyboard accessibility foundation | Implemented; manual qualification open | Skip link, main landmark, visible focus, forced-colors styling and modal focus containment/restoration |
 | Themes and motion | Implemented | Midnight/Light, responsive shell, transitions and reduced-motion handling |
 | PWA install/offline shell | Implemented foundation | Manifest, icon, production service worker and static-shell caching; not offline data synchronization |
-| Backup and recovery | Implemented locally | Validated JSON snapshot backup; binary attachments excluded and separately downloadable |
+| Backup and recovery | Implemented locally; attachment recovery partial | Validated JSON snapshot backup; IndexedDB attachment bytes and artifact metadata are excluded and require separate manual download; cross-store transaction, portable attachment archive and orphan recovery remain open |
 
 ## Qualification evidence
 
-Latest successful workflow: [GitHub Actions #45695594885](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45695594885), on commit `4fc4e4788710c771c6490c9514a70f1c2ca51674`.
+Latest successful workflow: [GitHub Actions #45743400167](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45743400167), on application-code commit `58f0c1392c272e3e8245c8295c16789cb79f08db`.
 
-All workflow steps completed successfully:
+All 17 workflow steps completed successfully:
 
 - Dependencies installed reproducibly with `npm ci` from the committed lockfile.
 - Strict TypeScript typecheck passed.
 - Production dependency audit passed.
-- Domain test suite passed (51 tests across the domain test files).
+- Domain test suite passed: 50 tests across 3 files.
 - Production Vite build passed.
-- All 13 Playwright browser journeys passed, including the 1024 × 1366 iPad Pro portrait viewport, offline cached-shell reload, and two-tab conflict export/recovery journey.
+- All 13 Playwright browser journeys passed in 17.4 seconds, including the 1024 × 1366 Chromium tablet viewport, offline cached-shell reload, cross-tab conflict workflow and non-assessment flashcard practice.
+
+The earlier baseline run #45695594885 also passed 51 domain tests and 13 browser journeys on commit 4fc4e478. The latest run qualifies the current code checkpoint, but documentation-only commits have been made afterward.
 
 The automated iPad viewport check is Chromium-based. It does not establish physical iPad Safari compatibility, touch/keyboard behavior, assistive-technology acceptance, or long-duration storage/offline reliability. Those remain open manual/device gates.
 
@@ -80,6 +82,17 @@ Continue implementation in coherent, connected increments. Do not restart planni
 
 NORTHSTAR 5.0 remains an academic organizer/intelligence layer. Academic workspaces and the course editor remain approved. Native quizzes/tests, assignment submissions/turn-in workflows and general-purpose document editors are excluded. Canvas and external services retain those workflows.
 
-The current source audit found a timed multiple-choice Study Lab attempt engine, a local “Turn in locally” action and an unconfigured Canvas adapter method named `submitAssignment`. They do not contact Canvas, but they resemble excluded native workflows. Their removal/reshaping is tracked by NSX-003/NSX-020 and NS-SCOPE-001. The Review Center remains limited to local writing drafts and feedback; it is not a general-purpose document editor. Legacy source remains untouched pending mapping and separate retirement approval.
+The new 5.0 app's timed multiple-choice Study Lab attempt engine, local “Turn in locally” action and Canvas `submitAssignment` adapter method have been removed. The Canvas adapter remains unconfigured/read-only; Submitted/Graded records are display-only and the personal status updater rejects those transitions. Automated qualification passed on code commit 58f0c139. The legacy root app and Worker still contain older capabilities and remain separately tracked under NSX-028; they have not been disabled or deleted. The Review Center remains limited to local writing drafts and feedback; it is not a general-purpose document editor. Legacy source remains untouched pending mapping and separate retirement approval.
 
 See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md) for task dependencies, approval boundaries and evidence.
+
+
+## Current checkpoint reconciliation — 2026-11-26
+
+- Phase 0 remains formally closed. The separate bounded authorization for local/demo implementation and development-branch qualification is recorded in the transition plan; Phase 0 sign-off itself is not treated as implementation authorization.
+- The 5.0.1 Academic Data & Canvas Intelligence planning specification remains approved as planning only. The separate Cross-Application Intelligence final planning review is still pending; the schema, provider mapping, read-only sync contract and API-policy gate are documented in the execution plan.
+- The latest code checkpoint 58f0c139 passed the full 5.0 web qualification workflow. Current development branch documentation was updated afterward; no application code changed after that checkpoint at this status update.
+- The current Instructure API Policy (effective 2026-11-25) creates a written authorization/partnership gate. No live Canvas request or credential use is claimed.
+- The repository release manifest remains legacy 4.4.x: Pages production 4.4.7.5, preview 4.4.8.3.1 and Worker 0.4.22. The 5.0 app has no deployment workflow or 5.0 release entry. Live deployment state was not rechecked.
+- Remaining high-risk recovery gap: conflict export currently clears the conflict record after starting a browser download, not after confirmed user save; JSON backup excludes attachment metadata/bytes. NSX-029 owns the design and requires approval before introducing a new attachment archive/restore workflow.
+- Remaining qualification gates: accessibility across workspaces, physical iPad Safari, offline/quota/corruption/interrupted-write matrix, attachment lifecycle, legacy capability parity, security/privacy review and release readiness.
