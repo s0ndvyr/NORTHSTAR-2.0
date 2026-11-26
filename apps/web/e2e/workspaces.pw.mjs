@@ -175,7 +175,7 @@ test("loads the cached application shell after network loss", async ({ page, con
   await context.setOffline(false);
 });
 
-test("preserves concurrent edits across tabs and exports both snapshots before reload", async ({ page }) => {
+test("preserves concurrent edits until the conflict bundle save is acknowledged", async ({ page }) => {
   const secondTab = await page.context().newPage();
   await secondTab.goto("/");
   await expect(secondTab.getByRole("heading", { name: /Make today/ })).toBeVisible();
@@ -201,12 +201,15 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   await expect(page.getByText("Concurrent academic edit preserved")).toBeVisible();
   await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeVisible();
   const downloadPromise = secondTab.waitForEvent("download");
-  await secondTab.getByRole("button", { name: "Download both versions and reload" }).click();
+  await secondTab.getByRole("button", { name: "Download both versions" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^northstar-conflict-/);
   const bundlePath = await download.path();
   const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
   expect(bundle.format).toBe("northstar-academic-conflict");
+  expect(bundle.conflicts[0].attachmentManifest).toBeTruthy();
+  expect(bundle.conflicts[0].attachmentManifest.local).toBeInstanceOf(Array);
+  expect(bundle.conflicts[0].attachmentManifest.saved).toBeInstanceOf(Array);
   const conflictSnapshots = bundle.conflicts.flatMap(conflict => [
     conflict.localBackup.snapshot,
     conflict.savedBackup.snapshot,
@@ -215,6 +218,10 @@ test("preserves concurrent edits across tabs and exports both snapshots before r
   expect(preservedTitles).toContain(firstTitle);
   expect(preservedTitles).toContain(secondTitle);
 
+  await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeVisible();
+  await expect(secondTab.getByRole("button", { name: "I've saved the bundle — reload latest saved copy" })).toBeVisible();
+  secondTab.once("dialog", dialog => dialog.accept());
+  await secondTab.getByRole("button", { name: "I've saved the bundle — reload latest saved copy" }).click();
   await expect(secondTab.getByRole("link", { name: firstTitle })).toBeVisible();
   await expect(secondTab.getByRole("link", { name: secondTitle })).toHaveCount(0);
   await expect(secondTab.getByText("Concurrent academic edit preserved")).toBeHidden();
