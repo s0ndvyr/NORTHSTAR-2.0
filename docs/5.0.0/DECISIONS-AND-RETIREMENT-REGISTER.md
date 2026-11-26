@@ -175,3 +175,29 @@ Supporting specification: MODULE-2-REPOSITORY-ENGINEERING-AND-QUALIFICATION-PLAN
 - **Scope:** React/TypeScript/Vite app shell, routing/navigation, Midnight design foundation, responsive layout and illustrative demo dashboard.
 - **Exclusions:** Production publishing, Canvas Worker changes, live Canvas/AI providers, secrets, data migration, destructive changes, legacy deletion and deployment are not included.
 - **Preservation:** The legacy root application and production branch remain untouched.
+
+
+
+## Owner product-scope clarification — NS-SCOPE-001 — 2026-11-25
+
+The owner clarified that NORTHSTAR 5.0 is an academic organizer and intelligence layer, not a Canvas/LMS replacement. Approved academic workspaces and continued course-editor development remain in scope.
+
+**Excluded from the NORTHSTAR 5.0 application:**
+- native quiz/test or timed graded assessment engine;
+- native assignment submission/turn-in, upload, re-submit or receipt workflow;
+- general-purpose document editor or replacement for Canvas/external document tools;
+- Canvas provider write operations as part of the 5.0 user workflow.
+
+Study Lab is limited to flashcards, spaced repetition, study guides and non-assessment learning aids. Review Center remains a limited local writing-draft/feedback workspace, not a document editor suite. Assignment tracking may display provider/demo status with provenance, but Submitted/Graded states are display-only and NORTHSTAR does not submit. Course editing is limited to the personal NORTHSTAR course workspace and does not mutate Canvas course records.
+
+This later owner clarification supersedes conflicting earlier planning/implementation annotations for the target 5.0 product, including the timed local practice engine, local “Turn in locally” simulation and Canvas `submitAssignment` adapter method. Historical requirements and source evidence are preserved and cross-referenced; they are not erased.
+
+**Legacy preservation:** Root 4.4.x source, Worker routes, tests, document editor and release artifacts remain untouched until complete mapping and a separate owner decision authorizes freeze/deactivation/retirement. The legacy Worker deployment state must not be inferred from source alone.
+
+**Authorization:** This scope restriction is separate from Phase 0 sign-off. Bounded local/demo app implementation and development-branch CI/build/test are separately authorized; live Canvas/API access, data migration, Worker deployment changes, legacy deletion/disablement and production release remain gated.
+
+## Current external and data requirements added
+
+- **NS-CAN-011:** Resolve the current Instructure Canvas API Policy authorization/partnership requirement before any live API access. No Canvas tenant request is authorized by public documentation research.
+- **NS-CAN-012:** Inventory and isolate legacy Canvas Worker/UI write, quiz, upload and discussion routes from the new 5.0 app; determine legacy runtime disposition separately.
+- **NS-DATA-007:** Define attachment Blob/metadata backup, restore, conflict export, deletion and orphan recovery across localStorage and IndexedDB.
