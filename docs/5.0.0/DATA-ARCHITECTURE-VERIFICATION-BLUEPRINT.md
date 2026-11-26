@@ -114,7 +114,7 @@ Additional data recovery scenarios:
 - backup/restore round trip explicitly reports that binary attachments are excluded until NS-DATA-007 is closed;
 - conflict bundle download is not treated as saved until the user acknowledges it; conflict data remains recoverable until then.
 
-The scope correction and cross-tab initialization fix passed full qualification on code checkpoint 58f0c139 (run 45743400167). The subsequent recovery correction requires explicit acknowledgement before clearing a conflict export and includes an attachment metadata manifest; code checkpoint 4aaa2984 passed full qualification in run 45744014664. Physical iPad and manual/device acceptance are not claimed.
+The scope correction and cross-tab initialization fix passed full qualification on code checkpoint 58f0c139 (run 45743400167). The subsequent recovery correction requires explicit acknowledgement before clearing a conflict export and includes an attachment metadata manifest; code checkpoint 4aaa2984 passed full qualification in run 45744014664. HTTPS-only resource link validation and opener isolation then passed full qualification on code checkpoint d6622c8d (run 45744506192). Physical iPad and manual/device acceptance are not claimed.
 
 
 
@@ -164,7 +164,7 @@ This is a static threat model and release checklist, not a passed security audit
 - Current 5.0 AI workspace uses deterministic local simulation; no external AI provider request is made.
 - Production dependency audit, typecheck, build, domain tests and Playwright browser qualification passed on code checkpoint 58f0c139 (run 45743400167).
 - The service worker caches the static app shell; academic data is stored separately in browser localStorage/IndexedDB.
-- The conflict export flow retains conflict records until explicit user acknowledgement and includes a metadata manifest for attachments; run 45744014664 passed all 13 Playwright journeys. Binary attachment bytes remain excluded.
+- The conflict export flow retains conflict records until explicit user acknowledgement and includes a metadata manifest for attachments; run 45744014664 passed all 13 Playwright journeys. HTTPS-only resource URL validation passed run 45744506192. Binary attachment bytes remain excluded.
 - The legacy Worker and root UI still contain excluded capabilities. Source-level inventory is not proof of live deployment status or safe retirement.
 
 ### 10.4 Release blockers
@@ -186,12 +186,12 @@ This is a static threat model and release checklist, not a passed security audit
 
 ### 10.5 Static source review performed — 2026-11-26
 
-Inspected 19 files across `apps/web/src/`, `apps/web/index.html`, `apps/web/public/sw.js`, `apps/web/vite.config.ts` and `apps/web/package.json`.
+Initial review inspected 19 files across `apps/web/src/`, `apps/web/index.html`, `apps/web/public/sw.js`, `apps/web/vite.config.ts` and `apps/web/package.json`; the subsequent external-link helper and test brought the reviewed set to 21 files.
 
 - No `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`, `eval`, `new Function`, `document.write`, `window.open`, `XMLHttpRequest` or `WebSocket` usage was found in the inspected new-app source.
 - Resource `content` is rendered as React text, not injected HTML.
 - The only application `fetch` found is in the service worker. It handles same-origin GET navigation/static-asset requests; it does not cache cross-origin responses, academic records or API payloads.
-- Both Study Lab and Resources external links now pass stored values through `safeExternalUrl`, which accepts absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and uses `rel="noopener noreferrer"`. Unit tests cover valid HTTPS and rejected JavaScript/data/file/HTTP/relative/credential-bearing values. The code is included in qualification run 45744506192, which is in progress at this update.
+- Both Study Lab and Resources external links pass stored values through `safeExternalUrl`, which accepts absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and uses `rel="noopener noreferrer"`. Unit tests cover valid HTTPS and rejected JavaScript/data/file/HTTP/relative/credential-bearing values. The change passed run 45744506192: 17 workflow steps, 61 domain tests across 4 files and all 13 Playwright journeys.
 - `apps/web/index.html` has no Content-Security-Policy meta tag, and the Vite config does not establish production response security headers. A production CSP/header policy must be designed and tested at the actual hosting layer before release.
 - The new app stores academic snapshot/conflict data in localStorage and attachment Blobs in IndexedDB without application-level encryption. This is a documented release/privacy risk, not an assertion that the browser profile is a secure vault.
 
