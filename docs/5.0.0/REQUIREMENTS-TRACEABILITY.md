@@ -335,3 +335,7 @@ The Canvas capability matrix now records official public documentation for cours
 Static inspection confirms the legacy `canvas-bridge/worker.js` and `tests/bridge.test.mjs` are byte-identical on the audited stabilization branch and current 5.0 development branch. The Worker source and tests include assignment submissions, quiz attempts/answers/flags/completion, assignment/quiz file uploads and discussion writes. Legacy `scripts/submissions.js` and PDF/document editor/storage files remain present.
 
 These are not part of the new `apps/web/` target scope. The new app's Canvas adapter has no submission operation and remains unconfigured. Legacy source is preserved; no deployment state is claimed. NS-CAN-012 and NSX-028 track the remaining call-graph, deployment-evidence and owner-disposition work. No legacy route has been disabled or removed.
+
+
+| NS-DATA-007 | User-created assignment attachment bytes and metadata have explicit, consistent backup/restore, conflict-export, deletion and orphan-recovery semantics across localStorage and IndexedDB | P1 | NS-DATA-005, NS-CAI-007, NS-QUAL-003 | Attachment manifest/archive round trip; quota/abort/interrupted-operation tests; orphan scan and user-visible recovery evidence | Partial — current JSON backup excludes binary files; recovery design open |
+
