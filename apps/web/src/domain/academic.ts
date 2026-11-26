@@ -118,11 +118,13 @@ export interface GradeItem {
   updatedAt: string;
 }
 
+/** @deprecated Legacy local quiz data retained only so older browser backups remain readable. */
 export interface PracticeOption {
   id: string;
   text: string;
 }
 
+/** @deprecated Legacy local quiz data retained only so older browser backups remain readable. */
 export interface PracticeQuestion {
   id: string;
   courseId: string;
@@ -134,6 +136,7 @@ export interface PracticeQuestion {
   source: "demo";
 }
 
+/** @deprecated Legacy local quiz attempts are preserved for backup compatibility and are not exposed by the 5.0 UI. */
 export interface PracticeAttempt {
   id: string;
   courseId: string;
@@ -167,7 +170,9 @@ export interface AcademicSnapshot {
   gradeItems?: GradeItem[];
   /** File metadata is stored in the snapshot; binary bytes live in a separate IndexedDB object store. */
   artifacts?: AssignmentArtifact[];
+  /** @deprecated Read-only compatibility fields for legacy local quiz data; new 5.0 snapshots do not seed or create them. */
   practiceQuestions?: PracticeQuestion[];
+  /** @deprecated Preserved in existing snapshots/backups; no 5.0 UI or command creates new attempts. */
   practiceAttempts?: PracticeAttempt[];
 }
 
