@@ -226,3 +226,11 @@ The user confirmed `apps/web/` as the official application directory and authori
 The initial foundation now exists in that directory: React + TypeScript + Vite configuration, strict TypeScript settings, route-based workspace shell, Midnight visual foundation, responsive dashboard preview, illustrative-only academic figures and app-level setup documentation. This is a starter foundation, not a completed workspace implementation.
 
 Implementation proceeds incrementally. The initial scaffold has not yet been built or tested in a runtime in this work session; the dependency lockfile must be generated and committed during the first local install. Production workflows, the legacy root application, Canvas Worker, real provider connections, data migration and legacy retirement remain outside the current authorization.
+
+
+
+## 15. Authorization and current implementation reconciliation — 2026-11-25
+
+The planning-only statements in Sections 1, 8 and 13 describe the earlier planning checkpoint. Section 14 and the later owner authorization recorded in the implementation-readiness document supersede those statements only for the isolated `apps/web/` development branch, bounded local/demo implementation and development-branch CI/build/test. They do not authorize live Canvas/AI/StudentVUE access, user-data migration, legacy Worker changes, production publishing or physical iPad qualification claims.
+
+The current development branch has a real React/TypeScript/Vite app, domain model, local persistence, workspaces and automated qualification workflow. Its current source and test status is maintained in [IMPLEMENTATION-STATUS.md](IMPLEMENTATION-STATUS.md) and the execution/evidence register. This does not mean all architecture requirements are implemented or accepted.
