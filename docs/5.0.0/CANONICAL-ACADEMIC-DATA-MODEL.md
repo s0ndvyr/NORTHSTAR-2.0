@@ -114,3 +114,17 @@ Confirm exact enum vocabularies, timezone policy, term/course identity across in
 - Every sourced/derived field has provenance and freshness semantics.
 
 **Disposition:** Logical model proposed for review; no physical schema, code or migration authorized.
+
+
+
+## 9. Scope reconciliation for provider-owned submission state — NS-SCOPE-001
+
+The earlier `Submission` entity catalogue is retained as historical modeling work, but its target 5.0 role is restricted:
+
+- NORTHSTAR does not create, edit, upload, submit, re-submit, score or complete a provider submission.
+- If a provider-owned submission/status fact is required for assignment tracking, represent only the minimum read-only status metadata needed: provider namespace/account, course/assignment external identity, current-user context, status, provider-updated/observed timestamps and provenance/freshness.
+- Do not model local answer bodies, attempt timers, upload staging, draft payloads, idempotency keys for submission writes or simulated receipts as active 5.0 entities.
+- Provider status fields are optional/permission-dependent. Missing data is `unknown/unavailable`, not an inferred `not submitted` state.
+- The new app must not expose a command or adapter method that can initiate a provider submission. Submitted/Graded demo records are display-only; personal workflow statuses remain separate.
+
+The old detailed Submission fields and relationships remain in this document to preserve the approved historical design record, but are **not implementation requirements** unless a later owner decision explicitly reopens that scope. See NS-SCOPE-001 and NS-CAI-009 restriction in the traceability register.
