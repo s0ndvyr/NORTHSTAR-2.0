@@ -170,7 +170,7 @@ This section records mechanisms identified by source inspection. It is not yet a
 
 | Mechanism | Database/key | Data | Read/write behavior | Current limitations / follow-up |
 |---|---|---|---|---|
-| Browser localStorage | `northstar-5-academic-demo-v1` | Canonical local snapshot: term, courses, assignments, resources, flashcards, writing drafts, events, grade items and artifact metadata | `loadAcademicSnapshot` reads/validates; `saveAcademicSnapshot` writes on app state changes; JSON schema version 1 | Plaintext, device/browser scoped, no cloud sync; quota/serialization failure keeps current session state but cannot guarantee reload recovery |
+| Browser localStorage | `northstar-5-academic-demo-v1` | Canonical local snapshot: term, courses, assignments, resources, flashcards, writing drafts, events, grade items and artifact metadata | `loadAcademicSnapshot` reads/validates and synchronously seeds the first snapshot when no record exists; `saveAcademicSnapshot` writes on app state changes; JSON schema version 1 | Plaintext, device/browser scoped, no cloud sync; deterministic local-day demo seed prevents cross-tab initialization conflicts; invalid/incompatible raw snapshots are preserved rather than overwritten; quota/serialization failure keeps current session state but cannot guarantee reload recovery |
 | Browser localStorage | `northstar-5-academic-conflicts-v1` | Competing local/persisted snapshots, detection timestamp and conflict ID | `saveAcademicSnapshot` preserves both sides when persisted revision is same/newer; max 10 conflict records; explicit export/clear | Conflict bundle excludes IndexedDB file bytes and current backup helper also strips artifact metadata; resolution currently downloads then clears automatically, which needs safer acknowledgement/backup behavior |
 | Browser localStorage | `northstar-theme` | `midnight` / `light` theme | App reads at startup and writes on theme change | Non-critical preference; no cross-device sync |
 | IndexedDB | `northstar-5-assignment-artifacts`, v1, store `files` | Blob, file name, MIME type, byte size and added timestamp | Save/read/delete through `assignment-artifact-storage.ts`; max 25 MB per file; metadata reference is stored in local snapshot | Blob data is not encrypted; no total-quota policy; JSON backups/conflict bundles exclude bytes; failed metadata/blob ordering can leave orphaned blobs or stale references |
@@ -227,3 +227,17 @@ The current development-branch `release.json` is still a 4.4.8.3.1 release manif
 
 These are repository release-manifest claims, not a live deployment recheck in this work session. The development branch workflow inventory contains the legacy Pages/Worker deployment workflows and a separate `northstar-web-qualification.yml`; no 5.0-specific Pages/production deployment workflow or 5.0 release entry was found. The new `apps/web/` app is therefore treated as development/qualification-only, not deployed.
 
+
+
+### 8.4 Cross-tab initialization correction — 2026-11-26
+
+The first automated concurrent-edit run exposed a real initialization race: the demo dataset used millisecond-varying `new Date()` timestamps, so two tabs opened with no saved snapshot could create different revision-1 seeds. The second seed was incorrectly treated as a competing edit, which then prevented subsequent writes while the conflict remained.
+
+The development branch now:
+- normalizes demo seed timestamps to local noon so tabs opened on the same local day generate identical seed content;
+- synchronously persists the initial snapshot inside `loadAcademicSnapshot` before React mounts, so later tabs normally read the same stored snapshot;
+- returns a valid persisted snapshot without injecting default empty arrays, preserving its serialized shape and avoiding false conflicts on reload;
+- refuses to overwrite an existing malformed or incompatible snapshot during normal saves; explicit backup restore remains a separate forced operation;
+- adds a unit test for deterministic initial seed content and an E2E persistence wait in the two-tab scenario.
+
+Source commits: `ffcb6d83a95a5a5eda9af48c5e04c60afc4a6e78`, `a3ab1f75bf92a64eb9c4691be2139f45fea0f9e6`, `3a87cca28c06760a622c22a85dfe3b24a920adc8`, `67c6403e8c83b7b3a58a2d71bfa09a01873bb2d0`. The latest workflow for the final commit is queued/in progress at the time this addendum was written; the fix is implemented but not yet marked automated-verified.
