@@ -69,3 +69,9 @@ The following legacy capabilities must be mapped and preserved as legacy source,
 Target 5.0 equivalents are organizer/intelligence capabilities only: assignment tracking and personal planning, external Canvas handoff, read-only provider status when authorized, course workspaces/editor for personal NORTHSTAR metadata, calendar, gradebook insights, resources, flashcards/spaced repetition/study guides, limited writing feedback and simulated AI.
 
 Legacy root files, Worker routes, tests and release records are not deleted or disabled by this map. NSX-028 requires an explicit owner decision whether the 4.4.x legacy runtime remains a separately frozen product or is deactivated/decommissioned. Any migration/retirement must first complete the source-to-target mapping, preserve user data, pass parity tests, produce a backup and rollback plan, and receive separate authorization.
+
+
+
+## 10. Authorization status clarification
+
+This map is an inventory and migration-planning artifact. The bounded local/demo implementation authorization does not authorize legacy data migration, source deletion, Worker route disablement, production deployment or destructive cleanup. NSX-028 and the migration/release gates remain mandatory.
