@@ -81,3 +81,9 @@ Current 5.0 offline behavior is:
 The 5.0 JSON backup and conflict bundle exclude IndexedDB attachment bytes (and the current JSON helper removes artifact metadata). The UI warns that attachments must be downloaded separately. There is no separate attachment archive or orphan scanner. Attach/delete/import/reset operations span localStorage and IndexedDB without a cross-store transaction. These are explicit NS-DATA-007 / NSX-029 gaps, not accepted recovery behavior.
 
 Do not invent numeric storage quotas, freshness periods or retention windows. Measure browser/physical iPad behavior and define per-data-class policy before claiming storage reliability. Local academic data and attachments are currently plaintext at rest; security classification, encryption requirements and user-facing disclosure remain open.
+
+
+
+## 12. Authorization status clarification
+
+This policy remains a planning/acceptance contract for future provider sync and full recovery behavior. The separate owner authorization permits local/demo persistence and recovery fixes in the development branch; it does not authorize live provider synchronization, cloud backup services, external data migration, production changes or legacy data deletion.
