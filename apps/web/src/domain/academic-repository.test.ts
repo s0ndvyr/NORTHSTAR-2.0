@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { initialSnapshot, afterEach, describe, expect, it, vi } from "vitest";
 import { buildCourseStudyGuide, searchWorkspaceResults, selectAcademicNotifications, selectCourseProgress, sortAssignments } from "./workspace-intelligence";
 import {
   createAcademicBackup,
@@ -522,6 +522,12 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
   const deleted = deleteAssignment(next, assignmentId);
   expect(deleted.events?.find(item => item.title === "Assignment review")?.assignmentId).toBeUndefined();
   expect(isAcademicSnapshot(deleted)).toBe(true);
+});
+
+describe("initial snapshot stability", () => {
+  it("produces identical demo seed data for tabs opened on the same local day", () => {
+    expect(JSON.stringify(initialSnapshot())).toBe(JSON.stringify(initialSnapshot()));
+  });
 });
 
 describe("Study Lab non-assessment scope", () => {
