@@ -261,14 +261,24 @@ export function loadAcademicSnapshot(): AcademicSnapshot {
   if (typeof window === "undefined") return initialSnapshot();
   try {
     const raw = window.localStorage.getItem(ACADEMIC_STORAGE_KEY);
-    if (raw) {
-      const parsed: unknown = JSON.parse(raw);
-      if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [], artifacts: parsed.artifacts ?? [] };
+    if (raw !== null) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (isAcademicSnapshot(parsed)) return { ...parsed, resources: parsed.resources ?? [], studyCards: parsed.studyCards ?? [], writingDrafts: parsed.writingDrafts ?? [], events: parsed.events ?? [], gradeItems: parsed.gradeItems ?? [], practiceQuestions: parsed.practiceQuestions ?? [], practiceAttempts: parsed.practiceAttempts ?? [], artifacts: parsed.artifacts ?? [] };
+      } catch {
+        // Preserve malformed/incompatible bytes for recovery; never replace them with demo data.
+      }
+      return initialSnapshot();
     }
+    // Seed synchronously before React mounts so a second tab reads the same persisted
+    // initial snapshot instead of creating a competing, time-varying demo snapshot.
+    const initial = initialSnapshot();
+    try { window.localStorage.setItem(ACADEMIC_STORAGE_KEY, JSON.stringify(initial)); } catch { /* The UI reports unavailable persistence on its first save. */ }
+    return initial;
   } catch {
-    // A malformed or unavailable browser store must not prevent the app from opening.
+    // A blocked browser store must not prevent the app from opening.
+    return initialSnapshot();
   }
-  return initialSnapshot();
 }
 
 export interface AcademicSnapshotConflict {
@@ -340,13 +350,12 @@ export function saveAcademicSnapshot(snapshot: AcademicSnapshot, force = false):
       const raw = window.localStorage.getItem(ACADEMIC_STORAGE_KEY);
       if (raw) {
         const persisted: unknown = JSON.parse(raw);
-        if (isAcademicSnapshot(persisted)) {
-          const localJson = JSON.stringify(snapshot);
-          const persistedJson = JSON.stringify(persisted);
-          if (localJson === persistedJson) return true;
-          if (loadAcademicConflicts().length > 0 || persisted.revision >= snapshot.revision) {
-            return preserveSnapshotConflict(snapshot, persisted);
-          }
+        if (!isAcademicSnapshot(persisted)) return false;
+        const localJson = JSON.stringify(snapshot);
+        const persistedJson = JSON.stringify(persisted);
+        if (localJson === persistedJson) return true;
+        if (loadAcademicConflicts().length > 0 || persisted.revision >= snapshot.revision) {
+          return preserveSnapshotConflict(snapshot, persisted);
         }
       }
     }
