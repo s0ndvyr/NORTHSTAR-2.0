@@ -11,6 +11,7 @@ export const demoCourses: AcademicCourse[] = [
   { id: "mat-151", code: "MAT 151", name: "College Algebra", instructor: "Prof. Rivera", termId: demoTerm.id, source: "demo", color: "violet", progress: 74 },
 ];
 const now = new Date();
+now.setHours(12, 0, 0, 0);
 const day = (offset: number) => {
   const value = new Date(now);
   value.setDate(value.getDate() + offset);
@@ -29,7 +30,7 @@ export const demoAssignments: AcademicAssignment[] = [
 ];
 
 
-const resourceNow = new Date().toISOString();
+const resourceNow = now.toISOString();
 export const demoResources: AcademicResource[] = [
   {
     id: "resource-eng-writing-notes", courseId: "eng-204", title: "Research writing notes",
