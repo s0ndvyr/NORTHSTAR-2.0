@@ -223,7 +223,7 @@ describe("academic repository", () => {
   it("changes status through the shared assignment record", () => {
     const snapshot = loadAcademicSnapshot();
     const assignment = snapshot.assignments[0];
-    const next = updateAssignmentStatus(snapshot, assignment.id, "submitted");
+    const next = updateAssignmentStatus(snapshot, assignment.id, "in_progress");
     expect(next.assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
     expect(next.revision).toBe(snapshot.revision + 1);
   });
@@ -523,6 +523,17 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
   const deleted = deleteAssignment(next, assignmentId);
   expect(deleted.events?.find(item => item.title === "Assignment review")?.assignmentId).toBeUndefined();
   expect(isAcademicSnapshot(deleted)).toBe(true);
+});
+
+describe("personal assignment status boundary", () => {
+  it("does not permit local updates to provider-owned Submitted or Graded states", () => {
+    const snapshot = loadAcademicSnapshot();
+    const assignment = snapshot.assignments[0];
+    // @ts-expect-error Submitted is provider-owned/read-only, not a personal workflow status.
+    expect(updateAssignmentStatus(snapshot, assignment.id, "submitted")).toEqual(snapshot);
+    // @ts-expect-error Graded is provider-owned/read-only, not a personal workflow status.
+    expect(updateAssignmentStatus(snapshot, assignment.id, "graded")).toEqual(snapshot);
+  });
 });
 
 describe("initial snapshot stability", () => {
