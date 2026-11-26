@@ -1,4 +1,5 @@
 export type AssignmentStatus = "not_started" | "in_progress" | "submitted" | "graded" | "missing";
+export type PersonalAssignmentStatus = Exclude<AssignmentStatus, "submitted" | "graded">;
 export type AssignmentPriority = "low" | "normal" | "high" | "urgent";
 
 export interface AcademicCourse {
