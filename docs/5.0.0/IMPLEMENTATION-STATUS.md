@@ -3,7 +3,7 @@
 [![NORTHSTAR Web Qualification](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml/badge.svg?branch=northstar-5.0.0-development)](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml)
 
 **Status:** Active implementation and qualification  
-**Last updated:** 2026-11-26 02:50 UTC  
+**Last updated:** 2026-11-26 02:53 UTC  
 **Development branch:** `northstar-5.0.0-development`  
 **Latest fully qualified application-code checkpoint:** `d6622c8d9a1d82a45441465a996f591f0f716354`  
 **Latest successful full qualification run:** [GitHub Actions #45744506192](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744506192) on commit `d6622c8d...` — 17 workflow steps succeeded; typecheck, production dependency audit, 61 domain tests across 4 files, production build and all 13 Playwright browser journeys passed
@@ -101,3 +101,11 @@ See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENC
 ## Security hardening checkpoint — 2026-11-26
 
 A static review found two new-app resource links directly bound stored URLs to href. The new helper apps/web/src/domain/external-links.ts now allows absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and both links use rel=noopener noreferrer. Unit tests cover the accepted and rejected cases. All 17 workflow steps passed in run 45744506192, including 61 domain tests across 4 files and all 13 Playwright browser journeys. CSP/response headers, dynamic security testing, local data-at-rest policy and release sign-off remain open.
+
+
+## Planning and traceability checkpoint — 2026-11-26
+
+- Canonical requirements catalogue: 61 requirement rows, 61 unique IDs, zero duplicate canonical IDs. The Module 2 source-isolation and quality-strategy requirements now use NS-ARCH-005 and NS-QUAL-004; release-governance criteria are consolidated in NS-REL-001. Twenty-nine repository Markdown files were scanned for cross-document references; no dangling old/new IDs were found. NSX-031 is complete; broader NSX-017 decision/status reconciliation remains in progress.
+- Legacy mapping: added a source-to-target call-site and Worker route/method inventory for Canvas reads, assignment submission, file upload, Classic/New Quizzes, discussions, LTI/session-token handoff, PDF/document storage, StudentVUE, Gemini and release diagnostics. This remains static planning evidence; no live Worker/Canvas request or migration was performed.
+- Persistence mapping: expanded the repository inventory to 112 tracked files and documented new 5.0 localStorage/IndexedDB/CacheStorage plus legacy localStorage/sessionStorage/vault/document databases and native WKWebView boundary. Full dynamic writer/reader/expiry/deletion graph and attachment lifecycle remain open.
+- Security: threat model and 21-file static review documented; HTTPS-only resource URL validation passed run 45744506192. CSP/response headers, local data-at-rest policy, dynamic security testing and release sign-off remain open.
