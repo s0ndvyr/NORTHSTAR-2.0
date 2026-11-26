@@ -353,3 +353,32 @@ Study Lab is restricted to flashcards, spaced repetition, study guides and other
 **External gate:** The current Instructure Canvas API Policy effective 2026-11-25 creates an unresolved authorization/partnership question (NS-CAN-011). Public API documentation research is allowed; no live tenant request or credential use occurs until written authorization is documented.
 
 **Implementation/evidence:** The new `apps/web/` app has had its timed quiz engine and local turn-in action removed, and its Canvas adapter has no submission operation. The legacy root app/Worker still contains older capabilities and is tracked separately under NS-CAN-012 / NSX-028. This is source-level implementation evidence only; final CI and browser qualification are tracked in the execution plan.
+
+
+
+
+## 19. Detailed planning completion matrix — 2026-11-25
+
+| Planning area | Work completed in current review | Remaining planning/verification work | Status |
+|---|---|---|---|
+| Detailed data schemas and ownership | Canonical logical schema addendum defines core academic entities, provider identity/provenance, sync checkpoints, conflicts, audit metadata, ownership, nullability, relationships and validation | Reconcile every field against final approved requirements and app implementation; complete persisted provider/personal status split | Partial |
+| Provider/application mapping | Canvas read-only endpoint/scope baseline; StudentVUE CSV/JSON import; legacy Gemini vs 5.0 simulation; local browser storage; external tools/LTI; Cloudflare deployment platform | Exact route-to-UI call graph and final tenant/provider mapping; target Canvas authorization unresolved | Partial |
+| Cross-application relationships | Term/course/assignment/event/resource/grade/file/study/note relationships and cardinalities specified | Validate each relationship against workspace contracts and actual repository projections | Partial |
+| Synchronization architecture | Read-only provider sync states, pagination checkpoints, error classes, rate limiting, stale/partial behavior and field-level merge rules specified | Implemented SyncRun/SyncCheckpoint persistence and authorized provider adapter remain gated by NS-CAN-011 | Specified; not implemented |
+| Conflict resolution | Provider-vs-user field authority rules; local two-sided cross-tab snapshot preservation; current initialization race identified and fixed in source | Final browser qualification; safe conflict export acknowledgement; field-level provider conflict UI not implemented | Partial |
+| Data retention and lifecycle | Legacy/new localStorage and IndexedDB inventory; PWA shell cache; backup exclusions and cross-store risks recorded | Numeric retention, total quota, encryption at rest, artifact archive/restore and orphan cleanup remain open | Partial |
+| Failure/interrupted sync handling | Read-only HTTP error classification, partial pagination, retry/backoff and last-good-snapshot behavior specified | Failure-injection tests and provider integration tests require implementation/authorization | Specified; not implemented |
+| Legacy migration/compatibility | Source tree, legacy storage keys, Worker route families and release manifest inventoried; old practice data retained for backup compatibility | Full source-to-target mapping, data migration rehearsal, legacy runtime disposition and rollback require separate approval | Partial |
+| Security/privacy/permissions | BFF boundary, OAuth/token handling, least privilege, redaction, local plaintext risk, current Instructure API Policy gate documented | Threat-model review, local storage protection, target-tenant permission proof and live security tests remain | Partial |
+| Validation and acceptance | Requirement traceability NS-CAI-001–010; domain/E2E scenario blueprint; explicit negative-scope checks added | Complete test-to-requirement evidence and passing CI/device/accessibility/security/performance gates | Partial |
+| External dependencies | Current Instructure API Policy and permission/partnership gate documented; no live provider access performed | Written Customer/Instructure clarification; target tenant, role, developer-key scopes and authorized test account | Blocked |
+
+### 19.1 What is specified versus implemented
+
+**Specified in planning documents:** canonical logical data model, field authority, provider mapping baseline, read-only sync state machine, pagination/throttling/error handling, cross-application relationships, migration and retention questions, security gates and acceptance scenarios.
+
+**Implemented in the development branch:** local/demo academic snapshot and workspaces; read-only/unconfigured Canvas adapter; flashcard-based Study Lab; no local turn-in UI or Canvas submit method; personal-status type/updater boundary; local cross-tab snapshot conflict mechanism and initial-seed correction; browser persistence and PWA shell cache.
+
+**Not implemented or not verified:** live Canvas read integration, provider provenance/SyncRun/SyncCheckpoint persistence, data migration, target-tenant authorization, attachment backup archive, complete cross-store recovery, physical iPad Safari, full accessibility/security/performance qualification, legacy Worker deactivation and production deployment.
+
+The final Cross-Application Intelligence planning review remains pending until the partial/blocked items are resolved or explicitly accepted as future gated work. No planning approval is treated as implementation authorization.
