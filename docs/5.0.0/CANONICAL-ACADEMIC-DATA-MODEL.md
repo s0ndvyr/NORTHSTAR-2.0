@@ -128,3 +128,101 @@ The earlier `Submission` entity catalogue is retained as historical modeling wor
 - The new app must not expose a command or adapter method that can initiate a provider submission. Submitted/Graded demo records are display-only; personal workflow statuses remain separate.
 
 The old detailed Submission fields and relationships remain in this document to preserve the approved historical design record, but are **not implementation requirements** unless a later owner decision explicitly reopens that scope. See NS-SCOPE-001 and NS-CAI-009 restriction in the traceability register.
+
+
+
+
+## 10. Detailed logical schema and ownership contract — 2026-11-25
+
+This is the canonical logical contract for future implementation and verification. It does not claim that every entity is present in the current app or that a database migration has been executed. Provider records remain unavailable until NS-CAN-011 is resolved.
+
+### 10.1 Common identity and provenance envelope
+
+| Field | Type / nullability | Authority | Rules |
+|---|---|---|---|
+| `id` | non-empty string, required | NORTHSTAR | Stable opaque canonical ID; never coerce a 64-bit provider ID to a JavaScript number |
+| `externalRefs[]` | array, zero or more | Provider mapping | Each reference includes provider, tenant/account scope, object type and external ID string |
+| `sourceKind` | enum, required | NORTHSTAR | `provider`, `user`, `imported`, `derived`, `demo` |
+| `createdAt`, `updatedAt` | ISO 8601 instant, required | NORTHSTAR | UTC canonical storage; retain original provider timestamp/offset in provenance when needed |
+| `revision` | non-negative integer, required for local mutable records | NORTHSTAR | Monotonic per canonical record; provider version/ETag is separate |
+| `provenance[]` | array, zero or more | NORTHSTAR | Field-level source, authority, observed time, source-updated time and transform version |
+| `deletedAt` | ISO 8601 instant or null | NORTHSTAR | Optional tombstone; do not hard-delete user-owned dependents when a provider source disappears |
+
+### 10.2 Core academic entities
+
+| Entity | Required fields | Optional fields | Ownership and invariants |
+|---|---|---|---|
+| **AcademicTerm** | `id`, `name`, `sourceKind` | `startsAt`, `endsAt`, `status`, `externalRefs[]` | Provider term dates/status are provider-owned; personal grouping/label is user-owned; dates may be unknown |
+| **AcademicCourse** | `id`, `name`, `sourceKind` | `termId`, `code`, `section`, `instructorNames[]`, `startsAt`, `endsAt`, `workflowState`, `personalLabel`, `externalRefs[]` | Provider identity/code/term/state are read-only; personal label, goals and organization are NORTHSTAR-owned; course editor must never mutate Canvas |
+| **AcademicAssignment** | `id`, `courseId`, `title`, `sourceKind` | `description`, `dueAt`, `unlockAt`, `lockAt`, `pointsPossible`, `assignmentGroupRef`, `published`, `availability`, `submissionTypes[]`, `externalUrl`, `personalPriority`, `personalTargetAt`, `personalStatus`, `estimateMinutes`, `notes`, `externalRefs[]` | Course relationship is required; provider instructions/due/points/availability are read-only; personal target/priority/notes/status are separate; `submissionTypes` is descriptive metadata only and cannot enable a submission action |
+| **ProviderAssignmentState** | `id`, `assignmentId`, `provider`, `tenantScope`, `observedAt` | `providerStatus`, `providerUpdatedAt`, `late`, `gradeVisibility`, `externalRef` | Optional read-only provider snapshot, only if authorized and necessary; no answer body, upload, attempt, receipt, timer or write command; absent/hidden values remain unknown |
+| **GradeItem** | `id`, `courseId`, `title`, `sourceKind` | `assignmentId`, `score`, `pointsPossible`, `percentage`, `letterGrade`, `status`, `feedback`, `gradedAt`, `isHidden`, `externalRefs[]` | Provider scores/feedback are read-only and permission-dependent; estimates are separate derived records; null is not zero |
+| **AcademicEvent** | `id`, `title`, `startAt`, `endAt`, `kind`, `sourceKind` | `courseId`, `assignmentId`, `timezone`, `allDay`, `location`, `url`, `recurrence`, `reminders[]`, `notes`, `externalRefs[]` | Provider events read-only; personal blocks/reminders NORTHSTAR-owned; end must be after start unless all-day semantics explicitly apply |
+| **AcademicResource** | `id`, `courseId`, `title`, `kind`, `sourceKind` | `assignmentId`, `description`, `contentHtml`, `url`, `fileAssetIds[]`, `tags[]`, `visibility`, `externalRefs[]` | Provider resources are read-only; HTML is untrusted and must be sanitized before rendering; links are external handoff, not editor entry points |
+| **FileAsset** | `id`, `ownerType`, `ownerId`, `fileName`, `mimeType`, `sizeBytes`, `storageRef`, `sourceKind`, `createdAt` | `checksumSha256`, `providerUrl`, `visibility`, `locked`, `encryptionState`, `retentionClass`, `deletedAt` | Binary bytes live outside the canonical JSON snapshot; access and visibility are explicit; never assume a provider URL is public or durable |
+| **PersonalNote** | `id`, `body`, `sourceKind=user` | `courseId`, `assignmentId`, `resourceId`, `tags[]`, `createdAt`, `updatedAt`, `revision` | User-owned; never overwritten by provider refresh |
+| **StudyArtifact** | `id`, `courseId`, `kind`, `sourceKind=user` | `prompt`, `answer`, `content`, `sourceRefs[]`, `nextReviewAt`, `intervalDays`, `easeFactor`, `repetitions` | Flashcards, guides and non-assessment learning aids only; no quiz question/attempt/score entity |
+| **WritingDraft** | `id`, `title`, `content`, `updatedAt`, `sourceKind=user` | `courseId`, `assignmentId`, `feedback`, `riskLabel`, `revision` | Local writing feedback/draft aid only; not a document editor or submission artifact |
+
+### 10.3 Cross-application and synchronization entities
+
+| Entity | Required fields | Optional fields | Rules |
+|---|---|---|---|
+| **ExternalReference** | `provider`, `tenantScope`, `objectType`, `externalId`, `canonicalEntityType`, `canonicalEntityId` | `sourceUrl`, `providerUpdatedAt`, `lastSeenAt`, `lastVerifiedAt`, `status` | Provider IDs are strings; uniqueness key is provider + tenant/account + object type + external ID; one canonical entity may have multiple provider references |
+| **FieldProvenance** | `entityType`, `entityId`, `fieldPath`, `authority`, `observedAt` | `provider`, `tenantScope`, `externalId`, `sourceUpdatedAt`, `transformVersion`, `freshness` | Authority enum: provider/user/imported/derived/demo; record per field where values may conflict |
+| **SyncCheckpoint** | `provider`, `tenantScope`, `objectType`, `scopeKey`, `status` | `nextLink`, `pageCount`, `lastAttemptAt`, `lastSuccessAt`, `retryAt`, `errorClass`, `partial` | Checkpoints apply to read pagination only in current 5.0; follow opaque provider next links; do not invent cursors |
+| **SyncRun** | `id`, `provider`, `tenantScope`, `startedAt`, `trigger`, `status` | `finishedAt`, `pagesRead`, `recordsRead`, `requestCost`, `rateLimitRemaining`, `correlationId`, `errorCode` | No access token, private payload or raw authorization header in logs |
+| **ConflictRecord** | `id`, `entityType`, `entityId`, `detectedAt`, `localRevision`, `persistedRevision` | `fieldPath`, `baseValue`, `localValue`, `providerValue`, `resolutionStatus`, `resolvedAt`, `resolutionActor` | Never silently choose between user-owned and provider-owned values; preserve both sides until explicit resolution |
+| **AuditEvent** | `id`, `actor`, `action`, `entityType`, `entityId`, `occurredAt` | `reason`, `correlationId`, `source`, `result` | Metadata only; do not copy grades, note bodies, file bytes, tokens or full private payloads into logs |
+
+There is no target 5.0 `ProviderWriteOperation`, `SubmissionAttempt`, `QuizAttempt` or `DocumentEditorSession` entity. If later authorized scope changes, those require a new decision and model revision.
+
+### 10.4 Relationship cardinality
+
+- AcademicTerm 1 → 0..N AcademicCourse.
+- AcademicCourse 1 → 0..N AcademicAssignment, AcademicEvent, AcademicResource, GradeItem, StudyArtifact and PersonalNote.
+- AcademicAssignment 1 → 1 AcademicCourse; 0..N GradeItem; 0..N AcademicEvent; 0..N FileAsset; 0..N PersonalNote/WritingDraft; 0..1 current ProviderAssignmentState.
+- AcademicResource 1 → 1 AcademicCourse; 0..N FileAsset.
+- FileAsset belongs to one canonical owner record; its Blob is stored separately from JSON metadata.
+- ExternalReference N → 1 canonical entity; each provider object maps to at most one canonical entity within the same tenant/type namespace unless a documented merge decision exists.
+- FieldProvenance N → 1 entity/field path; SyncCheckpoint is unique per provider/tenant/object/scope key.
+- ConflictRecord references one entity and one or more competing revisions; SyncRun references its checkpoints but never owns academic content.
+
+### 10.5 Authority, nullability and validation rules
+
+1. **Provider-owned:** course/assignment identity, official instructions, due/lock/unlock times, published/availability state, official grade/feedback and provider event/resource content. Read-only; preserve source and freshness.
+2. **User-owned:** personal course labels, goals, notes, priorities, target dates, personal calendar blocks, flashcards, study guides and writing drafts. Provider refresh must not overwrite.
+3. **Derived:** completion percentages, workload forecasts, priority rankings and grade projections. Store formula/version and source inputs; label as estimates.
+4. **Imported/unverified:** user-supplied CSV/JSON or third-party exports. Keep separate until validation and provenance are established.
+5. Use explicit nullable/unknown values. Missing grade, due date, provider status or permission is not zero/false/not-submitted.
+6. IDs and external IDs are strings. Canvas 64-bit IDs must use string-ID response mode where supported.
+7. Timestamps are timezone-aware ISO 8601. Preserve the original timezone/offset and normalize canonical instants to UTC.
+8. Scores and points are non-negative; percentages are derived only when denominator and provider grading semantics are known. Do not clamp or invent hidden/unposted values.
+9. `courseId` is required for assignment/resource/grade/study entities; referenced IDs must exist or be marked orphaned/unavailable.
+10. External URLs require safe-scheme validation and source attribution. Provider HTML is sanitized before rendering.
+11. File size, MIME type and checksum are validated before storage; actual storage quota and retention limits remain platform-dependent and require measurement.
+12. Local personal status and provider-owned status are separate. Submitted/Graded provider states are read-only; a local planning action cannot create them.
+
+### 10.6 Lifecycle and retention
+
+- Provider disappearance, enrollment removal or permission revocation marks source data stale/unavailable or tombstoned; it does not automatically delete user-owned notes, plans, drafts or attachments.
+- Local records persist until explicit user deletion/reset or browser/device data loss; no cloud retention or automatic expiration is currently implemented.
+- Attachment bytes require a separate manifest/archive lifecycle; current JSON backup does not include them (NS-DATA-007).
+- Conflict snapshots must retain both competing local states until a verified export/explicit acknowledgement; automatic clearing after initiating a download is not acceptable.
+- Numeric retention periods, automatic purge rules, attachment total quota and cross-device recovery are unresolved and must not be invented.
+
+### 10.7 Current implementation mapping and gaps
+
+The current `apps/web/src/domain/academic.ts` implements `AcademicTerm`, `AcademicCourse`, `AcademicAssignment`, `AcademicEvent`, `GradeItem`, `AcademicResource`, `StudyCard`, `WritingDraft`, `AssignmentArtifact` and `AcademicSnapshot`. The repository persists the snapshot in localStorage and file bytes in IndexedDB. The Canvas adapter is unconfigured and exposes only read methods.
+
+Not yet implemented in the app: ExternalReference/tenant namespace, field-level provenance, provider-specific assignment state as a separate entity, durable sync checkpoints/runs, field-level conflict resolution, audit-event ledger, attachment archive/restore, and a cross-provider merge engine. The current `AssignmentStatus` display field still contains demo Submitted/Graded states; the personal updater is now typed to allow only personal statuses. Full physical separation/migration of provider status and personal status remains an implementation task and must be completed before live provider integration.
+
+### 10.8 Unresolved decisions and external dependencies
+
+- NS-CAN-011: written authorization/partnership applicability under the current Instructure API Policy.
+- Provider tenant/account namespace and allowed Canvas read scopes.
+- Exact grade visibility and student role behavior in the target tenant.
+- Whether provider submission status is needed at all for 5.0, and the minimum permitted read-only fields if so.
+- Numeric retention, attachment archive, local at-rest encryption and recovery policy.
+- Migration/compatibility strategy from the 4.4.x local stores and any imported StudentVUE data.
+- Cross-provider identity collision and duplicate-course resolution.
