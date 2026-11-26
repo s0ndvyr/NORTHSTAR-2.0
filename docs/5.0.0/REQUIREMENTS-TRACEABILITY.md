@@ -33,7 +33,7 @@ Status values: **Planned**, **Audit required**, **Not implemented**, **Not verif
 | NS-CAI-006 | Offline cached reads with freshness indicators and bounded cache policy | P1 | NS-DATA-003, NS-STATE-001 | Offline cache, stale labeling, quota and eviction tests | Planned |
 | NS-CAI-007 | Durable offline local writes and safe, idempotent reconnect reconciliation | P0 | NS-CAI-005, NS-CAI-006, NS-CAN-001 | Queue durability, permission revalidation, replay ordering, deduplication and recovery tests | Planned |
 | NS-CAI-008 | Visible synchronization lifecycle, error, retry and recovery status | P1 | NS-CAI-002, NS-CAI-003 | Local cross-tab update notice, concurrent-edit alert, conflict export and reload recovery are implemented and browser-tested; provider synchronization states/retries remain unimplemented | In progress |
-| NS-CAI-009 | Permission-aware adapter and domain-service boundaries for provider writes | P0 | NS-SEC-001, NS-CAN-001 | Authorization, secret isolation, revocation and approval-flow tests | Planned |
+| NS-CAI-009 | Permission-aware adapter and domain-service boundaries for provider operations | P0 | NS-SEC-001, NS-CAN-001 | Least-privilege, secret isolation and revocation controls; native submission/provider-write workflows are excluded by NS-SCOPE-001 | Restricted by NS-SCOPE-001; historical approval retained |
 | NS-CAI-010 | Cross-workspace consistency and recovery verification | P0 | NS-CAI-001 through NS-CAI-009 | Twelve passing Playwright journeys cover connected workspaces, local persistence, iPad-sized layout and offline app-shell reload; reconnect, conflict and external-provider recovery remain open | In progress |
 
 
@@ -307,3 +307,14 @@ The user has explicitly authorized bounded local/demo implementation on the deve
 - The provenance UI change displays DEMO/PERSONAL origin labels across assignments, courses, calendar items, grade records and Study Lab flashcards. Dedicated browser assertions passed in [GitHub Actions #45692975729](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45692975729). Full field-level source authority, Canvas precedence and conflict-resolution tests remain open.
 - Local concurrent-edit protection uses academic snapshot revisions, preserves both competing snapshots in a separate conflict log, blocks further primary writes while unresolved, exports both versions, then reloads the saved snapshot. This is not a substitute for remote Canvas/provider reconciliation.
 - No Canvas connection, AI provider, cloud sync, remote data authority, physical iPad Safari, or production release is claimed by this evidence.
+
+
+## Product-scope clarification and supersession — 2026-11-25
+
+The owner clarified that NORTHSTAR is not to become a Canvas/LMS replacement. Academic workspaces and course-editor development remain approved. A native quiz/test engine, assignment-submission/turn-in workflow and general-purpose document editor are excluded from the NORTHSTAR 5.0 application. Canvas/external services retain those workflows.
+
+This is recorded as **NS-SCOPE-001**. It supersedes conflicting earlier implementation annotations that described a timed graded Study Lab practice engine or local assignment “turn in” simulation. Those annotations remain as historical evidence of what existed at the inspected commit; they are not current acceptance criteria. The new app must remove or reshape those affordances. A typed Canvas `submitAssignment` interface method is also outside current scope and must not be exposed as an available 5.0 operation.
+
+**NS-CAI-009** is retained as a historical approved security requirement, but its provider-write/submission portion is restricted by NS-SCOPE-001. Its least-privilege, secret-isolation, permission and revocation principles remain applicable to any separately approved provider capability. No historical requirement or decision is deleted.
+
+Legacy root files such as `scripts/submissions.js`, quiz-related code and `scripts/document-editor.js` are not deleted by this clarification. They remain under the preservation rule until complete dependency/data mapping and separate retirement approval.
