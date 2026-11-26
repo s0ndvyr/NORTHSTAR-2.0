@@ -160,3 +160,70 @@ The statement in Section 6 that no application files had been modified, no tests
 A later separate owner authorization permits bounded local/demo implementation and development-branch CI/build/test work; see the [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md), [Requirements Traceability](REQUIREMENTS-TRACEABILITY.md) and [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md).
 
 The inventory itself remains an initial checkpoint, not a complete dependency/persistence map. The audited legacy Worker remains present in the development branch and is byte-identical to the stabilization branch at the inspected SHA. Its write routes and the old document-editor/submission source remain preserved pending NSX-028 owner disposition. No Worker deployment state is asserted.
+
+
+## 8. Persistence and lifecycle evidence pass — 2026-11-25
+
+This section records mechanisms identified by source inspection. It is not yet a complete call-site/consumer graph or a tested retention policy.
+
+### 8.1 NORTHSTAR 5.0 `apps/web/` persistence
+
+| Mechanism | Database/key | Data | Read/write behavior | Current limitations / follow-up |
+|---|---|---|---|---|
+| Browser localStorage | `northstar-5-academic-demo-v1` | Canonical local snapshot: term, courses, assignments, resources, flashcards, writing drafts, events, grade items and artifact metadata | `loadAcademicSnapshot` reads/validates; `saveAcademicSnapshot` writes on app state changes; JSON schema version 1 | Plaintext, device/browser scoped, no cloud sync; quota/serialization failure keeps current session state but cannot guarantee reload recovery |
+| Browser localStorage | `northstar-5-academic-conflicts-v1` | Competing local/persisted snapshots, detection timestamp and conflict ID | `saveAcademicSnapshot` preserves both sides when persisted revision is same/newer; max 10 conflict records; explicit export/clear | Conflict bundle excludes IndexedDB file bytes and current backup helper also strips artifact metadata; resolution currently downloads then clears automatically, which needs safer acknowledgement/backup behavior |
+| Browser localStorage | `northstar-theme` | `midnight` / `light` theme | App reads at startup and writes on theme change | Non-critical preference; no cross-device sync |
+| IndexedDB | `northstar-5-assignment-artifacts`, v1, store `files` | Blob, file name, MIME type, byte size and added timestamp | Save/read/delete through `assignment-artifact-storage.ts`; max 25 MB per file; metadata reference is stored in local snapshot | Blob data is not encrypted; no total-quota policy; JSON backups/conflict bundles exclude bytes; failed metadata/blob ordering can leave orphaned blobs or stale references |
+| Cache Storage / service worker | `northstar-shell-v5.0.0` | `./`, `index.html`, manifest, app icon and same-origin static script/style/image/font assets | Install precaches shell; navigation is network-first with cached index fallback; static assets cache-first; only same-origin GET is handled; older `northstar-shell-*` caches removed on activation | This is shell/static-asset offline support, not provider data sync or an offline mutation queue; no external/API responses are cached |
+
+**Observed code paths:**
+- `academic-repository.ts`: `ACADEMIC_STORAGE_KEY`, `ACADEMIC_CONFLICTS_KEY`, schema validation, revision comparison, two-sided conflict snapshots, backup parse/export.
+- `assignment-artifact-storage.ts`: IndexedDB v1 object store `files`, 25 MB per-file cap, transaction completion/error/abort handling.
+- `App.tsx`: theme persistence; snapshot autosave; cross-tab `storage` listener; attach/download/delete/reset/import; conflict export and reload.
+- `main.tsx` registers the service worker in production; `public/sw.js` only caches the app shell/static assets.
+
+**Important backup semantics:** `createAcademicBackup` explicitly sets `artifacts: []`; binary attachment bytes live separately in IndexedDB and are not exported. `parseAcademicBackup` restores with no artifact references. The Settings UI warns that attachments must be downloaded separately. Conflict bundles use the same JSON backup helper and therefore omit file metadata and bytes. No separate portable attachment archive exists yet.
+
+**Observed recovery risks requiring NSX-005/012/016/022 work:**
+1. Import/reset/delete flows remove IndexedDB blobs and change snapshot metadata through separate stores; there is no cross-store transaction. Failure ordering can produce orphaned blobs or metadata pointing to missing bytes.
+2. Attach flow stores the Blob before snapshot metadata is saved; a failed snapshot save can orphan a Blob.
+3. Delete/reset/import use `Promise.allSettled`; failures are surfaced in some UI messages, but there is no orphan scanner/reconciliation report.
+4. Conflict export currently initiates a download and clears conflict records immediately; browser download initiation is not proof that the user saved the file. Require explicit acknowledgement and safer retention before clearing.
+5. Binary files are not encrypted at rest. The academic snapshot and writing drafts are plaintext localStorage. Threat model and user-facing disclosure remain open.
+6. Per-file limit is 25 MB, but total storage quota, persistence permission, eviction behavior and Safari-specific failure modes are not measured.
+7. Static shell offline behavior is tested in Chromium; physical iPad Safari storage and PWA lifecycle remain unverified.
+
+### 8.2 Legacy 4.4.x persistence mechanisms
+
+| Mechanism | Key/database | Data and lifecycle | Evidence / limitation |
+|---|---|---|---|
+| localStorage JSON helper | `northstar_notes_v2` | Personal notes; read/write via `store.get/set` | `scripts/premium.js` |
+| localStorage JSON helper | `northstar_periods_v1` | Academic period definitions | `scripts/premium.js` |
+| localStorage JSON helper | `northstar_hidden_assignments_v1` | Hidden assignment IDs | `scripts/premium.js` |
+| localStorage JSON helper | `northstar_gemini_model_v1` | Selected Gemini model | `scripts/premium.js` |
+| localStorage JSON helper | `northstar_ignored_courses_v1` | Ignored course IDs | `scripts/premium.js` |
+| localStorage JSON helper | `northstar_ledger_period_v1` | Selected grade-ledger period | `scripts/premium.js` |
+| localStorage JSON | `northstar_studentvue_grades_v1` | User-imported StudentVUE CSV/JSON grade records | `scripts/studentvue.js`; no StudentVUE API is used |
+| localStorage | `northstar-last-seen-release` | Last-seen release marker | `scripts/release.js` |
+| sessionStorage | `northstar_canvas_session`, `northstar_gemini_session`, `northstar_gemini_model` | Tab/session-only credential/model migration values; removed after vault hydration | `scripts/premium.js`; old plaintext `canvas_token` and `canvas_base` are removed at boot |
+| localStorage, scoped | `northstar_[preview_]draft_{localAssignmentId}` | Assignment response draft | `scripts/premium.js`; preview prefix separates preview data |
+| localStorage, scoped | `northstar_[preview_]discussion_draft_v1_{courseId}_{topicId}_{slot}` | Initial/reply/edit discussion drafts | `scripts/premium.js`; slots include initial, reply ID and edit ID |
+| localStorage, scoped | `northstar_[preview_]discussion_uncertain_v1_{courseId}_{topicId}` | Ambiguous discussion write marker pending provider read-back | `scripts/premium.js`; no blind retry while marker exists |
+| localStorage, scoped | `northstar_[preview_]canvas_staged_uploads_v1_{courseId}_{assignmentId}_{localAssignmentId}` | Staged Canvas file IDs and metadata; expiry timestamp is validated and defaults to seven days when persisted | `scripts/premium.js`; not the binary file store |
+| localStorage, scoped | `northstar_[preview_]canvas_submission_uncertain_v1_{canvasAssignmentId}_{localAssignmentId}` | Ambiguous assignment submission marker | `scripts/premium.js`; blocks repeat submission until reconciled |
+| localStorage, scoped | `northstar_[preview_]external_return_v2` | Course/assignment IDs, provider label, launch time, return hash and last submission/sync state | `scripts/premium.js`; does not store launch URL or credentials |
+| localStorage, scoped | `northstar_[preview_]pdf_markup_v2_{assignmentId}_{fileId}`, matching `_pdf_identity_v1`; legacy `_pdf_markup_v1` | PDF annotations and attachment identity fallback/migration | `scripts/assignment-room.js`; IndexedDB is primary for source PDF bytes and drafts |
+| IndexedDB | `northstar-secure-vault`, v1, store `secrets` | Non-extractable AES-GCM device key at `__device_key__`; encrypted `canvas-credentials`, `gemini-api-key`, and cached `canvas-snapshot` | `scripts/vault.js`, `scripts/premium.js`, `scripts/app.js`; protects against casual at-rest inspection, not XSS/same-origin malicious script |
+| IndexedDB | `northstar-document-studio`, v1, stores `documents`, `drafts` | Immutable source PDF bytes (max 100 MB, PDF header checked) separate from mutable annotation drafts/page/scale/identity | `scripts/document-storage.js`; no retention/eviction policy or cross-device backup is defined |
+
+The legacy upload/discussion/quiz/session keys are associated with excluded legacy workflows. They are preserved in source and local data until a separate legacy disposition is approved; they are not target 5.0 data contracts.
+
+### 8.3 Release and deployment evidence separation
+
+The current development-branch `release.json` is still a 4.4.8.3.1 release manifest (package 0.4.32, dated 2026-11-24). It records:
+- Pages preview deployed as NORTHSTAR 4.4.8.3.1 / package 0.4.32 by run 45410896624;
+- production remains recorded as NORTHSTAR 4.4.7.5 / package 0.4.19;
+- Canvas Worker 0.4.22 recorded as deployed from source SHA `97e3c9ea80698753a9aa365015aa12d20469a3c3`, with a recorded HTTP version-header smoke check and Cloudflare Version ID `f06f5377-632b-44c9-b647-dcfca3166f54`.
+
+These are repository release-manifest claims, not a live deployment recheck in this work session. The development branch workflow inventory contains the legacy Pages/Worker deployment workflows and a separate `northstar-web-qualification.yml`; no 5.0-specific Pages/production deployment workflow or 5.0 release entry was found. The new `apps/web/` app is therefore treated as development/qualification-only, not deployed.
+
