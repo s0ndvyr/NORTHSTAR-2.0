@@ -1,9 +1,10 @@
-import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtifact, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
+import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtifact, AcademicResource, AcademicSnapshot, AssignmentStatus, PersonalAssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
 import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 export const ACADEMIC_STORAGE_KEY = "northstar-5-academic-demo-v1";
 export const ACADEMIC_CONFLICTS_KEY = "northstar-5-academic-conflicts-v1";
 const VALID_STATUSES: AssignmentStatus[] = ["not_started", "in_progress", "submitted", "graded", "missing"];
+const PERSONAL_STATUSES: PersonalAssignmentStatus[] = ["not_started", "in_progress", "missing"];
 const VALID_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
 export type CourseInput = Pick<AcademicCourse, "code" | "name" | "instructor" | "color" | "progress">;
@@ -28,7 +29,7 @@ function isValidAssignmentInput(input: AssignmentInput, courseIds: Set<string>):
 }
 
 
-function initialSnapshot(): AcademicSnapshot {
+export function initialSnapshot(): AcademicSnapshot {
   return {
     schemaVersion: 1,
     revision: 1,
@@ -371,8 +372,8 @@ function revise(snapshot: AcademicSnapshot, assignments: AcademicAssignment[]): 
   return { ...snapshot, revision: snapshot.revision + 1, assignments };
 }
 
-export function updateAssignmentStatus(snapshot: AcademicSnapshot, id: string, status: AssignmentStatus): AcademicSnapshot {
-  if (!VALID_STATUSES.includes(status)) return snapshot;
+export function updateAssignmentStatus(snapshot: AcademicSnapshot, id: string, status: PersonalAssignmentStatus): AcademicSnapshot {
+  if (!PERSONAL_STATUSES.includes(status)) return snapshot;
   const exists = snapshot.assignments.some(assignment => assignment.id === id);
   if (!exists) return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment =>
