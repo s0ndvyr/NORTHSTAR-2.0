@@ -72,7 +72,7 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-002 | Verify Phase 0 closure and separate implementation authorization | Phase 0 sign-off; transition approval; NS-GOV-002 | NSX-001 | **Complete — repository evidence** |
 | NSX-003 | Record current product-scope guardrail and reconcile earlier conflicting requirements | Latest owner clarification; NS-CAI-009; NS-ACAD-004; NS-MIG-001 | NSX-002 | **In progress** |
 | NSX-004 | Complete exact-source tracked-file inventory and source/dependency/consumer graph | EFP-DEC-16; NS-MIG-002/003/005 | NSX-001 | **Partial** |
-| NSX-005 | Complete browser persistence, file, key, schema and lifecycle call-site map | EFP-DEC-17; NS-MIG-004; NS-DATA-006 | NSX-004 | **Partial** |
+| NSX-005 | Complete browser persistence, file, key, schema and lifecycle call-site map | EFP-DEC-17; NS-MIG-004; NS-DATA-006 | NSX-004 | **Partial — 5.0 and legacy stores enumerated; lifecycle, backup and orphan cleanup remain open** |
 | NSX-006 | Enumerate every Canvas Worker route and external operation | EFP-DEC-18; NS-SEC-003; NS-CAN-005 | NSX-004 | **Partial — legacy read/write route families mapped; per-route test/security matrix remains** |
 | NSX-007 | Research official Canvas API capabilities, endpoint semantics, scopes, pagination, rate limits and evidence dates | NS-CAN-003/004/005; NS-CAI-003 | NSX-006 | **In progress — public read-only endpoint baseline captured; route-level mapping remains open** |
 | NSX-027 | Resolve Instructure API Policy applicability and document written authorization/partnership/express-permission gate before any live Canvas access | NS-CAN-011; current Instructure API Policy effective 2026-11-25 | NSX-007 | **Blocked — classification and written permission are not established** |
@@ -80,7 +80,7 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-009 | Complete field-level source authority, provenance and local-overlay matrix | CAI-DEC-03; NS-DATA-002; NS-CAI-004 | NSX-007, NSX-008 | **Partial** |
 | NSX-010 | Complete typed event, ordering, idempotency and projection contracts | CAI-DEC-02; NS-CAI-002/008 | NSX-008, NSX-009 | **Partial — envelope/state notes drafted** |
 | NSX-011 | Complete synchronization, conflict, retry, ambiguous-outcome and recovery state machines | CAI-DEC-04; NS-CAI-005/007/008 | NSX-007, NSX-009, NSX-010 | **Partial** |
-| NSX-012 | Complete offline cache, freshness, quota, retention, backup, restore and disconnect policy | DAP-DEC-03; NS-DATA-005; NS-OFF-002; NS-CAI-006/007 | NSX-005, NSX-008, NSX-011 | **Partial — policy drafted; numeric/platform evidence open** |
+| NSX-012 | Complete offline cache, freshness, quota, retention, backup, restore and disconnect policy | DAP-DEC-03; NS-DATA-005; NS-OFF-002; NS-CAI-006/007 | NSX-005, NSX-008, NSX-011 | **Partial — shell/cache and local data behavior mapped; artifact backup and platform quota evidence open** |
 | NSX-013 | Complete BFF threat model, permissions, secret lifecycle and provider boundary | Secure BFF decision; NS-SEC-001/002/003; NS-CAI-009 | NSX-006, NSX-007, NSX-009 | **Partial — boundary specified; threat review open** |
 | NSX-014 | Define seven workspace integration contracts | EFP-DEC-19; NS-INT-001/002/003 | NSX-008 through NSX-013 | **Not started as a complete contract set** |
 | NSX-015 | Reconcile legacy capabilities/data to approved target scope, parity and rollback | DAP-DEC-04; NS-MIG-001/002/003/005 | NSX-003 through NSX-006, NSX-008 | **Partial — framework and selected-file review exist** |
@@ -90,12 +90,13 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-019 | Prepare Cross-Application Intelligence design acceptance package | NS-GOV-001/004; CAI planning sign-off criteria | NSX-007 through NSX-018 | **Blocked pending evidence closure and owner review** |
 | NSX-020 | Align the new app implementation with the no-LMS-replacement scope | NS-SCOPE-001; current owner clarification | NSX-003 | **In progress; local/demo changes authorized** |
 | NSX-021 | Complete workspace accessibility qualification | NS-UX-003; NS-QUAL-001/002 | Current app implementation | **Partial; manual qualification open** |
-| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **Partial; some automated journeys passed, broader failure matrix open** |
+| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — cross-tab initialization race corrected in source; final E2E run pending** |
 | NSX-023 | Complete physical iPad Safari/PWA acceptance | NS-UX-002; NS-QUAL-002 | NSX-021, NSX-022 | **Blocked — physical device/session required** |
 | NSX-024 | Complete capability parity and legacy preservation reconciliation | NS-MIG-001/002/003/005; Phase 0 preservation rule | NSX-004, NSX-005, NSX-015 | **Partial; no legacy deletion authorized** |
 | NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Not started** |
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
 | NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
+| NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — risks identified; recovery design and implementation not started** |
 
 ### 3.1 Task execution details and completion criteria
 
@@ -150,6 +151,15 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 - **Verification:** Static route regex/dispatch analysis, tests inspection and workflow/config review. No Worker deployment or live request.
 - **Dependencies:** NSX-004.
 - **Status:** Partial. Worker source is inspected; full route catalogue is outstanding.
+
+#### NSX-029 — Cross-store attachment lifecycle and recovery
+- **Work:** Define and implement a safe lifecycle for attachment Blobs in IndexedDB and metadata in localStorage. Cover attach, detach, assignment delete, reset, backup, restore, conflict export, quota failure, transaction abort and orphan cleanup.
+- **Systems/files:** `apps/web/src/domain/assignment-artifact-storage.ts`, `academic-repository.ts`, `App.tsx`, Settings/backup UI and domain/E2E tests.
+- **Current evidence:** JSON backups and conflict bundles exclude artifact bytes (and current backup helper clears artifact metadata); app UI warns that files must be downloaded separately. Attach writes Blob before snapshot metadata; import/reset/delete span two stores and use best-effort deletion. No cross-store transaction or orphan scanner exists.
+- **Deliverables:** Attachment manifest/archive format; transactional/compensating lifecycle; orphan detection and recovery UI; explicit retention/size/quota policy; failure-injection tests.
+- **Acceptance:** No user attachment is silently lost during a failed save/import/reset/delete; backups state exactly what is included; either file bytes are exported/restored or user has a verifiable separate export path; conflict records are not cleared until the recovery bundle is explicitly acknowledged.
+- **Verification:** IndexedDB quota/blocked/abort tests; localStorage quota/corruption tests; interrupted attach/import/delete; missing Blob; orphan scan; backup round trip; conflict export interrupted or dismissed.
+- **Status:** Partial — source risks documented; implementation not started.
 
 #### NSX-028 — Legacy Worker and excluded-workflow disposition
 - **Work:** Reconcile the legacy Worker, bridge tests, submission client, quiz routes, discussion writes, file uploads, LTI launch and PDF/document editor against NS-SCOPE-001. Determine whether the legacy runtime remains a separately preserved/frozen product or must be disabled/decommissioned.
@@ -343,7 +353,8 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 10. NSX-016/017 connect every requirement to acceptance and evidence.
 11. NSX-018/019 complete risk review and CAI planning acceptance.
 11. NSX-020 through NSX-025 continue authorized local/demo implementation and qualification in parallel where dependencies permit.
-12. NSX-026 reconciles the final state.
+12. NSX-029 closes cross-store attachment recovery before final offline/recovery acceptance.
+13. NSX-026 reconciles the final state.
 
 No live provider work, migration, legacy deletion or production deployment is inserted into this sequence without a separate authorization record.
 
@@ -351,7 +362,7 @@ No live provider work, migration, legacy deletion or production deployment is in
 
 The development status board records the following as implemented locally: React 19/TypeScript/Vite foundation; versioned local academic snapshot; dashboard; assignment CRUD/tracking; course create/edit and hubs; calendar events; gradebook records; resources; Study Lab flashcards/spaced repetition; Review Center local drafts/heuristic feedback; simulated AI; unconfigured Canvas adapter; Midnight/Light themes; reduced motion; PWA shell; local backup/recovery. These are implementation claims from the board and source, not blanket acceptance.
 
-The new app scope conflicts identified in NSX-020 have been corrected in source: the timed multiple-choice Study Lab attempt engine was replaced with self-guided flashcard review; the local “Turn in locally” action was removed; Submitted/Graded states are display-only; and the Canvas adapter no longer exposes `submitAssignment`. Automated qualification is pending. Separately, the legacy Worker and root scripts still contain real submission/quiz/document-editor code. Those files are byte-identical to the audited stabilization branch and remain untouched pending NSX-028 owner disposition.
+The new app scope conflicts identified in NSX-020 have been corrected in source: the timed multiple-choice Study Lab attempt engine was replaced with self-guided flashcard review; the local “Turn in locally” action was removed; Submitted/Graded states are display-only; and the Canvas adapter no longer exposes `submitAssignment`. The first two browser qualification attempts exposed stale E2E expectations and a real cross-tab initial-seed race. The E2E was updated and the seed race corrected; the latest run is pending, so no browser pass is claimed. Separately, the legacy Worker and root scripts still contain real submission/quiz/document-editor code. Those files are byte-identical to the audited stabilization branch and remain untouched pending NSX-028 owner disposition.
 
 The Review Center is a limited local writing draft/feedback surface, not a general-purpose document editor. Keep it constrained to that approved purpose.
 
