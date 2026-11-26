@@ -3,10 +3,11 @@
 [![NORTHSTAR Web Qualification](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml/badge.svg?branch=northstar-5.0.0-development)](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/workflows/northstar-web-qualification.yml)
 
 **Status:** Active implementation and qualification  
-**Last updated:** 2026-11-26 02:43 UTC  
+**Last updated:** 2026-11-26 02:46 UTC  
 **Development branch:** `northstar-5.0.0-development`  
-**Latest application-code checkpoint:** `4aaa2984cc45e55456097a901b8734b713bfc61d`  
+**Last fully qualified application-code checkpoint:** `4aaa2984cc45e55456097a901b8734b713bfc61d`  
 **Latest successful full qualification run:** [GitHub Actions #45744014664](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744014664) on commit `4aaa2984...` — 17 workflow steps succeeded; typecheck, production dependency audit, 50 domain tests across 3 files, production build and all 13 Playwright browser journeys passed
+**Current security-hardening change:** commit `d6622c8d...` adds HTTPS-only external resource URL validation and tests; run [#45744506192](https://github.com/s0ndvyr/NORTHSTAR-2.0/actions/runs/45744506192) has passed typecheck, audit, domain tests and build; browser qualification is pending
 
 Local conflict recovery instructions: [Local Concurrent-Edit Recovery](LOCAL-CONFLICT-RECOVERY.md).
 
@@ -91,8 +92,13 @@ See [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENC
 
 - Phase 0 remains formally closed. The separate bounded authorization for local/demo implementation and development-branch qualification is recorded in the transition plan; Phase 0 sign-off itself is not treated as implementation authorization.
 - The 5.0.1 Academic Data & Canvas Intelligence planning specification remains approved as planning only. The separate Cross-Application Intelligence final planning review is still pending; the schema, provider mapping, read-only sync contract and API-policy gate are documented in the execution plan.
-- The latest code checkpoint 4aaa2984 passed the full 5.0 web qualification workflow. Current development branch documentation was updated afterward; no application code changed after that checkpoint at this status update.
+- The last fully qualified code checkpoint 4aaa2984 passed the full 5.0 web qualification workflow. A subsequent security-hardening change d6622c8d validates external resource URLs and is awaiting the browser stage of run 45744506192.
 - The current Instructure API Policy (effective 2026-11-25) creates a written authorization/partnership gate. No live Canvas request or credential use is claimed.
 - The repository release manifest remains legacy 4.4.x: Pages production 4.4.7.5, preview 4.4.8.3.1 and Worker 0.4.22. The 5.0 app has no deployment workflow or 5.0 release entry. Live deployment state was not rechecked.
 - Remaining high-risk recovery gap: conflict export now retains records until the user confirms saving the bundle and any needed files; the bundle contains an attachment metadata manifest but not binary bytes. Portable attachment archive/restore, cross-store atomicity, quota recovery and orphan cleanup remain open under NSX-029; a new archive/restore workflow requires separate scope approval.
 - Remaining qualification gates: accessibility across workspaces, physical iPad Safari, offline/quota/corruption/interrupted-write matrix, attachment lifecycle, legacy capability parity, security/privacy review and release readiness.
+
+
+## Security hardening in progress — 2026-11-26
+
+A static review found two new-app resource links directly bound stored URLs to href. The new helper apps/web/src/domain/external-links.ts now allows absolute HTTPS URLs only, rejects credentials and unsafe/non-HTTPS schemes, and both links use rel=noopener noreferrer. Unit tests cover the accepted and rejected cases. Typecheck, dependency audit, domain tests and build have passed in run 45744506192; the browser qualification stage is still pending. CSP/response headers, dynamic security testing, local data-at-rest policy and release sign-off remain open.
