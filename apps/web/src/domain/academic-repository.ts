@@ -374,8 +374,8 @@ function revise(snapshot: AcademicSnapshot, assignments: AcademicAssignment[]): 
 
 export function updateAssignmentStatus(snapshot: AcademicSnapshot, id: string, status: PersonalAssignmentStatus): AcademicSnapshot {
   if (!PERSONAL_STATUSES.includes(status)) return snapshot;
-  const exists = snapshot.assignments.some(assignment => assignment.id === id);
-  if (!exists) return snapshot;
+  const current = snapshot.assignments.find(assignment => assignment.id === id);
+  if (!current || current.status === "submitted" || current.status === "graded") return snapshot;
   return revise(snapshot, snapshot.assignments.map(assignment =>
     assignment.id === id ? { ...assignment, status, updatedAt: new Date().toISOString() } : assignment,
   ));
