@@ -73,7 +73,11 @@ describe("academic repository", () => {
     const base = loadAcademicSnapshot();
     expect(saveAcademicSnapshot(base, true)).toBe(true);
     const assignment = base.assignments[0];
-    const persisted = updateAssignmentStatus(base, assignment.id, "in_progress");
+    const persistedBase = updateAssignmentStatus(base, assignment.id, "in_progress");
+    const persisted: AcademicSnapshot = {
+      ...persistedBase,
+      assignments: persistedBase.assignments.map(item => item.id === assignment.id ? { ...item, status: "submitted" } : item),
+    };
     const local = updateAssignment(base, assignment.id, {
       courseId: assignment.courseId,
       title: "Concurrent local edit",
@@ -220,11 +224,11 @@ describe("academic repository", () => {
     });
   });
 
-  it("changes status through the shared assignment record", () => {
+  it("changes personal status through the shared assignment record", () => {
     const snapshot = loadAcademicSnapshot();
-    const assignment = snapshot.assignments[0];
+    const assignment = snapshot.assignments.find(item => item.status === "not_started")!;
     const next = updateAssignmentStatus(snapshot, assignment.id, "in_progress");
-    expect(next.assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
+    expect(next.assignments.find(item => item.id === assignment.id)?.status).toBe("in_progress");
     expect(next.revision).toBe(snapshot.revision + 1);
   });
 
@@ -526,13 +530,24 @@ it("detaches calendar and grade links when a linked assignment is removed", () =
 });
 
 describe("personal assignment status boundary", () => {
-  it("does not permit local updates to provider-owned Submitted or Graded states", () => {
+  it("does not permit local updates to Submitted/Graded values or mutate existing provider-owned states", () => {
     const snapshot = loadAcademicSnapshot();
-    const assignment = snapshot.assignments[0];
+    const assignment = snapshot.assignments.find(item => item.status === "not_started")!;
     // @ts-expect-error Submitted is provider-owned/read-only, not a personal workflow status.
     expect(updateAssignmentStatus(snapshot, assignment.id, "submitted")).toEqual(snapshot);
     // @ts-expect-error Graded is provider-owned/read-only, not a personal workflow status.
     expect(updateAssignmentStatus(snapshot, assignment.id, "graded")).toEqual(snapshot);
+
+    const submittedSnapshot: AcademicSnapshot = {
+      ...snapshot,
+      assignments: snapshot.assignments.map(item => item.id === assignment.id ? { ...item, status: "submitted" } : item),
+    };
+    expect(updateAssignmentStatus(submittedSnapshot, assignment.id, "in_progress")).toEqual(submittedSnapshot);
+    const gradedSnapshot: AcademicSnapshot = {
+      ...snapshot,
+      assignments: snapshot.assignments.map(item => item.id === assignment.id ? { ...item, status: "graded" } : item),
+    };
+    expect(updateAssignmentStatus(gradedSnapshot, assignment.id, "missing")).toEqual(gradedSnapshot);
   });
 });
 
