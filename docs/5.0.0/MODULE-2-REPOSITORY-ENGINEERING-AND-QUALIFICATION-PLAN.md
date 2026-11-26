@@ -313,3 +313,13 @@ This module authorizes planning and documentation only. It does not authorize:
 - deleting, disabling, rewriting or migrating legacy functionality.
 
 A later implementation phase requires a separate, explicit user authorization after planning sign-off. No planning decision in this document grants that authorization.
+
+
+
+## 15. Superseding authorization and current execution status — 2026-11-25
+
+Section 14 records the planning-only boundary at the time Module 2 was approved. It remains in force for production deployment, live provider access, data migration, legacy deletion/disablement, privileged credentials and physical/device acceptance claims.
+
+The later explicit owner transition authorization in [IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md) authorizes the isolated `apps/web/` development branch and bounded local/demo application implementation and development-branch CI/build/test. Subsequent owner scope clarification authorizes keeping academic workspaces/course editor in scope while excluding native quizzes, assignment submissions and document editors.
+
+This later authorization does not reopen Phase 0 or grant blanket permission for all future integrations/releases. The controlling boundaries and remaining approval gates are in [EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md). No production workflow or legacy Worker has been changed.
