@@ -1,5 +1,5 @@
 import type { AcademicAssignment, AcademicCourse, AcademicEvent, AssignmentArtifact, AcademicResource, AcademicSnapshot, AssignmentStatus, GradeItem, PracticeAttempt, PracticeQuestion, StudyCard, StudyRating, WritingDraft } from "./academic";
-import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoPracticeQuestions, demoResources, demoStudyCards, demoTerm } from "./demo-data";
+import { demoAssignments, demoCourses, demoEvents, demoGradeItems, demoResources, demoStudyCards, demoTerm } from "./demo-data";
 
 export const ACADEMIC_STORAGE_KEY = "northstar-5-academic-demo-v1";
 export const ACADEMIC_CONFLICTS_KEY = "northstar-5-academic-conflicts-v1";
@@ -40,8 +40,6 @@ function initialSnapshot(): AcademicSnapshot {
     writingDrafts: [],
     events: demoEvents.map(event => ({ ...event })),
     gradeItems: demoGradeItems.map(item => ({ ...item })),
-    practiceQuestions: demoPracticeQuestions.map(question => ({ ...question, options: question.options.map(option => ({ ...option })) })),
-    practiceAttempts: [],
     artifacts: [],
   };
 }
@@ -655,33 +653,4 @@ export function selectGradeSummary(snapshot: AcademicSnapshot, courseId?: string
   const earned = items.reduce((sum, item) => sum + (item.score ?? 0), 0);
   const possible = items.reduce((sum, item) => sum + item.pointsPossible, 0);
   return { items: items.length, earned, possible, percentage: possible > 0 ? Math.round((earned / possible) * 1000) / 10 : null };
-}
-
-export function createPracticeAttempt(snapshot: AcademicSnapshot, courseId: string, durationSeconds = 600): AcademicSnapshot {
-  const existing = (snapshot.practiceAttempts ?? []).find(attempt => attempt.courseId === courseId && attempt.status === "in_progress");
-  if (existing) return snapshot;
-  const questions = (snapshot.practiceQuestions ?? []).filter(question => question.courseId === courseId);
-  if (!questions.length || !snapshot.courses.some(course => course.id === courseId) || !Number.isInteger(durationSeconds) || durationSeconds < 60 || durationSeconds > 7200) return snapshot;
-  const now = new Date().toISOString();
-  const attempt: PracticeAttempt = { id: "practice-" + (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now())), courseId, questionIds: questions.map(question => question.id), answers: {}, flaggedIds: [], startedAt: now, elapsedSeconds: 0, durationSeconds, status: "in_progress" };
-  return { ...snapshot, revision: snapshot.revision + 1, practiceAttempts: [...(snapshot.practiceAttempts ?? []), attempt] };
-}
-
-export function updatePracticeAttempt(snapshot: AcademicSnapshot, id: string, answers: Record<string,string>, flaggedIds: string[], elapsedSeconds: number): AcademicSnapshot {
-  const attempts = snapshot.practiceAttempts ?? []; const current = attempts.find(attempt => attempt.id === id); if (!current || current.status !== "in_progress") return snapshot;
-  const questions = new Map((snapshot.practiceQuestions ?? []).map(question => [question.id, question]));
-  for (const [questionId, optionId] of Object.entries(answers)) { const question = questions.get(questionId); if (!current.questionIds.includes(questionId) || !question || !question.options.some(option => option.id === optionId)) return snapshot; }
-  if (flaggedIds.some(questionId => !current.questionIds.includes(questionId)) || !Number.isFinite(elapsedSeconds) || elapsedSeconds < 0) return snapshot;
-  const updated = { ...current, answers: { ...answers }, flaggedIds: [...new Set(flaggedIds)], elapsedSeconds: Math.floor(elapsedSeconds) };
-  return { ...snapshot, revision: snapshot.revision + 1, practiceAttempts: attempts.map(attempt => attempt.id === id ? updated : attempt) };
-}
-
-export function completePracticeAttempt(snapshot: AcademicSnapshot, id: string): AcademicSnapshot {
-  const attempts = snapshot.practiceAttempts ?? []; const current = attempts.find(attempt => attempt.id === id); if (!current || current.status !== "in_progress") return snapshot;
-  const questions = new Map((snapshot.practiceQuestions ?? []).map(question => [question.id, question]));
-  const correct = current.questionIds.filter(questionId => current.answers[questionId] === questions.get(questionId)?.correctOptionId).length;
-  const score = current.questionIds.length ? Math.round(correct / current.questionIds.length * 100) : 0;
-  const now = new Date().toISOString();
-  const updated = { ...current, score, completedAt: now, status: "completed" as const };
-  return { ...snapshot, revision: snapshot.revision + 1, practiceAttempts: attempts.map(attempt => attempt.id === id ? updated : attempt) };
 }
