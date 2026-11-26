@@ -211,3 +211,27 @@ NSX-028 / NS-CAN-012 track the outstanding decision:
 - Do not edit, disable, delete or redeploy the Worker, legacy UI, tests or document-editor files until the owner separately authorizes that action and the parity/rollback/security review is complete.
 
 **Risk:** The current NORTHSTAR 5.0 product boundary excludes native quizzes, submissions and document editors, while legacy source still contains those capabilities. The new app and legacy runtime must not be conflated.
+
+
+## 12. Current Instructure API Policy and official API mechanics — checked 2026-11-25
+
+**Primary policy:** [Instructure API Policy](https://www.instructure.com/policies/canvas-api-policy), effective 25 November 2026. The policy governs APIs documented at the Instructure Developer Documentation Portal.
+
+Policy implications to resolve before any live use:
+1. API use must be authorized by Instructure. The policy describes a Customer identified in an Order Form or expressly permitted by Instructure, and an end-user User authorized by the Customer to use Instructure's SaaS and the Customer's applications.
+2. Third-party subcontractors are not included in the User definition and must obtain their own active Integration Tier Partnership subscription for authorized API access.
+3. Restrictions prohibit API access without an active Integration Tier Partnership subscription or other express permission. A developer key or user-generated token is not, by itself, evidence of the required policy authorization.
+4. Application registration must outline what actions the application will take on the Customer's or User's behalf.
+5. The policy requires transparency about private information, data disclosures and any generative-AI use; GAI outputs must be labeled, limitations/risks disclosed, and the policy requires notice concerning training and storage.
+6. The policy requires least privilege and dynamic API rate-limit compliance. It warns that disproportionate high-impact/non-GET requests may result in token revocation or other action.
+
+**Official API mechanics used in the planning contract:**
+- [Canvas REST API overview](https://developerdocs.instructure.com/services/canvas): HTTPS, JSON, 64-bit integer IDs and ISO 8601 UTC timestamps.
+- [Developer keys and scopes](https://developerdocs.instructure.com/services/canvas/oauth2/file.developer_keys): institution/root-account enablement and endpoint scopes.
+- [OAuth2](https://developerdocs.instructure.com/services/canvas/oauth2): OAuth authorization and token lifecycle; access-token expiry/refresh requirements must be implemented only in an authorized backend.
+- [Pagination](https://developerdocs.instructure.com/services/canvas/basics/file.pagination): follow provider Link headers/opaque next links.
+- [Throttling](https://developerdocs.instructure.com/services/canvas/basics/file.throttling): dynamic throttling, 429 behavior, `X-Request-Cost`, `X-Rate-Limit-Remaining`; one concurrent request is the conservative default.
+
+**Authorization question (NS-CAN-011):** NORTHSTAR must obtain written confirmation identifying whether the project is a Customer-authorized User application or a third-party integration provider/subcontractor, what express permission/Integration Tier Partnership applies, which tenant/developer key/scopes are approved, and which actions are disclosed to the institution. The current school Canvas domain or possession of a token does not answer this question. No live API call is permitted until this gate is resolved.
+
+The current policy also reinforces NS-SCOPE-001: the application must be transparent about being independent from Canvas and must not mirror/replicate Canvas or mislead users about provider ownership.
