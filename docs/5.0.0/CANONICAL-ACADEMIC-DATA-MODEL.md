@@ -226,3 +226,9 @@ Not yet implemented in the app: ExternalReference/tenant namespace, field-level 
 - Numeric retention, attachment archive, local at-rest encryption and recovery policy.
 - Migration/compatibility strategy from the 4.4.x local stores and any imported StudentVUE data.
 - Cross-provider identity collision and duplicate-course resolution.
+
+
+
+## 11. Authorization status clarification
+
+The initial header's “no code or physical schema authorized” statement records the original planning checkpoint. A later separate owner authorization permits bounded local/demo application implementation and development-branch CI/build/test. This document remains a logical schema specification; it does not authorize a physical database redesign, external provider schema migration, live Canvas access or production data migration.
