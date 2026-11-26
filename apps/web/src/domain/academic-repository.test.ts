@@ -73,7 +73,7 @@ describe("academic repository", () => {
     const base = loadAcademicSnapshot();
     expect(saveAcademicSnapshot(base, true)).toBe(true);
     const assignment = base.assignments[0];
-    const persisted = updateAssignmentStatus(base, assignment.id, "submitted");
+    const persisted = updateAssignmentStatus(base, assignment.id, "in_progress");
     const local = updateAssignment(base, assignment.id, {
       courseId: assignment.courseId,
       title: "Concurrent local edit",
@@ -116,7 +116,7 @@ describe("academic repository", () => {
     stubAcademicStorage();
     const original = loadAcademicSnapshot();
     expect(saveAcademicSnapshot(original, true)).toBe(true);
-    const newer = updateAssignmentStatus(original, original.assignments[0].id, "submitted");
+    const newer = updateAssignmentStatus(original, original.assignments[0].id, "in_progress");
     expect(saveAcademicSnapshot(newer)).toBe(true);
     expect(saveAcademicSnapshot(original, true)).toBe(true);
     expect(loadAcademicSnapshot().revision).toBe(original.revision);
