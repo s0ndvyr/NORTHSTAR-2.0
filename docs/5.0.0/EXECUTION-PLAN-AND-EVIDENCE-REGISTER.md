@@ -74,7 +74,8 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 | NSX-004 | Complete exact-source tracked-file inventory and source/dependency/consumer graph | EFP-DEC-16; NS-MIG-002/003/005 | NSX-001 | **Partial** |
 | NSX-005 | Complete browser persistence, file, key, schema and lifecycle call-site map | EFP-DEC-17; NS-MIG-004; NS-DATA-006 | NSX-004 | **Partial** |
 | NSX-006 | Enumerate every Canvas Worker route and external operation | EFP-DEC-18; NS-SEC-003; NS-CAN-005 | NSX-004 | **Partial** |
-| NSX-007 | Research official Canvas API capabilities, endpoint semantics, scopes, pagination, rate limits and evidence dates | NS-CAN-003/004/005; NS-CAI-003 | NSX-006 | **Not started** |
+| NSX-007 | Research official Canvas API capabilities, endpoint semantics, scopes, pagination, rate limits and evidence dates | NS-CAN-003/004/005; NS-CAI-003 | NSX-006 | **In progress — public read-only endpoint baseline captured; route-level mapping remains open** |
+| NSX-027 | Resolve Instructure API Policy applicability and document written authorization/partnership/express-permission gate before any live Canvas access | NS-CAN-011; current Instructure API Policy effective 2026-11-25 | NSX-007 | **Blocked — classification and written permission are not established** |
 | NSX-008 | Reconcile canonical entities, field schemas, identities and relationships | DAP-DEC-01; NS-DATA-001/004; NS-CAI-001 | NSX-004, NSX-005 | **Partial — logical model drafted** |
 | NSX-009 | Complete field-level source authority, provenance and local-overlay matrix | CAI-DEC-03; NS-DATA-002; NS-CAI-004 | NSX-007, NSX-008 | **Partial** |
 | NSX-010 | Complete typed event, ordering, idempotency and projection contracts | CAI-DEC-02; NS-CAI-002/008 | NSX-008, NSX-009 | **Partial — envelope/state notes drafted** |
@@ -158,6 +159,15 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 - **Dependencies:** NSX-006.
 - **Approval boundary:** Read-only public documentation research is authorized; live tenant access and any write test are not.
 - **Status:** Not started.
+
+#### NSX-027 — Instructure API Policy and authorization gate
+- **Work:** Determine whether NORTHSTAR's single-user application is an authorized end-user integration, whether its developer/operator is treated as a third-party subcontractor, and whether an Integration Tier Partnership subscription or express Instructure permission is required. Obtain written clarification from the institution/Customer and, if needed, Instructure before any live API request.
+- **Source:** Current Instructure Canvas API Policy, effective 2026-11-25: https://www.instructure.com/policies/canvas-api-policy.
+- **Deliverable:** Dated authorization memorandum recording the applicable Customer/User classification, permitted use, required partnership/permission, owner, approved tenant, approved read-only scope and any restrictions.
+- **Acceptance:** The permission basis is explicit and retained as evidence; the integration remains disabled until then. Do not infer authorization from a Canvas login, institution URL, developer key or OAuth token.
+- **Verification:** Policy review against the actual account/institution relationship and written confirmation from the authorized party. This is a contractual/permission check, not a code test.
+- **Dependencies:** NSX-007.
+- **Status:** Blocked. Public documentation research is authorized; live Canvas access is not.
 
 #### NSX-008 — Canonical model completion
 - **Work:** Reconcile entities, fields, identity, versioning, lifecycle, relationships and nullable/optional semantics against source and workspace requirements.
@@ -318,9 +328,10 @@ The current development head `e7aabe5` is a documentation/status update whose pa
 5. NSX-008/009 complete canonical data and authority.
 6. NSX-010/011 define propagation, synchronization and conflict behavior.
 7. NSX-012/013 complete offline lifecycle and security boundary.
-8. NSX-014/015 define workspace integration and migration/parity.
-9. NSX-016/017 connect every requirement to acceptance and evidence.
-10. NSX-018/019 complete risk review and CAI planning acceptance.
+8. NSX-027 resolves Instructure API Policy authorization before any live provider access.
+9. NSX-014/015 define workspace integration and migration/parity.
+10. NSX-016/017 connect every requirement to acceptance and evidence.
+11. NSX-018/019 complete risk review and CAI planning acceptance.
 11. NSX-020 through NSX-025 continue authorized local/demo implementation and qualification in parallel where dependencies permit.
 12. NSX-026 reconciles the final state.
 
@@ -366,7 +377,7 @@ Recorded checks: clean `npm ci`, TypeScript typecheck, production dependency aud
 | Work | Blocker / approval needed | Work that can continue now |
 |---|---|---|
 | Physical iPad Safari | Actual iPad/Safari test session and device/OS evidence | Automated browser checks and manual test protocol |
-| Live Canvas tenant verification | Explicit owner authorization for named tenant, account role, scopes and exact read-only test | Official public API documentation research and mock contract tests |
+| Live Canvas tenant verification | Explicit owner authorization for named tenant, account role, scopes and exact read-only test; written confirmation of current Instructure API Policy applicability/permission (NSX-027) | Official public API documentation research and mock contract tests |
 | Canvas/provider writes | Not in current product scope for submissions; any other consequential provider write requires new explicit approval | Read-only capability planning and local/demo UI |
 | AI provider connection | Separate explicit authorization, provider/account and secret-handling review | Provider-neutral simulation and service contract planning |
 | User-data migration/import | Separate explicit authorization plus verified backup/archive, mapping and rollback | Static source mapping, fixtures and migration design |
@@ -390,7 +401,8 @@ Recorded checks: clean `npm ci`, TypeScript typecheck, production dependency aud
 1. Finish NSX-003 by recording NS-SCOPE-001 in the decision and traceability documents and updating the implementation status.
 2. Resolve the two app-scope conflicts found in NSX-020: remove the timed graded practice engine and native-looking turn-in/submit adapter affordances while preserving Study Lab learning tools and assignment tracking.
 3. Continue NSX-004/005/006 with source-by-source inventory, persistence call-site trace and Worker route matrix.
-4. Begin NSX-007 official Canvas documentation research and attach dated endpoint evidence.
-5. Complete workspace contracts and data model/authority refinements before requesting Cross-Application Intelligence planning sign-off.
+4. Continue NSX-007 route-to-endpoint mapping using the official public API evidence now recorded in the Canvas matrix.
+5. Resolve NSX-027 before any live Canvas access; the current Instructure API Policy creates an external authorization gate.
+6. Complete workspace contracts and data model/authority refinements before requesting Cross-Application Intelligence planning sign-off.
 
-**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo application foundation with successful automated qualification recorded for commit `4fc4e478...`; the active development branch is `e7aabe5...`. Phase 0 is closed. The Cross-Application Intelligence workstream is not signed off. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
+**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo application foundation. The no-quiz/no-submission scope correction is committed in the development branch; its latest CI qualification is pending. Phase 0 is closed. Public Canvas API documentation has been researched, but the current Instructure API Policy applicability/permission is unresolved (NSX-027). The Cross-Application Intelligence workstream is not signed off. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
