@@ -199,3 +199,19 @@ The invariant is that eviction or disconnect must not silently destroy the only 
 ## 12. Authorization boundary
 
 This document is planning only. It does not authorize code, database schemas/migrations, dependency installation, live provider access, data export/import, source deletion, deployment, or runtime testing.
+
+
+
+## 13. Current 5.0 scope restriction — provider operations and state machines
+
+The earlier generic sync-operation and submission-specific state-machine sections describe a broader provider-write design. Under NS-SCOPE-001, that write path is not part of the NORTHSTAR 5.0 product contract.
+
+For the current 5.0 application:
+- Provider interaction is read-only and remains disabled until NS-CAN-011 authorization is resolved.
+- There is no submission operation state machine, no offline queue for Canvas writes, no assignment upload/receipt state, no quiz attempt lifecycle and no discussion/document mutation lifecycle.
+- Local NORTHSTAR changes (personal notes, course organization, assignment planning status, calendar blocks, flashcards and writing-feedback drafts) use local persistence/revision/conflict handling only.
+- Provider refresh/pagination may be resumed from documented read cursors; partial fetch remains visibly partial/stale and never overwrites user-owned fields.
+- A provider-owned status snapshot, if later authorized, is read-only and must not be advanced by a local button or local completion event.
+- Any later provider-write requirement requires a new owner decision, an updated API-policy authorization record, a threat model, an ADR and new acceptance criteria before implementation.
+
+The old submission-specific state machine is retained as historical planning text, not a target 5.0 implementation contract. NS-CAI-009 is restricted by NS-SCOPE-001; its least-privilege and revocation controls remain.
