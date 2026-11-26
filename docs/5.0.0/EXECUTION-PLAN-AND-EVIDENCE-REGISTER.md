@@ -53,16 +53,16 @@ Each task record must include task ID; start branch and SHA; inspected/changed p
 | Audited stabilization branch | `northstar-4.4.8.3.1-stabilization` | Branch API |
 | Audited migration-source head | `df0427304e0f03aa822a1c8fe99547355e9c0bfc` | Branch API |
 | Development branch | `northstar-5.0.0-development` | Branch API |
-| Development branch head | `0f1c402e83fb6cdfd517993c04eed73af74121a0` | Branch API, verified 2026-11-26 02:38 UTC |
+| Development branch head | `492f7802b955a11d459f345e3b39f09ec4a4ded6` | Branch API, verified 2026-11-26 02:42 UTC |
 | Prior successful CI/code checkpoint | `4fc4e4788710c771c6490c9514a70f1c2ca51674` | Ancestor of current development branch; successful run 45695594885, not current branch head |
 | Phase 0 to setup branch | 62 commits ahead, 0 behind | Compare API |
-| Last application-code checkpoint | `58f0c1392c272e3e8245c8295c16789cb79f08db` | Latest app/test code commit; current head |
+| Last application-code checkpoint | `4aaa2984cc45e55456097a901b8734b713bfc61d` | Latest recovery code/test commit; qualified by run 45744014664 |
 | Phase 0 branch tree | 78 tracked files at inspected head | Recursive Git tree |
 | Development branch tree | 110 tracked files at inspected head | Recursive Git tree |
 | 4.4.8.3.2 qualification branch | `northstar-4.4.8.3.2-assignment-workspace-qualification` at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b` | Branch API |
-| Prior successful CI checkpoint to current development head | 73 commits ahead, 0 behind | Compare API |
-| Last app-code commit to current development head | 3 commits ahead, 0 behind; only execution-plan/status documentation changed | Compare API |
-| Phase 0 to development branch | 450 commits ahead, 0 behind | Compare API, 2026-11-26 02:38 UTC |
+| Prior successful CI checkpoint to current development head | 82 commits ahead, 0 behind | Compare API |
+| Last app-code commit to current development head | 2 commits ahead, 0 behind; only DATA-ARCHITECTURE-VERIFICATION-BLUEPRINT.md changed | Compare API |
+| Phase 0 to development branch | 459 commits ahead, 0 behind | Compare API, 2026-11-26 02:42 UTC |
 
 The audited stabilization branch remains at `df0427304e0f03aa822a1c8fe99547355e9c0bfc`; a later 4.4.8.3.2 qualification branch exists at `df8f6c5f6ad8d0d5f6b61dd0034eead562c3483b`. The Phase 0 setup branch is 62 commits ahead of the stabilization source and contains the closed Phase 0 planning artifacts. The development branch is 443 commits ahead of the Phase 0 branch and contains the separate `apps/web/` implementation. The default `main` branch remains divergent from the audited stabilization line (4 commits ahead and 321 behind at the comparison checkpoint), so it is not a substitute for the migration source.
 
@@ -94,13 +94,13 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 | NSX-019 | Prepare Cross-Application Intelligence design acceptance package | NS-GOV-001/004; CAI planning sign-off criteria | NSX-007 through NSX-018 | **Blocked pending evidence closure and owner review** |
 | NSX-020 | Align the new app implementation with the no-LMS-replacement scope | NS-SCOPE-001; current owner clarification | NSX-003 | **Complete — new-app scope correction passed full CI/browser qualification; legacy runtime remains separate under NSX-028** |
 | NSX-021 | Complete workspace accessibility qualification | NS-UX-003; NS-QUAL-001/002 | Current app implementation | **Partial; manual qualification open** |
-| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — deterministic seed/synchronous initialization fix passed the 13-journey browser suite; broader storage failure/recovery matrix remains** |
+| NSX-022 | Complete offline/recovery and concurrent-edit edge-case qualification | NS-DATA-003/005; NS-STATE-001; NS-CAI-005/006/007/010 | NSX-005, NSX-012, NSX-016 | **In progress — deterministic seed and explicit conflict-export acknowledgement passed all 13 browser journeys; broader storage failure/recovery matrix remains** |
 | NSX-023 | Complete physical iPad Safari/PWA acceptance | NS-UX-002; NS-QUAL-002 | NSX-021, NSX-022 | **Blocked — physical device/session required** |
 | NSX-024 | Complete capability parity and legacy preservation reconciliation | NS-MIG-001/002/003/005; Phase 0 preservation rule | NSX-004, NSX-005, NSX-015 | **Partial; no legacy deletion authorized** |
-| NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Not started** |
+| NSX-025 | Complete security, privacy and release-readiness review | NS-SEC-001/002/003; NS-REL-001 | NSX-006, NSX-012, NSX-013, NSX-016, NSX-018 | **Partial — threat model and 19-file static source review documented; URL validation, CSP, dynamic security testing and release controls remain** |
 | NSX-026 | Final repository/document reconciliation and close authorized work packages | NS-GOV-001/004; completion criteria | NSX-019 through NSX-025 | **Not started** |
 | NSX-028 | Decide and evidence disposition of legacy Worker/UI write, quiz and document-editor capabilities without silently changing the legacy product | NS-CAN-012; NS-SCOPE-001; NS-MIG-005; legacy preservation rule | NSX-004, NSX-006, NSX-015, NSX-018 | **Blocked — owner decision and separate deployment/retirement authorization required** |
-| NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — risks identified; recovery design and implementation not started** |
+| NSX-029 | Make local attachment lifecycle, backup/restore, conflict export and cleanup safe across localStorage and IndexedDB | NS-DATA-007; NS-DATA-005; NS-CAI-007; NS-QUAL-003 | NSX-005, NSX-012, NSX-016 | **Partial — conflict export acknowledgement and attachment metadata manifest implemented and browser-qualified; binary archive/restore, cross-store transaction and orphan cleanup remain** |
 | NSX-030 | Enforce separation of personal assignment planning status from provider-owned Submitted/Graded status in schema, domain APIs and UI | NS-DATA-008; NS-SCOPE-001 | NSX-008, NSX-020 | **Partial — type/runtime guard and immutable provider-state check passed CI; full persisted field split and migration remain** |
 
 ### 3.1 Task execution details and completion criteria
@@ -160,11 +160,11 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 #### NSX-029 — Cross-store attachment lifecycle and recovery
 - **Work:** Define and implement a safe lifecycle for attachment Blobs in IndexedDB and metadata in localStorage. Cover attach, detach, assignment delete, reset, backup, restore, conflict export, quota failure, transaction abort and orphan cleanup.
 - **Systems/files:** `apps/web/src/domain/assignment-artifact-storage.ts`, `academic-repository.ts`, `App.tsx`, Settings/backup UI and domain/E2E tests.
-- **Current evidence:** JSON backups and conflict bundles exclude artifact bytes (and current backup helper clears artifact metadata); app UI warns that files must be downloaded separately. Attach writes Blob before snapshot metadata; import/reset/delete span two stores and use best-effort deletion. No cross-store transaction or orphan scanner exists.
+- **Current evidence:** JSON backups and conflict bundles exclude artifact bytes. The conflict bundle now includes a local/saved attachment metadata manifest; the UI requires the user to acknowledge saving the bundle and any needed files before clearing conflicts. Attach writes Blob before snapshot metadata; import/reset/delete span two stores and use best-effort deletion. No cross-store transaction, portable binary archive or orphan scanner exists.
 - **Deliverables:** Attachment manifest/archive format; transactional/compensating lifecycle; orphan detection and recovery UI; explicit retention/size/quota policy; failure-injection tests.
 - **Acceptance:** No user attachment is silently lost during a failed save/import/reset/delete; backups state exactly what is included; either file bytes are exported/restored or user has a verifiable separate export path; conflict records are not cleared until the recovery bundle is explicitly acknowledged.
 - **Verification:** IndexedDB quota/blocked/abort tests; localStorage quota/corruption tests; interrupted attach/import/delete; missing Blob; orphan scan; backup round trip; conflict export interrupted or dismissed.
-- **Status:** Partial — source risks documented; implementation not started.
+- **Status:** Partial — safe conflict export acknowledgement and metadata manifest implemented and passed run 45744014664; attachment Blob archive/restore, cross-store atomicity, orphan scan and quota policy remain open.
 
 #### NSX-030 — Personal versus provider assignment status
 - **Work:** Complete the semantic separation between a user's local planning status and any provider-owned assignment/submission state. Keep display of provider/demo Submitted/Graded records read-only; no local command may create those states.
@@ -173,7 +173,7 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 - **Acceptance:** Personal status updates cannot set Submitted/Graded at type or runtime; provider status cannot be changed by local actions; legacy/demo snapshots remain readable; old data migration is deterministic and reversible.
 - **Verification:** Typecheck, unit tests for rejected status transitions, E2E UI tests for read-only Submitted/Graded states, snapshot migration/backup round trip.
 - **Dependencies:** NSX-008, NSX-020, NS-DATA-008.
-- **Status:** Partial — type and updater boundary implemented; full persisted field split and CI qualification pending.
+- **Status:** Partial — type/runtime guard, immutable provider-state check and domain tests passed run 45743400167/45744014664; full persisted field split and migration remain.
 
 #### NSX-027 — Instructure API authorization gate
 - **Work:** Obtain written determination whether NORTHSTAR is a Customer-authorized User application or a third-party integration provider/subcontractor under the Instructure API Policy effective 2026-11-25. Establish whether express permission or an active Integration Tier Partnership is required; identify approved customer/tenant, developer key, scopes, registration disclosure and permitted data/actions.
@@ -321,7 +321,7 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 - **Acceptance:** No silent loss of local user-authored data; recovery is visible and deterministic; static shell cache is not described as offline data sync.
 - **Verification:** Automated browser tests and documented manual tests.
 - **Dependencies:** NSX-005, NSX-012, NSX-016.
-- **Status:** Partial; one offline cached-shell reload and two-tab conflict recovery journey passed in the latest recorded Playwright run; broader failure matrix open.
+- **Status:** Partial — deterministic initial seeding, cross-tab conflict preservation and explicit conflict-export acknowledgement passed all 13 Playwright journeys in run 45744014664; storage quota/corruption/interrupted-write and full attachment recovery matrix remain.
 
 #### NSX-023 — Physical iPad Safari qualification
 - **Work:** Test supported iPadOS/Safari on actual hardware: portrait/landscape, split view/resizing, touch target sizing, hardware/on-screen keyboard, file import/export, install/update, storage pressure, offline and recovery.
@@ -342,7 +342,7 @@ The current development head is `46b6be3f9bfd8d331f72cfdcdeb84163546db7c5`. The 
 - **Deliverables:** Security review, release checklist, known limitations and gated action list.
 - **Acceptance:** No unresolved critical security/data-loss issue; preview and production are separate; production release remains blocked until explicit approval.
 - **Verification:** Static review, automated scans/CI and documented manual checks. Do not claim production readiness from a passing app build.
-- **Status:** Not started as a complete review.
+- **Status:** Partial — threat model and static source audit documented; no full dynamic security audit, CSP validation, penetration test or release sign-off.
 
 #### NSX-026 — Final reconciliation and closeout
 - **Work:** Recheck branch head, commits, docs, traceability, task statuses and evidence locations after all authorized work.
@@ -409,6 +409,7 @@ The Review Center is a limited local writing draft/feedback surface, not a gener
 | EV-022 | NSX-030/020 | GitHub Actions run 45742347520 on commit 470641f... | Typecheck and production dependency audit passed; domain tests 48 passed / 2 failed because assertions still expected local Submitted transitions; build/browser steps skipped | Failure captured; fixture/expectations and runtime provider-state guard corrected in 75c4c99... / 57c4e5d... |
 | EV-023 | NSX-030 | GitHub Actions run 45743250191 on commit 57c4e5d... | Typecheck failed because test fixtures referenced AcademicSnapshot without importing its type; subsequent correction committed as 58f0c139... | Failure captured; correction committed; rerun in progress |
 | EV-024 | NSX-020/022/030 | GitHub Actions run 45743400167 on commit 58f0c139...; job 139653581983 | 17 steps succeeded; TypeScript typecheck, production dependency audit, 3 domain test files / 50 tests, Vite production build and 13 Playwright journeys passed (17.4s) | Automated qualification passed for this code commit; documentation-only commits follow |
+| EV-025 | NSX-022/029/025 | Commits eb83e57..., a0618d0..., 1dde510..., 9dfd287..., 4aaa2984...; GitHub Actions run 45744014664, job 139655583227 | Conflict bundle now includes local/saved attachment metadata manifest; conflict records remain until user explicitly confirms bundle/file preservation; added clear-all operation, unit test and two-tab browser assertion. Run passed: 17 steps, 50 domain tests across 3 files, production build and 13 Playwright journeys (16.6s) | Automated qualification passed for code commit 4aaa2984; binary attachment bytes remain excluded |
 
 ### 6.1 Latest successful baseline CI evidence
 
@@ -422,7 +423,8 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 - Run 45741495661: 12/13 browser tests passed; the cross-tab persistence journey exposed the time-varying initial-seed race. Corrected by deterministic local-day demo timestamps and synchronous first-snapshot persistence.
 - Run 45742347520: typecheck and dependency audit passed; domain tests 48 passed / 2 failed because assertions still expected local Submitted status transitions. Corrected by keeping provider-owned Submitted/Graded records immutable and updating fixtures/expectations.
 - Run 45743250191: typecheck failed because the new test fixture omitted the AcademicSnapshot type import. Corrected in commit 58f0c139.
-- Run 45743400167: completed successfully on code checkpoint 58f0c139; 17 workflow steps succeeded, 50 domain tests and all 13 Playwright journeys passed. The current branch head is three documentation-only commits ahead; no application code changed after the qualified checkpoint.
+- Run 45743400167: completed successfully on code checkpoint 58f0c139; 17 workflow steps, 50 domain tests and 13 Playwright journeys passed.
+- Run 45744014664: completed successfully on recovery code checkpoint 4aaa2984; 17 workflow steps, 50 domain tests and 13 Playwright journeys passed. This verifies the explicit conflict-export acknowledgement flow and attachment metadata manifest; binary file backup remains excluded. The current branch head is two documentation-only commits ahead.
 
 
 ## 7. Explicit blockers and approval gates
@@ -451,7 +453,7 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 
 ## 9. Next execution actions
 
-1. Preserve the successful code checkpoint 58f0c139 / run 45743400167 as the current automated baseline; continue broader recovery qualification under NSX-022 and NSX-029 rather than treating the CI pass as full release acceptance.
+1. Preserve the successful recovery code checkpoint 4aaa2984 / run 45744014664 as the current automated baseline; continue broader recovery qualification under NSX-022 and NSX-029 rather than treating the CI pass as full release acceptance.
 2. Complete NSX-022's offline/recovery matrix: storage quota/corruption, interrupted writes, cross-tab competing edits, reload recovery and safe conflict export acknowledgement.
 3. Complete NSX-029 planning for attachment Blob/metadata lifecycle, portable backup/restore, conflict attachment manifest, orphan cleanup and quota behavior. Do not implement a new archive/restore workflow until its scope and data-loss behavior are approved.
 4. Complete NSX-030 canonical personal/provider status separation in the persisted model and migration contract; current type/runtime guard is only an intermediate control.
@@ -461,4 +463,4 @@ Verified log output: 17 workflow steps succeeded; Vitest reported 3 files / 51 t
 8. Keep NSX-027 blocked until written Customer/Instructure authorization and approved tenant/scopes exist. Keep NSX-028 blocked until the owner decides legacy runtime disposition and separately authorizes any deployment/retirement.
 9. Finish NSX-026 repository/document reconciliation only after all authorized work and evidence are complete.
 
-**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization and personal/provider status protections are implemented in source and passed full CI/browser qualification on code commit 58f0c139 (run 45743400167). The current branch head is three documentation-only commits ahead. Broader recovery, accessibility, iPad, security and release gates remain. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
+**Current honest status:** NORTHSTAR 5.0.0 has an implemented local/demo academic application foundation and a substantial approved planning/specification baseline. The current owner scope is recorded and the new app's timed quiz, turn-in and Canvas submit affordances have been removed. Cross-tab initialization, personal/provider status protections and explicit conflict-export acknowledgement are implemented in source and passed full CI/browser qualification on code commit 4aaa2984 (run 45744014664). The current branch head is two documentation-only commits ahead. Binary attachment backup, broader recovery, accessibility, iPad, security and release gates remain. Phase 0 is closed. The 5.0.1 planning specification is approved; Cross-Application Intelligence final planning review remains pending. Live provider integration, data migration, legacy retirement, physical iPad acceptance and production release are not claimed.
