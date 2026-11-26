@@ -339,3 +339,7 @@ These are not part of the new `apps/web/` target scope. The new app's Canvas ada
 
 | NS-DATA-007 | User-created assignment attachment bytes and metadata have explicit, consistent backup/restore, conflict-export, deletion and orphan-recovery semantics across localStorage and IndexedDB | P1 | NS-DATA-005, NS-CAI-007, NS-QUAL-003 | Attachment manifest/archive round trip; quota/abort/interrupted-operation tests; orphan scan and user-visible recovery evidence | Partial — current JSON backup excludes binary files; recovery design open |
 
+
+
+| NS-DATA-008 | Personal assignment workflow state is distinct from provider-owned Submitted/Graded state; local actions cannot create or mutate provider-owned completion/submission facts | P0 | NS-SCOPE-001, NS-DATA-001, NS-CAN-005 | Type-safe personal status API, runtime guard, read-only display behavior, migration/schema mapping and domain/E2E tests | Partial — personal type/updater guard in source; persisted canonical field split remains |
+
