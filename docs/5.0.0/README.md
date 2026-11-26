@@ -26,6 +26,7 @@ The audited source includes later external return-context hardening changes that
 - [Phase sign-off checklist](PHASE-SIGNOFF-CHECKLIST.md)
 - [Engineering Foundation planning brief](ENGINEERING-FOUNDATION-PLANNING.md)
 - [Implementation Readiness and Transition Plan](IMPLEMENTATION-READINESS-AND-TRANSITION-PLAN.md)
+- [Authorized Execution Plan and Evidence Register](EXECUTION-PLAN-AND-EVIDENCE-REGISTER.md)
 - [Cross-Application Intelligence planning](CROSS-APPLICATION-INTELLIGENCE-PLANNING.md)
 - [Cross-Application data contracts and state machines](CROSS-APPLICATION-DATA-CONTRACTS-AND-STATE-MACHINES.md)
 - [Integrated Cross-Application Data Architecture](INTEGRATED-CROSS-APPLICATION-DATA-ARCHITECTURE.md)
@@ -225,3 +226,19 @@ The planning process is now consolidated and evidence-led: no repetitive five-qu
 The user confirmed `apps/web/` as the official NORTHSTAR 5.0 application location and authorized beginning implementation of the first foundation slice. Work is isolated on `northstar-5.0.0-development`.
 
 The initial React + TypeScript + Vite shell is now present, with responsive Midnight styling, workspace navigation, route placeholders and illustrative dashboard content. No legacy application files were removed or replaced. No production workflow, Canvas Worker, real provider connection, user-data migration or deployment was changed. Build and test qualification remain pending.
+
+
+## Current product scope guardrail — 2026-11-25
+
+The owner reaffirmed that NORTHSTAR is an academic organizer and intelligence layer, not a Canvas/LMS replacement. Approved academic workspaces and continued course-editor development remain in scope.
+
+**Do not implement in the NORTHSTAR 5.0 application:**
+- a native quiz/test or timed graded assessment engine;
+- a native assignment-submission or “turn in” workflow;
+- a general-purpose document editor or replacement for Canvas/external document tools.
+
+Canvas and other external academic services retain their native assessment, submission and document workflows. NORTHSTAR may organize assignments, track deadlines and local planning status, display provider/demo status with clear provenance, link users to external workflows, and provide academic intelligence.
+
+Study Lab is limited to flashcards, spaced repetition, study guides and non-assessment learning aids. Review Center remains a limited local writing-draft/feedback workspace, not a document editor suite. The Course workspace and course editor remain approved. Legacy source containing excluded workflows is preserved until its dependencies, data and parity are mapped and a separate retirement approval is granted.
+
+This scope clarification supersedes conflicting earlier planning or implementation annotations for the NORTHSTAR 5.0 product. Historical records remain preserved and are cross-referenced in `REQUIREMENTS-TRACEABILITY.md` under `NS-SCOPE-001`.
