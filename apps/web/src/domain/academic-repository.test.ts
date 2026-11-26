@@ -23,6 +23,7 @@ import {
   loadAcademicSnapshot,
   loadAcademicConflicts,
   clearAcademicConflict,
+  clearAllAcademicConflicts,
   saveAcademicSnapshot,
   parseAcademicBackup,
   updateAcademicEvent,
@@ -113,7 +114,7 @@ describe("academic repository", () => {
     expect(saveAcademicSnapshot(continuedLocal)).toBe(true);
     expect(loadAcademicSnapshot().assignments.find(item => item.id === assignment.id)?.status).toBe("submitted");
     expect(loadAcademicConflicts()).toHaveLength(2);
-    for (const conflict of loadAcademicConflicts()) expect(clearAcademicConflict(conflict.id)).toBe(true);
+    expect(clearAllAcademicConflicts()).toBe(true);
     expect(loadAcademicConflicts()).toHaveLength(0);
   });
 
