@@ -87,3 +87,17 @@ Do not invent numeric storage quotas, freshness periods or retention windows. Me
 ## 12. Authorization status clarification
 
 This policy remains a planning/acceptance contract for future provider sync and full recovery behavior. The separate owner authorization permits local/demo persistence and recovery fixes in the development branch; it does not authorize live provider synchronization, cloud backup services, external data migration, production changes or legacy data deletion.
+
+
+
+
+## 13. Implementation evidence update — 2026-11-26
+
+The local cross-tab recovery implementation now follows the explicit-acknowledgement rule:
+- Conflict export includes both academic snapshots and local/saved attachment metadata manifests.
+- Binary IndexedDB attachment bytes are still excluded.
+- Starting the download no longer clears conflict records.
+- A separate user acknowledgement, with a warning that attachment bytes must be saved separately, is required before conflict records are cleared and the latest persisted snapshot is reloaded.
+- A unit test covers clearing the conflict store; the two-tab Playwright journey verifies that the conflict remains visible after download and disappears only after acknowledgement.
+
+This implementation passed the full development-branch qualification workflow on code commit 4aaa2984 (GitHub Actions run 45744014664): 17 workflow steps, 50 domain tests and 13 Playwright browser journeys. This does not close NS-DATA-007: portable binary attachment backup/restore, cross-store atomicity, quota/corruption/interrupted-write recovery and orphan cleanup remain open.
