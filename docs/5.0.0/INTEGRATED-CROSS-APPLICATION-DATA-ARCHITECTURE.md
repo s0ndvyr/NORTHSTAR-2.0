@@ -216,3 +216,20 @@ Integration readiness must be specified across Assignments, Courses, Calendar, G
 ## 14. Source evidence update
 
 The initial selected-file source review is recorded in [LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md](LEGACY-SOURCE-INVENTORY-INITIAL-REVIEW.md). It is not a complete repository audit. The exact migration source branch must be reconciled, all storage keys/object stores and read/write call sites enumerated, all Worker routes and provider operations mapped, and dependencies/CDN imports inventoried before migration design can be accepted.
+
+
+
+## 15. Current owner scope and external authorization gates — 2026-11-25
+
+The owner reaffirmed NS-SCOPE-001: NORTHSTAR 5.0 is an academic organizer/intelligence layer, not a Canvas/LMS replacement. Academic workspaces and the personal course editor remain approved. Native quiz/test engines, assignment submissions/turn-in, provider write workflows and general-purpose document editors are excluded. Canvas/external services retain those native workflows.
+
+The architecture's earlier provider-write and pending-submission sections are preserved as historical planning context. For the target 5.0 implementation:
+- the Canvas adapter is read-only and remains unconfigured until NS-CAN-011 is resolved;
+- no Canvas POST/PUT/PATCH/DELETE command, submission/quiz attempt lifecycle or offline provider-write queue is exposed;
+- provider-owned assignment status, if needed and authorized, is read-only with provenance/freshness;
+- local organizer state remains NORTHSTAR-owned and separate from official Canvas fields;
+- Study Lab supports flashcards/spaced repetition/study guides; Review Center is limited writing feedback/drafts; no general document editor is included.
+
+The current Instructure Canvas API Policy effective 2026-11-25 requires an authorization/partnership determination before live API access. Public documentation research is captured in the Canvas matrix, but no live tenant request is authorized or claimed. Legacy Worker/UI write routes remain in the 4.4.x source and are tracked separately; do not disable or delete them without NSX-028 approval.
+
+The 5.0 app's localStorage/IndexedDB persistence is now mapped in the source inventory. Important unresolved architecture gaps include plaintext local snapshot/artifacts, no cross-store transaction, JSON backup exclusion of attachment bytes, conflict-bundle acknowledgement, quota/eviction limits and physical Safari evidence. NS-DATA-007 / NSX-029 owns attachment lifecycle and backup/recovery closure.
