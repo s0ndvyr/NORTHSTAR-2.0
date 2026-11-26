@@ -205,7 +205,7 @@ function AssignmentDetail({ snapshot, onStatus, onArtifactAttach, onArtifactDown
   </div>;
 }
 
-function Assignments({ snapshot, onStatus, onCreate, onUpdate, onDelete }: { snapshot: AcademicSnapshot; onStatus: (id: string, status: AssignmentStatus) => void; onCreate: (input: AssignmentInput) => void; onUpdate: (id: string, input: AssignmentInput) => void; onDelete: (id: string) => void }) {
+function Assignments({ snapshot, onStatus, onCreate, onUpdate, onDelete }: { snapshot: AcademicSnapshot; onStatus: (id: string, status: PersonalAssignmentStatus) => void; onCreate: (input: AssignmentInput) => void; onUpdate: (id: string, input: AssignmentInput) => void; onDelete: (id: string) => void }) {
   const [query, setQuery] = useState(""); const [status, setStatus] = useState("all"); const [course, setCourse] = useState("all"); const [sort,setSort]=useState<"due"|"priority"|"updated">("due");
   const [searchParams,setSearchParams]=useSearchParams();
   const requestedEdit=searchParams.get("edit");
@@ -573,7 +573,7 @@ export default function App() {
     window.addEventListener("storage",onStorage);
     return ()=>window.removeEventListener("storage",onStorage);
   }, []);
-  const handleStatus = (id: string, status: AssignmentStatus) => setSnapshot(current => updateAssignmentStatus(current,id,status));
+  const handleStatus = (id: string, status: PersonalAssignmentStatus) => setSnapshot(current => updateAssignmentStatus(current,id,status));
   const handleCourseCreate = (input:CourseInput) => setSnapshot(current => createCourse(current,input));
   const handleCourseUpdate = (id:string,input:CourseInput) => setSnapshot(current => updateCourse(current,id,input));
   const handleCreate = (input: AssignmentInput) => setSnapshot(current => createAssignment(current,input));
