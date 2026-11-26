@@ -114,7 +114,7 @@ Additional data recovery scenarios:
 - backup/restore round trip explicitly reports that binary attachments are excluded until NS-DATA-007 is closed;
 - conflict bundle download is not treated as saved until the user acknowledges it; conflict data remains recoverable until then.
 
-The scope correction and cross-tab initialization fix passed the full qualification workflow on code checkpoint 58f0c139 (run 45743400167). A subsequent recovery correction now requires explicit acknowledgement before clearing a conflict export and includes an attachment metadata manifest; that newer code is being qualified in run 45744014664. Physical iPad and manual/device acceptance are not claimed.
+The scope correction and cross-tab initialization fix passed full qualification on code checkpoint 58f0c139 (run 45743400167). The subsequent recovery correction requires explicit acknowledgement before clearing a conflict export and includes an attachment metadata manifest; code checkpoint 4aaa2984 passed full qualification in run 45744014664. Physical iPad and manual/device acceptance are not claimed.
 
 
 
@@ -164,7 +164,7 @@ This is a static threat model and release checklist, not a passed security audit
 - Current 5.0 AI workspace uses deterministic local simulation; no external AI provider request is made.
 - Production dependency audit, typecheck, build, domain tests and Playwright browser qualification passed on code checkpoint 58f0c139 (run 45743400167).
 - The service worker caches the static app shell; academic data is stored separately in browser localStorage/IndexedDB.
-- The conflict export flow has been changed in source to retain conflict records until explicit user acknowledgement; the follow-up qualification run 45744014664 is in progress.
+- The conflict export flow retains conflict records until explicit user acknowledgement and includes a metadata manifest for attachments; run 45744014664 passed all 13 Playwright journeys. Binary attachment bytes remain excluded.
 - The legacy Worker and root UI still contain excluded capabilities. Source-level inventory is not proof of live deployment status or safe retirement.
 
 ### 10.4 Release blockers
